@@ -72,7 +72,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
       <button
         style={{
           position: "fixed",
-          top: "20px",
+          top: "60px", // Below mute/chat buttons (they're at top: 10px with ~40px height)
           left: "20px",
           padding: "8px 12px",
           backgroundColor: "rgba(0, 0, 0, 0.7)",

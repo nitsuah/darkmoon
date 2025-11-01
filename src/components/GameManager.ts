@@ -96,12 +96,18 @@ export class GameManager {
     }
   }
 
-  startTagGame(duration: number = 180) {
-    // 3 minutes default
+  startTagGame(duration: number = 60) {
+    // 1 minute default for faster playtesting (dynamic: +1min per player above 2)
     // Allow solo practice (0 players) or real games with 2+ players; block single-player
     if (this.players.size === 1) {
       this.gmDebug("Need at least 2 players to start tag game");
       return false;
+    }
+
+    // Dynamic duration: 1 minute + 1 minute per player above 2
+    const playerCount = this.players.size;
+    if (playerCount > 2) {
+      duration = 60 + (playerCount - 2) * 60;
     }
 
     this.gameState = {

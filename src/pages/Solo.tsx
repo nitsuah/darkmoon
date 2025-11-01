@@ -185,6 +185,7 @@ interface BotCharacterProps {
   isIt: boolean;
   playerIsIt: boolean;
   onTagPlayer: () => void;
+  gameState: GameState;
 }
 
 const BotCharacter: React.FC<BotCharacterProps> = ({
@@ -194,6 +195,7 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
   isIt,
   playerIsIt,
   onTagPlayer,
+  gameState,
 }) => {
   const meshRef = useRef<THREE.Group>(null);
   const lastTagTime = useRef(0);
@@ -202,9 +204,9 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
   const CHASE_RADIUS = 10; // Start chasing when player is within 10 units
   const BOT_SPEED = 1.5; // Bot moves at 1.5 units/second
   const FLEE_SPEED = 1.8; // Slightly slower than player max speed (2.0)
-  const TAG_COOLDOWN = 2000; // 2 second cooldown between tags
-  const TAG_DISTANCE = 1.5; // Distance to tag
-  const PAUSE_AFTER_TAG = 1000; // Pause for 1 second after tagging
+  const TAG_COOLDOWN = 2500; // 2.5 second cooldown between tags (increased from 1500)
+  const TAG_DISTANCE = 1.2; // Reduced collision distance for easier tagging
+  const PAUSE_AFTER_TAG = 1500; // Pause for 1.5 seconds after tagging
   const INITIAL_POSITION: [number, number, number] = [5, 0.5, 5];
 
   useFrame((state, delta) => {
@@ -230,10 +232,10 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
     const playerPos = new THREE.Vector3(...playerPosition);
     const distance = botPos.distanceTo(playerPos);
 
-    // Behavior depends on who is IT
-    if (isIt) {
-      // Bot is IT - chase player to tag them
-      if (distance < CHASE_RADIUS && distance > TAG_DISTANCE) {
+    // Behavior depends on who is IT (only during active tag games)
+    if (isIt && gameState.isActive && gameState.mode === "tag") {
+      // Bot is IT - ALWAYS chase player (no distance limit)
+      if (distance > TAG_DISTANCE) {
         // Chase player
         const direction = new THREE.Vector3()
           .subVectors(playerPos, botPos)
@@ -245,18 +247,15 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
         // Rotate bot to face player
         const angle = Math.atan2(direction.x, direction.z);
         meshRef.current.rotation.y = angle;
-      } else if (
-        distance <= TAG_DISTANCE &&
-        now - lastTagTime.current > TAG_COOLDOWN
-      ) {
+      } else if (now - lastTagTime.current > TAG_COOLDOWN) {
         // Tag the player!
         lastTagTime.current = now;
         isPausedAfterTag.current = true;
         pauseEndTime.current = now + PAUSE_AFTER_TAG;
         onTagPlayer();
       }
-    } else if (playerIsIt) {
-      // Player is IT - flee from player
+    } else if (playerIsIt && gameState.isActive && gameState.mode === "tag") {
+      // Player is IT - only flee when player is within detection radius
       if (distance < CHASE_RADIUS) {
         // Flee away from player
         const direction = new THREE.Vector3()
@@ -362,12 +361,12 @@ const PlayerCharacter = React.forwardRef<
   const isJumping = useRef(false);
   const verticalVelocity = useRef(0);
   const jumpHoldTime = useRef(0); // Track how long space is held
-  const JUMP_INITIAL_FORCE = 0.08; // Initial thrust
-  const JUMP_HOLD_FORCE = 0.12; // Additional thrust while holding
-  const JUMP_MAX_HOLD_TIME = 0.5; // Max seconds to hold for extra height
-  const GRAVITY = 0.003; // Moon gravity (much lower)
+  const JUMP_INITIAL_FORCE = 0.1; // Initial thrust (increased from 0.08 for better launch)
+  const JUMP_HOLD_FORCE = 0.15; // Additional thrust while holding (increased from 0.12 for stronger jetpack)
+  const JUMP_MAX_HOLD_TIME = 1.0; // Max seconds to hold for extra height (doubled from 0.5 for longer thrust)
+  const GRAVITY = 0.002; // Moon gravity (reduced from 0.003 for more floaty feeling)
   const GROUND_Y = 0.5;
-  const AIR_RESISTANCE = 0.98; // Floaty feeling (slight drag)
+  const AIR_RESISTANCE = 0.99; // More floaty feeling (increased from 0.98 for less drag)
 
   // Expose reset function to parent via ref
   React.useImperativeHandle(ref, () => ({
@@ -599,16 +598,19 @@ const PlayerCharacter = React.forwardRef<
                 resolvedPosition.add(pushDirection.multiplyScalar(0.1));
               }
 
-              // Handle tagging bot in solo mode
+              // Handle tagging bot in solo mode (only during active tag game)
               if (
                 clientId === "bot-1" &&
+                gameState.mode === "tag" &&
+                gameState.isActive &&
                 playerIsIt &&
-                distance < 1.5 &&
-                now - lastTagCheck.current > 2000
+                distance < 1.2 &&
+                now - lastTagCheck.current > 2500
               ) {
                 // Player tagged the bot!
                 if (setPlayerIsIt) setPlayerIsIt(false);
                 if (setBotIsIt) setBotIsIt(true);
+                lastTagCheck.current = now;
 
                 // Victory celebration effects
                 const flashOverlay = document.createElement("div");
@@ -934,6 +936,27 @@ const Solo: React.FC = () => {
   const [playerIsIt, setPlayerIsIt] = useState(true); // Player starts as IT
   const [botIsIt, setBotIsIt] = useState(false);
   const orientation = useOrientation();
+
+  // Detect if device is mobile/touch-enabled
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => {
+      // Check for touch capability and small screen
+      const hasTouchScreen =
+        "ontouchstart" in window ||
+        (typeof window !== "undefined" &&
+          "navigator" in window &&
+          (window.navigator.maxTouchPoints > 0 ||
+            // @ts-expect-error - Legacy IE support
+            window.navigator.msMaxTouchPoints > 0));
+      const isSmallScreen = window.innerWidth <= 1024;
+      setIsMobileDevice(hasTouchScreen && isSmallScreen);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   // Solo mode: no reconnection refs needed
   const keyDisplayRef = useRef<KeyDisplay | null>(null);
   const lastEmitTime = useRef(0);
@@ -1375,11 +1398,11 @@ const Solo: React.FC = () => {
     }
 
     if (mode === "tag") {
-      const started = gameManager.current.startTagGame(180); // 3 minutes
+      const started = gameManager.current.startTagGame(60); // 1 minute
       if (started) {
         // Only emit to server when connected
         if (socketClient && isConnected) {
-          socketClient.emit("game-start", { mode: "tag", duration: 180 });
+          socketClient.emit("game-start", { mode: "tag", duration: 60 });
         }
       }
     }
@@ -1719,7 +1742,11 @@ const Solo: React.FC = () => {
           isPaused={isPaused}
           isIt={botIsIt}
           playerIsIt={playerIsIt}
+          gameState={gameState}
           onTagPlayer={() => {
+            // Bot tagged the player - only if game is active and in tag mode
+            if (!gameState.isActive || gameState.mode !== "tag") return;
+
             // Bot tagged the player - swap IT status
             setPlayerIsIt(false);
             setBotIsIt(true);
@@ -1777,29 +1804,33 @@ const Solo: React.FC = () => {
       </Canvas>
 
       {/* Mobile Joysticks - only appear on touch devices */}
-      <MobileJoystick
-        side="left"
-        label="MOVE"
-        onMove={(x, y) => setJoystickMove({ x, y })}
-      />
-      <MobileJoystick
-        side="right"
-        label="CAMERA"
-        onMove={(x, y) => setJoystickCamera({ x, y })}
-      />
+      {isMobileDevice && (
+        <>
+          <MobileJoystick
+            side="left"
+            label="MOVE"
+            onMove={(x, y) => setJoystickMove({ x, y })}
+          />
+          <MobileJoystick
+            side="right"
+            label="CAMERA"
+            onMove={(x, y) => setJoystickCamera({ x, y })}
+          />
 
-      {/* Mobile Jump Button */}
-      <MobileButton
-        label="JUMP"
-        icon="⬆️"
-        position="bottom-center"
-        onPress={() => {
-          setKeysPressed((prev) => ({ ...prev, [SPACE]: true }));
-        }}
-        onRelease={() => {
-          setKeysPressed((prev) => ({ ...prev, [SPACE]: false }));
-        }}
-      />
+          {/* Mobile Jump Button */}
+          <MobileButton
+            label="JUMP"
+            icon="⬆️"
+            position="bottom-center"
+            onPress={() => {
+              setKeysPressed((prev) => ({ ...prev, [SPACE]: true }));
+            }}
+            onRelease={() => {
+              setKeysPressed((prev) => ({ ...prev, [SPACE]: false }));
+            }}
+          />
+        </>
+      )}
     </div>
   );
 };
