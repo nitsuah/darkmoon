@@ -8,10 +8,10 @@ Please verify the following fixes work as expected:
 
 ### Bot AI & Tag Mechanics
 
-- [ ] **Bot chase**: When bot is IT, it always chases player (no longer moves away)
-- [ ] **Tag collision**: Easier to tag bot (reduced distance: 1.5→1.2 units)
-- [ ] **Tag cooldown**: 1.5 second delay prevents rapid re-tagging
-- [ ] **Freeze duration**: Bot/player frozen for 1.5s after being tagged
+- [ ] **Bot chase**: When bot is IT, it always chases player (no longer moves away) - but this should only happen when the game tag is active and the bot is actually it.
+- [ ] **Tag collision**: Easier to tag bot (reduced distance: 1.5→1.2 units) - but the bot cant seem to tag us
+- [ ] **Tag cooldown**: 1.5 second delay prevents rapid re-tagging - doesnt seem t work on the collision still triggers the "bot tagged you" message rapidly, it also doesnt change who is it. so the bot tags us but nothing changes. make the delay 3 seconds.
+- [ ] **Freeze duration**: Bot/player frozen for 1.5s after being tagged (make it 3 seconds)
 - [ ] **Tag game only**: Cannot tag outside active tag games
 
 ### Game Settings
