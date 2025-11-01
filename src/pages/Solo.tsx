@@ -186,6 +186,7 @@ interface BotCharacterProps {
   playerIsIt: boolean;
   onTagPlayer: () => void;
   gameState: GameState;
+  collisionSystem: React.RefObject<CollisionSystem>;
 }
 
 const BotCharacter: React.FC<BotCharacterProps> = ({
@@ -196,6 +197,7 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
   playerIsIt,
   onTagPlayer,
   gameState,
+  collisionSystem,
 }) => {
   const meshRef = useRef<THREE.Group>(null);
   const lastTagTime = useRef(0);
@@ -204,10 +206,10 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
   const CHASE_RADIUS = 10; // Start chasing when player is within 10 units
   const BOT_SPEED = 1.5; // Bot moves at 1.5 units/second
   const FLEE_SPEED = 1.8; // Slightly slower than player max speed (2.0)
-  const TAG_COOLDOWN = 2500; // 2.5 second cooldown between tags (increased from 1500)
-  const TAG_DISTANCE = 1.2; // Reduced collision distance for easier tagging
-  const PAUSE_AFTER_TAG = 1500; // Pause for 1.5 seconds after tagging
-  const INITIAL_POSITION: [number, number, number] = [5, 0.5, 5];
+  const TAG_COOLDOWN = 3000; // 3 second cooldown between tags
+  const TAG_DISTANCE = 1.0; // Touch distance accounting for character sizes (~0.5 radius each)
+  const PAUSE_AFTER_TAG = 3000; // Pause for 3 seconds after tagging
+  const INITIAL_POSITION: [number, number, number] = [-5, 0.5, -5]; // Clear spawn away from rocks
 
   useFrame((state, delta) => {
     if (!meshRef.current || isPaused) return;
@@ -241,8 +243,26 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
           .subVectors(playerPos, botPos)
           .normalize();
 
-        botPos.x += direction.x * BOT_SPEED * delta;
-        botPos.z += direction.z * BOT_SPEED * delta;
+        // Calculate new position
+        const currentPos = new THREE.Vector3(botPos.x, botPos.y, botPos.z);
+        const newPos = new THREE.Vector3(
+          botPos.x + direction.x * BOT_SPEED * delta,
+          botPos.y,
+          botPos.z + direction.z * BOT_SPEED * delta
+        );
+
+        // Check collision with environment
+        if (collisionSystem.current) {
+          const resolved = collisionSystem.current.checkCollision(
+            currentPos,
+            newPos
+          );
+          botPos.x = resolved.x;
+          botPos.z = resolved.z;
+        } else {
+          botPos.x = newPos.x;
+          botPos.z = newPos.z;
+        }
 
         // Rotate bot to face player
         const angle = Math.atan2(direction.x, direction.z);
@@ -262,8 +282,26 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
           .subVectors(botPos, playerPos) // Reversed direction to flee
           .normalize();
 
-        botPos.x += direction.x * FLEE_SPEED * delta;
-        botPos.z += direction.z * FLEE_SPEED * delta;
+        // Calculate new position
+        const currentPos = new THREE.Vector3(botPos.x, botPos.y, botPos.z);
+        const newPos = new THREE.Vector3(
+          botPos.x + direction.x * FLEE_SPEED * delta,
+          botPos.y,
+          botPos.z + direction.z * FLEE_SPEED * delta
+        );
+
+        // Check collision with environment
+        if (collisionSystem.current) {
+          const resolved = collisionSystem.current.checkCollision(
+            currentPos,
+            newPos
+          );
+          botPos.x = resolved.x;
+          botPos.z = resolved.z;
+        } else {
+          botPos.x = newPos.x;
+          botPos.z = newPos.z;
+        }
 
         // Rotate bot to face away from player
         const angle = Math.atan2(direction.x, direction.z);
@@ -282,16 +320,6 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
       <mesh position={[0, 1.5, 0]}>
         <sphereGeometry args={[0.12, 8, 8]} />
         <meshBasicMaterial color="#ffff00" />
-      </mesh>
-      {/* Chase radius indicator - transparent ring at ground level */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.49, 0]}>
-        <ringGeometry args={[CHASE_RADIUS - 0.2, CHASE_RADIUS, 32]} />
-        <meshBasicMaterial
-          color="#ffaa00"
-          transparent
-          opacity={0.2}
-          side={THREE.DoubleSide}
-        />
       </mesh>
     </group>
   );
@@ -604,8 +632,8 @@ const PlayerCharacter = React.forwardRef<
                 gameState.mode === "tag" &&
                 gameState.isActive &&
                 playerIsIt &&
-                distance < 1.2 &&
-                now - lastTagCheck.current > 2500
+                distance < 1.0 &&
+                now - lastTagCheck.current > 3000
               ) {
                 // Player tagged the bot!
                 if (setPlayerIsIt) setPlayerIsIt(false);
@@ -966,6 +994,7 @@ const Solo: React.FC = () => {
   const isPausedRef = useRef(isPaused);
   const chatVisibleRef = useRef(chatVisible);
   const keysPressedRef = useRef(keysPressed);
+  const collisionSystemRef = useRef(new CollisionSystem());
   const playerCharacterRef = useRef<PlayerCharacterHandle>(null);
 
   // Keep refs in sync with state
@@ -1411,7 +1440,58 @@ const Solo: React.FC = () => {
   const handleEndGame = () => {
     if (!gameManager.current) return;
 
-    gameManager.current.endGame();
+    const results = gameManager.current.endGame();
+
+    // Announce game end with results
+    if (results && results.length > 0) {
+      console.log("🏁 Game Over! Final Results:");
+      results.forEach((player, index) => {
+        console.log(`${index + 1}. ${player.name}: ${player.score} points`);
+      });
+
+      // Determine winner and loser in solo mode
+      if (results.length === 2) {
+        const winner = results[0]; // Highest score
+        const loser = results[1]; // Lowest score
+
+        // Add chat message
+        const endMessage: ChatMessage = {
+          id: Date.now().toString(),
+          playerId: "system",
+          playerName: "System",
+          message: `🏁 Game Over! Winner: ${winner.name} (${winner.score} points) | Loser: ${loser.name} (${loser.score} points)`,
+          timestamp: Date.now(),
+        };
+
+        setChatMessages((prev) => [
+          ...prev.slice(-(MAX_CHAT_MESSAGES - 1)),
+          endMessage,
+        ]);
+
+        console.log(`🏆 Winner: ${winner.name} with ${winner.score} points`);
+        console.log(`😢 Loser: ${loser.name} with ${loser.score} points`);
+      }
+
+      // Show visual notification
+      const gameOverText = document.createElement("div");
+      gameOverText.textContent = "🏁 GAME OVER! 🏁";
+      gameOverText.style.position = "fixed";
+      gameOverText.style.top = "50%";
+      gameOverText.style.left = "50%";
+      gameOverText.style.transform = "translate(-50%, -50%)";
+      gameOverText.style.fontSize = "72px";
+      gameOverText.style.fontWeight = "bold";
+      gameOverText.style.color = "#FFD700";
+      gameOverText.style.textShadow =
+        "0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.5)";
+      gameOverText.style.pointerEvents = "none";
+      gameOverText.style.zIndex = "10000";
+      gameOverText.style.animation =
+        "popIn 0.5s ease-out, fadeOut 2s ease-out 1s";
+      document.body.appendChild(gameOverText);
+      setTimeout(() => gameOverText.remove(), 3000);
+    }
+
     if (socketClient) {
       socketClient.emit("game-end");
     }
@@ -1743,13 +1823,14 @@ const Solo: React.FC = () => {
           isIt={botIsIt}
           playerIsIt={playerIsIt}
           gameState={gameState}
+          collisionSystem={collisionSystemRef}
           onTagPlayer={() => {
             // Bot tagged the player - only if game is active and in tag mode
             if (!gameState.isActive || gameState.mode !== "tag") return;
 
-            // Bot tagged the player - swap IT status
-            setPlayerIsIt(false);
-            setBotIsIt(true);
+            // Bot tagged the player - swap IT status (player becomes IT, bot becomes NOT IT)
+            setPlayerIsIt(true);
+            setBotIsIt(false);
 
             // Show tag notification
             const tagText = document.createElement("div");

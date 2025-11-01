@@ -23,7 +23,7 @@ describe("PerformanceMonitor Component", () => {
       const fpsElement = screen.getByRole("button");
       expect(fpsElement).toHaveStyle({
         position: "fixed",
-        top: "10px",
+        bottom: "120px",
         right: "10px",
       });
     });
@@ -38,15 +38,21 @@ describe("PerformanceMonitor Component", () => {
   });
 
   describe("User Interactions", () => {
-    it("should hide on click", async () => {
+    it("should toggle text/icon mode on click", async () => {
       const { act } = await import("@testing-library/react");
       render(<PerformanceMonitor />);
       const fpsElement = screen.getByRole("button");
+
+      // Initially shows text mode "FPS: 60"
+      expect(screen.getByText(/FPS: 60/)).toBeInTheDocument();
+
+      // Click to switch to icon mode
       await act(async () => {
         fpsElement.click();
       });
+
       await waitFor(() => {
-        expect(screen.queryByText(/FPS:/)).not.toBeInTheDocument();
+        expect(screen.getByText(/📊 60/)).toBeInTheDocument();
       });
     });
 
@@ -60,11 +66,11 @@ describe("PerformanceMonitor Component", () => {
       expect(screen.getByRole("button")).toHaveAttribute("tabIndex", "0");
     });
 
-    it("should display Click to hide title", () => {
+    it("should display correct title for text mode", () => {
       render(<PerformanceMonitor />);
       expect(screen.getByRole("button")).toHaveAttribute(
         "title",
-        "Click to hide"
+        "Click to switch to icon mode"
       );
     });
   });
