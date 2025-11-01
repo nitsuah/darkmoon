@@ -39,9 +39,12 @@ describe("PerformanceMonitor Component", () => {
 
   describe("User Interactions", () => {
     it("should hide on click", async () => {
+      const { act } = await import("@testing-library/react");
       render(<PerformanceMonitor />);
       const fpsElement = screen.getByRole("button");
-      fpsElement.click();
+      await act(async () => {
+        fpsElement.click();
+      });
       await waitFor(() => {
         expect(screen.queryByText(/FPS:/)).not.toBeInTheDocument();
       });
