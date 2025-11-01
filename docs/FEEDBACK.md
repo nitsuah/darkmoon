@@ -8,28 +8,19 @@ Please verify the following fixes work as expected:
 
 ### Bot AI & Tag Mechanics
 
+- [ ] **Bot Debug** maybe we should add another bot and have them both simulate much faster games of tag (5-10 secs) and log events locally (for local debugging) to help debug? and iterate/etc. (slow ML)
 - [ ] **Bot chase**: When bot is IT, it always chases player (no longer moves away) - but this should only happen when the game tag is active and the bot is actually it.
 - [ ] **Tag collision**: Easier to tag bot (reduced distance: 1.5→1.2 units) - but the bot cant seem to tag us
 - [ ] **Tag cooldown**: 1.5 second delay prevents rapid re-tagging - doesnt seem t work on the collision still triggers the "bot tagged you" message rapidly, it also doesnt change who is it. so the bot tags us but nothing changes. make the delay 3 seconds.
 - [ ] **Freeze duration**: Bot/player frozen for 1.5s after being tagged (make it 3 seconds)
 - [ ] **Tag game only**: Cannot tag outside active tag games
-
-### Game Settings
-
-- [ ] **Game duration**: Tag games now 1 minute (60s) by default
-- [ ] **Dynamic duration**: Games scale +1min per player above 2
+- [ ]
 
 ### UI Positioning
 
-- [ ] **Press C text**: Positioned below mute/chat buttons (no overlap)
-- [ ] **TAG GAME menu**: Moved right, no longer overlaps FPS counter
-- [ ] **FPS counter**: Visible at top-right, left of TAG GAME menu
-
 ### Jetpack Improvements
 
-- [ ] **Hold duration**: Can hold Space for 1 second (doubled from 0.5s)
-- [ ] **Thrust power**: Stronger initial launch and continuous thrust
-- [ ] **Floaty feel**: Reduced gravity, less air resistance, more airborne time
+- [ ] this is a joke right? we just hop higher. theres no inertia, no moon gravity, no floaty feel, no fun. fix this plz.
 
 ### Home Page
 
