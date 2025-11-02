@@ -216,12 +216,20 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
   const isPausedAfterTag = useRef(false);
   const pauseEndTime = useRef(0);
   const lastGotTaggedTimestamp = useRef(0);
+  const botVelocity = useRef<[number, number, number]>([0, 0, 0]); // Track velocity for animation
+  const lastPosition = useRef(new THREE.Vector3(-5, 0.5, -5));
+  const isSprinting = useRef(false); // Track sprint state
+  const sprintEndTime = useRef(0); // When current sprint burst ends
+  const nextSprintTime = useRef(0); // When bot can sprint again
   const CHASE_RADIUS = 10; // Start chasing when player is within 10 units
   const BOT_SPEED = 1.5; // Bot moves at 1.5 units/second
+  const SPRINT_SPEED = 2.5; // Sprint speed (burst only)
   const FLEE_SPEED = 1.8; // Slightly slower than player max speed (2.0)
   const TAG_COOLDOWN = 3000; // 3 second cooldown between tags
   const TAG_DISTANCE = 1.0; // Touch distance accounting for character sizes (~0.5 radius each)
   const PAUSE_AFTER_TAG = 3000; // Pause for 3 seconds after tagging
+  const SPRINT_DURATION = 2000; // Sprint for 2 seconds
+  const SPRINT_COOLDOWN = 5000; // Wait 5 seconds between sprints
   const INITIAL_POSITION: [number, number, number] = [-5, 0.5, -5]; // Clear spawn away from rocks
 
   // Handle being tagged by player
@@ -260,10 +268,31 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
     const playerPos = new THREE.Vector3(...playerPosition);
     const distance = botPos.distanceTo(playerPos);
 
+    // Calculate velocity for animation (difference from last frame)
+    const currentPosVec = new THREE.Vector3(botPos.x, botPos.y, botPos.z);
+    const velocityVec = currentPosVec.clone().sub(lastPosition.current);
+    botVelocity.current = [velocityVec.x, velocityVec.y, velocityVec.z];
+    lastPosition.current.copy(currentPosVec);
+
     // Behavior depends on who is IT (only during active tag games)
     if (isIt && gameState.isActive && gameState.mode === "tag") {
       // Bot is IT - ALWAYS chase player (no distance limit)
       if (distance > TAG_DISTANCE) {
+        // Sprint burst logic - bot can sprint in short bursts when IT
+        if (now >= nextSprintTime.current && !isSprinting.current) {
+          // Start sprint burst
+          isSprinting.current = true;
+          sprintEndTime.current = now + SPRINT_DURATION;
+          nextSprintTime.current = now + SPRINT_DURATION + SPRINT_COOLDOWN;
+          tagDebug(`🤖 Bot1 SPRINT BURST started!`);
+        } else if (isSprinting.current && now >= sprintEndTime.current) {
+          // End sprint burst
+          isSprinting.current = false;
+          tagDebug(`🤖 Bot1 sprint ended - cooling down`);
+        }
+
+        const currentSpeed = isSprinting.current ? SPRINT_SPEED : BOT_SPEED;
+
         // Chase player
         const direction = new THREE.Vector3()
           .subVectors(playerPos, botPos)
@@ -272,9 +301,9 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
         // Calculate new position
         const currentPos = new THREE.Vector3(botPos.x, botPos.y, botPos.z);
         const newPos = new THREE.Vector3(
-          botPos.x + direction.x * BOT_SPEED * delta,
+          botPos.x + direction.x * currentSpeed * delta,
           botPos.y,
-          botPos.z + direction.z * BOT_SPEED * delta
+          botPos.z + direction.z * currentSpeed * delta
         );
 
         // Check collision with environment
@@ -302,12 +331,13 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
         );
         tagDebug(`  State before: Bot isIT=${isIt}, Player isIT=${playerIsIt}`);
         lastTagTime.current = now;
-        isPausedAfterTag.current = true;
-        pauseEndTime.current = now + PAUSE_AFTER_TAG;
-        tagDebug(`  Bot will freeze for ${PAUSE_AFTER_TAG}ms`);
+        // Bot should NOT freeze when tagging - only the tagged player freezes
+        // isPausedAfterTag.current = true; // REMOVED
+        // pauseEndTime.current = now + PAUSE_AFTER_TAG; // REMOVED
+        tagDebug(`  Bot continues moving (no freeze for tagger)`);
         onTagPlayer();
         tagDebug(
-          `  State after callback: Bot should become NOT IT, Player should become IT`
+          `  State after callback: Bot should become NOT IT, Player should become IT and freeze`
         );
       } else {
         // Too soon to tag again
@@ -362,7 +392,13 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
 
   return (
     <group ref={meshRef} position={INITIAL_POSITION}>
-      <SpacemanModel color={isIt ? "#ff4444" : "#ff8888"} isIt={isIt} />
+      <SpacemanModel
+        color={isIt ? "#ff4444" : "#ff8888"}
+        isIt={isIt}
+        velocity={botVelocity.current} // eslint-disable-line react-hooks/refs
+        cameraRotation={meshRef.current?.rotation?.y ?? 0} // eslint-disable-line react-hooks/refs
+        isSprinting={isSprinting.current} // eslint-disable-line react-hooks/refs
+      />
       {/* Bot1 label - red sphere above head */}
       <mesh position={[0, 1.5, 0]}>
         <sphereGeometry args={[0.12, 8, 8]} />
@@ -416,12 +452,20 @@ const BotCharacter2: React.FC<BotCharacter2Props> = ({
   const isPausedAfterTag = useRef(false);
   const pauseEndTime = useRef(0);
   const lastGotTaggedTimestamp = useRef(0);
+  const botVelocity = useRef<[number, number, number]>([0, 0, 0]); // Track velocity for animation
+  const lastPosition = useRef(new THREE.Vector3(8, 0.5, -8));
+  const isSprinting = useRef(false); // Track sprint state
+  const sprintEndTime = useRef(0); // When current sprint burst ends
+  const nextSprintTime = useRef(0); // When bot can sprint again
   const CHASE_RADIUS = 10;
   const BOT_SPEED = 1.6; // Slightly faster than Bot1
+  const SPRINT_SPEED = 2.6; // Sprint speed for Bot2
   const FLEE_SPEED = 1.9;
   const TAG_COOLDOWN = 1000; // 1 second for faster bot debug testing
   const TAG_DISTANCE = 1.0;
   const PAUSE_AFTER_TAG = 1000; // 1 second pause for faster games
+  const SPRINT_DURATION = 2000; // Sprint for 2 seconds
+  const SPRINT_COOLDOWN = 5000; // Wait 5 seconds between sprints
   const INITIAL_POSITION: [number, number, number] = [8, 0.5, -8]; // Clear spawn away from rocks
 
   // Handle being tagged by Bot1
@@ -460,19 +504,40 @@ const BotCharacter2: React.FC<BotCharacter2Props> = ({
     const bot1Pos = new THREE.Vector3(...bot1Position);
     const distance = botPos.distanceTo(bot1Pos);
 
+    // Calculate velocity for animation
+    const currentPosVec = new THREE.Vector3(botPos.x, botPos.y, botPos.z);
+    const velocityVec = currentPosVec.clone().sub(lastPosition.current);
+    botVelocity.current = [velocityVec.x, velocityVec.y, velocityVec.z];
+    lastPosition.current.copy(currentPosVec);
+
     // Behavior depends on who is IT (only during active tag games)
     if (isIt && gameState.isActive && gameState.mode === "tag") {
       // Bot2 is IT - chase Bot1
       if (distance > TAG_DISTANCE) {
+        // Sprint burst logic - bot can sprint in short bursts when IT
+        if (now >= nextSprintTime.current && !isSprinting.current) {
+          // Start sprint burst
+          isSprinting.current = true;
+          sprintEndTime.current = now + SPRINT_DURATION;
+          nextSprintTime.current = now + SPRINT_DURATION + SPRINT_COOLDOWN;
+          tagDebug(`🤖2 Bot2 SPRINT BURST started!`);
+        } else if (isSprinting.current && now >= sprintEndTime.current) {
+          // End sprint burst
+          isSprinting.current = false;
+          tagDebug(`🤖2 Bot2 sprint ended - cooling down`);
+        }
+
+        const currentSpeed = isSprinting.current ? SPRINT_SPEED : BOT_SPEED;
+
         const direction = new THREE.Vector3()
           .subVectors(bot1Pos, botPos)
           .normalize();
 
         const currentPos = new THREE.Vector3(botPos.x, botPos.y, botPos.z);
         const newPos = new THREE.Vector3(
-          botPos.x + direction.x * BOT_SPEED * delta,
+          botPos.x + direction.x * currentSpeed * delta,
           botPos.y,
-          botPos.z + direction.z * BOT_SPEED * delta
+          botPos.z + direction.z * currentSpeed * delta
         );
 
         if (collisionSystem.current) {
@@ -492,7 +557,11 @@ const BotCharacter2: React.FC<BotCharacter2Props> = ({
 
         // Log chase behavior periodically
         if (Math.random() < 0.01) {
-          tagDebug(`[BOT2] Chasing Bot1 - distance: ${distance.toFixed(2)}`);
+          tagDebug(
+            `[BOT2] Chasing Bot1 - distance: ${distance.toFixed(
+              2
+            )}, sprinting: ${isSprinting.current}`
+          );
         }
       } else if (now - lastTagTime.current > TAG_COOLDOWN) {
         // Tag Bot1!
@@ -503,12 +572,13 @@ const BotCharacter2: React.FC<BotCharacter2Props> = ({
         );
         tagDebug(`  State before: Bot2 isIT=${isIt}, Bot1 isIT=${bot1IsIt}`);
         lastTagTime.current = now;
-        isPausedAfterTag.current = true;
-        pauseEndTime.current = now + PAUSE_AFTER_TAG;
-        tagDebug(`  Bot2 will freeze for ${PAUSE_AFTER_TAG}ms`);
+        // Bot2 should NOT freeze when tagging - only the tagged bot freezes
+        // isPausedAfterTag.current = true; // REMOVED
+        // pauseEndTime.current = now + PAUSE_AFTER_TAG; // REMOVED
+        tagDebug(`  Bot2 continues moving (no freeze for tagger)`);
         onTagBot();
         tagDebug(
-          `  State after: Bot2 should become NOT IT, Bot1 should become IT`
+          `  State after: Bot2 should become NOT IT, Bot1 should become IT and freeze`
         );
       }
     } else if (bot1IsIt && gameState.isActive && gameState.mode === "tag") {
@@ -554,7 +624,13 @@ const BotCharacter2: React.FC<BotCharacter2Props> = ({
 
   return (
     <group ref={meshRef} position={INITIAL_POSITION}>
-      <SpacemanModel color={isIt ? "#ff4444" : "#4444ff"} isIt={isIt} />
+      <SpacemanModel
+        color={isIt ? "#ff4444" : "#4444ff"}
+        isIt={isIt}
+        velocity={botVelocity.current} // eslint-disable-line react-hooks/refs
+        cameraRotation={meshRef.current?.rotation?.y ?? 0} // eslint-disable-line react-hooks/refs
+        isSprinting={isSprinting.current} // eslint-disable-line react-hooks/refs
+      />
       {/* Bot2 label - blue sphere above head to distinguish from Bot1 */}
       <mesh position={[0, 3, 0]}>
         <sphereGeometry args={[0.12, 8, 8]} />
@@ -648,7 +724,6 @@ const PlayerCharacter = React.forwardRef<
   // Player freeze state when tagged
   const isPlayerFrozen = useRef(false);
   const playerFreezeEndTime = useRef(0);
-  const PLAYER_FREEZE_DURATION = 3000; // 3 seconds
 
   // Jump mechanics - True moon-like low gravity physics (1/6 Earth gravity)
   const isJumping = useRef(false);
@@ -998,7 +1073,7 @@ const PlayerCharacter = React.forwardRef<
                   }));
                 }
 
-                // Trigger bot freeze by setting timestamp
+                // Trigger bot freeze by setting timestamp (only tagged player freezes)
                 if (setBot1GotTagged) setBot1GotTagged(now);
 
                 // Play success tag sound (player tagged bot)
@@ -1011,17 +1086,15 @@ const PlayerCharacter = React.forwardRef<
                   console.warn("Sound manager not ready for tag sound:", error);
                 }
 
-                // Freeze player for 3 seconds
-                isPlayerFrozen.current = true;
-                playerFreezeEndTime.current = now + PLAYER_FREEZE_DURATION;
-                tagDebug(
-                  `  Player will freeze for ${PLAYER_FREEZE_DURATION}ms`
-                );
+                // Player should NOT freeze when tagging - only the tagged player freezes
+                // isPlayerFrozen.current = true; // REMOVED
+                // playerFreezeEndTime.current = now + PLAYER_FREEZE_DURATION; // REMOVED
+                tagDebug(`  Player continues moving (no freeze for tagger)`);
                 tagDebug(
                   `  Bot will freeze for 3000ms (via gotTaggedTimestamp)`
                 );
                 tagDebug(
-                  `  State after: Player should become NOT IT, Bot should become IT`
+                  `  State after: Player should become NOT IT, Bot should become IT and freeze`
                 );
 
                 // Victory celebration effects
@@ -1457,10 +1530,26 @@ const PlayerCharacter = React.forwardRef<
   const currentPlayer = gameManager?.getPlayers().get(currentPlayerId);
   const isIt = currentPlayer?.isIt || false;
 
+  // Calculate current velocity for animation
+  const currentVelocity: [number, number, number] = [
+    velocity.current.x, // eslint-disable-line react-hooks/refs
+    velocity.current.y, // eslint-disable-line react-hooks/refs
+    velocity.current.z, // eslint-disable-line react-hooks/refs
+  ];
+
+  // Check if sprinting
+  const isSprinting = keysPressedRef.current[SHIFT];
+
   // Player spawn at [0, 0.5, 0] - center of map, clear of all rocks
   return (
     <group ref={meshRef} position={[0, 0.5, 0]}>
-      <SpacemanModel color={isIt ? "#ff4444" : "#4a90e2"} isIt={isIt} />
+      <SpacemanModel
+        color={isIt ? "#ff4444" : "#4a90e2"}
+        isIt={isIt}
+        velocity={currentVelocity} // eslint-disable-line react-hooks/refs
+        cameraRotation={cameraRotation.current.horizontal} // eslint-disable-line react-hooks/refs
+        isSprinting={isSprinting} // eslint-disable-line react-hooks/refs
+      />
       {/* Jetpack thrust visual effect */}
       {showJetpackFlame && (
         <group position={[0, -0.5, 0]}>
