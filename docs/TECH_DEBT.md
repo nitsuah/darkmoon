@@ -5,7 +5,7 @@
 ## Cleanup and Refactoring
 
 - Go through every single file and folder with a fine tooth comb. identify the areas of improvement such as:
-  - Identify high line of code files for potential splitting
+  - Identify high line of code files for potential splitting - ex: Solo.tsx and others which contain over 500 lines of code.
   - Remove any css from jsx files and place in separate standard css files
   - Modularize shared UI components or commonly used functions or utilities
   - Improve test coverage for critical game logic functions

@@ -395,6 +395,7 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
       <SpacemanModel
         color={isIt ? "#ff4444" : "#ff8888"}
         isIt={isIt}
+        // Pass ref values for per-frame updates without React re-renders (R3F optimization pattern)
         velocity={botVelocity.current} // eslint-disable-line react-hooks/refs
         cameraRotation={meshRef.current?.rotation?.y ?? 0} // eslint-disable-line react-hooks/refs
         isSprinting={isSprinting.current} // eslint-disable-line react-hooks/refs
@@ -627,6 +628,7 @@ const BotCharacter2: React.FC<BotCharacter2Props> = ({
       <SpacemanModel
         color={isIt ? "#ff4444" : "#4444ff"}
         isIt={isIt}
+        // Pass ref values for per-frame updates without React re-renders (R3F optimization pattern)
         velocity={botVelocity.current} // eslint-disable-line react-hooks/refs
         cameraRotation={meshRef.current?.rotation?.y ?? 0} // eslint-disable-line react-hooks/refs
         isSprinting={isSprinting.current} // eslint-disable-line react-hooks/refs
@@ -1546,6 +1548,7 @@ const PlayerCharacter = React.forwardRef<
       <SpacemanModel
         color={isIt ? "#ff4444" : "#4a90e2"}
         isIt={isIt}
+        // Pass ref values for per-frame updates without React re-renders (R3F optimization pattern)
         velocity={currentVelocity} // eslint-disable-line react-hooks/refs
         cameraRotation={cameraRotation.current.horizontal} // eslint-disable-line react-hooks/refs
         isSprinting={isSprinting} // eslint-disable-line react-hooks/refs
@@ -1840,14 +1843,12 @@ const Solo: React.FC = () => {
   // Expose bot debug mode toggle to window (dev console)
   useEffect(() => {
     if (__isDev) {
-      // @ts-expect-error - Development debugging utility
       window.enableBotDebug = () => {
         setBotDebugMode(true);
         console.log(
           "🤖 Bot vs Bot Debug Mode ENABLED - 2 bots will play tag with faster games"
         );
       };
-      // @ts-expect-error - Development debugging utility
       window.disableBotDebug = () => {
         setBotDebugMode(false);
         console.log("🤖 Bot vs Bot Debug Mode DISABLED");
@@ -1860,9 +1861,7 @@ const Solo: React.FC = () => {
 
     return () => {
       if (__isDev) {
-        // @ts-expect-error - Cleanup
         delete window.enableBotDebug;
-        // @ts-expect-error - Cleanup
         delete window.disableBotDebug;
       }
     };
