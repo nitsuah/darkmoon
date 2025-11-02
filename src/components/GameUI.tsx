@@ -7,6 +7,8 @@ interface GameUIProps {
   currentPlayerId: string;
   onStartGame: (mode: string) => void;
   onEndGame: () => void;
+  botDebugMode?: boolean;
+  onToggleDebug?: () => void;
 }
 
 const GameUI: React.FC<GameUIProps> = ({
@@ -15,6 +17,8 @@ const GameUI: React.FC<GameUIProps> = ({
   currentPlayerId,
   onStartGame,
   onEndGame,
+  botDebugMode = false,
+  onToggleDebug,
 }) => {
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -160,11 +164,13 @@ const GameUI: React.FC<GameUIProps> = ({
           </button>
 
           <button
-            onClick={() => onStartGame("debug")}
+            onClick={() => onToggleDebug && onToggleDebug()}
             style={{
               padding: "6px 10px",
-              backgroundColor: "rgba(255, 140, 0, 0.8)",
-              border: "1px solid #ff8c00",
+              backgroundColor: botDebugMode
+                ? "rgba(220, 53, 69, 0.8)"
+                : "rgba(255, 140, 0, 0.8)",
+              border: botDebugMode ? "1px solid #dc3545" : "1px solid #ff8c00",
               borderRadius: "3px",
               color: "white",
               cursor: "pointer",
@@ -172,7 +178,7 @@ const GameUI: React.FC<GameUIProps> = ({
               width: "100%",
             }}
           >
-            🔧 Start Debug
+            {botDebugMode ? "⏹️ Stop Debug" : "🔧 Start Debug"}
           </button>
 
           <div style={{ fontSize: "9px", color: "#888", textAlign: "center" }}>

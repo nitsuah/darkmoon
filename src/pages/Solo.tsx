@@ -362,11 +362,11 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
 
   return (
     <group ref={meshRef} position={INITIAL_POSITION}>
-      <SpacemanModel color={isIt ? "#ff4444" : "#44ff44"} isIt={isIt} />
-      {/* Bot label - yellow sphere above head */}
+      <SpacemanModel color="#ff4444" isIt={isIt} />
+      {/* Bot1 label - red sphere above head */}
       <mesh position={[0, 1.5, 0]}>
         <sphereGeometry args={[0.12, 8, 8]} />
-        <meshBasicMaterial color="#ffff00" />
+        <meshBasicMaterial color="#ff4444" />
       </mesh>
       {/* Debug hitbox visualization */}
       {showHitboxes && (
@@ -554,11 +554,11 @@ const BotCharacter2: React.FC<BotCharacter2Props> = ({
 
   return (
     <group ref={meshRef} position={INITIAL_POSITION}>
-      <SpacemanModel color={isIt ? "#ff4444" : "#44ff44"} isIt={isIt} />
-      {/* Bot2 label - cyan sphere above head to distinguish from Bot1 */}
+      <SpacemanModel color="#4444ff" isIt={isIt} />
+      {/* Bot2 label - blue sphere above head to distinguish from Bot1 */}
       <mesh position={[0, 1.5, 0]}>
         <sphereGeometry args={[0.12, 8, 8]} />
-        <meshBasicMaterial color="#00ffff" />
+        <meshBasicMaterial color="#4444ff" />
       </mesh>
       {/* Debug hitbox visualization */}
       {showHitboxes && (
@@ -599,6 +599,7 @@ interface PlayerCharacterProps {
   setPlayerIsIt?: (isIt: boolean) => void;
   setBotIsIt?: (isIt: boolean) => void;
   setBot1GotTagged?: (timestamp: number) => void;
+  setGameState?: React.Dispatch<React.SetStateAction<GameState>>;
   showHitboxes?: boolean;
   mobileJetpackTrigger?: React.MutableRefObject<boolean>;
 }
@@ -628,6 +629,7 @@ const PlayerCharacter = React.forwardRef<
     setPlayerIsIt,
     setBotIsIt,
     setBot1GotTagged,
+    setGameState,
   } = props;
 
   const meshRef = useRef<THREE.Group>(null);
@@ -655,7 +657,7 @@ const PlayerCharacter = React.forwardRef<
   const lastJumpTime = useRef(0); // For double-jump detection
   const jetpackActive = useRef(false); // Track if jetpack mode is active
   const isUsingRCS = useRef(false); // Track if RCS jets are active (SHIFT in air)
-   
+
   const jetpackThrustSound = useRef<{
     osc: OscillatorNode;
     gain: GainNode;
@@ -677,9 +679,8 @@ const PlayerCharacter = React.forwardRef<
 
   // Jump physics (first jump)
   const JUMP_INITIAL_FORCE = 0.1; // Reduced from 0.12 for heavier feel
-  const DOUBLE_JUMP_WINDOW = 300; // ms window to detect double-jump
 
-  // Jetpack physics (double-jump triggered)
+  // Jetpack physics (mobile double-tap triggered only)
   const JETPACK_INITIAL_BOOST = 0.06; // Lessened jetpack effect
   const JETPACK_HOLD_FORCE = 0.08; // Reduced from 0.18 - less thrust
   const JETPACK_MAX_HOLD_TIME = 2.5; // Increased from 1.5 - longer duration
@@ -975,6 +976,14 @@ const PlayerCharacter = React.forwardRef<
                 if (setBotIsIt) setBotIsIt(true);
                 lastTagCheck.current = now;
 
+                // Update gameState with new IT player
+                if (setGameState) {
+                  setGameState((prev) => ({
+                    ...prev,
+                    itPlayerId: "bot-1",
+                  }));
+                }
+
                 // Trigger bot freeze by setting timestamp
                 if (setBot1GotTagged) setBot1GotTagged(now);
 
@@ -1190,27 +1199,23 @@ const PlayerCharacter = React.forwardRef<
       }
     }
 
-    // Jump mechanics - Double-jump for jetpack, heavier and floatier
+    // Jump mechanics - Single jump only, no jetpack from jump
+    // Jetpack only activates from mobile double-tap button
     const isOnGround = meshRef.current.position.y <= GROUND_Y + 0.01;
     const currentTime = Date.now();
 
     if (keysPressedRef.current[SPACE] && isOnGround && !isJumping.current) {
-      // Check for double-jump (jetpack trigger) - desktop or mobile
-      const timeSinceLastJump = currentTime - lastJumpTime.current;
+      // Check for mobile jetpack trigger only
       const mobileJetpackTriggerRef = props.mobileJetpackTrigger;
       const mobileDoubleTap = mobileJetpackTriggerRef?.current || false;
 
-      if (timeSinceLastJump < DOUBLE_JUMP_WINDOW || mobileDoubleTap) {
-        // Double-jump detected - activate jetpack mode
+      if (mobileDoubleTap) {
+        // Mobile double-tap - activate jetpack mode
         jetpackActive.current = true;
         isJumping.current = true;
         verticalVelocity.current = JETPACK_INITIAL_BOOST;
         jumpHoldTime.current = 0;
-        tagDebug(
-          `🚀 Jetpack activated (${
-            mobileDoubleTap ? "mobile double-tap" : "double-jump"
-          })!`
-        );
+        tagDebug(`🚀 Jetpack activated (mobile double-tap)!`);
 
         // Reset mobile trigger
         if (mobileJetpackTriggerRef) {
@@ -1227,7 +1232,7 @@ const PlayerCharacter = React.forwardRef<
           console.warn("Sound manager not ready for jetpack sound:", error);
         }
       } else {
-        // Single jump - normal jump
+        // Single jump - normal jump only (no jetpack from space bar)
         jetpackActive.current = false;
         isJumping.current = true;
         verticalVelocity.current = JUMP_INITIAL_FORCE;
@@ -1518,8 +1523,8 @@ const Solo: React.FC = () => {
   const [bot2GotTagged, setBot2GotTagged] = useState(0);
 
   // Bot debug mode - enables 2 bots playing each other with faster games
-  // Can be enabled via: window.enableBotDebug()
-  const [botDebugMode, setBotDebugMode] = useState(false);
+  // Can be enabled via: window.enableBotDebug() or UI button
+  const [botDebugMode, setBotDebugMode] = useState(false); // Default false - user must enable
   const [showHitboxes, setShowHitboxes] = useState(false);
 
   // Mobile jetpack trigger (set to true when double-tap detected)
@@ -1729,8 +1734,8 @@ const Solo: React.FC = () => {
       }
 
       if (mode === "tag") {
-        // Use shorter duration for bot debug mode (5-10 seconds for rapid testing)
-        const duration = botDebugMode ? 7 : 60; // 7 seconds in debug mode, 60 in normal mode
+        // Both debug and normal mode use 60 second duration
+        const duration = 60; // 1 minute for all tag games
         const started = gameManager.current.startTagGame(duration);
         if (started) {
           if (botDebugMode) {
@@ -1746,19 +1751,21 @@ const Solo: React.FC = () => {
     [socketClient, isConnected, localPlayerId, botDebugMode]
   );
 
-  // Auto-start bot debug mode game when enabled
+  // Bot debug mode setup - no auto-start, user must click button
   useEffect(() => {
     if (botDebugMode && gameManager.current) {
-      tagDebug("🤖 Bot Debug Mode: Starting initial game...");
-      // Bot2 starts as IT
+      tagDebug("🤖 Bot Debug Mode: Enabled - ready to start game manually");
+      // Bot2 starts as IT when game starts
       setBotIsIt(false);
       setBot2IsIt(true);
-      // Start game after short delay to ensure scene is ready
-      setTimeout(() => {
-        handleStartGame("tag");
-      }, 500);
+
+      // Update gameState with initial IT player
+      setGameState((prev) => ({
+        ...prev,
+        itPlayerId: "bot-2",
+      }));
     }
-  }, [botDebugMode, handleStartGame]);
+  }, [botDebugMode]);
 
   // Mobile viewport handling - hide browser bars
   useEffect(() => {
@@ -2162,6 +2169,13 @@ const Solo: React.FC = () => {
           const bot1StartsIT = Math.random() > 0.5;
           setBotIsIt(bot1StartsIT);
           setBot2IsIt(!bot1StartsIT);
+
+          // Update gameState with initial IT player
+          setGameState((prev) => ({
+            ...prev,
+            itPlayerId: bot1StartsIT ? "bot-1" : "bot-2",
+          }));
+
           tagDebug(
             `🤖 Bot Debug Mode: ${bot1StartsIT ? "Bot1" : "Bot2"} starts as IT`
           );
@@ -2394,6 +2408,8 @@ const Solo: React.FC = () => {
         currentPlayerId={socketClient?.id || localPlayerId}
         onStartGame={handleStartGame}
         onEndGame={handleEndGame}
+        botDebugMode={botDebugMode}
+        onToggleDebug={() => setBotDebugMode(!botDebugMode)}
       />
 
       {/* Debug Overlay - Show bot states, distances, and collision info */}
@@ -2401,17 +2417,18 @@ const Solo: React.FC = () => {
         <div
           style={{
             position: "fixed",
-            top: "60px",
-            left: "10px",
+            top: "200px", // Below GameUI panel
+            right: "10px", // Right side to match GameUI
             padding: "12px",
-            backgroundColor: "rgba(0, 0, 0, 0.8)",
+            backgroundColor: "rgba(0, 0, 0, 0.85)",
             color: "#0f0",
-            borderRadius: "4px",
+            borderRadius: "6px",
             zIndex: 1000,
             fontFamily: "monospace",
             fontSize: "11px",
             lineHeight: "1.5",
-            maxWidth: "300px",
+            minWidth: "180px",
+            border: "1px solid rgba(255, 140, 0, 0.5)",
           }}
         >
           <div
@@ -2605,6 +2622,7 @@ const Solo: React.FC = () => {
           setPlayerIsIt={setPlayerIsIt}
           setBotIsIt={setBotIsIt}
           setBot1GotTagged={setBot1GotTagged}
+          setGameState={setGameState}
           showHitboxes={showHitboxes}
           mobileJetpackTrigger={mobileJetpackTrigger}
         />
@@ -2631,10 +2649,22 @@ const Solo: React.FC = () => {
               setBotIsIt(false);
               setBot2IsIt(true);
               setBot2GotTagged(Date.now()); // Freeze Bot2
+
+              // Update gameState with new IT player
+              setGameState((prev) => ({
+                ...prev,
+                itPlayerId: "bot-2",
+              }));
             } else {
               tagDebug(`🤖 Bot1 successfully tagged player!`);
               setPlayerIsIt(true);
               setBotIsIt(false);
+
+              // Update gameState with new IT player
+              setGameState((prev) => ({
+                ...prev,
+                itPlayerId: localPlayerId,
+              }));
 
               // Play "got tagged" sound (player got tagged by bot)
               try {
@@ -2712,6 +2742,12 @@ const Solo: React.FC = () => {
               setBot2IsIt(false);
               setBotIsIt(true);
               setBot1GotTagged(Date.now()); // Freeze Bot1
+
+              // Update gameState with new IT player
+              setGameState((prev) => ({
+                ...prev,
+                itPlayerId: "bot-1",
+              }));
             }}
             onPositionUpdate={(position) => {
               setBot2Position(position);

@@ -116,7 +116,7 @@
   gap: 2rem;
   padding: 0 1rem;
   max-width: 1200px;
-  margin: 0 auto;
+  margin: -2rem auto 0 auto; /* Bring cards up closer to badges */
 }
 
 .mode-card {
@@ -483,10 +483,37 @@
   }
 
   .game-modes-grid {
-    grid-template-columns: 1fr;
-    gap: 2.5rem;
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 1.5rem;
+    padding: 0 1rem 1.5rem 1rem;
     max-width: 100%;
-    padding: 0 1rem;
+    margin: -1rem auto 0 auto;
+    /* Enable smooth horizontal scrolling on mobile */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(102, 126, 234, 0.5) rgba(255, 255, 255, 0.1);
+  }
+
+  .game-modes-grid::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .game-modes-grid::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+  }
+
+  .game-modes-grid::-webkit-scrollbar-thumb {
+    background: rgba(102, 126, 234, 0.5);
+    border-radius: 10px;
+  }
+
+  .mode-card-flip-container {
+    flex: 0 0 85%;
+    max-width: 400px;
+    scroll-snap-align: center;
   }
 
   .mode-card-flip-container {
@@ -560,7 +587,13 @@
   }
 
   .game-modes-grid {
-    padding: 0 0.5rem;
+    padding: 0 0.5rem 1rem 0.5rem;
+    gap: 1rem;
+  }
+
+  .mode-card-flip-container {
+    flex: 0 0 90%;
+    max-width: 350px;
   }
 
   .mode-card-flip-container {
