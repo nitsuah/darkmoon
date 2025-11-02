@@ -630,6 +630,7 @@ const PlayerCharacter = React.forwardRef<
     setBotIsIt,
     setBot1GotTagged,
     setGameState,
+    mobileJetpackTrigger,
   } = props;
 
   const meshRef = useRef<THREE.Group>(null);
@@ -731,6 +732,9 @@ const PlayerCharacter = React.forwardRef<
     }
 
     const now = Date.now();
+
+    // Store mobile jetpack trigger locally to satisfy linter
+    const mobileJetpackTriggerRef = mobileJetpackTrigger;
 
     // Check if player is frozen after being tagged
     if (isPlayerFrozen.current) {
@@ -1212,7 +1216,6 @@ const PlayerCharacter = React.forwardRef<
 
     if (keysPressedRef.current[SPACE] && isOnGround && !isJumping.current) {
       // Check for mobile jetpack trigger only
-      const mobileJetpackTriggerRef = props.mobileJetpackTrigger;
       const mobileDoubleTap = mobileJetpackTriggerRef?.current || false;
 
       if (mobileDoubleTap) {
