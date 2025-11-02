@@ -1691,6 +1691,9 @@ const Solo: React.FC = () => {
   // Can be enabled via: window.enableBotDebug() or UI button
   const [botDebugMode, setBotDebugMode] = useState(false); // Default false - user must enable
   const [showHitboxes, setShowHitboxes] = useState(false);
+  const debugRestartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
 
   // Mobile jetpack trigger (set to true when double-tap detected)
   const mobileJetpackTrigger = useRef(false);
@@ -1863,6 +1866,11 @@ const Solo: React.FC = () => {
       if (__isDev) {
         delete window.enableBotDebug;
         delete window.disableBotDebug;
+      }
+      // Clean up debug restart timeout if component unmounts
+      if (debugRestartTimeoutRef.current) {
+        clearTimeout(debugRestartTimeoutRef.current);
+        debugRestartTimeoutRef.current = null;
       }
     };
   }, []);
@@ -2346,7 +2354,7 @@ const Solo: React.FC = () => {
       // In bot debug mode, auto-restart after 1 second
       if (botDebugMode) {
         tagDebug("[DEBUG] Auto-restarting game in 1 second...");
-        setTimeout(() => {
+        debugRestartTimeoutRef.current = setTimeout(() => {
           // Reset IT states - randomize who starts as IT
           const bot1StartsIT = Math.random() > 0.5;
           setBotIsIt(bot1StartsIT);
