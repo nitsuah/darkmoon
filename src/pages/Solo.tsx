@@ -673,6 +673,7 @@ const PlayerCharacter = React.forwardRef<
 
   // Dust effect state for landing
   const [showDustEffect, setShowDustEffect] = useState(false);
+  const [showJetpackFlame, setShowJetpackFlame] = useState(false);
 
   // Physics constants - tuned for heavier, floatier feel
   const GRAVITY = 0.0005; // Reduced from 0.0008 for more floaty feel
@@ -1224,6 +1225,7 @@ const PlayerCharacter = React.forwardRef<
       if (mobileDoubleTap) {
         // Mobile double-tap - activate jetpack mode
         jetpackActive.current = true;
+        setShowJetpackFlame(true);
         isJumping.current = true;
         verticalVelocity.current = JETPACK_INITIAL_BOOST;
         jumpHoldTime.current = 0;
@@ -1396,6 +1398,7 @@ const PlayerCharacter = React.forwardRef<
 
         isJumping.current = false;
         jetpackActive.current = false;
+        setShowJetpackFlame(false);
         isUsingRCS.current = false;
         verticalVelocity.current = 0;
         jumpHoldTime.current = 0;
@@ -1457,6 +1460,29 @@ const PlayerCharacter = React.forwardRef<
   return (
     <group ref={meshRef} position={[0, 0.5, 0]}>
       <SpacemanModel color={isIt ? "#ff4444" : "#4a90e2"} isIt={isIt} />
+      {/* Jetpack thrust visual effect */}
+      {showJetpackFlame && (
+        <group position={[0, -0.5, 0]}>
+          {/* Flame cone */}
+          <mesh rotation={[Math.PI, 0, 0]}>
+            <coneGeometry args={[0.15, 0.4, 8]} />
+            <meshBasicMaterial
+              color="#ff6600"
+              opacity={0.7}
+              transparent
+              // eslint-disable-next-line react/no-unknown-property
+              emissive="#ff4400"
+              // eslint-disable-next-line react/no-unknown-property
+              emissiveIntensity={1.5}
+            />
+          </mesh>
+          {/* Inner bright core */}
+          <mesh position={[0, 0.1, 0]} rotation={[Math.PI, 0, 0]}>
+            <coneGeometry args={[0.08, 0.25, 8]} />
+            <meshBasicMaterial color="#ffff00" opacity={0.9} transparent />
+          </mesh>
+        </group>
+      )}
       {/* Landing dust effect */}
       {showDustEffect && (
         <group position={[0, -0.4, 0]}>
