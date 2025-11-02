@@ -139,6 +139,7 @@
   min-height: 320px;
   display: flex;
   align-items: stretch;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mode-card-flip-inner {
@@ -151,8 +152,22 @@
   transform-style: preserve-3d;
 }
 
-.mode-card-flip-container:hover .mode-card-flip-inner {
+/* Hover for desktop, active for mobile touch */
+.mode-card-flip-container:hover .mode-card-flip-inner,
+.mode-card-flip-container:active .mode-card-flip-inner,
+.mode-card-flip-container.flipped .mode-card-flip-inner {
   transform: rotateY(180deg);
+}
+
+/* Prevent hover flip on mobile, use flipped class instead */
+@media (max-width: 1024px) {
+  .mode-card-flip-container:hover .mode-card-flip-inner {
+    transform: none;
+  }
+
+  .mode-card-flip-container.flipped .mode-card-flip-inner {
+    transform: rotateY(180deg);
+  }
 }
 
 .mode-card-front,
@@ -420,17 +435,35 @@
 @media (max-width: 1024px) {
   .game-modes-grid {
     grid-template-columns: 1fr;
-    max-width: 500px;
+    max-width: 550px;
+    gap: 2rem;
   }
 
   .mode-card-flip-container {
-    min-height: 300px;
+    min-height: 380px;
   }
 
   .mode-card-flip-inner,
   .mode-card-front,
   .mode-card-back {
-    min-height: 300px;
+    min-height: 380px;
+  }
+
+  /* Convert feature list to grid for better mobile layout */
+  .flip-features-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem 1rem;
+    max-width: 100%;
+    padding: 0;
+  }
+
+  .flip-features-list li {
+    font-size: 0.85rem;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    text-align: center;
   }
 }
 
@@ -450,27 +483,40 @@
 
   .game-modes-grid {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 2rem;
+    max-width: 100%;
+    padding: 0 0.5rem;
   }
 
   .mode-card-flip-container {
-    min-height: 240px;
+    min-height: 340px;
   }
 
   .mode-card-flip-inner,
   .mode-card-front,
   .mode-card-back {
-    min-height: 240px;
-    padding: 1.75rem 1.5rem;
+    min-height: 340px;
+    padding: 2rem 1.5rem;
   }
 
   .flip-features-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
     max-width: 100%;
   }
 
   .flip-features-list li {
     font-size: 0.8rem;
-    padding: 0.3rem 0;
+    padding: 0.5rem 0.25rem;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  .mode-card-back h3 {
+    margin-bottom: 1.25rem;
   }
 
   .section-title {
@@ -499,6 +545,8 @@
   .cta-play-button {
     padding: 0.875rem 1.5rem;
     font-size: 1rem;
+    width: 90%;
+    max-width: 300px;
   }
 
   .hero-badges {
@@ -510,32 +558,54 @@
     padding: 0.4rem 0.8rem;
   }
 
+  .game-modes-grid {
+    padding: 0;
+  }
+
   .mode-card-flip-container {
-    min-height: 220px;
+    min-height: 320px;
   }
 
   .mode-card-flip-inner,
   .mode-card-front,
   .mode-card-back {
-    min-height: 220px;
-    padding: 1.5rem 1rem;
+    min-height: 320px;
+    padding: 1.75rem 1.25rem;
   }
 
   .mode-icon {
     font-size: 2.5rem;
+    margin-bottom: 0.75rem;
   }
 
   .mode-card h3 {
-    font-size: 1.3rem;
+    font-size: 1.25rem;
+    margin: 0.5rem 0;
   }
 
   .mode-card p {
     font-size: 0.9rem;
+    margin: 0.5rem 0 1rem 0;
+  }
+
+  .mode-card-back h3 {
+    margin-bottom: 1rem;
+  }
+
+  .flip-features-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
   }
 
   .flip-features-list li {
     font-size: 0.75rem;
-    padding: 0.25rem 0;
+    padding: 0.5rem 0.25rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    text-align: center;
+    line-height: 1.2;
   }
 
   .home-container {

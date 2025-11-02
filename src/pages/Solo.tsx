@@ -1483,18 +1483,31 @@ const Solo: React.FC = () => {
       // Update viewport height for mobile browsers
       const vh = window.innerHeight * 0.01;
       document.documentElement.style.setProperty("--vh", `${vh}px`);
+
+      // Also set --app-height directly for additional compatibility
+      document.documentElement.style.setProperty(
+        "--app-height",
+        `${window.innerHeight}px`
+      );
     };
 
-    // Hide on load
-    hideBrowserUI();
+    // Hide on load with slight delay to ensure layout is ready
+    setTimeout(hideBrowserUI, 100);
 
-    // Re-hide on orientation change or resize
-    window.addEventListener("resize", hideBrowserUI);
+    // Re-hide on orientation change or resize with debounce
+    let resizeTimeout: ReturnType<typeof setTimeout>;
+    const debouncedHide = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(hideBrowserUI, 150);
+    };
+
+    window.addEventListener("resize", debouncedHide);
     window.addEventListener("orientationchange", hideBrowserUI);
 
     return () => {
-      window.removeEventListener("resize", hideBrowserUI);
+      window.removeEventListener("resize", debouncedHide);
       window.removeEventListener("orientationchange", hideBrowserUI);
+      clearTimeout(resizeTimeout);
     };
   }, []);
 
