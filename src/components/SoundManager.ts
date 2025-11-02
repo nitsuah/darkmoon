@@ -201,8 +201,12 @@ class SoundManager {
           if (this.backgroundMusic) {
             try {
               this.backgroundMusic.stop();
-            } catch {
-              // Already stopped
+            } catch (error) {
+              // Oscillator may already be stopped - log for debugging
+              console.warn(
+                "Oscillator already stopped or invalid state:",
+                error
+              );
             }
             this.backgroundMusic = null;
           }

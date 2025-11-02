@@ -1095,9 +1095,15 @@ const PlayerCharacter = React.forwardRef<
       // Capture horizontal momentum at jump start
       horizontalMomentum.current.copy(direction.current).multiplyScalar(speed);
 
-      // Play jump sound
-      const soundMgr = getSoundManager();
-      soundMgr.playJumpSound();
+      // Play jump sound with error handling
+      try {
+        const soundMgr = getSoundManager();
+        if (soundMgr) {
+          soundMgr.playJumpSound();
+        }
+      } catch (error) {
+        console.warn("Sound manager not ready for jump sound:", error);
+      }
     }
 
     // Apply continuous thrust while space is held (jetpack style)
@@ -1140,9 +1146,15 @@ const PlayerCharacter = React.forwardRef<
         jumpHoldTime.current = 0;
         horizontalMomentum.current.set(0, 0, 0);
 
-        // Play landing sound
-        const soundMgr = getSoundManager();
-        soundMgr.playJumpSound(); // Reuse jump sound for landing
+        // Play landing sound with error handling
+        try {
+          const soundMgr = getSoundManager();
+          if (soundMgr) {
+            soundMgr.playJumpSound(); // Reuse jump sound for landing
+          }
+        } catch (error) {
+          console.warn("Sound manager not ready for landing sound:", error);
+        }
 
         // TODO: Add dust particle effect on landing
       }
