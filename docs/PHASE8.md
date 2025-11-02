@@ -1,4 +1,87 @@
-# Phase 8: RCS Thrusters, Audio, Visual Polish & Mobile Fixes
+# Phase 8: Gameplay Polish & Bug Fixes
+
+**Status**: ✅ COMPLETED (Commit: d16b289)
+
+## Completed This Phase
+
+### ✅ Bot AI & Tag Mechanics Fixes
+
+**Fixed Issues**:
+
+- Bot now always chases player when IT (removed distance limit on chase)
+- Reduced tag collision distance: 1.5 → 1.2 units (easier to tag)
+- Enforced tag cooldown: 1.5 seconds between tags (prevents spam)
+- Increased freeze duration: 1.5 seconds after being tagged
+- Added game mode checks to prevent tagging outside active games
+
+**Technical Changes** (`src/pages/Solo.tsx`):
+
+- TAG_DISTANCE: 1.5 → 1.2
+- TAG_COOLDOWN: 2000ms → 1500ms
+- PAUSE_AFTER_TAG: 1000ms → 1500ms
+- Bot chase logic: removed CHASE_RADIUS limit when isIt=true
+
+### ✅ Game Duration Improvements
+
+**Changes**:
+
+- Tag games now 1 minute (60s) by default (down from 3 minutes)
+- Dynamic scaling: +60s per player above 2
+- Example: 2 players = 1min, 4 players = 3min
+
+**Technical Changes** (`src/components/GameManager.ts`):
+
+- startTagGame() default duration: 180s → 60s
+- Added player count scaling logic
+
+### ✅ UI Positioning Fixes
+
+**Fixed Issues**:
+
+- TAG GAME menu no longer overlaps FPS counter
+- "Press C to open chat" text positioned below mute/chat buttons
+
+**Technical Changes**:
+
+- GameUI.tsx: TAG GAME menu moved from `right: 60px` → `right: 120px`
+- ChatBox.tsx: Press C button moved from `top: 20px` → `top: 60px`
+- PerformanceMonitor remains at `right: 10px`
+
+### ✅ Jetpack Mechanics Enhanced
+
+**Improvements**:
+
+- Hold duration: 0.5s → 1.0s (can hold Space twice as long)
+- Initial thrust: 0.08 → 0.1 (+25% stronger)
+- Hold thrust: 0.12 → 0.15 (+25% stronger)
+- Gravity: 0.003 → 0.002 (more floaty)
+- Air resistance: 0.98 → 0.99 (less drag)
+
+**Technical Changes** (`src/pages/Solo.tsx`):
+
+- JUMP_MAX_HOLD_TIME: 0.5 → 1.0
+- JUMP_INITIAL_FORCE: 0.08 → 0.1
+- JUMP_HOLD_FORCE: 0.12 → 0.15
+- GRAVITY: 0.003 → 0.002
+- AIR_RESISTANCE: 0.98 → 0.99
+
+### ✅ Home Page Flip Card Animation
+
+**Implementation**:
+
+- Solo Practice card flips 180° on hover
+- Front: Original content with play button
+- Back: Game features (Smart AI, Tag mechanics, Jetpack, Practice controls)
+- Smooth 0.6s transition with CSS 3D transforms
+
+**Technical Changes**:
+
+- Home.tsx: Added flip card HTML structure
+- Home.css: Added CSS 3D flip animation with perspective: 1000px
+
+---
+
+## Phase 9 Planning
 
 ## Priority: High - RCS Thruster System
 
@@ -38,7 +121,7 @@
 - Fuel/cooldown limits or unlimited RCS use?
 - Should Space bar still exist as jump or be replaced by W/Q/E up thrusters?
 
-## Priority: High - Mobile Issues
+## Priority: High - Mobile Issues (Deferred to Phase 9)
 
 ### 1. Fix Mobile Joysticks
 
@@ -61,7 +144,7 @@
 - Single touch (not on joystick) does nothing
 - Chat toggle button works on touch
 
-### 2. Fix Mobile Address Bar
+### 2. Fix Mobile Address Bar (Deferred to Phase 9)
 
 **Problem**: Current `dvh` solution doesn't hide address bar on iOS Safari or Android Chrome.
 
@@ -77,7 +160,7 @@
 - <https://developer.mozilla.org/en-US/docs/Web/API/Visual_Viewport_API>
 - <https://webkit.org/blog/7929/designing-websites-for-iphone-x/>
 
-## Priority: Medium - Audio System
+## Priority: Medium - Audio System (Deferred to Phase 9)
 
 ### 3. Ambient Space Music
 
@@ -113,7 +196,7 @@
 - OpenGameArt.org - sci-fi sound packs
 - Zapsplat.com - free tier available
 
-## Priority: Low - Visual Enhancements
+## Priority: Low - Visual Enhancements (Deferred to Phase 9)
 
 ### 5. Jetpack Thrust Animation
 

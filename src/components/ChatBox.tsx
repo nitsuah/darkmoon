@@ -68,35 +68,15 @@ const ChatBox: React.FC<ChatBoxProps> = ({
   };
 
   if (!isVisible) {
-    return (
-      <button
-        style={{
-          position: "fixed",
-          top: "20px",
-          left: "20px",
-          padding: "8px 12px",
-          backgroundColor: "rgba(0, 0, 0, 0.7)",
-          color: "white",
-          borderRadius: "4px",
-          fontSize: "12px",
-          fontFamily: "monospace",
-          cursor: "pointer",
-          zIndex: 1000,
-          border: "none",
-        }}
-        onClick={onToggle}
-      >
-        Press C to open chat
-      </button>
-    );
+    return null; // Chat icon in Solo.tsx handles visibility, no need for separate button
   }
 
   return (
     <div
       style={{
         position: "fixed",
-        top: "20px",
-        left: "20px",
+        top: "60px", // Below mute/chat buttons at top: 10px + ~40px height
+        left: "10px",
         width: "400px",
         height: "300px",
         backgroundColor: "rgba(0, 0, 0, 0.8)",

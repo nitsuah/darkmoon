@@ -35,7 +35,7 @@ const GameUI: React.FC<GameUIProps> = ({
         style={{
           position: "fixed",
           top: "10px",
-          right: "60px",
+          right: "120px", // Moved further right to avoid FPS counter (which is at right: 10px)
           padding: "8px 12px",
           backgroundColor: "rgba(0, 0, 0, 0.85)",
           border: "1px solid rgba(255, 255, 255, 0.3)",
@@ -119,7 +119,7 @@ const GameUI: React.FC<GameUIProps> = ({
       style={{
         position: "fixed",
         top: "10px",
-        right: "60px",
+        right: "10px", // Top-right corner (FPS counter moved to bottom-right)
         padding: "10px 12px",
         backgroundColor: "rgba(0, 0, 0, 0.85)",
         border: "1px solid rgba(255, 255, 255, 0.25)",

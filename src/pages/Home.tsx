@@ -35,93 +35,81 @@ const Home = () => {
       {/* Game Modes Grid */}
       <div className="game-modes-grid">
         <div
-          className="mode-card mode-card-solo"
+          className="mode-card mode-card-solo mode-card-flip-container"
           onClick={() => navigate("/solo")}
           onKeyDown={(e) => e.key === "Enter" && navigate("/solo")}
           role="button"
           tabIndex={0}
         >
-          <div className="mode-icon">🎯</div>
-          <h3>Solo Practice</h3>
-          <p>Hone your skills against AI opponents</p>
-          <div className="mode-status status-live">● LIVE NOW</div>
-        </div>
-
-        <div className="mode-card mode-card-disabled">
-          <div className="mode-icon">👥</div>
-          <h3>Multiplayer Tag</h3>
-          <p>Compete with players worldwide</p>
-          <div className="mode-status status-coming-soon">⏳ Coming Soon</div>
-        </div>
-
-        <div className="mode-card mode-card-disabled">
-          <div className="mode-icon">🏆</div>
-          <h3>Tournament</h3>
-          <p>Ranked competitive matches</p>
-          <div className="mode-status status-coming-soon">⏳ Coming Soon</div>
-        </div>
-      </div>
-
-      {/* Features Showcase */}
-      <div className="features-section">
-        <h2 className="section-title">Game Features</h2>
-        <div className="features-grid">
-          <div className="feature-item">
-            <div className="feature-icon">🎮</div>
-            <h4>Smooth Controls</h4>
-            <p>WASD movement with camera rotation & jumping</p>
-          </div>
-          <div className="feature-item">
-            <div className="feature-icon">🤖</div>
-            <h4>Smart AI</h4>
-            <p>Bots that chase and challenge you</p>
-          </div>
-          <div className="feature-item">
-            <div className="feature-icon">🌍</div>
-            <h4>Dynamic Terrain</h4>
-            <p>Procedurally generated landscapes</p>
-          </div>
-          <div className="feature-item">
-            <div className="feature-icon">💬</div>
-            <h4>Live Chat</h4>
-            <p>Communicate with other players</p>
-          </div>
-          <div className="feature-item">
-            <div className="feature-icon">📱</div>
-            <h4>Mobile Ready</h4>
-            <p>Play on any device with touch controls</p>
-          </div>
-          <div className="feature-item">
-            <div className="feature-icon">🎨</div>
-            <h4>Theme Support</h4>
-            <p>Dark and light mode themes</p>
+          <div className="mode-card-flip-inner">
+            <div className="mode-card-front">
+              <div className="mode-icon">🎯</div>
+              <h3>Solo Practice</h3>
+              <p>Hone your skills against AI opponents</p>
+              <div className="mode-status status-live">● LIVE NOW</div>
+            </div>
+            <div className="mode-card-back">
+              <div className="mode-icon">✨</div>
+              <h3>Game Features</h3>
+              <ul className="flip-features-list">
+                <li>🤖 Smart AI opponents</li>
+                <li>🏃 Tag game mechanics</li>
+                <li>🚀 Jetpack movement</li>
+                <li>🎮 WASD controls</li>
+                <li>💬 Live chat</li>
+                <li>🎨 Theme support</li>
+              </ul>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Upcoming Features */}
-      <div className="roadmap-section">
-        <h2 className="section-title">🚀 Coming Soon</h2>
-        <div className="roadmap-grid">
-          <div className="roadmap-item">
-            <div className="roadmap-number">01</div>
-            <h4>Collectible Hunt Mode</h4>
-            <p>Race to collect items scattered across the map</p>
+        <div className="mode-card mode-card-disabled mode-card-flip-container">
+          <div className="mode-card-flip-inner">
+            <div className="mode-card-front">
+              <div className="mode-icon">👥</div>
+              <h3>Multiplayer Tag</h3>
+              <p>Compete with players worldwide</p>
+              <div className="mode-status status-coming-soon">
+                ⏳ Coming Soon
+              </div>
+            </div>
+            <div className="mode-card-back">
+              <div className="mode-icon">🌍</div>
+              <h3>Planned Features</h3>
+              <ul className="flip-features-list">
+                <li>🌐 Global matchmaking</li>
+                <li>🏃 Real-time multiplayer</li>
+                <li>💬 Voice chat support</li>
+                <li>📱 Cross-platform play</li>
+                <li>🎮 Custom lobbies</li>
+                <li>📊 Stats tracking</li>
+              </ul>
+            </div>
           </div>
-          <div className="roadmap-item">
-            <div className="roadmap-number">02</div>
-            <h4>Race Mode</h4>
-            <p>Checkpoint-based racing with lap times</p>
-          </div>
-          <div className="roadmap-item">
-            <div className="roadmap-number">03</div>
-            <h4>Emotes & Actions</h4>
-            <p>Express yourself with quick emotes</p>
-          </div>
-          <div className="roadmap-item">
-            <div className="roadmap-number">04</div>
-            <h4>Custom Avatars</h4>
-            <p>Personalize your character appearance</p>
+        </div>
+
+        <div className="mode-card mode-card-disabled mode-card-flip-container">
+          <div className="mode-card-flip-inner">
+            <div className="mode-card-front">
+              <div className="mode-icon">�</div>
+              <h3>Tournament</h3>
+              <p>Ranked competitive matches</p>
+              <div className="mode-status status-coming-soon">
+                ⏳ Coming Soon
+              </div>
+            </div>
+            <div className="mode-card-back">
+              <div className="mode-icon">🎯</div>
+              <h3>Future Modes</h3>
+              <ul className="flip-features-list">
+                <li>🏁 Race mode</li>
+                <li>💎 Collectible hunt</li>
+                <li>🎭 Emotes & actions</li>
+                <li>👤 Custom avatars</li>
+                <li>🏅 Leaderboards</li>
+                <li>🎁 Rewards system</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>

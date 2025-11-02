@@ -8,7 +8,7 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
   onPerformanceChange,
 }) => {
   const [fps, setFps] = useState<number>(60);
-  const [show, setShow] = useState<boolean>(true);
+  const [textMode, setTextMode] = useState<boolean>(true); // Toggle between text and icon mode
   const frameTimesRef = useRef<number[]>([]);
   const lastFrameTimeRef = useRef<number>(0);
   const rafIdRef = useRef<number>(0);
@@ -71,21 +71,19 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
     return "#ff0000"; // Red
   };
 
-  if (!show) return null;
-
   return (
     <div
       role="button"
       tabIndex={0}
-      onClick={() => setShow(false)}
+      onClick={() => setTextMode(!textMode)}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
-          setShow(false);
+          setTextMode(!textMode);
         }
       }}
       style={{
         position: "fixed",
-        top: "10px",
+        bottom: "120px", // Above quality settings meter (at bottom: 10px with ~100px height)
         right: "10px",
         backgroundColor: "rgba(0, 0, 0, 0.7)",
         color: getFPSColor(),
@@ -97,9 +95,13 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
         userSelect: "none",
         cursor: "pointer",
       }}
-      title="Click to hide"
+      title={
+        textMode
+          ? "Click to switch to icon mode"
+          : "Click to switch to text mode"
+      }
     >
-      FPS: {fps}
+      {textMode ? `FPS: ${fps}` : `📊 ${fps}`}
     </div>
   );
 };
