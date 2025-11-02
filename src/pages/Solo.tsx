@@ -1466,7 +1466,7 @@ const PlayerCharacter = React.forwardRef<
           {/* Flame cone */}
           <mesh rotation={[Math.PI, 0, 0]}>
             <coneGeometry args={[0.15, 0.4, 8]} />
-            <meshBasicMaterial
+            <meshStandardMaterial
               color="#ff6600"
               opacity={0.7}
               transparent
@@ -1479,7 +1479,15 @@ const PlayerCharacter = React.forwardRef<
           {/* Inner bright core */}
           <mesh position={[0, 0.1, 0]} rotation={[Math.PI, 0, 0]}>
             <coneGeometry args={[0.08, 0.25, 8]} />
-            <meshBasicMaterial color="#ffff00" opacity={0.9} transparent />
+            <meshStandardMaterial
+              color="#ffff00"
+              opacity={0.9}
+              transparent
+              // eslint-disable-next-line react/no-unknown-property
+              emissive="#ffff00"
+              // eslint-disable-next-line react/no-unknown-property
+              emissiveIntensity={2}
+            />
           </mesh>
         </group>
       )}
