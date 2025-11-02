@@ -69,7 +69,7 @@ class SoundManager {
   }
 
   /**
-   * Start background music (ambient procedural music)
+   * Start background music (ambient space-themed procedural music)
    */
   public startBackgroundMusic() {
     if (!this.audioContext || this.isMusicPlaying || this.isMuted) return;
@@ -77,58 +77,138 @@ class SoundManager {
     try {
       this.resumeAudioContext();
 
-      // Create a simple ambient drone using oscillators
-      const osc1 = this.audioContext.createOscillator();
-      const osc2 = this.audioContext.createOscillator();
-      const filter = this.audioContext.createBiquadFilter();
+      // Create space-themed ambient music with multiple layers
+      const masterGain = this.audioContext.createGain();
+      masterGain.gain.value = 1.0;
+      masterGain.connect(this.musicGain!);
 
-      // Low frequency ambient tones
-      osc1.type = "sine";
-      osc1.frequency.value = 110; // A2 note
-      osc2.type = "sine";
-      osc2.frequency.value = 165; // E3 note (perfect fifth)
+      // Deep space drone (very low frequencies)
+      const drone1 = this.audioContext.createOscillator();
+      const drone2 = this.audioContext.createOscillator();
+      const droneGain = this.audioContext.createGain();
+      drone1.type = "sine";
+      drone1.frequency.value = 55; // A1 - very deep
+      drone2.type = "sine";
+      drone2.frequency.value = 82.5; // E2 - perfect fifth
+      droneGain.gain.value = 0.4;
+      drone1.connect(droneGain);
+      drone2.connect(droneGain);
+      droneGain.connect(masterGain);
 
-      // Filter for warmth
-      filter.type = "lowpass";
-      filter.frequency.value = 800;
-      filter.Q.value = 1;
+      // Mid-range ethereal pad
+      const pad1 = this.audioContext.createOscillator();
+      const pad2 = this.audioContext.createOscillator();
+      const pad3 = this.audioContext.createOscillator();
+      const padGain = this.audioContext.createGain();
+      const padFilter = this.audioContext.createBiquadFilter();
 
-      // Connect: oscillators -> filter -> gain -> destination
-      osc1.connect(filter);
-      osc2.connect(filter);
-      filter.connect(this.musicGain!);
+      pad1.type = "triangle";
+      pad1.frequency.value = 220; // A3
+      pad2.type = "triangle";
+      pad2.frequency.value = 329.63; // E4
+      pad3.type = "triangle";
+      pad3.frequency.value = 277.18; // C#4 - adds mystery
 
-      // Add subtle LFO for movement
+      padFilter.type = "lowpass";
+      padFilter.frequency.value = 1200;
+      padFilter.Q.value = 0.5;
+      padGain.gain.value = 0.25;
+
+      pad1.connect(padFilter);
+      pad2.connect(padFilter);
+      pad3.connect(padFilter);
+      padFilter.connect(padGain);
+      padGain.connect(masterGain);
+
+      // Subtle shimmer (high frequencies for space atmosphere)
+      const shimmer = this.audioContext.createOscillator();
+      const shimmerGain = this.audioContext.createGain();
+      const shimmerFilter = this.audioContext.createBiquadFilter();
+      shimmer.type = "sine";
+      shimmer.frequency.value = 880; // A5
+      shimmerFilter.type = "highpass";
+      shimmerFilter.frequency.value = 800;
+      shimmerGain.gain.value = 0.08;
+      shimmer.connect(shimmerFilter);
+      shimmerFilter.connect(shimmerGain);
+      shimmerGain.connect(masterGain);
+
+      // LFO for slow filter sweep (creates movement/breathing)
       const lfo = this.audioContext.createOscillator();
       const lfoGain = this.audioContext.createGain();
-      lfo.frequency.value = 0.2; // Slow modulation
-      lfoGain.gain.value = 10;
+      lfo.type = "sine";
+      lfo.frequency.value = 0.1; // Very slow - 10 second cycle
+      lfoGain.gain.value = 200; // Sweep range
       lfo.connect(lfoGain);
-      lfoGain.connect(filter.frequency);
+      lfoGain.connect(padFilter.frequency);
 
-      osc1.start();
-      osc2.start();
+      // LFO for shimmer tremolo
+      const shimmerLfo = this.audioContext.createOscillator();
+      const shimmerLfoGain = this.audioContext.createGain();
+      shimmerLfo.type = "sine";
+      shimmerLfo.frequency.value = 0.3; // Faster shimmer
+      shimmerLfoGain.gain.value = 0.03;
+      shimmerLfo.connect(shimmerLfoGain);
+      shimmerLfoGain.connect(shimmerGain.gain);
+
+      // Start all oscillators
+      drone1.start();
+      drone2.start();
+      pad1.start();
+      pad2.start();
+      pad3.start();
+      shimmer.start();
       lfo.start();
+      shimmerLfo.start();
 
-      this.backgroundMusic = osc1; // Keep reference for stopping
+      // Fade in music
+      masterGain.gain.setValueAtTime(0, this.audioContext.currentTime);
+      masterGain.gain.linearRampToValueAtTime(
+        1.0,
+        this.audioContext.currentTime + 3.0
+      );
+
+      this.backgroundMusic = drone1; // Keep reference for stopping
       this.isMusicPlaying = true;
 
-      console.log("Background music started");
+      console.log("Space-themed background music started");
     } catch (error) {
       console.error("Failed to start background music:", error);
     }
   }
 
   /**
-   * Stop background music
+   * Stop background music (with fade out)
    */
   public stopBackgroundMusic() {
-    if (this.backgroundMusic && this.audioContext) {
+    if (this.backgroundMusic && this.audioContext && this.musicGain) {
       try {
-        this.backgroundMusic.stop();
-        this.backgroundMusic = null;
-        this.isMusicPlaying = false;
-        console.log("Background music stopped");
+        // Fade out over 2 seconds
+        const fadeOutTime = 2.0;
+        this.musicGain.gain.linearRampToValueAtTime(
+          0,
+          this.audioContext.currentTime + fadeOutTime
+        );
+
+        // Stop after fade completes
+        setTimeout(() => {
+          if (this.backgroundMusic) {
+            try {
+              this.backgroundMusic.stop();
+            } catch {
+              // Already stopped
+            }
+            this.backgroundMusic = null;
+          }
+          this.isMusicPlaying = false;
+
+          // Restore music gain for next time
+          if (this.musicGain && !this.isMuted) {
+            this.musicGain.gain.value = this.musicVolume;
+          }
+
+          console.log("Background music stopped");
+        }, fadeOutTime * 1000);
       } catch (error) {
         console.error("Error stopping music:", error);
       }

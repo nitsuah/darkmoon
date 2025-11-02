@@ -61,6 +61,27 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
     const base = baseRef.current;
     if (!base) return;
 
+    // Debug positioning on mount (development only)
+    if (import.meta.env.DEV) {
+      const rect = base.getBoundingClientRect();
+      const computed = window.getComputedStyle(base.parentElement!);
+      console.log(`[JOYSTICK ${side}] Mounted at:`, {
+        rect: {
+          top: rect.top,
+          bottom: rect.bottom,
+          left: rect.left,
+          right: rect.right,
+        },
+        computed: {
+          position: computed.position,
+          top: computed.top,
+          bottom: computed.bottom,
+          left: computed.left,
+          right: computed.right,
+        },
+      });
+    }
+
     // Use native events with passive: false to allow preventDefault
     // eslint-disable-next-line no-undef
     const touchStartHandler = (e: TouchEvent) => {
@@ -113,7 +134,7 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
         handleEnd();
       }
     };
-  }, [handleEnd, handleMove]);
+  }, [handleEnd, handleMove, side]);
 
   return (
     <div className={`joystick-container ${side}`}>

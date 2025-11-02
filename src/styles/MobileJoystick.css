@@ -1,8 +1,8 @@
 /* Mobile Joystick Styles */
 .joystick-container {
-  position: fixed;
-  bottom: 40px;
-  z-index: 1000;
+  position: fixed !important;
+  bottom: 40px !important;
+  z-index: 1000 !important;
   pointer-events: auto;
   user-select: none;
   -webkit-user-select: none;
@@ -10,11 +10,13 @@
 }
 
 .joystick-container.left {
-  left: 40px;
+  left: 40px !important;
+  top: auto !important; /* Ensure top doesn't override */
 }
 
 .joystick-container.right {
-  right: 40px;
+  right: 40px !important;
+  top: auto !important; /* Ensure top doesn't override */
 }
 
 .joystick-label {

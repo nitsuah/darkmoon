@@ -90,6 +90,14 @@ const debug = (...args: unknown[]) => {
   }
 };
 
+// Dedicated tag debug logger with timestamps and clear prefixes
+const tagDebug = (...args: unknown[]) => {
+  if (__isDev) {
+    const timestamp = new Date().toISOString().split("T")[1].slice(0, -1);
+    console.log(`[TAG ${timestamp}]`, ...args);
+  }
+};
+
 const UserWrapper: React.FC<UserWrapperProps> = ({
   position,
   rotation,
@@ -269,10 +277,28 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
         meshRef.current.rotation.y = angle;
       } else if (now - lastTagTime.current > TAG_COOLDOWN) {
         // Tag the player!
+        tagDebug(
+          `🤖 BOT TAGGING PLAYER! Distance: ${distance.toFixed(
+            2
+          )}, Cooldown elapsed: ${now - lastTagTime.current}ms`
+        );
+        tagDebug(`  State before: Bot isIT=${isIt}, Player isIT=${playerIsIt}`);
         lastTagTime.current = now;
         isPausedAfterTag.current = true;
         pauseEndTime.current = now + PAUSE_AFTER_TAG;
+        tagDebug(`  Bot will freeze for ${PAUSE_AFTER_TAG}ms`);
         onTagPlayer();
+        tagDebug(
+          `  State after callback: Bot should become NOT IT, Player should become IT`
+        );
+      } else {
+        // Too soon to tag again
+        const cooldownRemaining = TAG_COOLDOWN - (now - lastTagTime.current);
+        if (cooldownRemaining > 0 && cooldownRemaining < 100) {
+          tagDebug(
+            `🤖 Bot within range but cooldown active: ${cooldownRemaining}ms remaining`
+          );
+        }
       }
     } else if (playerIsIt && gameState.isActive && gameState.mode === "tag") {
       // Player is IT - only flee when player is within detection radius
@@ -307,6 +333,9 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
         const angle = Math.atan2(direction.x, direction.z);
         meshRef.current.rotation.y = angle;
       }
+    } else if (!gameState.isActive || gameState.mode !== "tag") {
+      // Game not active - bot should be idle
+      // No movement when game is not active
     }
 
     // Notify parent of position change
@@ -320,6 +349,167 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
       <mesh position={[0, 1.5, 0]}>
         <sphereGeometry args={[0.12, 8, 8]} />
         <meshBasicMaterial color="#ffff00" />
+      </mesh>
+    </group>
+  );
+};
+
+// Second bot for debug mode - targets other bot instead of player
+interface BotCharacter2Props {
+  bot1Position: [number, number, number];
+  isPaused: boolean;
+  onPositionUpdate: (position: [number, number, number]) => void;
+  isIt: boolean;
+  bot1IsIt: boolean;
+  onTagBot: () => void;
+  gameState: GameState;
+  collisionSystem: React.RefObject<CollisionSystem>;
+}
+
+const BotCharacter2: React.FC<BotCharacter2Props> = ({
+  bot1Position,
+  isPaused,
+  onPositionUpdate,
+  isIt,
+  bot1IsIt,
+  onTagBot,
+  gameState,
+  collisionSystem,
+}) => {
+  const meshRef = useRef<THREE.Group>(null);
+  const lastTagTime = useRef(0);
+  const isPausedAfterTag = useRef(false);
+  const pauseEndTime = useRef(0);
+  const CHASE_RADIUS = 10;
+  const BOT_SPEED = 1.6; // Slightly faster than Bot1
+  const FLEE_SPEED = 1.9;
+  const TAG_COOLDOWN = 1000; // 1 second for faster bot debug testing
+  const TAG_DISTANCE = 1.0;
+  const PAUSE_AFTER_TAG = 1000; // 1 second pause for faster games
+  const INITIAL_POSITION: [number, number, number] = [5, 0.5, 5]; // Opposite corner from Bot1
+
+  useFrame((state, delta) => {
+    if (!meshRef.current || isPaused) return;
+
+    const now = Date.now();
+
+    // Check if bot is paused after tagging
+    if (isPausedAfterTag.current) {
+      if (now >= pauseEndTime.current) {
+        isPausedAfterTag.current = false;
+        tagDebug(`🤖2 Bot2 unfrozen - resuming movement`);
+      } else {
+        const pulse = 1 + Math.sin(now * 0.01) * 0.1;
+        meshRef.current.scale.set(pulse, pulse, pulse);
+        return;
+      }
+    } else {
+      meshRef.current.scale.set(1, 1, 1);
+    }
+
+    const botPos = meshRef.current.position;
+    const bot1Pos = new THREE.Vector3(...bot1Position);
+    const distance = botPos.distanceTo(bot1Pos);
+
+    // Behavior depends on who is IT (only during active tag games)
+    if (isIt && gameState.isActive && gameState.mode === "tag") {
+      // Bot2 is IT - chase Bot1
+      if (distance > TAG_DISTANCE) {
+        const direction = new THREE.Vector3()
+          .subVectors(bot1Pos, botPos)
+          .normalize();
+
+        const currentPos = new THREE.Vector3(botPos.x, botPos.y, botPos.z);
+        const newPos = new THREE.Vector3(
+          botPos.x + direction.x * BOT_SPEED * delta,
+          botPos.y,
+          botPos.z + direction.z * BOT_SPEED * delta
+        );
+
+        if (collisionSystem.current) {
+          const resolved = collisionSystem.current.checkCollision(
+            currentPos,
+            newPos
+          );
+          botPos.x = resolved.x;
+          botPos.z = resolved.z;
+        } else {
+          botPos.x = newPos.x;
+          botPos.z = newPos.z;
+        }
+
+        const angle = Math.atan2(direction.x, direction.z);
+        meshRef.current.rotation.y = angle;
+
+        // Log chase behavior periodically
+        if (Math.random() < 0.01) {
+          tagDebug(`🤖2 Bot2 chasing Bot1 - distance: ${distance.toFixed(2)}`);
+        }
+      } else if (now - lastTagTime.current > TAG_COOLDOWN) {
+        // Tag Bot1!
+        tagDebug(
+          `🤖2 BOT2 TAGGING BOT1! Distance: ${distance.toFixed(2)}, Cooldown: ${
+            now - lastTagTime.current
+          }ms`
+        );
+        tagDebug(`  State before: Bot2 isIT=${isIt}, Bot1 isIT=${bot1IsIt}`);
+        lastTagTime.current = now;
+        isPausedAfterTag.current = true;
+        pauseEndTime.current = now + PAUSE_AFTER_TAG;
+        tagDebug(`  Bot2 will freeze for ${PAUSE_AFTER_TAG}ms`);
+        onTagBot();
+        tagDebug(
+          `  State after: Bot2 should become NOT IT, Bot1 should become IT`
+        );
+      }
+    } else if (bot1IsIt && gameState.isActive && gameState.mode === "tag") {
+      // Bot1 is IT - flee
+      if (distance < CHASE_RADIUS) {
+        const direction = new THREE.Vector3()
+          .subVectors(botPos, bot1Pos)
+          .normalize();
+
+        const currentPos = new THREE.Vector3(botPos.x, botPos.y, botPos.z);
+        const newPos = new THREE.Vector3(
+          botPos.x + direction.x * FLEE_SPEED * delta,
+          botPos.y,
+          botPos.z + direction.z * FLEE_SPEED * delta
+        );
+
+        if (collisionSystem.current) {
+          const resolved = collisionSystem.current.checkCollision(
+            currentPos,
+            newPos
+          );
+          botPos.x = resolved.x;
+          botPos.z = resolved.z;
+        } else {
+          botPos.x = newPos.x;
+          botPos.z = newPos.z;
+        }
+
+        const angle = Math.atan2(direction.x, direction.z);
+        meshRef.current.rotation.y = angle;
+
+        // Log flee behavior periodically
+        if (Math.random() < 0.01) {
+          tagDebug(
+            `🤖2 Bot2 fleeing from Bot1 - distance: ${distance.toFixed(2)}`
+          );
+        }
+      }
+    }
+
+    onPositionUpdate([botPos.x, botPos.y, botPos.z]);
+  });
+
+  return (
+    <group ref={meshRef} position={INITIAL_POSITION}>
+      <SpacemanModel color={isIt ? "#ff4444" : "#44ff44"} isIt={isIt} />
+      {/* Bot2 label - cyan sphere above head to distinguish from Bot1 */}
+      <mesh position={[0, 1.5, 0]}>
+        <sphereGeometry args={[0.12, 8, 8]} />
+        <meshBasicMaterial color="#00ffff" />
       </mesh>
     </group>
   );
@@ -350,6 +540,7 @@ interface PlayerCharacterProps {
 
 export interface PlayerCharacterHandle {
   resetPosition: () => void;
+  freezePlayer: (duration: number) => void;
 }
 
 const PlayerCharacter = React.forwardRef<
@@ -385,18 +576,28 @@ const PlayerCharacter = React.forwardRef<
   const lastTagCheck = useRef(0);
   const frameCounter = useRef(0);
 
-  // Jump mechanics - Moon-like low gravity physics
+  // Player freeze state when tagged
+  const isPlayerFrozen = useRef(false);
+  const playerFreezeEndTime = useRef(0);
+  const PLAYER_FREEZE_DURATION = 3000; // 3 seconds
+
+  // Jump mechanics - True moon-like low gravity physics (1/6 Earth gravity)
   const isJumping = useRef(false);
   const verticalVelocity = useRef(0);
   const jumpHoldTime = useRef(0); // Track how long space is held
-  const JUMP_INITIAL_FORCE = 0.1; // Initial thrust (increased from 0.08 for better launch)
-  const JUMP_HOLD_FORCE = 0.15; // Additional thrust while holding (increased from 0.12 for stronger jetpack)
-  const JUMP_MAX_HOLD_TIME = 1.0; // Max seconds to hold for extra height (doubled from 0.5 for longer thrust)
-  const GRAVITY = 0.002; // Moon gravity (reduced from 0.003 for more floaty feeling)
-  const GROUND_Y = 0.5;
-  const AIR_RESISTANCE = 0.99; // More floaty feeling (increased from 0.98 for less drag)
+  const horizontalMomentum = useRef(new THREE.Vector3(0, 0, 0)); // Preserve momentum in air
 
-  // Expose reset function to parent via ref
+  // Moon gravity is ~1/6 of Earth (0.0008 vs Earth's ~0.0049)
+  const JUMP_INITIAL_FORCE = 0.12; // Initial thrust for good liftoff
+  const JUMP_HOLD_FORCE = 0.18; // Strong continuous jetpack thrust
+  const JUMP_MAX_HOLD_TIME = 1.5; // Longer thrust duration for floaty jetpack feel
+  const GRAVITY = 0.0008; // True moon gravity - much slower fall
+  const GROUND_Y = 0.5;
+  const AIR_RESISTANCE = 0.995; // Minimal air resistance on moon (near vacuum)
+  const HORIZONTAL_AIR_CONTROL = 0.6; // Can still steer in air but with momentum
+  const MOMENTUM_PRESERVATION = 0.98; // Keep most horizontal momentum
+
+  // Expose reset and freeze functions to parent via ref
   React.useImperativeHandle(ref, () => ({
     resetPosition: () => {
       if (meshRef.current) {
@@ -407,6 +608,11 @@ const PlayerCharacter = React.forwardRef<
       direction.current.set(0, 0, 0);
       isJumping.current = false;
       verticalVelocity.current = 0;
+    },
+    freezePlayer: (duration: number) => {
+      isPlayerFrozen.current = true;
+      playerFreezeEndTime.current = Date.now() + duration;
+      tagDebug(`👤 Player frozen for ${duration}ms via ref`);
     },
   }));
 
@@ -429,6 +635,24 @@ const PlayerCharacter = React.forwardRef<
         debug("Frame skipped:", { hasMesh: !!meshRef.current, isPaused });
       }
       return;
+    }
+
+    const now = Date.now();
+
+    // Check if player is frozen after being tagged
+    if (isPlayerFrozen.current) {
+      if (now >= playerFreezeEndTime.current) {
+        isPlayerFrozen.current = false;
+        tagDebug(`👤 Player unfrozen - can move again`);
+      } else {
+        // Player is frozen - show visual indicator and prevent movement
+        const pulse = 1 + Math.sin(now * 0.01) * 0.1;
+        meshRef.current.scale.set(pulse, pulse, pulse);
+        // Still allow camera controls but no movement - return early after camera updates
+        // We'll add a flag to allow camera controls below
+      }
+    } else {
+      meshRef.current.scale.set(1, 1, 1);
     }
 
     // WoW-style camera controls
@@ -528,6 +752,16 @@ const PlayerCharacter = React.forwardRef<
 
     cameraOffset.current.set(offsetX, offsetY, offsetZ);
 
+    // If player is frozen, skip movement but allow camera controls
+    if (isPlayerFrozen.current) {
+      // Update camera position but don't process movement
+      state.camera.position
+        .copy(meshRef.current.position)
+        .add(cameraOffset.current);
+      state.camera.lookAt(meshRef.current.position);
+      return;
+    }
+
     // Calculate direction based on keys pressed and camera rotation
     direction.current.set(0, 0, 0);
 
@@ -537,6 +771,9 @@ const PlayerCharacter = React.forwardRef<
       keysPressedRef.current[Q] ||
       keysPressedRef.current[E];
     const hasJoystickInput = joystickMove.x !== 0 || joystickMove.y !== 0;
+
+    // Calculate speed (used for movement and jump momentum)
+    const speed = keysPressedRef.current[SHIFT] ? 5 : 2;
 
     // WoW-style auto-run: both mouse buttons held = move forward
     if (bothMouseButtons || hasKeyboardInput || hasJoystickInput) {
@@ -584,9 +821,6 @@ const PlayerCharacter = React.forwardRef<
       // Normalize direction
       if (direction.current.length() > 0) {
         direction.current.normalize();
-
-        // Apply speed (faster with shift)
-        const speed = keysPressedRef.current[SHIFT] ? 5 : 2;
         velocity.current.copy(direction.current).multiplyScalar(speed * delta);
 
         // Calculate new position with collision detection
@@ -636,9 +870,28 @@ const PlayerCharacter = React.forwardRef<
                 now - lastTagCheck.current > 3000
               ) {
                 // Player tagged the bot!
+                tagDebug(
+                  `👤 PLAYER TAGGING BOT! Distance: ${distance.toFixed(
+                    2
+                  )}, Cooldown elapsed: ${now - lastTagCheck.current}ms`
+                );
+                tagDebug(
+                  `  State before: Player isIT=${playerIsIt}, Bot isIT=false`
+                );
+
                 if (setPlayerIsIt) setPlayerIsIt(false);
                 if (setBotIsIt) setBotIsIt(true);
                 lastTagCheck.current = now;
+
+                // Freeze player for 3 seconds
+                isPlayerFrozen.current = true;
+                playerFreezeEndTime.current = now + PLAYER_FREEZE_DURATION;
+                tagDebug(
+                  `  Player will freeze for ${PLAYER_FREEZE_DURATION}ms`
+                );
+                tagDebug(
+                  `  State after: Player should become NOT IT, Bot should become IT`
+                );
 
                 // Victory celebration effects
                 const flashOverlay = document.createElement("div");
@@ -824,38 +1077,54 @@ const PlayerCharacter = React.forwardRef<
       }
     }
 
-    // Jump mechanics (independent of horizontal movement) - Floaty jetpack style
+    // Jump mechanics - True moon physics with momentum preservation
     const isOnGround = meshRef.current.position.y <= GROUND_Y + 0.01;
 
     if (keysPressedRef.current[SPACE] && isOnGround && !isJumping.current) {
-      // Start jump
+      // Start jump - capture current horizontal velocity as momentum
       isJumping.current = true;
       verticalVelocity.current = JUMP_INITIAL_FORCE;
       jumpHoldTime.current = 0;
+
+      // Capture horizontal momentum at jump start
+      horizontalMomentum.current.copy(direction.current).multiplyScalar(speed);
+
+      // Play jump sound
+      const soundMgr = getSoundManager();
+      soundMgr.playJumpSound();
     }
 
     // Apply continuous thrust while space is held (jetpack style)
     if (isJumping.current && keysPressedRef.current[SPACE]) {
       if (jumpHoldTime.current < JUMP_MAX_HOLD_TIME) {
         jumpHoldTime.current += delta;
-        // Gradual thrust that decreases over time
-        const thrustMultiplier = 1 - jumpHoldTime.current / JUMP_MAX_HOLD_TIME;
+        // Stronger, more consistent thrust for jetpack feel
+        const thrustMultiplier =
+          1 - (jumpHoldTime.current / JUMP_MAX_HOLD_TIME) * 0.5; // Only reduce to 50%
         verticalVelocity.current += JUMP_HOLD_FORCE * delta * thrustMultiplier;
       }
     }
 
-    // Apply moon gravity and air resistance
+    // Apply moon gravity and physics while in air
     if (isJumping.current || !isOnGround) {
+      // Very slow fall due to moon's low gravity
       verticalVelocity.current -= GRAVITY;
-      verticalVelocity.current *= AIR_RESISTANCE; // Floaty feeling
+      verticalVelocity.current *= AIR_RESISTANCE; // Minimal resistance (near vacuum)
       meshRef.current.position.y += verticalVelocity.current;
 
-      // Apply horizontal air drift (maintain momentum)
-      if (velocity.current.length() > 0) {
-        const airDrift = velocity.current.clone().multiplyScalar(0.95);
-        meshRef.current.position.x += airDrift.x * delta * 10;
-        meshRef.current.position.z += airDrift.z * delta * 10;
-      }
+      // Preserve horizontal momentum with slight decay
+      horizontalMomentum.current.multiplyScalar(MOMENTUM_PRESERVATION);
+
+      // Allow some air control - blend player input with momentum
+      const inputDirection = direction.current
+        .clone()
+        .multiplyScalar(speed * HORIZONTAL_AIR_CONTROL);
+      const finalMovement = horizontalMomentum.current
+        .clone()
+        .add(inputDirection);
+
+      meshRef.current.position.x += finalMovement.x * delta * 10;
+      meshRef.current.position.z += finalMovement.z * delta * 10;
 
       // Check if landed
       if (meshRef.current.position.y <= GROUND_Y) {
@@ -863,9 +1132,13 @@ const PlayerCharacter = React.forwardRef<
         isJumping.current = false;
         verticalVelocity.current = 0;
         jumpHoldTime.current = 0;
+        horizontalMomentum.current.set(0, 0, 0);
+
         // Play landing sound
         const soundMgr = getSoundManager();
         soundMgr.playJumpSound(); // Reuse jump sound for landing
+
+        // TODO: Add dust particle effect on landing
       }
     }
 
@@ -961,8 +1234,20 @@ const Solo: React.FC = () => {
   const [playerPosition, setPlayerPosition] = useState<
     [number, number, number]
   >([0, 0.5, 0]);
+  const [bot1Position, setBot1Position] = useState<[number, number, number]>([
+    -5, 0.5, -5,
+  ]);
+  const [bot2Position, setBot2Position] = useState<[number, number, number]>([
+    5, 0.5, 5,
+  ]);
   const [playerIsIt, setPlayerIsIt] = useState(true); // Player starts as IT
   const [botIsIt, setBotIsIt] = useState(false);
+  const [bot2IsIt, setBot2IsIt] = useState(false);
+
+  // Bot debug mode - enables 2 bots playing each other with faster games
+  // Can be enabled via: window.enableBotDebug()
+  const [botDebugMode, setBotDebugMode] = useState(false);
+
   const orientation = useOrientation();
 
   // Detect if device is mobile/touch-enabled
@@ -1107,6 +1392,87 @@ const Solo: React.FC = () => {
       socket.disconnect();
     };
   }, [connectSocket]);
+
+  // Expose bot debug mode toggle to window (dev console)
+  useEffect(() => {
+    if (__isDev) {
+      // @ts-expect-error - Development debugging utility
+      window.enableBotDebug = () => {
+        setBotDebugMode(true);
+        console.log(
+          "🤖 Bot vs Bot Debug Mode ENABLED - 2 bots will play tag with faster games"
+        );
+      };
+      // @ts-expect-error - Development debugging utility
+      window.disableBotDebug = () => {
+        setBotDebugMode(false);
+        console.log("🤖 Bot vs Bot Debug Mode DISABLED");
+      };
+
+      console.log(
+        "💡 Bot Debug Mode: Type window.enableBotDebug() to enable 2 bots playing tag"
+      );
+    }
+
+    return () => {
+      if (__isDev) {
+        // @ts-expect-error - Cleanup
+        delete window.enableBotDebug;
+        // @ts-expect-error - Cleanup
+        delete window.disableBotDebug;
+      }
+    };
+  }, []);
+
+  // Define handleStartGame early so it can be used in effects
+  const handleStartGame = React.useCallback(
+    (mode: string) => {
+      if (!gameManager.current) return;
+
+      // If we're offline (no socket client), ensure there is a local player in the game manager
+      const currentId = socketClient?.id || localPlayerId;
+      if (!gameManager.current.getPlayers().has(currentId)) {
+        gameManager.current.addPlayer({
+          id: currentId,
+          name: `Player ${currentId.slice(-4)}`,
+          position: [0, 0.5, 0],
+          rotation: [0, 0, 0],
+        });
+        // If we're using a local id, also update local gamePlayers map for UI
+        setGamePlayers(new Map(gameManager.current.getPlayers()));
+      }
+
+      if (mode === "tag") {
+        // Use shorter duration for bot debug mode (5-10 seconds for rapid testing)
+        const duration = botDebugMode ? 7 : 60; // 7 seconds in debug mode, 60 in normal mode
+        const started = gameManager.current.startTagGame(duration);
+        if (started) {
+          if (botDebugMode) {
+            tagDebug(`🤖 Bot Debug Mode: Starting ${duration}s tag game`);
+          }
+          // Only emit to server when connected
+          if (socketClient && isConnected) {
+            socketClient.emit("game-start", { mode: "tag", duration });
+          }
+        }
+      }
+    },
+    [socketClient, isConnected, localPlayerId, botDebugMode]
+  );
+
+  // Auto-start bot debug mode game when enabled
+  useEffect(() => {
+    if (botDebugMode && gameManager.current) {
+      tagDebug("🤖 Bot Debug Mode: Starting initial game...");
+      // Bot2 starts as IT
+      setBotIsIt(false);
+      setBot2IsIt(true);
+      // Start game after short delay to ensure scene is ready
+      setTimeout(() => {
+        handleStartGame("tag");
+      }, 500);
+    }
+  }, [botDebugMode, handleStartGame]);
 
   // Mobile viewport handling - hide browser bars
   useEffect(() => {
@@ -1269,6 +1635,68 @@ const Solo: React.FC = () => {
       e.preventDefault(); // Disable right-click context menu
     };
 
+    // Two-finger touch handling for mobile (simulates right-click)
+    let lastTouchX = 0;
+    let lastTouchY = 0;
+
+    // eslint-disable-next-line no-undef
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        // Two fingers - simulate right-click for camera rotation
+        e.preventDefault();
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        lastTouchX = (touch1.clientX + touch2.clientX) / 2;
+        lastTouchY = (touch1.clientY + touch2.clientY) / 2;
+
+        setMouseControls((prev) => ({
+          ...prev,
+          rightClick: true,
+          mouseX: lastTouchX,
+          mouseY: lastTouchY,
+        }));
+
+        tagDebug(
+          `📱 Two-finger touch detected at (${lastTouchX.toFixed(
+            0
+          )}, ${lastTouchY.toFixed(0)})`
+        );
+      }
+    };
+
+    // eslint-disable-next-line no-undef
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        // Two fingers - update camera rotation
+        e.preventDefault();
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const touchX = (touch1.clientX + touch2.clientX) / 2;
+        const touchY = (touch1.clientY + touch2.clientY) / 2;
+
+        setMouseControls((prev) => ({
+          ...prev,
+          rightClick: true,
+          mouseX: touchX,
+          mouseY: touchY,
+        }));
+
+        lastTouchX = touchX;
+        lastTouchY = touchY;
+      }
+    };
+
+    // eslint-disable-next-line no-undef
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) {
+        // Less than two fingers - end right-click simulation
+        setMouseControls((prev) => ({
+          ...prev,
+          rightClick: false,
+        }));
+      }
+    };
+
     // Fix for stuck keys when focus is lost
     const handleWindowBlur = () => {
       // Reset all key states when window loses focus
@@ -1298,6 +1726,11 @@ const Solo: React.FC = () => {
     window.addEventListener("contextmenu", handleContextMenu);
     window.addEventListener("blur", handleWindowBlur);
 
+    // Touch event listeners for two-finger camera control
+    window.addEventListener("touchstart", handleTouchStart, { passive: false });
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    window.addEventListener("touchend", handleTouchEnd, { passive: false });
+
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
@@ -1306,6 +1739,9 @@ const Solo: React.FC = () => {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("contextmenu", handleContextMenu);
       window.removeEventListener("blur", handleWindowBlur);
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
       // Clean up KeyDisplay elements
       if (keyDisplayRef.current) {
         [W, A, S, D, Q, E, SHIFT, SPACE].forEach((key) => {
@@ -1410,33 +1846,6 @@ const Solo: React.FC = () => {
     setChatVisible(!chatVisible);
   };
 
-  const handleStartGame = (mode: string) => {
-    if (!gameManager.current) return;
-
-    // If we're offline (no socket client), ensure there is a local player in the game manager
-    const currentId = socketClient?.id || localPlayerId;
-    if (!gameManager.current.getPlayers().has(currentId)) {
-      gameManager.current.addPlayer({
-        id: currentId,
-        name: `Player ${currentId.slice(-4)}`,
-        position: [0, 0.5, 0],
-        rotation: [0, 0, 0],
-      });
-      // If we're using a local id, also update local gamePlayers map for UI
-      setGamePlayers(new Map(gameManager.current.getPlayers()));
-    }
-
-    if (mode === "tag") {
-      const started = gameManager.current.startTagGame(60); // 1 minute
-      if (started) {
-        // Only emit to server when connected
-        if (socketClient && isConnected) {
-          socketClient.emit("game-start", { mode: "tag", duration: 60 });
-        }
-      }
-    }
-  };
-
   const handleEndGame = () => {
     if (!gameManager.current) return;
 
@@ -1448,6 +1857,24 @@ const Solo: React.FC = () => {
       results.forEach((player, index) => {
         console.log(`${index + 1}. ${player.name}: ${player.score} points`);
       });
+
+      // In bot debug mode, auto-restart after 1 second
+      if (botDebugMode) {
+        tagDebug("🤖 Bot Debug Mode: Auto-restarting game in 1 second...");
+        setTimeout(() => {
+          // Reset IT states - randomize who starts as IT
+          const bot1StartsIT = Math.random() > 0.5;
+          setBotIsIt(bot1StartsIT);
+          setBot2IsIt(!bot1StartsIT);
+          tagDebug(
+            `🤖 Bot Debug Mode: ${bot1StartsIT ? "Bot1" : "Bot2"} starts as IT`
+          );
+
+          // Restart game
+          handleStartGame("tag");
+        }, 1000);
+        return; // Skip normal end game logic
+      }
 
       // Determine winner and loser in solo mode
       if (results.length === 2) {
@@ -1816,42 +2243,57 @@ const Solo: React.FC = () => {
           setBotIsIt={setBotIsIt}
         />
 
-        {/* AI Bot - chases/flees player */}
+        {/* AI Bot 1 - chases/flees player (or Bot2 in debug mode) */}
         <BotCharacter
-          playerPosition={playerPosition}
+          playerPosition={botDebugMode ? bot2Position : playerPosition}
           isPaused={isPaused}
           isIt={botIsIt}
-          playerIsIt={playerIsIt}
+          playerIsIt={botDebugMode ? bot2IsIt : playerIsIt}
           gameState={gameState}
           collisionSystem={collisionSystemRef}
           onTagPlayer={() => {
-            // Bot tagged the player - only if game is active and in tag mode
-            if (!gameState.isActive || gameState.mode !== "tag") return;
+            // Bot tagged the target (player or Bot2) - only if game is active and in tag mode
+            if (!gameState.isActive || gameState.mode !== "tag") {
+              tagDebug(`🤖 Bot1 tag attempt outside active game - BLOCKED`);
+              return;
+            }
 
-            // Bot tagged the player - swap IT status (player becomes IT, bot becomes NOT IT)
-            setPlayerIsIt(true);
-            setBotIsIt(false);
+            if (botDebugMode) {
+              tagDebug(`🤖1 Bot1 successfully tagged Bot2!`);
+              setBotIsIt(false);
+              setBot2IsIt(true);
+            } else {
+              tagDebug(`🤖 Bot1 successfully tagged player!`);
+              setPlayerIsIt(true);
+              setBotIsIt(false);
 
-            // Show tag notification
-            const tagText = document.createElement("div");
-            tagText.textContent = "🤖 BOT TAGGED YOU! 🤖";
-            tagText.style.position = "fixed";
-            tagText.style.top = "50%";
-            tagText.style.left = "50%";
-            tagText.style.transform = "translate(-50%, -50%)";
-            tagText.style.fontSize = "72px";
-            tagText.style.fontWeight = "bold";
-            tagText.style.color = "#ff4444";
-            tagText.style.textShadow =
-              "0 0 20px rgba(255, 68, 68, 0.8), 0 0 40px rgba(255, 68, 68, 0.5)";
-            tagText.style.pointerEvents = "none";
-            tagText.style.zIndex = "10000";
-            tagText.style.animation =
-              "popIn 0.5s ease-out, fadeOut 1s ease-out 0.5s";
-            document.body.appendChild(tagText);
-            setTimeout(() => tagText.remove(), 1500);
+              // Freeze player for 3 seconds
+              if (playerCharacterRef.current) {
+                playerCharacterRef.current.freezePlayer(3000);
+              }
+
+              // Show tag notification
+              const tagText = document.createElement("div");
+              tagText.textContent = "🤖 BOT TAGGED YOU! 🤖";
+              tagText.style.position = "fixed";
+              tagText.style.top = "50%";
+              tagText.style.left = "50%";
+              tagText.style.transform = "translate(-50%, -50%)";
+              tagText.style.fontSize = "72px";
+              tagText.style.fontWeight = "bold";
+              tagText.style.color = "#ff4444";
+              tagText.style.textShadow =
+                "0 0 20px rgba(255, 68, 68, 0.8), 0 0 40px rgba(255, 68, 68, 0.5)";
+              tagText.style.pointerEvents = "none";
+              tagText.style.zIndex = "10000";
+              tagText.style.animation =
+                "popIn 0.5s ease-out, fadeOut 1s ease-out 0.5s";
+              document.body.appendChild(tagText);
+              setTimeout(() => tagText.remove(), 1500);
+            }
           }}
           onPositionUpdate={(position) => {
+            setBot1Position(position);
             // Update bot in clients for collision detection
             setClients((prev) => ({
               ...prev,
@@ -1866,6 +2308,41 @@ const Solo: React.FC = () => {
             }
           }}
         />
+
+        {/* AI Bot 2 - only in debug mode */}
+        {botDebugMode && (
+          <BotCharacter2
+            bot1Position={bot1Position}
+            isPaused={isPaused}
+            isIt={bot2IsIt}
+            bot1IsIt={botIsIt}
+            gameState={gameState}
+            collisionSystem={collisionSystemRef}
+            onTagBot={() => {
+              if (!gameState.isActive || gameState.mode !== "tag") {
+                tagDebug(`🤖2 Bot2 tag attempt outside active game - BLOCKED`);
+                return;
+              }
+
+              tagDebug(`🤖2 Bot2 successfully tagged Bot1!`);
+              setBot2IsIt(false);
+              setBotIsIt(true);
+            }}
+            onPositionUpdate={(position) => {
+              setBot2Position(position);
+              setClients((prev) => ({
+                ...prev,
+                "bot-2": {
+                  ...prev["bot-2"],
+                  position,
+                },
+              }));
+              if (gameManager.current) {
+                gameManager.current.updatePlayer("bot-2", { position });
+              }
+            }}
+          />
+        )}
 
         {Object.keys(clients)
           .filter((clientKey) => socketClient && clientKey !== socketClient.id)
