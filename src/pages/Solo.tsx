@@ -233,7 +233,7 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
       lastGotTaggedTimestamp.current = gotTaggedTimestamp;
       isPausedAfterTag.current = true;
       pauseEndTime.current = gotTaggedTimestamp + PAUSE_AFTER_TAG;
-      tagDebug(`🤖 Bot got tagged! Freezing for ${PAUSE_AFTER_TAG}ms`);
+      tagDebug(`[BOT1] Got tagged! Freezing for ${PAUSE_AFTER_TAG}ms`);
     }
   }, [gotTaggedTimestamp]);
 
@@ -362,11 +362,11 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
 
   return (
     <group ref={meshRef} position={INITIAL_POSITION}>
-      <SpacemanModel color="#ff4444" isIt={isIt} />
+      <SpacemanModel color={isIt ? "#ff4444" : "#ff8888"} isIt={isIt} />
       {/* Bot1 label - red sphere above head */}
       <mesh position={[0, 1.5, 0]}>
         <sphereGeometry args={[0.12, 8, 8]} />
-        <meshBasicMaterial color="#ff4444" />
+        <meshBasicMaterial color={isIt ? "#ff4444" : "#ff8888"} />
       </mesh>
       {/* Debug hitbox visualization */}
       {showHitboxes && (
@@ -433,7 +433,7 @@ const BotCharacter2: React.FC<BotCharacter2Props> = ({
       lastGotTaggedTimestamp.current = gotTaggedTimestamp;
       isPausedAfterTag.current = true;
       pauseEndTime.current = gotTaggedTimestamp + PAUSE_AFTER_TAG;
-      tagDebug(`🤖2 Bot2 got tagged! Freezing for ${PAUSE_AFTER_TAG}ms`);
+      tagDebug(`[BOT2] Got tagged! Freezing for ${PAUSE_AFTER_TAG}ms`);
     }
   }, [gotTaggedTimestamp]);
 
@@ -446,7 +446,7 @@ const BotCharacter2: React.FC<BotCharacter2Props> = ({
     if (isPausedAfterTag.current) {
       if (now >= pauseEndTime.current) {
         isPausedAfterTag.current = false;
-        tagDebug(`🤖2 Bot2 unfrozen - resuming movement`);
+        tagDebug(`[BOT2] Unfrozen - resuming movement`);
       } else {
         const pulse = 1 + Math.sin(now * 0.01) * 0.1;
         meshRef.current.scale.set(pulse, pulse, pulse);
@@ -492,7 +492,7 @@ const BotCharacter2: React.FC<BotCharacter2Props> = ({
 
         // Log chase behavior periodically
         if (Math.random() < 0.01) {
-          tagDebug(`🤖2 Bot2 chasing Bot1 - distance: ${distance.toFixed(2)}`);
+          tagDebug(`[BOT2] Chasing Bot1 - distance: ${distance.toFixed(2)}`);
         }
       } else if (now - lastTagTime.current > TAG_COOLDOWN) {
         // Tag Bot1!
@@ -554,11 +554,11 @@ const BotCharacter2: React.FC<BotCharacter2Props> = ({
 
   return (
     <group ref={meshRef} position={INITIAL_POSITION}>
-      <SpacemanModel color="#4444ff" isIt={isIt} />
+      <SpacemanModel color={isIt ? "#ff4444" : "#4444ff"} isIt={isIt} />
       {/* Bot2 label - blue sphere above head to distinguish from Bot1 */}
       <mesh position={[0, 3, 0]}>
         <sphereGeometry args={[0.12, 8, 8]} />
-        <meshBasicMaterial color="#4444ff" />
+        <meshBasicMaterial color={isIt ? "#ff4444" : "#4444ff"} />
       </mesh>
       {/* Debug hitbox visualization */}
       {showHitboxes && (
@@ -1788,7 +1788,28 @@ const Solo: React.FC = () => {
         setBotDebugMode(true);
         setShowHitboxes(true);
         tagDebug("🔧 Debug Tag Mode enabled via UI button");
-        // Auto-start will happen via useEffect
+
+        // Auto-start the debug tag game
+        const currentId = socketClient?.id || localPlayerId;
+        if (!gameManager.current.getPlayers().has(currentId)) {
+          gameManager.current.addPlayer({
+            id: currentId,
+            name: `Player ${currentId.slice(-4)}`,
+            position: [0, 0.5, 0],
+            rotation: [0, 0, 0],
+          });
+          setGamePlayers(new Map(gameManager.current.getPlayers()));
+        }
+
+        const duration = 60; // 1 minute for all tag games
+        const started = gameManager.current.startTagGame(duration);
+        if (started) {
+          tagDebug(`[DEBUG] Starting ${duration}s tag game`);
+          // Only emit to server when connected
+          if (socketClient && isConnected) {
+            socketClient.emit("game-start", { mode: "debug", duration });
+          }
+        }
         return;
       }
 
@@ -1811,7 +1832,7 @@ const Solo: React.FC = () => {
         const started = gameManager.current.startTagGame(duration);
         if (started) {
           if (botDebugMode) {
-            tagDebug(`🤖 Bot Debug Mode: Starting ${duration}s tag game`);
+            tagDebug(`[DEBUG] Starting ${duration}s tag game`);
           }
           // Only emit to server when connected
           if (socketClient && isConnected) {
@@ -1826,7 +1847,7 @@ const Solo: React.FC = () => {
   // Bot debug mode setup - no auto-start, user must click button
   useEffect(() => {
     if (botDebugMode && gameManager.current) {
-      tagDebug("🤖 Bot Debug Mode: Enabled - ready to start game manually");
+      tagDebug("[DEBUG] Enabled - ready to start game manually");
       // Bot2 starts as IT when game starts
       setBotIsIt(false);
       setBot2IsIt(true);
@@ -2235,7 +2256,7 @@ const Solo: React.FC = () => {
 
       // In bot debug mode, auto-restart after 1 second
       if (botDebugMode) {
-        tagDebug("🤖 Bot Debug Mode: Auto-restarting game in 1 second...");
+        tagDebug("[DEBUG] Auto-restarting game in 1 second...");
         setTimeout(() => {
           // Reset IT states - randomize who starts as IT
           const bot1StartsIT = Math.random() > 0.5;
@@ -2712,12 +2733,12 @@ const Solo: React.FC = () => {
           onTagPlayer={() => {
             // Bot tagged the target (player or Bot2) - only if game is active and in tag mode
             if (!gameState.isActive || gameState.mode !== "tag") {
-              tagDebug(`🤖 Bot1 tag attempt outside active game - BLOCKED`);
+              tagDebug(`[BOT1] Tag attempt outside active game - BLOCKED`);
               return;
             }
 
             if (botDebugMode) {
-              tagDebug(`🤖1 Bot1 successfully tagged Bot2!`);
+              tagDebug(`[BOT1] Successfully tagged Bot2!`);
               setBotIsIt(false);
               setBot2IsIt(true);
               setBot2GotTagged(Date.now()); // Freeze Bot2
@@ -2728,7 +2749,7 @@ const Solo: React.FC = () => {
                 itPlayerId: "bot-2",
               }));
             } else {
-              tagDebug(`🤖 Bot1 successfully tagged player!`);
+              tagDebug(`[BOT1] Successfully tagged player!`);
               setPlayerIsIt(true);
               setBotIsIt(false);
 
@@ -2806,11 +2827,11 @@ const Solo: React.FC = () => {
             showHitboxes={showHitboxes}
             onTagBot={() => {
               if (!gameState.isActive || gameState.mode !== "tag") {
-                tagDebug(`🤖2 Bot2 tag attempt outside active game - BLOCKED`);
+                tagDebug(`[BOT2] Tag attempt outside active game - BLOCKED`);
                 return;
               }
 
-              tagDebug(`🤖2 Bot2 successfully tagged Bot1!`);
+              tagDebug(`[BOT2] Successfully tagged Bot1!`);
               setBot2IsIt(false);
               setBotIsIt(true);
               setBot1GotTagged(Date.now()); // Freeze Bot1
