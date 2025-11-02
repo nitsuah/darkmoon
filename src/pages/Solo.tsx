@@ -1457,6 +1457,7 @@ const PlayerCharacter = React.forwardRef<
   const currentPlayer = gameManager?.getPlayers().get(currentPlayerId);
   const isIt = currentPlayer?.isIt || false;
 
+  // Player spawn at [0, 0.5, 0] - center of map, clear of all rocks
   return (
     <group ref={meshRef} position={[0, 0.5, 0]}>
       <SpacemanModel color={isIt ? "#ff4444" : "#4a90e2"} isIt={isIt} />
