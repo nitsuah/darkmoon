@@ -671,6 +671,9 @@ const PlayerCharacter = React.forwardRef<
   const idealCameraPositionRef = useRef(new THREE.Vector3());
   const skyTargetRef = useRef(new THREE.Vector3());
 
+  // Dust effect state for landing
+  const [showDustEffect, setShowDustEffect] = useState(false);
+
   // Physics constants - tuned for heavier, floatier feel
   const GRAVITY = 0.0005; // Reduced from 0.0008 for more floaty feel
   const GROUND_Y = 0.5;
@@ -1408,7 +1411,11 @@ const PlayerCharacter = React.forwardRef<
           console.warn("Sound manager not ready for landing sound:", error);
         }
 
-        // TODO: Add dust particle effect on landing
+        // Trigger dust effect on hard landing (velocity > 0.02)
+        if (landingVelocity > 0.02) {
+          setShowDustEffect(true);
+          setTimeout(() => setShowDustEffect(false), 300);
+        }
       }
     }
 
@@ -1450,6 +1457,28 @@ const PlayerCharacter = React.forwardRef<
   return (
     <group ref={meshRef} position={[0, 0.5, 0]}>
       <SpacemanModel color={isIt ? "#ff4444" : "#4a90e2"} isIt={isIt} />
+      {/* Landing dust effect */}
+      {showDustEffect && (
+        <group position={[0, -0.4, 0]}>
+          {[...Array(8)].map((_, i) => {
+            const angle = (i / 8) * Math.PI * 2;
+            const radius = 0.3 + (i % 2) * 0.2; // Alternating radii for variation
+            return (
+              <mesh
+                key={i}
+                position={[
+                  Math.cos(angle) * radius,
+                  0.1,
+                  Math.sin(angle) * radius,
+                ]}
+              >
+                <sphereGeometry args={[0.05, 8, 8]} />
+                <meshBasicMaterial color="#999999" opacity={0.6} transparent />
+              </mesh>
+            );
+          })}
+        </group>
+      )}
       {/* Debug hitbox visualization */}
       {props.showHitboxes && (
         <mesh position={[0, 0, 0]}>
