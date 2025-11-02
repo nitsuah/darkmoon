@@ -1,22 +1,29 @@
-/* Mobile Joystick Styles */
-.joystick-container {
-  position: fixed !important;
-  bottom: 40px !important;
-  z-index: 1000 !important;
+/* Mobile Joystick Styles - Higher specificity to override React inline styles */
+body .joystick-container,
+#root .joystick-container,
+.App .joystick-container {
+  position: fixed;
+  bottom: 40px;
+  z-index: 1000;
+  top: auto; /* Prevent any top positioning */
   pointer-events: auto;
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
 }
 
-.joystick-container.left {
-  left: 40px !important;
-  top: auto !important; /* Ensure top doesn't override */
+body .joystick-container.left,
+#root .joystick-container.left,
+.App .joystick-container.left {
+  left: 40px;
+  right: auto;
 }
 
-.joystick-container.right {
-  right: 40px !important;
-  top: auto !important; /* Ensure top doesn't override */
+body .joystick-container.right,
+#root .joystick-container.right,
+.App .joystick-container.right {
+  right: 40px;
+  left: auto;
 }
 
 .joystick-label {
@@ -101,11 +108,15 @@
 
 /* Smaller joysticks on very small screens */
 @media (max-width: 400px) {
-  .joystick-container.left {
+  body .joystick-container.left,
+  #root .joystick-container.left,
+  .App .joystick-container.left {
     left: 20px;
   }
 
-  .joystick-container.right {
+  body .joystick-container.right,
+  #root .joystick-container.right,
+  .App .joystick-container.right {
     right: 20px;
   }
 
@@ -122,15 +133,21 @@
 
 /* Portrait mode - stack joysticks with more spacing */
 @media (max-width: 767px) and (orientation: portrait) {
-  .joystick-container {
+  body .joystick-container,
+  #root .joystick-container,
+  .App .joystick-container {
     bottom: max(30px, env(safe-area-inset-bottom, 20px));
   }
 
-  .joystick-container.left {
+  body .joystick-container.left,
+  #root .joystick-container.left,
+  .App .joystick-container.left {
     left: max(30px, env(safe-area-inset-left, 20px));
   }
 
-  .joystick-container.right {
+  body .joystick-container.right,
+  #root .joystick-container.right,
+  .App .joystick-container.right {
     right: max(30px, env(safe-area-inset-right, 20px));
   }
 
@@ -148,15 +165,21 @@
 
 /* Landscape mode adjustments - more compact for limited vertical space */
 @media (max-height: 500px) and (orientation: landscape) {
-  .joystick-container {
+  body .joystick-container,
+  #root .joystick-container,
+  .App .joystick-container {
     bottom: 15px;
   }
 
-  .joystick-container.left {
+  body .joystick-container.left,
+  #root .joystick-container.left,
+  .App .joystick-container.left {
     left: 15px;
   }
 
-  .joystick-container.right {
+  body .joystick-container.right,
+  #root .joystick-container.right,
+  .App .joystick-container.right {
     right: 15px;
   }
 
@@ -178,7 +201,9 @@
 
 /* Very tall portrait screens - more bottom spacing */
 @media (min-aspect-ratio: 1/2) and (orientation: portrait) {
-  .joystick-container {
+  body .joystick-container,
+  #root .joystick-container,
+  .App .joystick-container {
     bottom: 50px;
   }
 }

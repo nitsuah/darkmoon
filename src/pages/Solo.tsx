@@ -587,6 +587,12 @@ const PlayerCharacter = React.forwardRef<
   const jumpHoldTime = useRef(0); // Track how long space is held
   const horizontalMomentum = useRef(new THREE.Vector3(0, 0, 0)); // Preserve momentum in air
 
+  // Reusable vectors to avoid allocations in animation loop
+  const inputDirectionRef = useRef(new THREE.Vector3());
+  const finalMovementRef = useRef(new THREE.Vector3());
+  const idealCameraPositionRef = useRef(new THREE.Vector3());
+  const skyTargetRef = useRef(new THREE.Vector3());
+
   // Moon gravity is ~1/6 of Earth (0.0008 vs Earth's ~0.0049)
   const JUMP_INITIAL_FORCE = 0.12; // Initial thrust for good liftoff
   const JUMP_HOLD_FORCE = 0.18; // Strong continuous jetpack thrust
@@ -1116,15 +1122,15 @@ const PlayerCharacter = React.forwardRef<
       horizontalMomentum.current.multiplyScalar(MOMENTUM_PRESERVATION);
 
       // Allow some air control - blend player input with momentum
-      const inputDirection = direction.current
-        .clone()
+      inputDirectionRef.current
+        .copy(direction.current)
         .multiplyScalar(speed * HORIZONTAL_AIR_CONTROL);
-      const finalMovement = horizontalMomentum.current
-        .clone()
-        .add(inputDirection);
+      finalMovementRef.current
+        .copy(horizontalMomentum.current)
+        .add(inputDirectionRef.current);
 
-      meshRef.current.position.x += finalMovement.x * delta * 10;
-      meshRef.current.position.z += finalMovement.z * delta * 10;
+      meshRef.current.position.x += finalMovementRef.current.x * delta * 10;
+      meshRef.current.position.z += finalMovementRef.current.z * delta * 10;
 
       // Check if landed
       if (meshRef.current.position.y <= GROUND_Y) {
@@ -1150,7 +1156,7 @@ const PlayerCharacter = React.forwardRef<
     }
 
     // Smooth third-person camera follow with rotation
-    const idealCameraPosition = new THREE.Vector3(
+    idealCameraPositionRef.current.set(
       meshRef.current.position.x + cameraOffset.current.x,
       meshRef.current.position.y + cameraOffset.current.y,
       meshRef.current.position.z + cameraOffset.current.z
@@ -1159,11 +1165,11 @@ const PlayerCharacter = React.forwardRef<
     // Lerp camera position for smooth following
     // If skycam is active, raise the camera and lerp more slowly for a floating feel
     if (skycam.current) {
-      const skyTarget = idealCameraPosition.clone();
-      skyTarget.y += 12; // raise camera when in skycam
-      state.camera.position.lerp(skyTarget, 0.06);
+      skyTargetRef.current.copy(idealCameraPositionRef.current);
+      skyTargetRef.current.y += 12; // raise camera when in skycam
+      state.camera.position.lerp(skyTargetRef.current, 0.06);
     } else {
-      state.camera.position.lerp(idealCameraPosition, 0.1);
+      state.camera.position.lerp(idealCameraPositionRef.current, 0.1);
     }
 
     // Make camera look at the character
@@ -1652,8 +1658,7 @@ const Solo: React.FC = () => {
     let lastTouchX = 0;
     let lastTouchY = 0;
 
-    // eslint-disable-next-line no-undef
-    const handleTouchStart = (e: TouchEvent) => {
+    const handleTouchStart = (e: globalThis.TouchEvent) => {
       if (e.touches.length === 2) {
         // Two fingers - simulate right-click for camera rotation
         e.preventDefault();
@@ -1677,8 +1682,7 @@ const Solo: React.FC = () => {
       }
     };
 
-    // eslint-disable-next-line no-undef
-    const handleTouchMove = (e: TouchEvent) => {
+    const handleTouchMove = (e: globalThis.TouchEvent) => {
       if (e.touches.length === 2) {
         // Two fingers - update camera rotation
         e.preventDefault();
@@ -1699,8 +1703,7 @@ const Solo: React.FC = () => {
       }
     };
 
-    // eslint-disable-next-line no-undef
-    const handleTouchEnd = (e: TouchEvent) => {
+    const handleTouchEnd = (e: globalThis.TouchEvent) => {
       if (e.touches.length < 2) {
         // Less than two fingers - end right-click simulation
         setMouseControls((prev) => ({

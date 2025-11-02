@@ -151,15 +151,20 @@ class SoundManager {
       shimmerLfo.connect(shimmerLfoGain);
       shimmerLfoGain.connect(shimmerGain.gain);
 
+      // Store all oscillators in array for easier management
+      const oscillators = [
+        drone1,
+        drone2,
+        pad1,
+        pad2,
+        pad3,
+        shimmer,
+        lfo,
+        shimmerLfo,
+      ];
+
       // Start all oscillators
-      drone1.start();
-      drone2.start();
-      pad1.start();
-      pad2.start();
-      pad3.start();
-      shimmer.start();
-      lfo.start();
-      shimmerLfo.start();
+      oscillators.forEach((osc) => osc.start());
 
       // Fade in music
       masterGain.gain.setValueAtTime(0, this.audioContext.currentTime);
@@ -168,7 +173,8 @@ class SoundManager {
         this.audioContext.currentTime + 3.0
       );
 
-      this.backgroundMusic = drone1; // Keep reference for stopping
+      // Store reference to first oscillator for backwards compatibility
+      this.backgroundMusic = drone1;
       this.isMusicPlaying = true;
 
       console.log("Space-themed background music started");
