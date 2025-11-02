@@ -422,7 +422,7 @@ const BotCharacter2: React.FC<BotCharacter2Props> = ({
   const TAG_COOLDOWN = 1000; // 1 second for faster bot debug testing
   const TAG_DISTANCE = 1.0;
   const PAUSE_AFTER_TAG = 1000; // 1 second pause for faster games
-  const INITIAL_POSITION: [number, number, number] = [5, 0.5, 5]; // Opposite corner from Bot1
+  const INITIAL_POSITION: [number, number, number] = [8, 0.5, -8]; // Clear spawn away from rocks
 
   // Handle being tagged by Bot1
   React.useEffect(() => {
@@ -556,7 +556,7 @@ const BotCharacter2: React.FC<BotCharacter2Props> = ({
     <group ref={meshRef} position={INITIAL_POSITION}>
       <SpacemanModel color="#4444ff" isIt={isIt} />
       {/* Bot2 label - blue sphere above head to distinguish from Bot1 */}
-      <mesh position={[0, 1.5, 0]}>
+      <mesh position={[0, 3, 0]}>
         <sphereGeometry args={[0.12, 8, 8]} />
         <meshBasicMaterial color="#4444ff" />
       </mesh>
@@ -681,8 +681,8 @@ const PlayerCharacter = React.forwardRef<
   const JUMP_INITIAL_FORCE = 0.1; // Reduced from 0.12 for heavier feel
 
   // Jetpack physics (mobile double-tap triggered only)
-  const JETPACK_INITIAL_BOOST = 0.06; // Lessened jetpack effect
-  const JETPACK_HOLD_FORCE = 0.08; // Reduced from 0.18 - less thrust
+  const JETPACK_INITIAL_BOOST = 0.04; // Reduced for slower jetpack
+  const JETPACK_HOLD_FORCE = 0.05; // Reduced for slower, more controlled thrust
   const JETPACK_MAX_HOLD_TIME = 2.5; // Increased from 1.5 - longer duration
 
   // RCS jets (SHIFT in air)
@@ -866,7 +866,13 @@ const PlayerCharacter = React.forwardRef<
     const hasJoystickInput = joystickMove.x !== 0 || joystickMove.y !== 0;
 
     // Calculate speed (used for movement and jump momentum)
-    const speed = keysPressedRef.current[SHIFT] ? 5 : 2;
+    // Jetpack mode: fixed slower speed (sprint has no effect)
+    // Normal mode: sprint = 5, walk = 2
+    const speed = jetpackActive.current
+      ? 1.5
+      : keysPressedRef.current[SHIFT]
+      ? 5
+      : 2;
 
     // WoW-style auto-run: both mouse buttons held = move forward
     if (bothMouseButtons || hasKeyboardInput || hasJoystickInput) {
