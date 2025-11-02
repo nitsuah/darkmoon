@@ -58,6 +58,9 @@ export default [
                 module: 'readonly',
                 require: 'readonly',
                 exports: 'readonly',
+                OscillatorNode: 'readonly',
+                GainNode: 'readonly',
+                AudioContext: 'readonly',
             },
         },
         plugins: {

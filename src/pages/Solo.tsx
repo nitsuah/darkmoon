@@ -195,6 +195,8 @@ interface BotCharacterProps {
   onTagPlayer: () => void;
   gameState: GameState;
   collisionSystem: React.RefObject<CollisionSystem>;
+  gotTaggedTimestamp?: number; // Timestamp when bot got tagged by player
+  showHitboxes?: boolean;
 }
 
 const BotCharacter: React.FC<BotCharacterProps> = ({
@@ -206,11 +208,14 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
   onTagPlayer,
   gameState,
   collisionSystem,
+  gotTaggedTimestamp,
+  showHitboxes,
 }) => {
   const meshRef = useRef<THREE.Group>(null);
   const lastTagTime = useRef(0);
   const isPausedAfterTag = useRef(false);
   const pauseEndTime = useRef(0);
+  const lastGotTaggedTimestamp = useRef(0);
   const CHASE_RADIUS = 10; // Start chasing when player is within 10 units
   const BOT_SPEED = 1.5; // Bot moves at 1.5 units/second
   const FLEE_SPEED = 1.8; // Slightly slower than player max speed (2.0)
@@ -218,6 +223,19 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
   const TAG_DISTANCE = 1.0; // Touch distance accounting for character sizes (~0.5 radius each)
   const PAUSE_AFTER_TAG = 3000; // Pause for 3 seconds after tagging
   const INITIAL_POSITION: [number, number, number] = [-5, 0.5, -5]; // Clear spawn away from rocks
+
+  // Handle being tagged by player
+  React.useEffect(() => {
+    if (
+      gotTaggedTimestamp &&
+      gotTaggedTimestamp !== lastGotTaggedTimestamp.current
+    ) {
+      lastGotTaggedTimestamp.current = gotTaggedTimestamp;
+      isPausedAfterTag.current = true;
+      pauseEndTime.current = gotTaggedTimestamp + PAUSE_AFTER_TAG;
+      tagDebug(`🤖 Bot got tagged! Freezing for ${PAUSE_AFTER_TAG}ms`);
+    }
+  }, [gotTaggedTimestamp]);
 
   useFrame((state, delta) => {
     if (!meshRef.current || isPaused) return;
@@ -350,6 +368,19 @@ const BotCharacter: React.FC<BotCharacterProps> = ({
         <sphereGeometry args={[0.12, 8, 8]} />
         <meshBasicMaterial color="#ffff00" />
       </mesh>
+      {/* Debug hitbox visualization */}
+      {showHitboxes && (
+        <mesh position={[0, 0, 0]}>
+          <sphereGeometry args={[0.5, 16, 16]} />
+          <meshBasicMaterial
+            color="#ffff00"
+            // eslint-disable-next-line react/no-unknown-property
+            wireframe={true}
+            opacity={0.3}
+            transparent
+          />
+        </mesh>
+      )}
     </group>
   );
 };
@@ -364,6 +395,8 @@ interface BotCharacter2Props {
   onTagBot: () => void;
   gameState: GameState;
   collisionSystem: React.RefObject<CollisionSystem>;
+  gotTaggedTimestamp?: number; // Timestamp when bot2 got tagged
+  showHitboxes?: boolean;
 }
 
 const BotCharacter2: React.FC<BotCharacter2Props> = ({
@@ -375,11 +408,14 @@ const BotCharacter2: React.FC<BotCharacter2Props> = ({
   onTagBot,
   gameState,
   collisionSystem,
+  gotTaggedTimestamp,
+  showHitboxes,
 }) => {
   const meshRef = useRef<THREE.Group>(null);
   const lastTagTime = useRef(0);
   const isPausedAfterTag = useRef(false);
   const pauseEndTime = useRef(0);
+  const lastGotTaggedTimestamp = useRef(0);
   const CHASE_RADIUS = 10;
   const BOT_SPEED = 1.6; // Slightly faster than Bot1
   const FLEE_SPEED = 1.9;
@@ -387,6 +423,19 @@ const BotCharacter2: React.FC<BotCharacter2Props> = ({
   const TAG_DISTANCE = 1.0;
   const PAUSE_AFTER_TAG = 1000; // 1 second pause for faster games
   const INITIAL_POSITION: [number, number, number] = [5, 0.5, 5]; // Opposite corner from Bot1
+
+  // Handle being tagged by Bot1
+  React.useEffect(() => {
+    if (
+      gotTaggedTimestamp &&
+      gotTaggedTimestamp !== lastGotTaggedTimestamp.current
+    ) {
+      lastGotTaggedTimestamp.current = gotTaggedTimestamp;
+      isPausedAfterTag.current = true;
+      pauseEndTime.current = gotTaggedTimestamp + PAUSE_AFTER_TAG;
+      tagDebug(`🤖2 Bot2 got tagged! Freezing for ${PAUSE_AFTER_TAG}ms`);
+    }
+  }, [gotTaggedTimestamp]);
 
   useFrame((state, delta) => {
     if (!meshRef.current || isPaused) return;
@@ -511,6 +560,19 @@ const BotCharacter2: React.FC<BotCharacter2Props> = ({
         <sphereGeometry args={[0.12, 8, 8]} />
         <meshBasicMaterial color="#00ffff" />
       </mesh>
+      {/* Debug hitbox visualization */}
+      {showHitboxes && (
+        <mesh position={[0, 0, 0]}>
+          <sphereGeometry args={[0.5, 16, 16]} />
+          <meshBasicMaterial
+            color="#00ffff"
+            // eslint-disable-next-line react/no-unknown-property
+            wireframe={true}
+            opacity={0.3}
+            transparent
+          />
+        </mesh>
+      )}
     </group>
   );
 };
@@ -536,6 +598,9 @@ interface PlayerCharacterProps {
   playerIsIt?: boolean;
   setPlayerIsIt?: (isIt: boolean) => void;
   setBotIsIt?: (isIt: boolean) => void;
+  setBot1GotTagged?: (timestamp: number) => void;
+  showHitboxes?: boolean;
+  mobileJetpackTrigger?: React.MutableRefObject<boolean>;
 }
 
 export interface PlayerCharacterHandle {
@@ -562,6 +627,7 @@ const PlayerCharacter = React.forwardRef<
     playerIsIt,
     setPlayerIsIt,
     setBotIsIt,
+    setBot1GotTagged,
   } = props;
 
   const meshRef = useRef<THREE.Group>(null);
@@ -586,6 +652,15 @@ const PlayerCharacter = React.forwardRef<
   const verticalVelocity = useRef(0);
   const jumpHoldTime = useRef(0); // Track how long space is held
   const horizontalMomentum = useRef(new THREE.Vector3(0, 0, 0)); // Preserve momentum in air
+  const lastJumpTime = useRef(0); // For double-jump detection
+  const jetpackActive = useRef(false); // Track if jetpack mode is active
+  const isUsingRCS = useRef(false); // Track if RCS jets are active (SHIFT in air)
+   
+  const jetpackThrustSound = useRef<{
+    osc: OscillatorNode;
+    gain: GainNode;
+  } | null>(null); // Track thrust sound
+  const lastRCSSoundTime = useRef(0); // Throttle RCS sound
 
   // Reusable vectors to avoid allocations in animation loop
   const inputDirectionRef = useRef(new THREE.Vector3());
@@ -593,15 +668,26 @@ const PlayerCharacter = React.forwardRef<
   const idealCameraPositionRef = useRef(new THREE.Vector3());
   const skyTargetRef = useRef(new THREE.Vector3());
 
-  // Moon gravity is ~1/6 of Earth (0.0008 vs Earth's ~0.0049)
-  const JUMP_INITIAL_FORCE = 0.12; // Initial thrust for good liftoff
-  const JUMP_HOLD_FORCE = 0.18; // Strong continuous jetpack thrust
-  const JUMP_MAX_HOLD_TIME = 1.5; // Longer thrust duration for floaty jetpack feel
-  const GRAVITY = 0.0008; // True moon gravity - much slower fall
+  // Physics constants - tuned for heavier, floatier feel
+  const GRAVITY = 0.0005; // Reduced from 0.0008 for more floaty feel
   const GROUND_Y = 0.5;
-  const AIR_RESISTANCE = 0.995; // Minimal air resistance on moon (near vacuum)
-  const HORIZONTAL_AIR_CONTROL = 0.6; // Can still steer in air but with momentum
-  const MOMENTUM_PRESERVATION = 0.98; // Keep most horizontal momentum
+  const AIR_RESISTANCE = 0.996; // Slightly more resistance for heavier feel
+  const HORIZONTAL_AIR_CONTROL = 0.5; // Reduced from 0.6 - less control in air
+  const MOMENTUM_PRESERVATION = 0.985; // Slightly more decay for heavier feel
+
+  // Jump physics (first jump)
+  const JUMP_INITIAL_FORCE = 0.1; // Reduced from 0.12 for heavier feel
+  const DOUBLE_JUMP_WINDOW = 300; // ms window to detect double-jump
+
+  // Jetpack physics (double-jump triggered)
+  const JETPACK_INITIAL_BOOST = 0.06; // Lessened jetpack effect
+  const JETPACK_HOLD_FORCE = 0.08; // Reduced from 0.18 - less thrust
+  const JETPACK_MAX_HOLD_TIME = 2.5; // Increased from 1.5 - longer duration
+
+  // RCS jets (SHIFT in air)
+  const RCS_THRUST = 0.05; // Directional thrust strength
+  const RCS_MAX_DURATION = 3.0; // Can use RCS for 3 seconds
+  const rcsTimeRemaining = useRef(0); // Track RCS fuel
 
   // Expose reset and freeze functions to parent via ref
   React.useImperativeHandle(ref, () => ({
@@ -889,11 +975,27 @@ const PlayerCharacter = React.forwardRef<
                 if (setBotIsIt) setBotIsIt(true);
                 lastTagCheck.current = now;
 
+                // Trigger bot freeze by setting timestamp
+                if (setBot1GotTagged) setBot1GotTagged(now);
+
+                // Play success tag sound (player tagged bot)
+                try {
+                  const soundMgr = getSoundManager();
+                  if (soundMgr) {
+                    soundMgr.playTagSound();
+                  }
+                } catch (error) {
+                  console.warn("Sound manager not ready for tag sound:", error);
+                }
+
                 // Freeze player for 3 seconds
                 isPlayerFrozen.current = true;
                 playerFreezeEndTime.current = now + PLAYER_FREEZE_DURATION;
                 tagDebug(
                   `  Player will freeze for ${PLAYER_FREEZE_DURATION}ms`
+                );
+                tagDebug(
+                  `  Bot will freeze for 3000ms (via gotTaggedTimestamp)`
                 );
                 tagDebug(
                   `  State after: Player should become NOT IT, Bot should become IT`
@@ -1053,12 +1155,17 @@ const PlayerCharacter = React.forwardRef<
         // Move the character to resolved position
         meshRef.current.position.copy(resolvedPosition);
 
-        // Play walking sound (throttled to avoid spam)
+        // Play footstep sounds (throttled to avoid spam) - different for walk vs sprint
         const now = Date.now();
-        const walkSoundInterval = keysPressedRef.current[SHIFT] ? 250 : 400; // Faster sounds when running
-        if (now - lastWalkSoundTimeRef.current > walkSoundInterval) {
+        const isSprinting = keysPressedRef.current[SHIFT];
+        const footstepInterval = isSprinting ? 250 : 400; // Faster sounds when running
+        if (now - lastWalkSoundTimeRef.current > footstepInterval) {
           const soundMgr = getSoundManager();
-          soundMgr.playWalkSound();
+          if (isSprinting) {
+            soundMgr.playSprintSound();
+          } else {
+            soundMgr.playWalkSound();
+          }
           lastWalkSoundTimeRef.current = now;
         }
 
@@ -1083,14 +1190,50 @@ const PlayerCharacter = React.forwardRef<
       }
     }
 
-    // Jump mechanics - True moon physics with momentum preservation
+    // Jump mechanics - Double-jump for jetpack, heavier and floatier
     const isOnGround = meshRef.current.position.y <= GROUND_Y + 0.01;
+    const currentTime = Date.now();
 
     if (keysPressedRef.current[SPACE] && isOnGround && !isJumping.current) {
-      // Start jump - capture current horizontal velocity as momentum
-      isJumping.current = true;
-      verticalVelocity.current = JUMP_INITIAL_FORCE;
-      jumpHoldTime.current = 0;
+      // Check for double-jump (jetpack trigger) - desktop or mobile
+      const timeSinceLastJump = currentTime - lastJumpTime.current;
+      const mobileJetpackTriggerRef = props.mobileJetpackTrigger;
+      const mobileDoubleTap = mobileJetpackTriggerRef?.current || false;
+
+      if (timeSinceLastJump < DOUBLE_JUMP_WINDOW || mobileDoubleTap) {
+        // Double-jump detected - activate jetpack mode
+        jetpackActive.current = true;
+        isJumping.current = true;
+        verticalVelocity.current = JETPACK_INITIAL_BOOST;
+        jumpHoldTime.current = 0;
+        tagDebug(
+          `🚀 Jetpack activated (${
+            mobileDoubleTap ? "mobile double-tap" : "double-jump"
+          })!`
+        );
+
+        // Reset mobile trigger
+        if (mobileJetpackTriggerRef) {
+          mobileJetpackTriggerRef.current = false;
+        }
+
+        // Play jetpack activation sound
+        try {
+          const soundMgr = getSoundManager();
+          if (soundMgr) {
+            soundMgr.playJetpackActivateSound();
+          }
+        } catch (error) {
+          console.warn("Sound manager not ready for jetpack sound:", error);
+        }
+      } else {
+        // Single jump - normal jump
+        jetpackActive.current = false;
+        isJumping.current = true;
+        verticalVelocity.current = JUMP_INITIAL_FORCE;
+        jumpHoldTime.current = 0;
+        lastJumpTime.current = currentTime;
+      }
 
       // Capture horizontal momentum at jump start
       horizontalMomentum.current.copy(direction.current).multiplyScalar(speed);
@@ -1106,22 +1249,111 @@ const PlayerCharacter = React.forwardRef<
       }
     }
 
-    // Apply continuous thrust while space is held (jetpack style)
-    if (isJumping.current && keysPressedRef.current[SPACE]) {
-      if (jumpHoldTime.current < JUMP_MAX_HOLD_TIME) {
+    // Apply jetpack thrust while space is held (only if jetpack active)
+    if (
+      jetpackActive.current &&
+      isJumping.current &&
+      keysPressedRef.current[SPACE]
+    ) {
+      if (jumpHoldTime.current < JETPACK_MAX_HOLD_TIME) {
         jumpHoldTime.current += delta;
-        // Stronger, more consistent thrust for jetpack feel
+        // Consistent, gentle thrust for floaty jetpack feel
         const thrustMultiplier =
-          1 - (jumpHoldTime.current / JUMP_MAX_HOLD_TIME) * 0.5; // Only reduce to 50%
-        verticalVelocity.current += JUMP_HOLD_FORCE * delta * thrustMultiplier;
+          1 - (jumpHoldTime.current / JETPACK_MAX_HOLD_TIME) * 0.3;
+        verticalVelocity.current +=
+          JETPACK_HOLD_FORCE * delta * thrustMultiplier;
+
+        // Start thrust sound if not already playing
+        if (!jetpackThrustSound.current) {
+          try {
+            const soundMgr = getSoundManager();
+            if (soundMgr) {
+              jetpackThrustSound.current = soundMgr.playJetpackThrustSound();
+            }
+          } catch (error) {
+            console.warn("Sound manager not ready for thrust sound:", error);
+          }
+        }
       }
+    } else if (jetpackThrustSound.current) {
+      // Stop thrust sound when space is released or jetpack ends
+      try {
+        const soundMgr = getSoundManager();
+        if (soundMgr) {
+          soundMgr.stopJetpackThrustSound(jetpackThrustSound.current);
+          jetpackThrustSound.current = null;
+        }
+      } catch (error) {
+        console.warn("Error stopping thrust sound:", error);
+      }
+    }
+
+    // RCS jets (SHIFT in air) - directional thrust from QWEASD
+    if (!isOnGround && keysPressedRef.current[SHIFT]) {
+      if (!isUsingRCS.current) {
+        isUsingRCS.current = true;
+        rcsTimeRemaining.current = RCS_MAX_DURATION;
+        tagDebug("🎯 RCS jets activated!");
+      }
+
+      if (rcsTimeRemaining.current > 0) {
+        rcsTimeRemaining.current -= delta;
+
+        // Apply directional RCS thrust based on QWEASD input
+        const rcsDirection = new THREE.Vector3();
+        const hasRCSInput =
+          keysPressedRef.current[W] ||
+          keysPressedRef.current[S] ||
+          keysPressedRef.current[A] ||
+          keysPressedRef.current[D] ||
+          keysPressedRef.current[Q] ||
+          keysPressedRef.current[E];
+
+        if (keysPressedRef.current[W]) rcsDirection.z += 1;
+        if (keysPressedRef.current[S]) rcsDirection.z -= 1;
+        if (keysPressedRef.current[A]) rcsDirection.x += 1;
+        if (keysPressedRef.current[D]) rcsDirection.x -= 1;
+        if (keysPressedRef.current[Q])
+          verticalVelocity.current += RCS_THRUST * delta * 2; // Up
+        if (keysPressedRef.current[E])
+          verticalVelocity.current -= RCS_THRUST * delta * 2; // Down
+
+        // Play RCS sound when input is active (throttle to ~10 times per second)
+        if (hasRCSInput && currentTime - lastRCSSoundTime.current > 100) {
+          lastRCSSoundTime.current = currentTime;
+          try {
+            const soundMgr = getSoundManager();
+            if (soundMgr) {
+              soundMgr.playRCSSound();
+            }
+          } catch (error) {
+            console.warn("Sound manager not ready for RCS sound:", error);
+          }
+        }
+
+        // Rotate direction by camera angle
+        if (rcsDirection.length() > 0) {
+          rcsDirection.normalize();
+          rcsDirection.applyAxisAngle(
+            new THREE.Vector3(0, 1, 0),
+            -cameraRotation.current.horizontal
+          );
+          horizontalMomentum.current.add(
+            rcsDirection.multiplyScalar(RCS_THRUST * delta * 10)
+          );
+        }
+      }
+    } else if (isOnGround) {
+      // Reset RCS when landing
+      isUsingRCS.current = false;
+      rcsTimeRemaining.current = RCS_MAX_DURATION;
     }
 
     // Apply moon gravity and physics while in air
     if (isJumping.current || !isOnGround) {
       // Very slow fall due to moon's low gravity
       verticalVelocity.current -= GRAVITY;
-      verticalVelocity.current *= AIR_RESISTANCE; // Minimal resistance (near vacuum)
+      verticalVelocity.current *= AIR_RESISTANCE;
       meshRef.current.position.y += verticalVelocity.current;
 
       // Preserve horizontal momentum with slight decay
@@ -1141,16 +1373,22 @@ const PlayerCharacter = React.forwardRef<
       // Check if landed
       if (meshRef.current.position.y <= GROUND_Y) {
         meshRef.current.position.y = GROUND_Y;
+
+        // Capture landing velocity before resetting
+        const landingVelocity = Math.abs(verticalVelocity.current);
+
         isJumping.current = false;
+        jetpackActive.current = false;
+        isUsingRCS.current = false;
         verticalVelocity.current = 0;
         jumpHoldTime.current = 0;
         horizontalMomentum.current.set(0, 0, 0);
 
-        // Play landing sound with error handling
+        // Play landing sound scaled by impact velocity
         try {
           const soundMgr = getSoundManager();
           if (soundMgr) {
-            soundMgr.playJumpSound(); // Reuse jump sound for landing
+            soundMgr.playLandingSoundScaled(landingVelocity);
           }
         } catch (error) {
           console.warn("Sound manager not ready for landing sound:", error);
@@ -1198,6 +1436,19 @@ const PlayerCharacter = React.forwardRef<
   return (
     <group ref={meshRef} position={[0, 0.5, 0]}>
       <SpacemanModel color={isIt ? "#ff4444" : "#4a90e2"} isIt={isIt} />
+      {/* Debug hitbox visualization */}
+      {props.showHitboxes && (
+        <mesh position={[0, 0, 0]}>
+          <sphereGeometry args={[0.5, 16, 16]} />
+          <meshBasicMaterial
+            color="#00ff00"
+            // eslint-disable-next-line react/no-unknown-property
+            wireframe={true}
+            opacity={0.3}
+            transparent
+          />
+        </mesh>
+      )}
     </group>
   );
 });
@@ -1262,9 +1513,17 @@ const Solo: React.FC = () => {
   const [botIsIt, setBotIsIt] = useState(false);
   const [bot2IsIt, setBot2IsIt] = useState(false);
 
+  // Timestamps for when bots get tagged (to trigger freeze)
+  const [bot1GotTagged, setBot1GotTagged] = useState(0);
+  const [bot2GotTagged, setBot2GotTagged] = useState(0);
+
   // Bot debug mode - enables 2 bots playing each other with faster games
   // Can be enabled via: window.enableBotDebug()
   const [botDebugMode, setBotDebugMode] = useState(false);
+  const [showHitboxes, setShowHitboxes] = useState(false);
+
+  // Mobile jetpack trigger (set to true when double-tap detected)
+  const mobileJetpackTrigger = useRef(false);
 
   const orientation = useOrientation();
 
@@ -1446,6 +1705,15 @@ const Solo: React.FC = () => {
   const handleStartGame = React.useCallback(
     (mode: string) => {
       if (!gameManager.current) return;
+
+      // Enable bot debug mode if "debug" mode selected
+      if (mode === "debug") {
+        setBotDebugMode(true);
+        setShowHitboxes(true);
+        tagDebug("🔧 Debug Tag Mode enabled via UI button");
+        // Auto-start will happen via useEffect
+        return;
+      }
 
       // If we're offline (no socket client), ensure there is a local player in the game manager
       const currentId = socketClient?.id || localPlayerId;
@@ -2128,6 +2396,73 @@ const Solo: React.FC = () => {
         onEndGame={handleEndGame}
       />
 
+      {/* Debug Overlay - Show bot states, distances, and collision info */}
+      {botDebugMode && (
+        <div
+          style={{
+            position: "fixed",
+            top: "60px",
+            left: "10px",
+            padding: "12px",
+            backgroundColor: "rgba(0, 0, 0, 0.8)",
+            color: "#0f0",
+            borderRadius: "4px",
+            zIndex: 1000,
+            fontFamily: "monospace",
+            fontSize: "11px",
+            lineHeight: "1.5",
+            maxWidth: "300px",
+          }}
+        >
+          <div
+            style={{
+              fontWeight: "bold",
+              marginBottom: "8px",
+              color: "#ff8c00",
+            }}
+          >
+            🔧 DEBUG TAG MODE
+          </div>
+          <div>Game: {gameState.isActive ? "Active" : "Waiting"}</div>
+          <div>Time: {gameState.timeRemaining}s</div>
+          <div style={{ marginTop: "8px", color: "#ffff00" }}>
+            Bot1: {botIsIt ? "IT 🔴" : "Safe 🟢"}
+          </div>
+          <div style={{ color: "#00ffff" }}>
+            Bot2: {bot2IsIt ? "IT 🔴" : "Safe 🟢"}
+          </div>
+          <div style={{ marginTop: "8px", color: "#aaa" }}>
+            Distance:{" "}
+            {Math.sqrt(
+              Math.pow(bot1Position[0] - bot2Position[0], 2) +
+                Math.pow(bot1Position[2] - bot2Position[2], 2)
+            ).toFixed(2)}
+            m
+          </div>
+          <div style={{ marginTop: "8px", fontSize: "9px", color: "#888" }}>
+            Hitboxes: {showHitboxes ? "Visible" : "Hidden"}
+          </div>
+          <button
+            onClick={() => setShowHitboxes(!showHitboxes)}
+            style={{
+              marginTop: "8px",
+              padding: "4px 8px",
+              backgroundColor: showHitboxes
+                ? "rgba(255, 140, 0, 0.6)"
+                : "rgba(100, 100, 100, 0.6)",
+              border: "1px solid rgba(255, 255, 255, 0.3)",
+              borderRadius: "3px",
+              color: "white",
+              cursor: "pointer",
+              fontSize: "10px",
+              width: "100%",
+            }}
+          >
+            {showHitboxes ? "Hide" : "Show"} Hitboxes
+          </button>
+        </div>
+      )}
+
       {/* Connection Status - Always show, centered at top */}
       <div
         style={{
@@ -2269,6 +2604,9 @@ const Solo: React.FC = () => {
           playerIsIt={playerIsIt}
           setPlayerIsIt={setPlayerIsIt}
           setBotIsIt={setBotIsIt}
+          setBot1GotTagged={setBot1GotTagged}
+          showHitboxes={showHitboxes}
+          mobileJetpackTrigger={mobileJetpackTrigger}
         />
 
         {/* AI Bot 1 - chases/flees player (or Bot2 in debug mode) */}
@@ -2279,6 +2617,8 @@ const Solo: React.FC = () => {
           playerIsIt={botDebugMode ? bot2IsIt : playerIsIt}
           gameState={gameState}
           collisionSystem={collisionSystemRef}
+          gotTaggedTimestamp={bot1GotTagged}
+          showHitboxes={showHitboxes}
           onTagPlayer={() => {
             // Bot tagged the target (player or Bot2) - only if game is active and in tag mode
             if (!gameState.isActive || gameState.mode !== "tag") {
@@ -2290,10 +2630,24 @@ const Solo: React.FC = () => {
               tagDebug(`🤖1 Bot1 successfully tagged Bot2!`);
               setBotIsIt(false);
               setBot2IsIt(true);
+              setBot2GotTagged(Date.now()); // Freeze Bot2
             } else {
               tagDebug(`🤖 Bot1 successfully tagged player!`);
               setPlayerIsIt(true);
               setBotIsIt(false);
+
+              // Play "got tagged" sound (player got tagged by bot)
+              try {
+                const soundMgr = getSoundManager();
+                if (soundMgr) {
+                  soundMgr.playTaggedSound();
+                }
+              } catch (error) {
+                console.warn(
+                  "Sound manager not ready for tagged sound:",
+                  error
+                );
+              }
 
               // Freeze player for 3 seconds
               if (playerCharacterRef.current) {
@@ -2346,6 +2700,8 @@ const Solo: React.FC = () => {
             bot1IsIt={botIsIt}
             gameState={gameState}
             collisionSystem={collisionSystemRef}
+            gotTaggedTimestamp={bot2GotTagged}
+            showHitboxes={showHitboxes}
             onTagBot={() => {
               if (!gameState.isActive || gameState.mode !== "tag") {
                 tagDebug(`🤖2 Bot2 tag attempt outside active game - BLOCKED`);
@@ -2355,6 +2711,7 @@ const Solo: React.FC = () => {
               tagDebug(`🤖2 Bot2 successfully tagged Bot1!`);
               setBot2IsIt(false);
               setBotIsIt(true);
+              setBot1GotTagged(Date.now()); // Freeze Bot1
             }}
             onPositionUpdate={(position) => {
               setBot2Position(position);
@@ -2413,6 +2770,10 @@ const Solo: React.FC = () => {
             }}
             onRelease={() => {
               setKeysPressed((prev) => ({ ...prev, [SPACE]: false }));
+            }}
+            onDoubleTap={() => {
+              // Trigger mobile jetpack on double-tap
+              mobileJetpackTrigger.current = true;
             }}
           />
         </>

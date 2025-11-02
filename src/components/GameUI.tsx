@@ -159,6 +159,22 @@ const GameUI: React.FC<GameUIProps> = ({
             Start Tag {players.size === 0 ? "(Practice)" : ""}
           </button>
 
+          <button
+            onClick={() => onStartGame("debug")}
+            style={{
+              padding: "6px 10px",
+              backgroundColor: "rgba(255, 140, 0, 0.8)",
+              border: "1px solid #ff8c00",
+              borderRadius: "3px",
+              color: "white",
+              cursor: "pointer",
+              fontSize: "11px",
+              width: "100%",
+            }}
+          >
+            🔧 Start Debug
+          </button>
+
           <div style={{ fontSize: "9px", color: "#888", textAlign: "center" }}>
             {players.size === 0
               ? "Practice • No opponents"
