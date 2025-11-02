@@ -1,0 +1,224 @@
+import * as React from "react";
+import { useRef, useEffect } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+import CollisionSystem from "../CollisionSystem";
+import { GameState } from "../GameManager";
+
+// Tag debug logger with timestamps
+const __isDev =
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  (typeof import.meta !== "undefined" && import.meta?.env?.DEV) ||
+  (typeof process !== "undefined" && process.env?.NODE_ENV !== "production");
+
+const tagDebug = (...args: unknown[]) => {
+  if (__isDev) {
+    const timestamp = new Date().toISOString().split("T")[1].slice(0, -1);
+    console.log(`[TAG ${timestamp}]`, ...args);
+  }
+};
+
+export interface BotConfig {
+  botSpeed: number;
+  sprintSpeed: number;
+  fleeSpeed: number;
+  tagCooldown: number;
+  tagDistance: number;
+  pauseAfterTag: number;
+  sprintDuration: number;
+  sprintCooldown: number;
+  chaseRadius: number;
+  initialPosition: [number, number, number];
+  label: string;
+}
+
+export interface BotAIProps {
+  targetPosition: [number, number, number];
+  isPaused: boolean;
+  isIt: boolean;
+  targetIsIt: boolean;
+  onTagTarget: () => void;
+  gameState: GameState;
+  collisionSystem: React.RefObject<CollisionSystem>;
+  gotTaggedTimestamp?: number;
+  config: BotConfig;
+  meshRef: React.RefObject<THREE.Group | null>;
+}
+
+export interface BotAIRefs {
+  velocity: React.RefObject<[number, number, number]>;
+  isSprinting: React.RefObject<boolean>;
+}
+
+/**
+ * Custom hook for bot AI logic
+ * Handles movement, chasing, fleeing, tagging, and sprint bursts
+ * Returns refs instead of values to avoid triggering re-renders
+ */
+export function useBotAI({
+  targetPosition,
+  isPaused,
+  isIt,
+  targetIsIt,
+  onTagTarget,
+  gameState,
+  collisionSystem,
+  gotTaggedTimestamp,
+  config,
+  meshRef,
+}: BotAIProps): BotAIRefs {
+  const lastTagTime = useRef(0);
+  const isPausedAfterTag = useRef(false);
+  const pauseEndTime = useRef(0);
+  const lastGotTaggedTimestamp = useRef(0);
+  const botVelocityRef = useRef<[number, number, number]>([0, 0, 0]);
+  const lastPosition = useRef(new THREE.Vector3(...config.initialPosition));
+  const isSprintingRef = useRef(false);
+  const sprintEndTime = useRef(0);
+  const nextSprintTime = useRef(0);
+
+  // Handle being tagged by target
+  useEffect(() => {
+    if (
+      gotTaggedTimestamp &&
+      gotTaggedTimestamp !== lastGotTaggedTimestamp.current
+    ) {
+      lastGotTaggedTimestamp.current = gotTaggedTimestamp;
+      isPausedAfterTag.current = true;
+      pauseEndTime.current = gotTaggedTimestamp + config.pauseAfterTag;
+      tagDebug(
+        `[${config.label}] Got tagged! Freezing for ${config.pauseAfterTag}ms`
+      );
+    }
+  }, [gotTaggedTimestamp, config.pauseAfterTag, config.label]);
+
+  useFrame((_state, delta) => {
+    if (!meshRef.current || isPaused) return;
+
+    const now = Date.now();
+
+    // Check if bot is paused after tagging
+    if (isPausedAfterTag.current) {
+      if (now >= pauseEndTime.current) {
+        isPausedAfterTag.current = false;
+      } else {
+        // Bot is frozen, show visual indicator by slightly pulsing scale
+        const pulse = 1 + Math.sin(now * 0.01) * 0.1;
+        meshRef.current.scale.set(pulse, pulse, pulse);
+        return;
+      }
+    } else {
+      meshRef.current.scale.set(1, 1, 1);
+    }
+
+    const botPos = meshRef.current.position;
+    const targetPos = new THREE.Vector3(...targetPosition);
+    const distance = botPos.distanceTo(targetPos);
+
+    // Calculate velocity for animation
+    const currentPosVec = new THREE.Vector3(botPos.x, botPos.y, botPos.z);
+    const velocityVec = currentPosVec.clone().sub(lastPosition.current);
+    botVelocityRef.current = [velocityVec.x, velocityVec.y, velocityVec.z];
+    lastPosition.current.copy(currentPosVec);
+
+    // Behavior depends on who is IT (only during active tag games)
+    if (isIt && gameState.isActive && gameState.mode === "tag") {
+      // Bot is IT - chase target
+      if (distance > config.tagDistance) {
+        // Sprint burst logic
+        if (now >= nextSprintTime.current && !isSprintingRef.current) {
+          isSprintingRef.current = true;
+          sprintEndTime.current = now + config.sprintDuration;
+          nextSprintTime.current =
+            now + config.sprintDuration + config.sprintCooldown;
+          tagDebug(`🤖 ${config.label} SPRINT BURST started!`);
+        } else if (isSprintingRef.current && now >= sprintEndTime.current) {
+          isSprintingRef.current = false;
+          tagDebug(`🤖 ${config.label} sprint ended - cooling down`);
+        }
+
+        const currentSpeed = isSprintingRef.current
+          ? config.sprintSpeed
+          : config.botSpeed;
+
+        // Chase target
+        const direction = new THREE.Vector3()
+          .subVectors(targetPos, botPos)
+          .normalize();
+
+        // Calculate new position
+        const currentPos = new THREE.Vector3(botPos.x, botPos.y, botPos.z);
+        const newPos = new THREE.Vector3(
+          botPos.x + direction.x * currentSpeed * delta,
+          botPos.y,
+          botPos.z + direction.z * currentSpeed * delta
+        );
+
+        // Check collision with environment
+        if (collisionSystem.current) {
+          const resolved = collisionSystem.current.checkCollision(
+            currentPos,
+            newPos
+          );
+          botPos.x = resolved.x;
+          botPos.z = resolved.z;
+        } else {
+          botPos.x = newPos.x;
+          botPos.z = newPos.z;
+        }
+
+        // Rotate bot to face target
+        const angle = Math.atan2(direction.x, direction.z);
+        meshRef.current.rotation.y = angle;
+      } else if (now - lastTagTime.current > config.tagCooldown) {
+        // Tag the target!
+        tagDebug(
+          `🤖 ${config.label} TAGGING TARGET! Distance: ${distance.toFixed(
+            2
+          )}, Cooldown elapsed: ${now - lastTagTime.current}ms`
+        );
+        lastTagTime.current = now;
+        tagDebug(`  ${config.label} continues moving (no freeze for tagger)`);
+        onTagTarget();
+      }
+    } else if (targetIsIt && gameState.isActive && gameState.mode === "tag") {
+      // Target is IT - flee when within detection radius
+      if (distance < config.chaseRadius) {
+        const direction = new THREE.Vector3()
+          .subVectors(botPos, targetPos)
+          .normalize();
+
+        // Calculate new position
+        const currentPos = new THREE.Vector3(botPos.x, botPos.y, botPos.z);
+        const newPos = new THREE.Vector3(
+          botPos.x + direction.x * config.fleeSpeed * delta,
+          botPos.y,
+          botPos.z + direction.z * config.fleeSpeed * delta
+        );
+
+        // Check collision with environment
+        if (collisionSystem.current) {
+          const resolved = collisionSystem.current.checkCollision(
+            currentPos,
+            newPos
+          );
+          botPos.x = resolved.x;
+          botPos.z = resolved.z;
+        } else {
+          botPos.x = newPos.x;
+          botPos.z = newPos.z;
+        }
+
+        // Rotate bot to face away from target
+        const angle = Math.atan2(direction.x, direction.z);
+        meshRef.current.rotation.y = angle;
+      }
+    }
+  });
+
+  return {
+    velocity: botVelocityRef,
+    isSprinting: isSprintingRef,
+  };
+}
