@@ -2,7 +2,18 @@
 
 **Branch**: `phase-9` | **PR**: #40
 
-- [ ] Pending QA of latest
+## Recently Completed - Please Verify
+
+### Character Model & Tag Fixes
+
+- [ ] Arms animate when moving/sprinting, head follows camera
+- [ ] Visible jetpack on all characters
+- [ ] Only tagged player freezes (not tagger)
+- [ ] Character colors update instantly when IT changes
+- [ ] Bots sprint in bursts when IT (2s sprint, 5s cooldown)
+- [ ] Tag UI shows correct IT player in real-time
+
+---
 
 ## QA Feedback
 
