@@ -8,13 +8,16 @@ Please verify the following fixes work as expected:
 
 ### Bot AI & Tag Mechanics
 
-- [ ] **Bot Debug** maybe we should add another bot and have them both simulate much faster games of tag (5-10 secs) and log events locally (for local debugging) to help debug? and iterate/etc. (slow ML)
-- [ ] **Bot chase**: When bot is IT, it always chases player (no longer moves away) - but this should only happen when the game tag is active and the bot is actually it.
-- [ ] **Tag collision**: Easier to tag bot (reduced distance: 1.5→1.2 units) - but the bot cant seem to tag us
-- [ ] **Tag cooldown**: 1.5 second delay prevents rapid re-tagging - doesnt seem t work on the collision still triggers the "bot tagged you" message rapidly, it also doesnt change who is it. so the bot tags us but nothing changes. make the delay 3 seconds.
-- [ ] **Freeze duration**: Bot/player frozen for 1.5s after being tagged (make it 3 seconds)
-- [ ] **Tag game only**: Cannot tag outside active tag games
-- [ ]
+Below are bugs, evaluate the desired code and ensure our game replicates the logic of playing "tag" even if the code might be different or the wording below confusing for our intent. just a simple game of tag between a player and a bot (or two bots to expedite things) where the bot chases when it is "it", flees when not "it", tags when close enough, and obeys game state rules otherwise when not in an active game. Most of this is generic QA feedback and responses to this validation checklist.
+
+- [ ] **Bot Debug Game mode of tag** maybe we should add another bot and have them both simulate much faster games of tag with each other? (5-10 secs) and log events locally (for local debugging) to help debug? and iterate/etc. (slow ML but faster than me debugging manually?) also maybe we should log the events more or some file more accessible for now to debug?/read
+- [ ] **Bot chase**: When bot is IT, but only during a game of tag it should chase the player (no longer moves away) - but this should only happen when the game tag is active and the bot is actually it.
+- [ ] **Tag collision**: Easier to tag bot (reduced distance: 1.5→1.2 units) - but the bot cant seem to tag us back effectively (tho it says we are being tagged)
+- [ ] **Tag cooldown**: 1.5 second delay prevents rapid re-tagging - doesnt seem to work on the collision still triggers the "bot tagged you" message rapidly, it also doesnt change who is "it"s. so the bot tags us but nothing changes. make the delay 3 seconds.
+- [ ] **Freeze duration**: Bot/player frozen for 1.5s after being tagged (make it 3 seconds but this does seem to work on the bot but not the player, it should affect whom ever just became "it")
+- [ ] **Tag game only**: Shouldnt be able to tag outside of active games (but bot can tag user outside active game right now)
+- [ ] update the game music so its not just some static. grab some open source "moon" music or something chill and spacey.
+- [ ] **Bot movement**: When the bot is not "it", it should move away from the player (flee) instead of just standing still unless frozen (but that shouldnt really occur right?).
 
 ### UI Positioning
 
@@ -24,8 +27,8 @@ Please verify the following fixes work as expected:
 
 ### Home Page
 
-- [ ] **Flip card**: Solo Practice card flips on hover showing game features
-- [ ] **Features list**: Shows Smart AI, Tag mechanics, Jetpack, Practice controls
+- [ ] **Flip card**: Solo Practice card flips on hover showing game features are too thin on smaller resolutions (mobile/tablet/halfscreen). Make the card bigger or change the cards so they stack vertically on smaller screens (which they do seem to do but then should allow scroll) maybe a happy balance with one card and scrolling? to maintain a single page home feel? flip works as expected
+- [ ] **Features list**: Shows Smart AI, Tag mechanics, Jetpack, Practice controls - these should be tiles/cards/labels like the "free to play, browser based, and no install ones are in the main body. should then allow us to more dynamically scale or add them to the flip side of the cards and make them visually appealing.
 
 ---
 
@@ -40,18 +43,3 @@ Right joystick appears on a grey bar at top-right instead of lower-right. Left j
 ### Mobile Browser Address Bar (MEDIUM PRIORITY)
 
 Current `dvh` solution doesn't work on mobile Safari or Android Chrome. Address bar still visible on load and after device rotation. Need alternative approach (possibly viewport-fit=cover meta tag or iOS-specific handling).
-
----
-
-## Completed in Phase 8
-
-✅ Bot AI chase behavior fixed  
-✅ Tag collision distance reduced  
-✅ Tag cooldown enforced (1.5s)  
-✅ Freeze duration increased (1.5s)  
-✅ Tag game duration shortened to 1 minute  
-✅ Dynamic duration scaling implemented  
-✅ Prevent tagging outside active games  
-✅ UI positioning conflicts resolved  
-✅ Jetpack mechanics improved (hold 1s, stronger thrust, more floaty)  
-✅ Home page flip card animation added
