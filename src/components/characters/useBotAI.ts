@@ -39,6 +39,7 @@ export interface BotAIProps {
   isIt: boolean;
   targetIsIt: boolean;
   onTagTarget: () => void;
+  onPositionUpdate: (position: [number, number, number]) => void;
   gameState: GameState;
   collisionSystem: React.RefObject<CollisionSystem>;
   gotTaggedTimestamp?: number;
@@ -62,6 +63,7 @@ export function useBotAI({
   isIt,
   targetIsIt,
   onTagTarget,
+  onPositionUpdate,
   gameState,
   collisionSystem,
   gotTaggedTimestamp,
@@ -214,6 +216,12 @@ export function useBotAI({
         const angle = Math.atan2(direction.x, direction.z);
         meshRef.current.rotation.y = angle;
       }
+    }
+
+    // Notify parent of position change
+    if (meshRef.current) {
+      const pos = meshRef.current.position;
+      onPositionUpdate([pos.x, pos.y, pos.z]);
     }
   });
 

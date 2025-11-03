@@ -50,19 +50,12 @@ export const BotCharacter: React.FC<BotCharacterProps> = ({
     isIt,
     targetIsIt,
     onTagTarget,
+    onPositionUpdate,
     gameState,
     collisionSystem,
     gotTaggedTimestamp,
     config,
     meshRef,
-  });
-
-  // Notify parent of position updates every frame
-  React.useEffect(() => {
-    if (meshRef.current) {
-      const pos = meshRef.current.position;
-      onPositionUpdate([pos.x, pos.y, pos.z]);
-    }
   });
 
   return (
