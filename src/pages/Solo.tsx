@@ -25,7 +25,6 @@ import {
   type PlayerCharacterHandle,
 } from "../components/characters/PlayerCharacter";
 import "../styles/App.css";
-import { getSoundManager } from "../components/SoundManager";
 import PauseMenu from "../components/PauseMenu";
 import { useNavigate } from "react-router-dom";
 import { filterProfanity } from "../lib/constants/profanity";
@@ -122,7 +121,6 @@ const Solo: React.FC = () => {
   const [currentFPS, setCurrentFPS] = useState(60);
   const [quality, setQuality] = useState<QualityLevel>("auto");
   const [isPaused, setIsPaused] = useState(false);
-  const [isSoundMuted, setIsSoundMuted] = useState(false);
   const [keysPressed, setKeysPressed] = useState<{ [key: string]: boolean }>({
     [W]: false,
     [A]: false,
@@ -209,7 +207,6 @@ const Solo: React.FC = () => {
 
   // Solo mode: no reconnection refs needed
   const gameManager = useRef<GameManager | null>(null);
-  const soundManager = useRef(getSoundManager());
   const lastWalkSoundTime = useRef(0);
   const isPausedRef = useRef(isPaused);
   const chatVisibleRef = useRef(chatVisible);
@@ -283,6 +280,8 @@ const Solo: React.FC = () => {
         const soloPlayer: Player = {
           id: socket.id || "solo",
           name: "Solo Player",
+          position: [0, 1, 0],
+          rotation: [0, 0, 0],
           isIt: false,
         };
         newGameManager.addPlayer(soloPlayer);
@@ -496,12 +495,6 @@ const Solo: React.FC = () => {
     setQuality(newQuality);
   };
 
-  const handleToggleSound = () => {
-    const newMutedState = !isSoundMuted;
-    setIsSoundMuted(newMutedState);
-    soundManager.current.setMuted(newMutedState);
-  };
-
   const handleResumeGame = () => {
     setIsPaused(false);
   };
@@ -668,7 +661,7 @@ const Solo: React.FC = () => {
                 anchorX="center"
                 anchorY="middle"
               >
-                {client.name}
+                {player?.name || id.slice(-4)}
               </Text>
             </group>
           );
@@ -682,11 +675,13 @@ const Solo: React.FC = () => {
       {isMobileDevice && (
         <>
           <MobileJoystick
-            position="left"
+            side="left"
+            label="Move"
             onMove={(x, y) => setJoystickMove({ x, y })}
           />
           <MobileJoystick
-            position="right"
+            side="right"
+            label="Look"
             onMove={(x, y) => setJoystickCamera({ x, y })}
           />
           <MobileButton
@@ -698,14 +693,14 @@ const Solo: React.FC = () => {
             onRelease={() => {
               setKeysPressed((prev) => ({ ...prev, [SPACE]: false }));
             }}
-            onDoublePress={() => {
+            onDoubleTap={() => {
               // Trigger jetpack via ref
               mobileJetpackTrigger.current = true;
               setKeysPressed((prev) => ({ ...prev, [SPACE]: true }));
             }}
           />
           <MobileButton
-            position="bottom-right-2"
+            position="bottom-center"
             label="Sprint"
             onPress={() => {
               setKeysPressed((prev) => ({ ...prev, [SHIFT]: true }));
@@ -751,37 +746,32 @@ const Solo: React.FC = () => {
         gameState={gameState}
         players={gamePlayers}
         currentPlayerId={socketClient?.id || localPlayerId}
-        onStartTagGame={handleStartTagGame}
+        onStartGame={handleStartTagGame}
+        onEndGame={() => {}}
       />
 
       {/* Performance Monitor */}
-      <PerformanceMonitor onFPSUpdate={setCurrentFPS} />
+      <PerformanceMonitor onPerformanceChange={setCurrentFPS} />
 
       {/* Quality Settings */}
-      <QualitySettings
-        currentQuality={quality}
-        currentFPS={currentFPS}
-        onQualityChange={handleQualityChange}
-      />
+      <QualitySettings currentFPS={currentFPS} onChange={handleQualityChange} />
 
       {/* Pause Menu */}
-      {isPaused && (
-        <PauseMenu
-          onResume={handleResumeGame}
-          onQuit={handleQuitGame}
-          isSoundMuted={isSoundMuted}
-          onToggleSound={handleToggleSound}
-        />
-      )}
+      <PauseMenu
+        isVisible={isPaused}
+        onResume={handleResumeGame}
+        onRestart={() => window.location.reload()}
+        onQuit={handleQuitGame}
+      />
 
       {/* Chat Box */}
-      {chatVisible && (
-        <ChatBox
-          messages={chatMessages}
-          onSendMessage={handleSendMessage}
-          onClose={() => setChatVisible(false)}
-        />
-      )}
+      <ChatBox
+        isVisible={chatVisible}
+        onToggle={() => setChatVisible(!chatVisible)}
+        messages={chatMessages}
+        onSendMessage={handleSendMessage}
+        currentPlayerId={socketClient?.id || localPlayerId}
+      />
     </div>
   );
 };
