@@ -32,6 +32,7 @@ export interface PlayerCharacterProps {
   setPlayerIsIt?: (isIt: boolean) => void;
   setBotIsIt?: (isIt: boolean) => void;
   setBot1GotTagged?: (timestamp: number) => void;
+  setBot2GotTagged?: (timestamp: number) => void;
   setGameState?: React.Dispatch<React.SetStateAction<GameState>>;
   showHitboxes?: boolean;
   mobileJetpackTrigger?: React.MutableRefObject<boolean>;
@@ -73,6 +74,7 @@ export const PlayerCharacter = React.forwardRef<
     setPlayerIsIt,
     setBotIsIt,
     setBot1GotTagged,
+    setBot2GotTagged,
     setGameState,
     mobileJetpackTrigger,
     onTagSuccess,
@@ -453,7 +455,11 @@ export const PlayerCharacter = React.forwardRef<
                 }
 
                 // Trigger bot freeze by setting timestamp (only tagged player freezes)
-                if (setBot1GotTagged) setBot1GotTagged(now);
+                if (clientId === "bot-1" && setBot1GotTagged) {
+                  setBot1GotTagged(now);
+                } else if (clientId === "bot-2" && setBot2GotTagged) {
+                  setBot2GotTagged(now);
+                }
 
                 // Play success tag sound (player tagged bot)
                 try {
