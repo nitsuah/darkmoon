@@ -76,6 +76,10 @@ export function useBotAI({
   const lastGotTaggedTimestamp = useRef(0);
   const botVelocityRef = useRef<[number, number, number]>([0, 0, 0]);
   const lastPosition = useRef(new THREE.Vector3(...config.initialPosition));
+  const lastReportedPosition = useRef(
+    new THREE.Vector3(...config.initialPosition)
+  );
+  const POSITION_UPDATE_THRESHOLD = 0.01; // Only update if moved > 1cm
   const isSprintingRef = useRef(false);
   const sprintEndTime = useRef(0);
   const nextSprintTime = useRef(0);
@@ -128,7 +132,7 @@ export function useBotAI({
     if (isIt && gameState.isActive && gameState.mode === "tag") {
       // Bot is IT - chase target
       if (distance > config.tagDistance) {
-        // Sprint burst logic
+        // Sprint burst logic - IT bot sprints more aggressively
         if (now >= nextSprintTime.current && !isSprintingRef.current) {
           isSprintingRef.current = true;
           sprintEndTime.current = now + config.sprintDuration;
@@ -140,6 +144,7 @@ export function useBotAI({
           tagDebug(`🤖 ${config.label} sprint ended - cooling down`);
         }
 
+        // IT bot moves at sprint speed (faster to catch prey)
         const currentSpeed = isSprintingRef.current
           ? config.sprintSpeed
           : config.botSpeed;
@@ -186,17 +191,21 @@ export function useBotAI({
       }
     } else if (targetIsIt && gameState.isActive && gameState.mode === "tag") {
       // Target is IT - flee when within detection radius
+      // Non-IT bot moves SLOWER so it can be caught (for debugging)
       if (distance < config.chaseRadius) {
         const direction = new THREE.Vector3()
           .subVectors(botPos, targetPos)
           .normalize();
 
+        // Use slower flee speed (0.7x) so IT bot can catch up
+        const fleeSpeed = config.fleeSpeed * 0.7;
+
         // Calculate new position
         const currentPos = new THREE.Vector3(botPos.x, botPos.y, botPos.z);
         const newPos = new THREE.Vector3(
-          botPos.x + direction.x * config.fleeSpeed * delta,
+          botPos.x + direction.x * fleeSpeed * delta,
           botPos.y,
-          botPos.z + direction.z * config.fleeSpeed * delta
+          botPos.z + direction.z * fleeSpeed * delta
         );
 
         // Check collision with environment
@@ -218,10 +227,15 @@ export function useBotAI({
       }
     }
 
-    // Notify parent of position change
+    // Notify parent of position change (only when position actually changes)
     if (meshRef.current) {
       const pos = meshRef.current.position;
-      onPositionUpdate([pos.x, pos.y, pos.z]);
+      const distanceMoved = pos.distanceTo(lastReportedPosition.current);
+
+      if (distanceMoved > POSITION_UPDATE_THRESHOLD) {
+        onPositionUpdate([pos.x, pos.y, pos.z]);
+        lastReportedPosition.current.copy(pos);
+      }
     }
   });
 

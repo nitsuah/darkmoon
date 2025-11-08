@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Text } from "@react-three/drei";
 import { io, Socket } from "socket.io-client";
@@ -37,6 +37,13 @@ interface ChatMessage {
   playerId: string;
   playerName: string;
   message: string;
+  timestamp: number;
+}
+
+interface Notification {
+  id: string;
+  message: string;
+  type: "success" | "info" | "warning" | "error";
   timestamp: number;
 }
 
@@ -87,29 +94,29 @@ const tagDebug = (...args: unknown[]) => {
 
 // Bot configurations - extracted from old inline implementations
 const BOT1_CONFIG: BotConfig = {
-  botSpeed: 1.5,
-  sprintSpeed: 2.5,
-  fleeSpeed: 1.8,
-  tagCooldown: 3000,
+  botSpeed: 3.0, // Faster for debug mode
+  sprintSpeed: 4.5, // Fast sprint when IT
+  fleeSpeed: 1.3, // Slower flee so can be caught
+  tagCooldown: 500, // Fast cooldown for debug
   tagDistance: 1.0,
-  pauseAfterTag: 3000,
-  sprintDuration: 2000,
-  sprintCooldown: 5000,
-  chaseRadius: 10,
+  pauseAfterTag: 500, // Short pause after being tagged
+  sprintDuration: 3000, // Longer sprint duration
+  sprintCooldown: 2000, // Shorter cooldown between sprints
+  chaseRadius: 15, // Larger detection radius
   initialPosition: [-5, 0.5, -5],
   label: "Bot1",
 };
 
 const BOT2_CONFIG: BotConfig = {
-  botSpeed: 1.6,
-  sprintSpeed: 2.6,
-  fleeSpeed: 1.9,
-  tagCooldown: 1000, // Faster for debug mode
+  botSpeed: 3.5, // Much faster for debug mode chasing
+  sprintSpeed: 5.0, // Very fast sprint for IT bot
+  fleeSpeed: 1.2, // Slower flee so IT can catch
+  tagCooldown: 500, // Very fast cooldown for debug
   tagDistance: 1.0,
-  pauseAfterTag: 1000, // Faster for debug mode
-  sprintDuration: 2000,
-  sprintCooldown: 5000,
-  chaseRadius: 10,
+  pauseAfterTag: 500, // Short pause after being tagged
+  sprintDuration: 3000, // Longer sprint duration
+  sprintCooldown: 2000, // Shorter cooldown between sprints
+  chaseRadius: 15, // Larger detection radius
   initialPosition: [8, 0.5, -8],
   label: "Bot2",
 };
@@ -117,7 +124,7 @@ const BOT2_CONFIG: BotConfig = {
 const Solo: React.FC = () => {
   const navigate = useNavigate();
   const [socketClient, setSocketClient] = useState<Socket | null>(null);
-  const [clients] = useState<Clients>({});
+  const clientsRef = useRef<Clients>({}); // Use ref to avoid re-render loops
   const [currentFPS, setCurrentFPS] = useState(60);
   const [quality, setQuality] = useState<QualityLevel>("auto");
   const [isPaused, setIsPaused] = useState(false);
@@ -140,6 +147,7 @@ const Solo: React.FC = () => {
   });
   const [chatVisible, setChatVisible] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [gameState, setGameState] = useState<GameState>({
     mode: "none",
     isActive: false,
@@ -155,15 +163,12 @@ const Solo: React.FC = () => {
   );
   const [joystickMove, setJoystickMove] = useState({ x: 0, y: 0 });
   const [joystickCamera, setJoystickCamera] = useState({ x: 0, y: 0 });
-  const [playerPosition, setPlayerPosition] = useState<
-    [number, number, number]
-  >([0, 0.5, 0]);
-  const [bot1Position, setBot1Position] = useState<[number, number, number]>([
-    -5, 0.5, -5,
-  ]);
-  const [bot2Position, setBot2Position] = useState<[number, number, number]>([
-    5, 0.5, 5,
-  ]);
+
+  // Use refs for positions to avoid re-render loops (bots only need latest values)
+  const playerPositionRef = useRef<[number, number, number]>([0, 0.5, 0]);
+  const bot1PositionRef = useRef<[number, number, number]>([-5, 0.5, -5]);
+  const bot2PositionRef = useRef<[number, number, number]>([8, 0.5, -8]);
+
   const [playerIsIt, setPlayerIsIt] = useState(true); // Player starts as IT
   const [botIsIt, setBotIsIt] = useState(false);
   const [bot2IsIt, setBot2IsIt] = useState(false);
@@ -227,6 +232,20 @@ const Solo: React.FC = () => {
     keysPressedRef.current = keysPressed;
   }, [keysPressed]);
 
+  // Game timer update - runs every second when game is active
+  useEffect(() => {
+    if (!gameState.isActive || !gameManager.current) return;
+
+    const timerInterval = setInterval(() => {
+      if (gameManager.current && gameState.isActive) {
+        gameManager.current.updateGameTimer(1); // Update by 1 second
+        setGameState(gameManager.current.getGameState());
+      }
+    }, 1000); // Every 1 second
+
+    return () => clearInterval(timerInterval);
+  }, [gameState.isActive]);
+
   // Quality presets
   const getQualitySettings = (level: QualityLevel) => {
     switch (level) {
@@ -259,6 +278,36 @@ const Solo: React.FC = () => {
 
   const qualitySettings = getQualitySettings(quality);
 
+  // Notification system
+  const addNotification = useCallback(
+    (message: string, type: Notification["type"] = "info") => {
+      const notification: Notification = {
+        id: `${Date.now()}-${Math.random()}`,
+        message,
+        type,
+        timestamp: Date.now(),
+      };
+      setNotifications((prev) => [...prev, notification]);
+      // Auto-remove after 4 seconds
+      setTimeout(() => {
+        setNotifications((prev) =>
+          prev.filter((n) => n.id !== notification.id)
+        );
+      }, 4000);
+    },
+    []
+  );
+
+  // Generate stable rock positions once (prevents respawning every frame)
+  const rockPositions = useMemo(() => {
+    return [...Array(25)].map(() => ({
+      x: (Math.random() - 0.5) * 80,
+      z: (Math.random() - 0.5) * 80,
+      size: 0.5 + Math.random() * 1.5,
+      height: 0.3 + Math.random() * 0.7,
+    }));
+  }, []); // Empty dependency array = only generate once on mount
+
   // Solo mode: no reconnection logic needed
   const connectSocket = useCallback(() => {
     const serverUrl =
@@ -277,6 +326,8 @@ const Solo: React.FC = () => {
       // Initialize game manager
       if (!gameManager.current) {
         const newGameManager = new GameManager();
+
+        // Add solo player
         const soloPlayer: Player = {
           id: socket.id || "solo",
           name: "Solo Player",
@@ -285,6 +336,35 @@ const Solo: React.FC = () => {
           isIt: false,
         };
         newGameManager.addPlayer(soloPlayer);
+
+        // Add bot player so tag game can start (needs 2+ players)
+        const botPlayer: Player = {
+          id: "bot-1",
+          name: "Bot",
+          position: [-5, 0.5, -5],
+          rotation: [0, 0, 0],
+          isIt: false,
+        };
+        newGameManager.addPlayer(botPlayer);
+
+        // Set up callbacks to sync state
+        newGameManager.setCallbacks({
+          onGameStateUpdate: (state) => {
+            setGameState(state);
+          },
+          onPlayerUpdate: (players) => {
+            setGamePlayers(new Map(players));
+            // Sync IT status from GameManager to local state
+            const soloPlayerId = socket.id || "solo";
+            const soloPlayer = players.get(soloPlayerId);
+            const bot1Player = players.get("bot-1");
+            const bot2Player = players.get("bot-2");
+            if (soloPlayer) setPlayerIsIt(soloPlayer.isIt || false);
+            if (bot1Player) setBotIsIt(bot1Player.isIt || false);
+            if (bot2Player) setBot2IsIt(bot2Player.isIt || false);
+          },
+        });
+
         gameManager.current = newGameManager;
         setGamePlayers(new Map(newGameManager.getPlayers()));
         debug("Game manager initialized for solo");
@@ -358,6 +438,9 @@ const Solo: React.FC = () => {
 
   // Mouse controls
   useEffect(() => {
+    let lastMouseUpdate = 0;
+    const MOUSE_UPDATE_INTERVAL = 16; // ~60fps throttle
+
     const handleMouseDown = (e: MouseEvent) => {
       setMouseControls((prev) => ({
         ...prev,
@@ -377,6 +460,10 @@ const Solo: React.FC = () => {
     };
 
     const handleMouseMove = (e: MouseEvent) => {
+      const now = Date.now();
+      if (now - lastMouseUpdate < MOUSE_UPDATE_INTERVAL) return;
+      lastMouseUpdate = now;
+
       setMouseControls((prev) => ({
         ...prev,
         mouseX: e.clientX,
@@ -401,10 +488,32 @@ const Solo: React.FC = () => {
     };
   }, []);
 
-  // Player position tracking
-  const handlePlayerPositionUpdate = (position: [number, number, number]) => {
-    setPlayerPosition(position);
-  };
+  // Player position tracking - use refs to avoid re-render loops
+  const handlePlayerPositionUpdate = useCallback(
+    (position: [number, number, number]) => {
+      playerPositionRef.current = position;
+    },
+    []
+  );
+
+  // Bot position tracking - use refs to avoid re-render loops AND update clients object for collision
+  const handleBot1PositionUpdate = useCallback(
+    (position: [number, number, number]) => {
+      bot1PositionRef.current = position;
+      // Update clients ref so PlayerCharacter can detect bot for tagging (no re-render)
+      clientsRef.current["bot-1"] = { position, rotation: [0, 0, 0] };
+    },
+    []
+  );
+
+  const handleBot2PositionUpdate = useCallback(
+    (position: [number, number, number]) => {
+      bot2PositionRef.current = position;
+      // Update clients ref so PlayerCharacter can detect bot for tagging (no re-render)
+      clientsRef.current["bot-2"] = { position, rotation: [0, 0, 0] };
+    },
+    []
+  );
 
   // Bot debug mode auto-restart when game ends
   useEffect(() => {
@@ -432,6 +541,60 @@ const Solo: React.FC = () => {
       }
     };
   }, [botDebugMode, gameState.isActive, gameState.mode]);
+
+  // Add/remove Bot2 when debug mode toggles
+  useEffect(() => {
+    if (!gameManager.current) return;
+
+    if (botDebugMode) {
+      // Add Bot2 to game manager
+      const bot2Player: Player = {
+        id: "bot-2",
+        name: "Bot2",
+        position: [8, 0.5, -8], // Match BOT2_CONFIG initial position
+        rotation: [0, 0, 0],
+        isIt: false,
+      };
+      gameManager.current.addPlayer(bot2Player);
+      tagDebug("🤖 Bot2 added to game (debug mode)");
+
+      // Auto-start tag game in debug mode (2 bots playing)
+      if (!gameState.isActive) {
+        setTimeout(() => {
+          if (gameManager.current) {
+            gameManager.current.startTagGame();
+            const newGameState = gameManager.current.getGameState();
+
+            // FORCE a bot to be IT in debug mode (never the player)
+            const itPlayerId = newGameState.itPlayerId;
+            const playerId = socketClient?.id || localPlayerId;
+
+            if (itPlayerId === playerId) {
+              // Player was randomly selected as IT - change it to bot-1
+              newGameState.itPlayerId = "bot-1";
+              gameManager.current["gameState"] = newGameState;
+              gameManager.current.updatePlayer(playerId, { isIt: false });
+              gameManager.current.updatePlayer("bot-1", { isIt: true });
+              setPlayerIsIt(false);
+              setBotIsIt(true);
+              tagDebug(
+                "🎮 Forced bot-1 to be IT (debug mode - player cannot be IT)"
+              );
+            }
+
+            setGameState(newGameState);
+            addNotification("Debug mode: Bot tag game started!", "info");
+            tagDebug("🎮 Auto-started tag game for debug mode");
+          }
+        }, 500); // Small delay to ensure bot is registered
+      }
+    } else {
+      // Remove Bot2 from game manager
+      gameManager.current.removePlayer("bot-2");
+      tagDebug("🤖 Bot2 removed from game");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [botDebugMode, addNotification, gameState.isActive]);
 
   // Dev utilities
   useEffect(() => {
@@ -487,9 +650,30 @@ const Solo: React.FC = () => {
   const handleStartTagGame = () => {
     if (gameManager.current) {
       gameManager.current.startTagGame();
-      setGameState(gameManager.current.getGameState());
+      const newGameState = gameManager.current.getGameState();
+      setGameState(newGameState);
+
+      // Show correct notification based on who is IT
+      const itPlayerId = newGameState.itPlayerId;
+      const currentPlayerId = socketClient?.id || localPlayerId;
+
+      if (itPlayerId === currentPlayerId) {
+        addNotification("Tag game started! You're IT!", "warning");
+      } else {
+        const itPlayer = gameManager.current.getPlayers().get(itPlayerId || "");
+        const itName = itPlayer?.name || "Someone";
+        addNotification(`Tag game started! ${itName} is IT!`, "info");
+      }
     }
   };
+
+  const handleEndGame = useCallback(() => {
+    if (gameManager.current) {
+      gameManager.current.endGame();
+      setGameState(gameManager.current.getGameState());
+      addNotification("Game ended", "info");
+    }
+  }, [addNotification]);
 
   const handleQualityChange = (newQuality: QualityLevel) => {
     setQuality(newQuality);
@@ -545,23 +729,17 @@ const Solo: React.FC = () => {
         </mesh>
 
         {/* Scattered Moon Rocks (collision obstacles) */}
-        {[...Array(25)].map((_, i) => {
-          const x = (Math.random() - 0.5) * 80;
-          const z = (Math.random() - 0.5) * 80;
-          const size = 0.5 + Math.random() * 1.5;
-          const height = 0.3 + Math.random() * 0.7;
-          return (
-            <mesh
-              key={`rock-${i}`}
-              position={[x, height / 2, z]}
-              castShadow
-              receiveShadow
-            >
-              <boxGeometry args={[size, height, size]} />
-              <meshStandardMaterial color="#666666" />
-            </mesh>
-          );
-        })}
+        {rockPositions.map((rock, i) => (
+          <mesh
+            key={`rock-${i}`}
+            position={[rock.x, rock.height / 2, rock.z]}
+            castShadow
+            receiveShadow
+          >
+            <boxGeometry args={[rock.size, rock.height, rock.size]} />
+            <meshStandardMaterial color="#666666" />
+          </mesh>
+        ))}
 
         {/* Player Character */}
         <PlayerCharacter
@@ -569,7 +747,7 @@ const Solo: React.FC = () => {
           keysPressedRef={keysPressedRef}
           socketClient={socketClient}
           mouseControls={mouseControls}
-          clients={clients}
+          clients={clientsRef.current}
           gameManager={gameManager.current}
           currentPlayerId={socketClient?.id || localPlayerId}
           joystickMove={joystickMove}
@@ -584,11 +762,14 @@ const Solo: React.FC = () => {
           setGameState={setGameState}
           showHitboxes={showHitboxes}
           mobileJetpackTrigger={mobileJetpackTrigger}
+          onTagSuccess={() => addNotification("You tagged the bot!", "success")}
         />
 
         {/* Bot Character 1 - Always present in solo mode */}
         <BotCharacter
-          targetPosition={botDebugMode ? bot2Position : playerPosition}
+          targetPosition={
+            botDebugMode ? bot2PositionRef.current : playerPositionRef.current
+          }
           isIt={botIsIt}
           targetIsIt={botDebugMode ? bot2IsIt : playerIsIt}
           isPaused={isPaused}
@@ -599,6 +780,19 @@ const Solo: React.FC = () => {
               setBotIsIt(false);
               setBot2IsIt(true);
               setBot2GotTagged(Date.now());
+              addNotification("Bot1 tagged Bot2!", "info");
+
+              // Update GameManager
+              if (gameManager.current) {
+                gameManager.current.updatePlayer("bot-1", { isIt: false });
+                gameManager.current.updatePlayer("bot-2", { isIt: true });
+                const newState = {
+                  ...gameManager.current.getGameState(),
+                  itPlayerId: "bot-2",
+                };
+                gameManager.current["gameState"] = newState;
+                setGameState(newState);
+              }
             } else {
               // Bot tagged player
               tagDebug("🤖 Bot tagged Player!");
@@ -607,11 +801,23 @@ const Solo: React.FC = () => {
               if (playerCharacterRef.current) {
                 playerCharacterRef.current.freezePlayer(3000);
               }
+              addNotification("You've been tagged! You're IT now!", "warning");
+
+              // Update GameManager
+              if (gameManager.current) {
+                const playerId = socketClient?.id || localPlayerId;
+                gameManager.current.updatePlayer("bot-1", { isIt: false });
+                gameManager.current.updatePlayer(playerId, { isIt: true });
+                const newState = {
+                  ...gameManager.current.getGameState(),
+                  itPlayerId: playerId,
+                };
+                gameManager.current["gameState"] = newState;
+                setGameState(newState);
+              }
             }
           }}
-          onPositionUpdate={(position) => {
-            setBot1Position(position);
-          }}
+          onPositionUpdate={handleBot1PositionUpdate}
           gameState={gameState}
           collisionSystem={collisionSystemRef}
           gotTaggedTimestamp={bot1GotTagged}
@@ -622,7 +828,7 @@ const Solo: React.FC = () => {
         {/* Bot Character 2 - Only in debug mode */}
         {botDebugMode && (
           <BotCharacter
-            targetPosition={bot1Position}
+            targetPosition={bot1PositionRef.current}
             isIt={bot2IsIt}
             targetIsIt={botIsIt}
             isPaused={isPaused}
@@ -632,10 +838,21 @@ const Solo: React.FC = () => {
               setBot2IsIt(false);
               setBotIsIt(true);
               setBot1GotTagged(Date.now());
+              addNotification("Bot2 tagged Bot1!", "info");
+
+              // Update GameManager
+              if (gameManager.current) {
+                gameManager.current.updatePlayer("bot-2", { isIt: false });
+                gameManager.current.updatePlayer("bot-1", { isIt: true });
+                const newState = {
+                  ...gameManager.current.getGameState(),
+                  itPlayerId: "bot-1",
+                };
+                gameManager.current["gameState"] = newState;
+                setGameState(newState);
+              }
             }}
-            onPositionUpdate={(position) => {
-              setBot2Position(position);
-            }}
+            onPositionUpdate={handleBot2PositionUpdate}
             gameState={gameState}
             collisionSystem={collisionSystemRef}
             gotTaggedTimestamp={bot2GotTagged}
@@ -646,26 +863,31 @@ const Solo: React.FC = () => {
         )}
 
         {/* Other connected players */}
-        {Object.entries(clients).map(([id, client]) => {
-          const player = gameManager.current?.getPlayers().get(id);
-          const isIt = player?.isIt || false;
+        {Object.entries(clientsRef.current)
+          .filter(([id]) => id !== "bot-1" && id !== "bot-2") // Exclude bots - they're rendered as BotCharacter components
+          .map(([id, client]) => {
+            const player = gameManager.current?.getPlayers().get(id);
+            const isIt = player?.isIt || false;
 
-          return (
-            <group key={id} position={client.position}>
-              <SpacemanModel color={isIt ? "#ff4444" : "#4a90e2"} isIt={isIt} />
-              {/* Player name label */}
-              <Text
-                position={[0, 2, 0]}
-                fontSize={0.3}
-                color="white"
-                anchorX="center"
-                anchorY="middle"
-              >
-                {player?.name || id.slice(-4)}
-              </Text>
-            </group>
-          );
-        })}
+            return (
+              <group key={id} position={client.position}>
+                <SpacemanModel
+                  color={isIt ? "#ff4444" : "#4a90e2"}
+                  isIt={isIt}
+                />
+                {/* Player name label */}
+                <Text
+                  position={[0, 2, 0]}
+                  fontSize={0.3}
+                  color="white"
+                  anchorX="center"
+                  anchorY="middle"
+                >
+                  {player?.name || id.slice(-4)}
+                </Text>
+              </group>
+            );
+          })}
 
         {/* Debug: OrbitControls for camera testing */}
         {/* <OrbitControls /> */}
@@ -747,8 +969,53 @@ const Solo: React.FC = () => {
         players={gamePlayers}
         currentPlayerId={socketClient?.id || localPlayerId}
         onStartGame={handleStartTagGame}
-        onEndGame={() => {}}
+        onEndGame={handleEndGame}
+        botDebugMode={botDebugMode}
+        onToggleDebug={() => setBotDebugMode((prev) => !prev)}
       />
+
+      {/* Notifications */}
+      <div
+        style={{
+          position: "fixed",
+          top: "180px",
+          right: "10px",
+          zIndex: 2000,
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+          pointerEvents: "none",
+          maxWidth: "300px",
+        }}
+      >
+        {notifications.map((notification) => (
+          <div
+            key={notification.id}
+            style={{
+              padding: "12px 16px",
+              backgroundColor:
+                notification.type === "success"
+                  ? "rgba(0, 200, 0, 0.9)"
+                  : notification.type === "warning"
+                  ? "rgba(255, 165, 0, 0.9)"
+                  : notification.type === "error"
+                  ? "rgba(200, 0, 0, 0.9)"
+                  : "rgba(74, 144, 226, 0.9)",
+              color: "white",
+              borderRadius: "6px",
+              fontFamily: "monospace",
+              fontSize: "14px",
+              border: "1px solid rgba(255, 255, 255, 0.3)",
+              boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
+              animation: "slideIn 0.3s ease-out",
+              minWidth: "200px",
+              textAlign: "center",
+            }}
+          >
+            {notification.message}
+          </div>
+        ))}
+      </div>
 
       {/* Performance Monitor */}
       <PerformanceMonitor onPerformanceChange={setCurrentFPS} />

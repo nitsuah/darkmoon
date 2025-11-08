@@ -113,6 +113,28 @@ const GameUI: React.FC<GameUIProps> = ({
         >
           End Game
         </button>
+
+        {/* Debug mode toggle - always available */}
+        {onToggleDebug && (
+          <button
+            onClick={onToggleDebug}
+            style={{
+              marginTop: "4px",
+              padding: "3px 6px",
+              backgroundColor: botDebugMode
+                ? "rgba(220, 53, 69, 0.8)"
+                : "rgba(255, 140, 0, 0.8)",
+              border: botDebugMode ? "1px solid #dc3545" : "1px solid #ff8c00",
+              borderRadius: "3px",
+              color: "white",
+              cursor: "pointer",
+              fontSize: "10px",
+              width: "100%",
+            }}
+          >
+            {botDebugMode ? "⏹️ Stop Debug" : "🔧 Debug Mode"}
+          </button>
+        )}
       </div>
     );
   }
@@ -145,10 +167,11 @@ const GameUI: React.FC<GameUIProps> = ({
         Players: {players.size}
       </div>
 
-      {players.size >= 2 || players.size === 0 ? (
+      {/* Always show game controls in solo mode (players.size 0-1) or multiplayer (2+) */}
+      {players.size >= 2 || players.size <= 1 ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           <button
-            onClick={() => onStartGame(players.size === 0 ? "solo" : "tag")}
+            onClick={() => onStartGame(players.size <= 1 ? "solo" : "tag")}
             style={{
               padding: "6px 10px",
               backgroundColor: "rgba(74, 144, 226, 0.8)",
@@ -160,7 +183,7 @@ const GameUI: React.FC<GameUIProps> = ({
               width: "100%",
             }}
           >
-            Start Tag {players.size === 0 ? "(Practice)" : ""}
+            Start Tag {players.size <= 1 ? "(Practice)" : ""}
           </button>
 
           <button
@@ -182,9 +205,7 @@ const GameUI: React.FC<GameUIProps> = ({
           </button>
 
           <div style={{ fontSize: "9px", color: "#888", textAlign: "center" }}>
-            {players.size === 0
-              ? "Practice • No opponents"
-              : "3 min • Tag to pass"}
+            {players.size <= 1 ? "Practice vs Bot" : "3 min • Tag to pass"}
           </div>
         </div>
       ) : (

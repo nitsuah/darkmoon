@@ -35,6 +35,7 @@ export interface PlayerCharacterProps {
   setGameState?: React.Dispatch<React.SetStateAction<GameState>>;
   showHitboxes?: boolean;
   mobileJetpackTrigger?: React.MutableRefObject<boolean>;
+  onTagSuccess?: () => void;
 }
 
 export interface PlayerCharacterHandle {
@@ -74,6 +75,7 @@ export const PlayerCharacter = React.forwardRef<
     setBot1GotTagged,
     setGameState,
     mobileJetpackTrigger,
+    onTagSuccess,
   } = props;
 
   const meshRef = useRef<THREE.Group>(null);
@@ -87,6 +89,10 @@ export const PlayerCharacter = React.forwardRef<
   const collisionSystem = useRef(new CollisionSystem());
   const lastTagCheck = useRef(0);
   const frameCounter = useRef(0);
+
+  // Track last reported position to avoid unnecessary updates
+  const lastReportedPosition = useRef(new THREE.Vector3(0, 0, 0));
+  const POSITION_UPDATE_THRESHOLD = 0.01; // Only update if moved > 1cm
 
   // Player freeze state when tagged
   const isPlayerFrozen = useRef(false);
@@ -411,7 +417,7 @@ export const PlayerCharacter = React.forwardRef<
 
               // Handle tagging bot in solo mode (only during active tag game)
               if (
-                clientId === "bot-1" &&
+                (clientId === "bot-1" || clientId === "bot-2") &&
                 gameState.mode === "tag" &&
                 gameState.isActive &&
                 playerIsIt &&
@@ -420,7 +426,7 @@ export const PlayerCharacter = React.forwardRef<
               ) {
                 // Player tagged the bot!
                 tagDebug(
-                  `👤 PLAYER TAGGING BOT! Distance: ${distance.toFixed(
+                  `👤 PLAYER TAGGING ${clientId.toUpperCase()}! Distance: ${distance.toFixed(
                     2
                   )}, Cooldown elapsed: ${now - lastTagCheck.current}ms`
                 );
@@ -432,11 +438,17 @@ export const PlayerCharacter = React.forwardRef<
                 if (setBotIsIt) setBotIsIt(true);
                 lastTagCheck.current = now;
 
+                // Update GameManager to keep it in sync
+                if (gameManager) {
+                  gameManager.updatePlayer(currentPlayerId, { isIt: false });
+                  gameManager.updatePlayer(clientId, { isIt: true });
+                }
+
                 // Update gameState with new IT player
                 if (setGameState) {
                   setGameState((prev) => ({
                     ...prev,
-                    itPlayerId: "bot-1",
+                    itPlayerId: clientId,
                   }));
                 }
 
@@ -463,6 +475,9 @@ export const PlayerCharacter = React.forwardRef<
                 tagDebug(
                   `  State after: Player should become NOT IT, Bot should become IT and freeze`
                 );
+
+                // Notify parent component
+                if (onTagSuccess) onTagSuccess();
 
                 // Victory celebration effects
                 const flashOverlay = document.createElement("div");
@@ -630,14 +645,6 @@ export const PlayerCharacter = React.forwardRef<
             soundMgr.playWalkSound();
           }
           lastWalkSoundTimeRef.current = now;
-        }
-
-        // Debug: Log position changes (gated)
-        if (
-          Math.abs(direction.current.x) > 0 ||
-          Math.abs(direction.current.z) > 0
-        ) {
-          debug("Character position:", meshRef.current.position.toArray());
         }
 
         // Character rotation is now controlled by A/D keys (camera rotation)
@@ -862,11 +869,15 @@ export const PlayerCharacter = React.forwardRef<
       }
     }
 
-    // Notify parent of position changes
+    // Notify parent of position changes (only when position actually changes)
     if (onPositionUpdate && meshRef.current) {
-      onPositionUpdate(
-        meshRef.current.position.toArray() as [number, number, number]
-      );
+      const currentPos = meshRef.current.position;
+      const distanceMoved = currentPos.distanceTo(lastReportedPosition.current);
+
+      if (distanceMoved > POSITION_UPDATE_THRESHOLD) {
+        onPositionUpdate(currentPos.toArray() as [number, number, number]);
+        lastReportedPosition.current.copy(currentPos);
+      }
     }
 
     // Smooth third-person camera follow with rotation
