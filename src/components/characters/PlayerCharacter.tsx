@@ -456,8 +456,10 @@ export const PlayerCharacter = React.forwardRef<
 
                 // Trigger bot freeze by setting timestamp (only tagged player freezes)
                 if (clientId === "bot-1" && setBot1GotTagged) {
+                  tagDebug(`  Calling setBot1GotTagged(${now})`);
                   setBot1GotTagged(now);
                 } else if (clientId === "bot-2" && setBot2GotTagged) {
+                  tagDebug(`  Calling setBot2GotTagged(${now})`);
                   setBot2GotTagged(now);
                 }
 

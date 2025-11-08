@@ -94,7 +94,12 @@ export function useBotAI({
       isPausedAfterTag.current = true;
       pauseEndTime.current = gotTaggedTimestamp + config.pauseAfterTag;
       tagDebug(
-        `[${config.label}] Got tagged! Freezing for ${config.pauseAfterTag}ms`
+        `[${config.label}] Got tagged! Freezing for ${config.pauseAfterTag}ms until ${pauseEndTime.current}`
+      );
+      tagDebug(
+        `[${config.label}] Current time: ${Date.now()}, End time: ${
+          pauseEndTime.current
+        }`
       );
     }
   }, [gotTaggedTimestamp, config.pauseAfterTag, config.label]);
@@ -108,11 +113,12 @@ export function useBotAI({
     if (isPausedAfterTag.current) {
       if (now >= pauseEndTime.current) {
         isPausedAfterTag.current = false;
+        tagDebug(`[${config.label}] Freeze ended at ${now}`);
       } else {
         // Bot is frozen, show visual indicator by slightly pulsing scale
         const pulse = 1 + Math.sin(now * 0.01) * 0.1;
         meshRef.current.scale.set(pulse, pulse, pulse);
-        return;
+        return; // Skip all movement logic while frozen
       }
     } else {
       meshRef.current.scale.set(1, 1, 1);
