@@ -483,6 +483,15 @@ const Solo: React.FC = () => {
 
     // Two-finger touch handlers for mobile camera rotation
     const handleTouchStart = (e: globalThis.TouchEvent) => {
+      // Check if any touch is on a joystick element
+      const touchesOnJoystick = Array.from(e.touches).some((touch) => {
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        return element?.closest(".joystick-container");
+      });
+
+      // Don't handle if touching joystick
+      if (touchesOnJoystick) return;
+
       // Track all touches
       Array.from(e.touches).forEach((touch) => {
         activeTouches[touch.identifier] = {
@@ -504,6 +513,15 @@ const Solo: React.FC = () => {
       const now = Date.now();
       if (now - lastTouchUpdate < TOUCH_UPDATE_INTERVAL) return;
       lastTouchUpdate = now;
+
+      // Check if any touch is on a joystick element
+      const touchesOnJoystick = Array.from(e.touches).some((touch) => {
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        return element?.closest(".joystick-container");
+      });
+
+      // Don't handle if touching joystick
+      if (touchesOnJoystick) return;
 
       // Update active touches
       Array.from(e.touches).forEach((touch) => {

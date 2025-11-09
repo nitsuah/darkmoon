@@ -13,7 +13,7 @@
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  z-index: 1000;
+  z-index: 10002; /* Above all game UI elements */
 }
 
 .theme-toggle:hover {

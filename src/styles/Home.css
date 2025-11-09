@@ -487,15 +487,30 @@
 
   .hero-title {
     font-size: 2.5rem;
+    text-align: left; /* QA request: left align on mobile */
   }
 
   .hero-subtitle {
     font-size: 1.2rem;
+    text-align: left; /* QA request: left align on mobile */
   }
 
   .cta-play-button {
     padding: 1rem 2rem;
     font-size: 1.1rem;
+    margin: 0; /* QA request: no auto-centering on mobile */
+  }
+
+  /* QA request: vertically stack badges on mobile */
+  .hero-badges {
+    flex-direction: column;
+    align-items: flex-start; /* Left align badges */
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+
+  .badge {
+    width: fit-content;
   }
 
   /* Ensure cards are visible and properly positioned */
@@ -539,6 +554,20 @@
   .mode-card-back {
     min-height: 380px;
     padding: 2rem 1.5rem;
+  }
+
+  /* QA request: minimal cards on mobile - hide descriptions */
+  .mode-card-front p {
+    display: none;
+  }
+
+  .mode-card-front h3 {
+    font-size: 1.15rem;
+    margin: 0.75rem 0;
+  }
+
+  .mode-icon {
+    font-size: 3.5rem; /* Larger emoji since we're hiding text */
   }
 
   .flip-features-list {

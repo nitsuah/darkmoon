@@ -29,6 +29,8 @@ const SpacemanModel: React.FC<SpacemanModelProps> = ({
 }) => {
   const leftArmRef = useRef<THREE.Group>(null);
   const rightArmRef = useRef<THREE.Group>(null);
+  const leftLegRef = useRef<THREE.Group>(null);
+  const rightLegRef = useRef<THREE.Group>(null);
   const headGroupRef = useRef<THREE.Group>(null);
   const animationTime = useRef(0);
   const flameRef1 = useRef<THREE.Mesh>(null);
@@ -80,6 +82,7 @@ const SpacemanModel: React.FC<SpacemanModelProps> = ({
 
   useFrame((state, delta) => {
     if (!leftArmRef.current || !rightArmRef.current) return;
+    if (!leftLegRef.current || !rightLegRef.current) return;
 
     // Calculate movement speed for animation
     const speed = Math.sqrt(velocity[0] ** 2 + velocity[2] ** 2);
@@ -99,10 +102,21 @@ const SpacemanModel: React.FC<SpacemanModelProps> = ({
       // Apply rotation on X axis (forward/backward swing)
       leftArmRef.current.rotation.x = leftArmSwing;
       rightArmRef.current.rotation.x = rightArmSwing;
+
+      // Animate legs - opposite to arms for natural walking gait
+      const legSwingAmount = isSprinting ? 0.5 : 0.3; // Legs swing less than arms
+      const leftLegSwing = -Math.sin(animationTime.current) * legSwingAmount; // Opposite of left arm
+      const rightLegSwing = Math.sin(animationTime.current) * legSwingAmount; // Opposite of right arm
+
+      // Apply rotation on X axis (forward/backward swing)
+      leftLegRef.current.rotation.x = leftLegSwing;
+      rightLegRef.current.rotation.x = rightLegSwing;
     } else {
       // Reset to neutral position when not moving
       leftArmRef.current.rotation.x *= 0.9; // Smooth decay
       rightArmRef.current.rotation.x *= 0.9;
+      leftLegRef.current.rotation.x *= 0.9;
+      rightLegRef.current.rotation.x *= 0.9;
     }
 
     // Head rotation to follow camera direction
@@ -225,27 +239,31 @@ const SpacemanModel: React.FC<SpacemanModelProps> = ({
         </mesh>
       </group>
 
-      {/* Left leg */}
-      <mesh castShadow position={[-0.15, 0.0, 0]}>
-        <cylinderGeometry args={[0.1, 0.1, 0.4, 8]} />
-        <meshStandardMaterial
-          ref={leftLegMaterialRef}
-          color={color}
-          metalness={0.3}
-          roughness={0.7}
-        />
-      </mesh>
+      {/* Left leg - wrapped in group for animation */}
+      <group ref={leftLegRef} position={[-0.15, 0.0, 0]}>
+        <mesh castShadow position={[0, 0, 0]}>
+          <cylinderGeometry args={[0.1, 0.1, 0.4, 8]} />
+          <meshStandardMaterial
+            ref={leftLegMaterialRef}
+            color={color}
+            metalness={0.3}
+            roughness={0.7}
+          />
+        </mesh>
+      </group>
 
-      {/* Right leg */}
-      <mesh castShadow position={[0.15, 0.0, 0]}>
-        <cylinderGeometry args={[0.1, 0.1, 0.4, 8]} />
-        <meshStandardMaterial
-          ref={rightLegMaterialRef}
-          color={color}
-          metalness={0.3}
-          roughness={0.7}
-        />
-      </mesh>
+      {/* Right leg - wrapped in group for animation */}
+      <group ref={rightLegRef} position={[0.15, 0.0, 0]}>
+        <mesh castShadow position={[0, 0, 0]}>
+          <cylinderGeometry args={[0.1, 0.1, 0.4, 8]} />
+          <meshStandardMaterial
+            ref={rightLegMaterialRef}
+            color={color}
+            metalness={0.3}
+            roughness={0.7}
+          />
+        </mesh>
+      </group>
 
       {/* JETPACK - Defined model on back */}
       <group position={[0, 0.7, -0.25]}>
@@ -306,22 +324,32 @@ const SpacemanModel: React.FC<SpacemanModelProps> = ({
         {/* Jetpack flame effects (visible when active) */}
         {isJetpackActive && (
           <>
+            {/* Outer flame layer - larger, orange */}
             <mesh ref={flameRef1} position={[-0.1, -0.35, -0.05]}>
-              <coneGeometry args={[0.08, 0.3, 8]} />
-              <meshBasicMaterial color="#ff6600" transparent opacity={0.8} />
+              <coneGeometry args={[0.12, 0.5, 8]} />
+              <meshBasicMaterial color="#ff4400" transparent opacity={0.7} />
             </mesh>
             <mesh ref={flameRef2} position={[0.1, -0.35, -0.05]}>
-              <coneGeometry args={[0.08, 0.3, 8]} />
-              <meshBasicMaterial color="#ff6600" transparent opacity={0.8} />
+              <coneGeometry args={[0.12, 0.5, 8]} />
+              <meshBasicMaterial color="#ff4400" transparent opacity={0.7} />
             </mesh>
-            {/* Inner bright core */}
+            {/* Middle flame layer - bright orange */}
             <mesh position={[-0.1, -0.35, -0.05]}>
-              <coneGeometry args={[0.05, 0.2, 8]} />
-              <meshBasicMaterial color="#ffaa00" transparent opacity={0.9} />
+              <coneGeometry args={[0.08, 0.35, 8]} />
+              <meshBasicMaterial color="#ff8800" transparent opacity={0.85} />
             </mesh>
             <mesh position={[0.1, -0.35, -0.05]}>
-              <coneGeometry args={[0.05, 0.2, 8]} />
-              <meshBasicMaterial color="#ffaa00" transparent opacity={0.9} />
+              <coneGeometry args={[0.08, 0.35, 8]} />
+              <meshBasicMaterial color="#ff8800" transparent opacity={0.85} />
+            </mesh>
+            {/* Inner bright core - yellow/white hot */}
+            <mesh position={[-0.1, -0.35, -0.05]}>
+              <coneGeometry args={[0.05, 0.25, 8]} />
+              <meshBasicMaterial color="#ffff00" transparent opacity={0.95} />
+            </mesh>
+            <mesh position={[0.1, -0.35, -0.05]}>
+              <coneGeometry args={[0.05, 0.25, 8]} />
+              <meshBasicMaterial color="#ffff00" transparent opacity={0.95} />
             </mesh>
           </>
         )}

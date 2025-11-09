@@ -83,8 +83,7 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
     }
 
     // Use native events with passive: false to allow preventDefault
-    // eslint-disable-next-line no-undef
-    const touchStartHandler = (e: TouchEvent) => {
+    const touchStartHandler = (e: globalThis.TouchEvent) => {
       e.preventDefault();
       e.stopPropagation();
 
@@ -108,8 +107,7 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
       }
     };
 
-    // eslint-disable-next-line no-undef
-    const touchMoveHandler = (e: TouchEvent) => {
+    const touchMoveHandler = (e: globalThis.TouchEvent) => {
       e.preventDefault();
       e.stopPropagation();
       if (!activeRef.current) return;
@@ -122,8 +120,7 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
       }
     };
 
-    // eslint-disable-next-line no-undef
-    const touchEndHandler = (e: TouchEvent) => {
+    const touchEndHandler = (e: globalThis.TouchEvent) => {
       e.preventDefault();
       e.stopPropagation();
       const touchEnded = !Array.from(e.touches).some(

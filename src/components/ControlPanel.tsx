@@ -54,7 +54,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         display: "flex",
         flexDirection: isMobile ? "column" : "row",
         gap: "8px",
-        zIndex: 1000,
+        zIndex: 10001, // Above QualitySettings (9998), below joysticks (10000)
       }}
     >
       {/* Mute Button */}
