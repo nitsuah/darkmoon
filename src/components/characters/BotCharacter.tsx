@@ -1,10 +1,16 @@
 import * as React from "react";
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import * as THREE from "three";
 import SpacemanModel from "../SpacemanModel";
 import CollisionSystem from "../CollisionSystem";
 import { GameState } from "../GameManager";
 import { useBotAI, BotConfig } from "./useBotAI";
+
+// Tag debug logger
+const tagDebug = (...args: unknown[]) => {
+  const timestamp = new Date().toISOString().split("T")[1].slice(0, -1);
+  console.log(`[TAG ${timestamp}]`, ...args);
+};
 
 export interface BotCharacterProps {
   targetPosition: [number, number, number];
@@ -43,6 +49,15 @@ export const BotCharacter: React.FC<BotCharacterProps> = ({
 }) => {
   const meshRef = useRef<THREE.Group>(null);
 
+  // Debug: Log when gotTaggedTimestamp changes
+  useEffect(() => {
+    if (gotTaggedTimestamp && gotTaggedTimestamp > 0) {
+      tagDebug(
+        `[BotCharacter ${config.label}] gotTaggedTimestamp prop changed to: ${gotTaggedTimestamp}`
+      );
+    }
+  }, [gotTaggedTimestamp, config.label]);
+
   // Use bot AI hook for movement and behavior logic
   const { velocity, isSprinting } = useBotAI({
     targetPosition,
@@ -59,7 +74,11 @@ export const BotCharacter: React.FC<BotCharacterProps> = ({
   });
 
   return (
-    <group ref={meshRef} position={config.initialPosition}>
+    <group
+      ref={meshRef}
+      position={config.initialPosition}
+      rotation={[0, Math.PI, 0]}
+    >
       <SpacemanModel
         color={isIt ? "#ff4444" : color}
         isIt={isIt}

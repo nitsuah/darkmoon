@@ -6,6 +6,7 @@ import { io, Socket } from "socket.io-client";
 import type { Clients } from "../types/socket";
 import PerformanceMonitor from "../components/PerformanceMonitor";
 import QualitySettings, { QualityLevel } from "../components/QualitySettings";
+import ControlPanel from "../components/ControlPanel";
 import ThemeToggle from "../components/ThemeToggle";
 import Tutorial from "../components/Tutorial";
 import HelpModal from "../components/HelpModal";
@@ -99,7 +100,7 @@ const BOT1_CONFIG: BotConfig = {
   fleeSpeed: 1.3, // Slower flee so can be caught
   tagCooldown: 500, // Fast cooldown for debug
   tagDistance: 1.0,
-  pauseAfterTag: 500, // Short pause after being tagged
+  pauseAfterTag: 3000, // 3 second freeze when tagged (matches player freeze)
   sprintDuration: 3000, // Longer sprint duration
   sprintCooldown: 2000, // Shorter cooldown between sprints
   chaseRadius: 15, // Larger detection radius
@@ -113,7 +114,7 @@ const BOT2_CONFIG: BotConfig = {
   fleeSpeed: 1.2, // Slower flee so IT can catch
   tagCooldown: 500, // Very fast cooldown for debug
   tagDistance: 1.0,
-  pauseAfterTag: 500, // Short pause after being tagged
+  pauseAfterTag: 3000, // 3 second freeze when tagged (matches player freeze)
   sprintDuration: 3000, // Longer sprint duration
   sprintCooldown: 2000, // Shorter cooldown between sprints
   chaseRadius: 15, // Larger detection radius
@@ -162,7 +163,7 @@ const Solo: React.FC = () => {
     () => `local-${Math.random().toString(36).slice(2, 8)}`
   );
   const [joystickMove, setJoystickMove] = useState({ x: 0, y: 0 });
-  const [joystickCamera, setJoystickCamera] = useState({ x: 0, y: 0 });
+  // joystickCamera removed - right joystick (camera look) disabled on mobile
 
   // Use refs for positions to avoid re-render loops (bots only need latest values)
   const playerPositionRef = useRef<[number, number, number]>([0, 0.5, 0]);
@@ -751,7 +752,7 @@ const Solo: React.FC = () => {
           gameManager={gameManager.current}
           currentPlayerId={socketClient?.id || localPlayerId}
           joystickMove={joystickMove}
-          joystickCamera={joystickCamera}
+          joystickCamera={{ x: 0, y: 0 }} // Disabled - right joystick removed
           lastWalkSoundTimeRef={lastWalkSoundTime}
           isPaused={isPaused}
           onPositionUpdate={handlePlayerPositionUpdate}
@@ -902,11 +903,12 @@ const Solo: React.FC = () => {
             label="Move"
             onMove={(x, y) => setJoystickMove({ x, y })}
           />
-          <MobileJoystick
+          {/* Right joystick (camera look) disabled - two-finger camera rotation not working on mobile */}
+          {/* <MobileJoystick
             side="right"
             label="Look"
             onMove={(x, y) => setJoystickCamera({ x, y })}
-          />
+          /> */}
           <MobileButton
             position="bottom-right"
             label="Jump"
@@ -1023,6 +1025,12 @@ const Solo: React.FC = () => {
 
       {/* Quality Settings */}
       <QualitySettings currentFPS={currentFPS} onChange={handleQualityChange} />
+
+      {/* Control Panel (Mute & Chat buttons) */}
+      <ControlPanel
+        onToggleChat={() => setChatVisible(!chatVisible)}
+        isChatVisible={chatVisible}
+      />
 
       {/* Pause Menu */}
       <PauseMenu

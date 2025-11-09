@@ -83,8 +83,8 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
       }}
       style={{
         position: "fixed",
-        bottom: "120px", // Above quality settings meter (at bottom: 10px with ~100px height)
-        right: "10px",
+        bottom: "10px", // Lower left corner
+        left: "10px", // Changed from right to left
         backgroundColor: "rgba(0, 0, 0, 0.7)",
         color: getFPSColor(),
         padding: "8px 12px",

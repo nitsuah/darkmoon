@@ -20,6 +20,17 @@ const GameUI: React.FC<GameUIProps> = ({
   botDebugMode = false,
   onToggleDebug,
 }) => {
+  // Detect mobile viewport
+  const [isMobile, setIsMobile] = React.useState(window.innerWidth <= 768);
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -39,26 +50,34 @@ const GameUI: React.FC<GameUIProps> = ({
         style={{
           position: "fixed",
           top: "10px",
-          right: "120px", // Moved further right to avoid FPS counter (which is at right: 10px)
-          padding: "8px 12px",
+          right: isMobile ? "10px" : "120px",
+          padding: isMobile ? "6px 8px" : "8px 12px",
           backgroundColor: "rgba(0, 0, 0, 0.85)",
           border: "1px solid rgba(255, 255, 255, 0.3)",
           borderRadius: "6px",
           color: "white",
           fontFamily: "monospace",
-          fontSize: "12px",
+          fontSize: isMobile ? "10px" : "12px",
           zIndex: 1000,
-          minWidth: "180px",
+          minWidth: isMobile ? "auto" : "180px",
           textAlign: "left",
         }}
       >
         <div
-          style={{ marginBottom: "6px", fontSize: "13px", fontWeight: "bold" }}
+          style={{
+            marginBottom: "6px",
+            fontSize: isMobile ? "11px" : "13px",
+            fontWeight: "bold",
+          }}
         >
-          {gameState.mode.toUpperCase()} GAME
+          {isMobile
+            ? gameState.mode.toUpperCase().substring(0, 3)
+            : `${gameState.mode.toUpperCase()} GAME`}
         </div>
 
-        <div style={{ marginBottom: "6px", fontSize: "11px" }}>
+        <div
+          style={{ marginBottom: "6px", fontSize: isMobile ? "10px" : "11px" }}
+        >
           ⏱️ {formatTime(gameState.timeRemaining)}
         </div>
 
@@ -75,15 +94,19 @@ const GameUI: React.FC<GameUIProps> = ({
                 border: currentPlayer?.isIt
                   ? "1px solid #ff6464"
                   : "1px solid #64ff64",
-                fontSize: "11px",
+                fontSize: isMobile ? "10px" : "11px",
               }}
             >
-              {currentPlayer?.isIt
+              {isMobile
+                ? currentPlayer?.isIt
+                  ? "🏃 IT!"
+                  : `${itPlayer?.name?.substring(0, 8) || "?"}`
+                : currentPlayer?.isIt
                 ? "🏃 YOU ARE IT!"
                 : `${itPlayer?.name || "Someone"} is IT`}
             </div>
 
-            {currentPlayer?.isIt && (
+            {currentPlayer?.isIt && !isMobile && (
               <div
                 style={{
                   fontSize: "10px",
@@ -101,17 +124,17 @@ const GameUI: React.FC<GameUIProps> = ({
           onClick={onEndGame}
           style={{
             marginTop: "4px",
-            padding: "3px 6px",
+            padding: isMobile ? "3px 6px" : "3px 6px",
             backgroundColor: "rgba(255, 100, 100, 0.8)",
             border: "1px solid #ff6464",
             borderRadius: "3px",
             color: "white",
             cursor: "pointer",
-            fontSize: "10px",
+            fontSize: isMobile ? "9px" : "10px",
             width: "100%",
           }}
         >
-          End Game
+          {isMobile ? "⏹️" : "End Game"}
         </button>
 
         {/* Debug mode toggle - always available */}
@@ -120,7 +143,7 @@ const GameUI: React.FC<GameUIProps> = ({
             onClick={onToggleDebug}
             style={{
               marginTop: "4px",
-              padding: "3px 6px",
+              padding: isMobile ? "3px 6px" : "3px 6px",
               backgroundColor: botDebugMode
                 ? "rgba(220, 53, 69, 0.8)"
                 : "rgba(255, 140, 0, 0.8)",
@@ -128,11 +151,11 @@ const GameUI: React.FC<GameUIProps> = ({
               borderRadius: "3px",
               color: "white",
               cursor: "pointer",
-              fontSize: "10px",
+              fontSize: isMobile ? "9px" : "10px",
               width: "100%",
             }}
           >
-            {botDebugMode ? "⏹️ Stop Debug" : "🔧 Debug Mode"}
+            {isMobile ? "🔧" : botDebugMode ? "⏹️ Stop Debug" : "🔧 Debug Mode"}
           </button>
         )}
       </div>
@@ -145,26 +168,34 @@ const GameUI: React.FC<GameUIProps> = ({
       style={{
         position: "fixed",
         top: "10px",
-        right: "10px", // Top-right corner (FPS counter moved to bottom-right)
-        padding: "10px 12px",
+        right: "10px",
+        padding: isMobile ? "6px 8px" : "10px 12px",
         backgroundColor: "rgba(0, 0, 0, 0.85)",
         border: "1px solid rgba(255, 255, 255, 0.25)",
         borderRadius: "6px",
         color: "white",
         fontFamily: "monospace",
-        fontSize: "11px",
+        fontSize: isMobile ? "10px" : "11px",
         zIndex: 1000,
-        minWidth: "160px",
+        minWidth: isMobile ? "auto" : "160px",
       }}
     >
-      <div
-        style={{ marginBottom: "8px", fontSize: "12px", fontWeight: "bold" }}
-      >
-        🎮 Game Modes
-      </div>
+      {!isMobile && (
+        <div
+          style={{ marginBottom: "8px", fontSize: "12px", fontWeight: "bold" }}
+        >
+          🎮 Game Modes
+        </div>
+      )}
 
-      <div style={{ marginBottom: "6px", color: "#aaa", fontSize: "10px" }}>
-        Players: {players.size}
+      <div
+        style={{
+          marginBottom: "6px",
+          color: "#aaa",
+          fontSize: isMobile ? "9px" : "10px",
+        }}
+      >
+        {isMobile ? `👥 ${players.size}` : `Players: ${players.size}`}
       </div>
 
       {/* Always show game controls in solo mode (players.size 0-1) or multiplayer (2+) */}
@@ -173,23 +204,25 @@ const GameUI: React.FC<GameUIProps> = ({
           <button
             onClick={() => onStartGame(players.size <= 1 ? "solo" : "tag")}
             style={{
-              padding: "6px 10px",
+              padding: isMobile ? "6px 8px" : "6px 10px",
               backgroundColor: "rgba(74, 144, 226, 0.8)",
               border: "1px solid #4a90e2",
               borderRadius: "3px",
               color: "white",
               cursor: "pointer",
-              fontSize: "11px",
+              fontSize: isMobile ? "14px" : "11px",
               width: "100%",
             }}
           >
-            Start Tag {players.size <= 1 ? "(Practice)" : ""}
+            {isMobile
+              ? "▶️"
+              : `Start Tag ${players.size <= 1 ? "(Practice)" : ""}`}
           </button>
 
           <button
             onClick={() => onToggleDebug && onToggleDebug()}
             style={{
-              padding: "6px 10px",
+              padding: isMobile ? "6px 8px" : "6px 10px",
               backgroundColor: botDebugMode
                 ? "rgba(220, 53, 69, 0.8)"
                 : "rgba(255, 140, 0, 0.8)",
@@ -197,20 +230,34 @@ const GameUI: React.FC<GameUIProps> = ({
               borderRadius: "3px",
               color: "white",
               cursor: "pointer",
-              fontSize: "11px",
+              fontSize: isMobile ? "14px" : "11px",
               width: "100%",
             }}
           >
-            {botDebugMode ? "⏹️ Stop Debug" : "🔧 Start Debug"}
+            {isMobile
+              ? "🔧"
+              : botDebugMode
+              ? "⏹️ Stop Debug"
+              : "🔧 Start Debug"}
           </button>
 
-          <div style={{ fontSize: "9px", color: "#888", textAlign: "center" }}>
-            {players.size <= 1 ? "Practice vs Bot" : "3 min • Tag to pass"}
-          </div>
+          {!isMobile && (
+            <div
+              style={{ fontSize: "9px", color: "#888", textAlign: "center" }}
+            >
+              {players.size <= 1 ? "Practice vs Bot" : "3 min • Tag to pass"}
+            </div>
+          )}
         </div>
       ) : (
-        <div style={{ color: "#888", textAlign: "center", fontSize: "10px" }}>
-          Need 2+ players
+        <div
+          style={{
+            color: "#888",
+            textAlign: "center",
+            fontSize: isMobile ? "9px" : "10px",
+          }}
+        >
+          {isMobile ? "Need 2+" : "Need 2+ players"}
         </div>
       )}
     </div>

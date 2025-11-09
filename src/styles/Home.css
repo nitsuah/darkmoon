@@ -469,6 +469,22 @@
 }
 
 @media (max-width: 768px) {
+  /* Make home page fullscreen on mobile */
+  .home-container {
+    min-height: 100vh;
+    min-height: calc(var(--vh, 1vh) * 100);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .hero-section {
+    flex-shrink: 0;
+    padding: 1.5rem 1rem;
+  }
+
   .hero-title {
     font-size: 2.5rem;
   }
@@ -482,16 +498,19 @@
     font-size: 1.1rem;
   }
 
+  /* Ensure cards are visible and properly positioned */
   .game-modes-grid {
     display: flex;
     overflow-x: auto;
+    overflow-y: visible;
     scroll-snap-type: x mandatory;
     gap: 1.5rem;
-    padding: 0 1rem 1.5rem 1rem;
+    padding: 1rem 1rem 2rem 1rem;
     max-width: 100%;
-    margin: -1rem auto 0 auto;
+    margin: auto 0 2rem 0; /* Push to bottom with margin */
     scrollbar-width: thin;
     scrollbar-color: rgba(102, 126, 234, 0.5) rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
   }
 
   .game-modes-grid::-webkit-scrollbar {
@@ -512,17 +531,14 @@
     flex: 0 0 85%;
     max-width: 400px;
     scroll-snap-align: center;
-  }
-
-  .mode-card-flip-container {
-    min-height: 440px; /* Maintain larger size on tablet */
+    min-height: 380px; /* Reduced to fit better on mobile screens */
   }
 
   .mode-card-flip-inner,
   .mode-card-front,
   .mode-card-back {
-    min-height: 440px;
-    padding: 2.5rem 2rem;
+    min-height: 380px;
+    padding: 2rem 1.5rem;
   }
 
   .flip-features-list {
@@ -550,12 +566,12 @@
   }
 
   .home-container {
-    gap: 2.5rem;
-    padding: 1rem;
+    gap: 1.5rem;
+    padding: 1rem 0.5rem;
   }
 
   .hero-section {
-    padding: 2rem 1rem;
+    padding: 1.5rem 1rem;
   }
 }
 
@@ -585,24 +601,22 @@
   }
 
   .game-modes-grid {
-    padding: 0 0.5rem 1rem 0.5rem;
+    padding: 0 0.5rem 1.5rem 0.5rem;
     gap: 1rem;
+    margin-bottom: 1.5rem; /* Ensure it's visible above footer */
   }
 
   .mode-card-flip-container {
     flex: 0 0 90%;
     max-width: 350px;
-  }
-
-  .mode-card-flip-container {
-    min-height: 380px; /* Better size for small mobile */
+    min-height: 340px; /* Smaller for very small screens */
   }
 
   .mode-card-flip-inner,
   .mode-card-front,
   .mode-card-back {
-    min-height: 380px;
-    padding: 2rem 1.5rem;
+    min-height: 340px;
+    padding: 1.75rem 1.25rem;
   }
 
   .mode-icon {

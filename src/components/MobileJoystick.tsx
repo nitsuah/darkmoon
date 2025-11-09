@@ -86,8 +86,21 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
     // eslint-disable-next-line no-undef
     const touchStartHandler = (e: TouchEvent) => {
       e.preventDefault();
-      const touch = e.touches[0];
+      e.stopPropagation();
+
+      // Find first touch that's within this joystick's bounds
+      const rect = base.getBoundingClientRect();
+      const touch = Array.from(e.touches).find((t) => {
+        return (
+          t.clientX >= rect.left &&
+          t.clientX <= rect.right &&
+          t.clientY >= rect.top &&
+          t.clientY <= rect.bottom
+        );
+      });
+
       if (touch) {
+        console.log(`[JOYSTICK ${side}] Touch start detected`);
         touchIdRef.current = touch.identifier;
         base.classList.add("active");
         activeRef.current = true;
@@ -98,6 +111,7 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
     // eslint-disable-next-line no-undef
     const touchMoveHandler = (e: TouchEvent) => {
       e.preventDefault();
+      e.stopPropagation();
       if (!activeRef.current) return;
 
       const touch = Array.from(e.touches).find(
@@ -111,10 +125,12 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
     // eslint-disable-next-line no-undef
     const touchEndHandler = (e: TouchEvent) => {
       e.preventDefault();
+      e.stopPropagation();
       const touchEnded = !Array.from(e.touches).some(
         (t) => t.identifier === touchIdRef.current
       );
       if (touchEnded) {
+        console.log(`[JOYSTICK ${side}] Touch end detected`);
         handleEnd();
       }
     };
