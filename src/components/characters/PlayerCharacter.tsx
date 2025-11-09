@@ -936,6 +936,7 @@ export const PlayerCharacter = React.forwardRef<
         velocity={currentVelocity} // eslint-disable-line react-hooks/refs
         cameraRotation={cameraRotation.current.horizontal} // eslint-disable-line react-hooks/refs
         isSprinting={isSprinting} // eslint-disable-line react-hooks/refs
+        isJetpackActive={jetpackActive.current} // eslint-disable-line react-hooks/refs
       />
       {/* Jetpack thrust visual effect */}
       {showJetpackFlame && (

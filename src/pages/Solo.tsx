@@ -442,6 +442,11 @@ const Solo: React.FC = () => {
     let lastMouseUpdate = 0;
     const MOUSE_UPDATE_INTERVAL = 16; // ~60fps throttle
 
+    // Two-finger touch tracking for mobile camera rotation
+    let activeTouches: { [key: number]: { x: number; y: number } } = {};
+    let lastTouchUpdate = 0;
+    const TOUCH_UPDATE_INTERVAL = 16; // ~60fps throttle
+
     const handleMouseDown = (e: MouseEvent) => {
       setMouseControls((prev) => ({
         ...prev,
@@ -476,16 +481,92 @@ const Solo: React.FC = () => {
       e.preventDefault(); // Prevent default right-click menu
     };
 
+    // Two-finger touch handlers for mobile camera rotation
+    const handleTouchStart = (e: globalThis.TouchEvent) => {
+      // Track all touches
+      Array.from(e.touches).forEach((touch) => {
+        activeTouches[touch.identifier] = {
+          x: touch.clientX,
+          y: touch.clientY,
+        };
+      });
+
+      // If we have 2+ touches, simulate right-click for camera rotation
+      if (Object.keys(activeTouches).length >= 2) {
+        setMouseControls((prev) => ({
+          ...prev,
+          rightClick: true,
+        }));
+      }
+    };
+
+    const handleTouchMove = (e: globalThis.TouchEvent) => {
+      const now = Date.now();
+      if (now - lastTouchUpdate < TOUCH_UPDATE_INTERVAL) return;
+      lastTouchUpdate = now;
+
+      // Update active touches
+      Array.from(e.touches).forEach((touch) => {
+        activeTouches[touch.identifier] = {
+          x: touch.clientX,
+          y: touch.clientY,
+        };
+      });
+
+      // If we have 2+ touches, use the first touch for camera movement
+      if (Object.keys(activeTouches).length >= 2) {
+        const firstTouch = e.touches[0];
+        setMouseControls((prev) => ({
+          ...prev,
+          mouseX: firstTouch.clientX,
+          mouseY: firstTouch.clientY,
+          rightClick: true,
+        }));
+      }
+    };
+
+    const handleTouchEnd = (e: globalThis.TouchEvent) => {
+      // Remove ended touches
+      const currentTouchIds = Array.from(e.touches).map((t) => t.identifier);
+      const newActiveTouches: { [key: number]: { x: number; y: number } } = {};
+
+      currentTouchIds.forEach((id) => {
+        if (activeTouches[id]) {
+          newActiveTouches[id] = activeTouches[id];
+        }
+      });
+
+      activeTouches = newActiveTouches;
+
+      // If we have fewer than 2 touches, stop camera rotation
+      if (Object.keys(activeTouches).length < 2) {
+        setMouseControls((prev) => ({
+          ...prev,
+          rightClick: false,
+        }));
+      }
+    };
+
     window.addEventListener("mousedown", handleMouseDown);
     window.addEventListener("mouseup", handleMouseUp);
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("contextmenu", handleContextMenu);
 
+    // Add touch listeners for two-finger camera rotation
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+    window.addEventListener("touchend", handleTouchEnd, { passive: true });
+    window.addEventListener("touchcancel", handleTouchEnd, { passive: true });
+
     return () => {
       window.removeEventListener("mousedown", handleMouseDown);
       window.removeEventListener("mouseup", handleMouseUp);
-      window.addEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("contextmenu", handleContextMenu);
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
+      window.removeEventListener("touchcancel", handleTouchEnd);
     };
   }, []);
 

@@ -8,6 +8,7 @@ interface SpacemanModelProps {
   velocity?: [number, number, number]; // Current velocity for animation
   cameraRotation?: number; // Camera yaw rotation for head tracking
   isSprinting?: boolean; // Sprint state for faster arm movement
+  isJetpackActive?: boolean; // Jetpack thruster active state for visual effects
 }
 
 /**
@@ -24,11 +25,14 @@ const SpacemanModel: React.FC<SpacemanModelProps> = ({
   velocity = [0, 0, 0],
   cameraRotation = 0,
   isSprinting = false,
+  isJetpackActive = false,
 }) => {
   const leftArmRef = useRef<THREE.Group>(null);
   const rightArmRef = useRef<THREE.Group>(null);
   const headGroupRef = useRef<THREE.Group>(null);
   const animationTime = useRef(0);
+  const flameRef1 = useRef<THREE.Mesh>(null);
+  const flameRef2 = useRef<THREE.Mesh>(null);
 
   // Refs for materials to update colors dynamically
   const bodyMaterialRef = useRef<THREE.MeshStandardMaterial | null>(null);
@@ -119,6 +123,25 @@ const SpacemanModel: React.FC<SpacemanModelProps> = ({
         -maxHeadRotation,
         maxHeadRotation
       );
+    }
+
+    // Animate jetpack flames when active
+    if (isJetpackActive && flameRef1.current && flameRef2.current) {
+      const flameFlicker = 1 + Math.sin(animationTime.current * 20) * 0.15;
+      const flameScale = 0.8 + Math.sin(animationTime.current * 15) * 0.2;
+
+      flameRef1.current.scale.set(flameScale, flameFlicker * 1.5, flameScale);
+      flameRef2.current.scale.set(flameScale, flameFlicker * 1.5, flameScale);
+
+      // Update flame opacity for pulsing effect
+      if (flameRef1.current.material instanceof THREE.MeshBasicMaterial) {
+        flameRef1.current.material.opacity =
+          0.7 + Math.sin(animationTime.current * 25) * 0.3;
+      }
+      if (flameRef2.current.material instanceof THREE.MeshBasicMaterial) {
+        flameRef2.current.material.opacity =
+          0.7 + Math.sin(animationTime.current * 25) * 0.3;
+      }
     }
   });
 
@@ -264,7 +287,7 @@ const SpacemanModel: React.FC<SpacemanModelProps> = ({
             // eslint-disable-next-line react/no-unknown-property
             emissive="#ff6600"
             // eslint-disable-next-line react/no-unknown-property
-            emissiveIntensity={0.3}
+            emissiveIntensity={isJetpackActive ? 0.8 : 0.3}
           />
         </mesh>
         <mesh position={[0.1, -0.25, -0.05]}>
@@ -276,9 +299,32 @@ const SpacemanModel: React.FC<SpacemanModelProps> = ({
             // eslint-disable-next-line react/no-unknown-property
             emissive="#ff6600"
             // eslint-disable-next-line react/no-unknown-property
-            emissiveIntensity={0.3}
+            emissiveIntensity={isJetpackActive ? 0.8 : 0.3}
           />
         </mesh>
+
+        {/* Jetpack flame effects (visible when active) */}
+        {isJetpackActive && (
+          <>
+            <mesh ref={flameRef1} position={[-0.1, -0.35, -0.05]}>
+              <coneGeometry args={[0.08, 0.3, 8]} />
+              <meshBasicMaterial color="#ff6600" transparent opacity={0.8} />
+            </mesh>
+            <mesh ref={flameRef2} position={[0.1, -0.35, -0.05]}>
+              <coneGeometry args={[0.08, 0.3, 8]} />
+              <meshBasicMaterial color="#ff6600" transparent opacity={0.8} />
+            </mesh>
+            {/* Inner bright core */}
+            <mesh position={[-0.1, -0.35, -0.05]}>
+              <coneGeometry args={[0.05, 0.2, 8]} />
+              <meshBasicMaterial color="#ffaa00" transparent opacity={0.9} />
+            </mesh>
+            <mesh position={[0.1, -0.35, -0.05]}>
+              <coneGeometry args={[0.05, 0.2, 8]} />
+              <meshBasicMaterial color="#ffaa00" transparent opacity={0.9} />
+            </mesh>
+          </>
+        )}
 
         {/* Control panel detail */}
         <mesh position={[0, 0.15, 0.11]}>
