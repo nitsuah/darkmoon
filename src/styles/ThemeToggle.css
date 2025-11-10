@@ -16,6 +16,15 @@
   z-index: 10002; /* Above all game UI elements */
 }
 
+/* On mobile landscape, move to left side to avoid utility menu */
+@media (max-width: 768px) and (orientation: landscape) {
+  .theme-toggle {
+    bottom: 20px;
+    left: 20px;
+    right: auto;
+  }
+}
+
 .theme-toggle:hover {
   background: var(--toggle-hover-bg);
   transform: scale(1.1);
@@ -33,28 +42,16 @@
   transform: rotate(20deg);
 }
 
-/* Dark theme variables */
+/* Dark theme toggle-specific variables */
 [data-theme="dark"] {
-  --bg-primary: #1a1a1a;
-  --bg-secondary: #2d2d2d;
-  --text-primary: #ffffff;
-  --text-secondary: #b0b0b0;
-  --accent: #4a90e2;
-  --border: #444444;
   --toggle-bg: #2d2d2d;
   --toggle-hover-bg: #3d3d3d;
   --toggle-color: #ffd700;
   --toggle-border: #444444;
 }
 
-/* Light theme variables */
+/* Light theme toggle-specific variables */
 [data-theme="light"] {
-  --bg-primary: #f5f5f5;
-  --bg-secondary: #ffffff;
-  --text-primary: #1a1a1a;
-  --text-secondary: #666666;
-  --accent: #2563eb;
-  --border: #e0e0e0;
   --toggle-bg: #ffffff;
   --toggle-hover-bg: #f0f0f0;
   --toggle-color: #1e40af;

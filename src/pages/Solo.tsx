@@ -5,9 +5,8 @@ import { Text } from "@react-three/drei";
 import { io, Socket } from "socket.io-client";
 import type { Clients } from "../types/socket";
 import PerformanceMonitor from "../components/PerformanceMonitor";
-import QualitySettings, { QualityLevel } from "../components/QualitySettings";
-import ControlPanel from "../components/ControlPanel";
-import ThemeToggle from "../components/ThemeToggle";
+import { QualityLevel } from "../components/QualitySettings";
+import UtilityMenu from "../components/UtilityMenu";
 import Tutorial from "../components/Tutorial";
 import HelpModal from "../components/HelpModal";
 import ChatBox from "../components/ChatBox";
@@ -17,7 +16,6 @@ import GameUI from "../components/GameUI";
 import { W, A, S, D, Q, E, SHIFT, SPACE } from "../components/utils";
 import { MobileJoystick } from "../components/MobileJoystick";
 import { MobileButton } from "../components/MobileButton";
-import { useOrientation } from "../components/useOrientation";
 import SpacemanModel from "../components/SpacemanModel";
 import { BotCharacter } from "../components/characters/BotCharacter";
 import type { BotConfig } from "../components/characters/useBotAI";
@@ -188,8 +186,6 @@ const Solo: React.FC = () => {
 
   // Mobile jetpack trigger (set to true when double-tap detected)
   const mobileJetpackTrigger = useRef(false);
-
-  const orientation = useOrientation();
 
   // Detect if device is mobile/touch-enabled
   const [isMobileDevice, setIsMobileDevice] = useState(false);
@@ -797,7 +793,6 @@ const Solo: React.FC = () => {
       }}
     >
       <Tutorial />
-      <ThemeToggle />
       <HelpModal />
 
       <Canvas
@@ -1036,35 +1031,6 @@ const Solo: React.FC = () => {
         </>
       )}
 
-      {/* Orientation Warning for Mobile */}
-      {isMobileDevice && orientation === "portrait" && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.9)",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 10000,
-            padding: "20px",
-            textAlign: "center",
-          }}
-        >
-          <div style={{ fontSize: "48px", marginBottom: "20px" }}>📱➡️</div>
-          <h2 style={{ color: "white", marginBottom: "10px" }}>
-            Please Rotate Your Device
-          </h2>
-          <p style={{ color: "#ccc", fontSize: "16px" }}>
-            This game works best in landscape mode
-          </p>
-        </div>
-      )}
-
       {/* Game UI Overlay */}
       <GameUI
         gameState={gameState}
@@ -1122,13 +1088,12 @@ const Solo: React.FC = () => {
       {/* Performance Monitor */}
       <PerformanceMonitor onPerformanceChange={setCurrentFPS} />
 
-      {/* Quality Settings */}
-      <QualitySettings currentFPS={currentFPS} onChange={handleQualityChange} />
-
-      {/* Control Panel (Mute & Chat buttons) */}
-      <ControlPanel
+      {/* Utility Menu (Mute, Quality Settings, Chat) */}
+      <UtilityMenu
         onToggleChat={() => setChatVisible(!chatVisible)}
         isChatVisible={chatVisible}
+        currentFPS={currentFPS}
+        onQualityChange={handleQualityChange}
       />
 
       {/* Pause Menu */}

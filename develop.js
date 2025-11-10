@@ -57,11 +57,12 @@ ioServer.on("connection", (client) => {
 
   ioServer.sockets.emit("move", clients);
 
-  client.on("move", ({ id, rotation, position }) => {
+  client.on("move", ({ rotation, position }) => {
     // Check if client exists before updating (prevents race condition)
-    if (clients[id]) {
-      clients[id].position = position;
-      clients[id].rotation = rotation;
+    // Use client.id from Socket instance to prevent position spoofing
+    if (clients[client.id]) {
+      clients[client.id].position = position;
+      clients[client.id].rotation = rotation;
       ioServer.sockets.emit("move", clients);
     }
   });

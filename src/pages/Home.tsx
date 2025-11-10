@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Footer from "../components/Footer";
 // import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorBoundary from "../components/ErrorBoundary";
+import UtilityMenu from "../components/UtilityMenu";
 import "../styles/App.css";
 import "../styles/Home.css";
 
@@ -209,6 +210,9 @@ const Home = () => {
         </div>
 
         {renderHome()}
+
+        {/* Utility Menu (theme toggle only on home page) */}
+        <UtilityMenu />
 
         <div
           style={{

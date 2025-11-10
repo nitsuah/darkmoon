@@ -19,6 +19,10 @@ const tagDebug = (...args: unknown[]) => {
   }
 };
 
+// Flee speed multiplier for non-IT bots - intentionally slower (70%) so IT bot can catch them
+// This makes the game more playable by allowing the chasing bot to successfully tag fleeing bots
+const FLEE_SPEED_MULTIPLIER = 0.7;
+
 export interface BotConfig {
   botSpeed: number;
   sprintSpeed: number;
@@ -203,8 +207,8 @@ export function useBotAI({
           .subVectors(botPos, targetPos)
           .normalize();
 
-        // Use slower flee speed (0.7x) so IT bot can catch up
-        const fleeSpeed = config.fleeSpeed * 0.7;
+        // Use slower flee speed so IT bot can catch up (see FLEE_SPEED_MULTIPLIER constant)
+        const fleeSpeed = config.fleeSpeed * FLEE_SPEED_MULTIPLIER;
 
         // Calculate new position
         const currentPos = new THREE.Vector3(botPos.x, botPos.y, botPos.z);

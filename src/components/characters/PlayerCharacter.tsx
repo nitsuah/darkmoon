@@ -485,7 +485,7 @@ export const PlayerCharacter = React.forwardRef<
                 );
 
                 // Notify parent component
-                if (onTagSuccess) onTagSuccess();
+                onTagSuccess?.();
 
                 // Victory celebration effects
                 const flashOverlay = document.createElement("div");
