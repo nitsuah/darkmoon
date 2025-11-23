@@ -2,6 +2,12 @@ import express from "express";
 import Router from "express-promise-router";
 import { Server } from "socket.io";
 import cors from "cors";
+import {
+  validatePosition,
+  validateRotation,
+  validateChatMessage,
+  validateGameMode,
+} from "./server/validation.js";
 
 // Environment configuration
 const PORT = process.env.PORT || 4444;
@@ -13,6 +19,41 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
       "https://deploy-preview-*--darkmoon-dev.netlify.app",
       "https://darkmoon-dev.netlify.app",
     ];
+
+// Rate limiting configuration
+const RATE_LIMITS = {
+  MOVE: 100, // Max 100 move events per second per client
+  CHAT: 10, // Max 10 chat messages per minute per client
+  GAME_ACTION: 5, // Max 5 game actions per second per client
+};
+
+// Track rate limits per client
+const rateLimitTrackers = new Map();
+
+/**
+ * Check if client exceeds rate limit
+ */
+const checkRateLimit = (clientId, action, limit, windowMs = 1000) => {
+  const now = Date.now();
+  const key = `${clientId}:${action}`;
+
+  if (!rateLimitTrackers.has(key)) {
+    rateLimitTrackers.set(key, { count: 1, resetTime: now + windowMs });
+    return false; // Not exceeded
+  }
+
+  const tracker = rateLimitTrackers.get(key);
+
+  if (now > tracker.resetTime) {
+    // Reset window
+    tracker.count = 1;
+    tracker.resetTime = now + windowMs;
+    return false;
+  }
+
+  tracker.count++;
+  return tracker.count > limit; // true if exceeded
+};
 
 // Create router
 const router = Router();
@@ -129,6 +170,25 @@ ioServer.on("connection", (client) => {
 
   // Use client.id from Socket instance to prevent position spoofing
   client.on("move", ({ rotation, position }) => {
+    // Rate limit check
+    if (checkRateLimit(client.id, "move", RATE_LIMITS.MOVE)) {
+      console.warn(`Rate limit exceeded for ${client.id} on move events`);
+      return;
+    }
+
+    // Validate input
+    if (!validatePosition(position)) {
+      console.warn(`Invalid position from ${client.id}:`, position);
+      client.emit("error", { message: "Invalid position data" });
+      return;
+    }
+
+    if (!validateRotation(rotation)) {
+      console.warn(`Invalid rotation from ${client.id}:`, rotation);
+      client.emit("error", { message: "Invalid rotation data" });
+      return;
+    }
+
     if (clients[client.id]) {
       clients[client.id].position = position;
       clients[client.id].rotation = rotation;
@@ -139,6 +199,20 @@ ioServer.on("connection", (client) => {
 
   // Handle chat messages
   client.on("chat-message", async (message) => {
+    // Rate limit check (10 messages per minute)
+    if (checkRateLimit(client.id, "chat", RATE_LIMITS.CHAT, 60000)) {
+      console.warn(`Rate limit exceeded for ${client.id} on chat`);
+      client.emit("error", { message: "Slow down! Too many messages." });
+      return;
+    }
+
+    // Validate message
+    if (!validateChatMessage(message)) {
+      console.warn(`Invalid chat message from ${client.id}`);
+      client.emit("error", { message: "Invalid message format" });
+      return;
+    }
+
     console.log(`Chat message from ${client.id}: ${message.message}`);
 
     // Basic profanity filter (configurable in CHAT_PROFANITY) - use helper
@@ -186,6 +260,19 @@ ioServer.on("connection", (client) => {
 
   // Handle game start
   client.on("game-start", (gameData) => {
+    // Rate limit game actions
+    if (checkRateLimit(client.id, "game", RATE_LIMITS.GAME_ACTION)) {
+      console.warn(`Rate limit exceeded for ${client.id} on game actions`);
+      return;
+    }
+
+    // Validate game mode
+    if (gameData && !validateGameMode(gameData.mode)) {
+      console.warn(`Invalid game mode from ${client.id}:`, gameData.mode);
+      client.emit("game-error", { message: "Invalid game mode" });
+      return;
+    }
+
     console.log(`Game start requested by ${client.id}:`, gameData);
 
     const playerCount = Object.keys(clients).length;

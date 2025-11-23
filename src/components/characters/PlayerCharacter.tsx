@@ -9,6 +9,9 @@ import GameManager, { GameState } from "../GameManager";
 import { W, A, S, D, Q, E, SHIFT, SPACE } from "../utils";
 import SpacemanModel from "../SpacemanModel";
 import { getSoundManager } from "../SoundManager";
+import { createTagLogger } from "../../lib/utils/logger";
+
+const tagDebug = createTagLogger("PlayerCharacter");
 
 export interface PlayerCharacterProps {
   keysPressedRef: React.MutableRefObject<{ [key: string]: boolean }>;
@@ -43,16 +46,6 @@ export interface PlayerCharacterHandle {
   resetPosition: () => void;
   freezePlayer: (duration: number) => void;
 }
-
-// Dedicated tag debug logger with timestamps and clear prefixes
-const tagDebug = (...args: unknown[]) => {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore - import.meta may not be available
-  if (import.meta && import.meta.env && import.meta.env.DEV) {
-    const timestamp = new Date().toISOString().split("T")[1].slice(0, -1);
-    console.log(`[TAG ${timestamp}]`, ...args);
-  }
-};
 
 export const PlayerCharacter = React.forwardRef<
   PlayerCharacterHandle,

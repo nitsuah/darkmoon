@@ -18,7 +18,6 @@ import { MobileJoystick } from "../components/MobileJoystick";
 import { MobileButton } from "../components/MobileButton";
 import SpacemanModel from "../components/SpacemanModel";
 import { BotCharacter } from "../components/characters/BotCharacter";
-import type { BotConfig } from "../components/characters/useBotAI";
 import {
   PlayerCharacter,
   type PlayerCharacterHandle,
@@ -27,9 +26,15 @@ import "../styles/App.css";
 import PauseMenu from "../components/PauseMenu";
 import { useNavigate } from "react-router-dom";
 import { filterProfanity } from "../lib/constants/profanity";
+import { createLogger, createTagLogger } from "../lib/utils/logger";
+import { BOT1_CONFIG, BOT2_CONFIG } from "../lib/constants/botConfigs";
 
 // Solo mode: no reconnection needed
 const MAX_CHAT_MESSAGES = 50;
+
+// Create loggers for this module
+const log = createLogger("Solo");
+const tagDebug = createTagLogger("Solo");
 
 interface ChatMessage {
   id: string;
@@ -45,80 +50,6 @@ interface Notification {
   type: "success" | "info" | "warning" | "error";
   timestamp: number;
 }
-
-// Top-level gated debug logger - only logs in dev
-let __isDev = false;
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore - import.meta may not be available
-try {
-  // access import.meta in a try to avoid environments where it might not be available
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore - import.meta may not be available
-  if (import.meta && import.meta.env && import.meta.env.DEV) {
-    __isDev = true;
-  }
-} catch {
-  // ignore
-}
-
-// Also enable debug if Node's NODE_ENV is not production (useful in test envs)
-try {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore - process may not be defined in browser
-  if (
-    typeof process !== "undefined" &&
-    process.env &&
-    process.env.NODE_ENV &&
-    process.env.NODE_ENV !== "production"
-  ) {
-    __isDev = true;
-  }
-} catch {
-  // ignore
-}
-
-const debug = (...args: unknown[]) => {
-  if (__isDev) {
-    console.log(...args);
-  }
-};
-
-// Dedicated tag debug logger with timestamps and clear prefixes
-const tagDebug = (...args: unknown[]) => {
-  if (__isDev) {
-    const timestamp = new Date().toISOString().split("T")[1].slice(0, -1);
-    console.log(`[TAG ${timestamp}]`, ...args);
-  }
-};
-
-// Bot configurations - extracted from old inline implementations
-const BOT1_CONFIG: BotConfig = {
-  botSpeed: 3.0, // Faster for debug mode
-  sprintSpeed: 4.5, // Fast sprint when IT
-  fleeSpeed: 1.3, // Slower flee so can be caught
-  tagCooldown: 500, // Fast cooldown for debug
-  tagDistance: 1.0,
-  pauseAfterTag: 3000, // 3 second freeze when tagged (matches player freeze)
-  sprintDuration: 3000, // Longer sprint duration
-  sprintCooldown: 2000, // Shorter cooldown between sprints
-  chaseRadius: 15, // Larger detection radius
-  initialPosition: [-5, 0.5, -5],
-  label: "Bot1",
-};
-
-const BOT2_CONFIG: BotConfig = {
-  botSpeed: 3.5, // Much faster for debug mode chasing
-  sprintSpeed: 5.0, // Very fast sprint for IT bot
-  fleeSpeed: 1.2, // Slower flee so IT can catch
-  tagCooldown: 500, // Very fast cooldown for debug
-  tagDistance: 1.0,
-  pauseAfterTag: 3000, // 3 second freeze when tagged (matches player freeze)
-  sprintDuration: 3000, // Longer sprint duration
-  sprintCooldown: 2000, // Shorter cooldown between sprints
-  chaseRadius: 15, // Larger detection radius
-  initialPosition: [8, 0.5, -8],
-  label: "Bot2",
-};
 
 const Solo: React.FC = () => {
   const navigate = useNavigate();
@@ -318,7 +249,7 @@ const Solo: React.FC = () => {
     });
 
     socket.on("connect", () => {
-      debug("Socket connected:", socket.id);
+      log.debug("Socket connected:", socket.id);
 
       // Initialize game manager
       if (!gameManager.current) {
@@ -364,12 +295,12 @@ const Solo: React.FC = () => {
 
         gameManager.current = newGameManager;
         setGamePlayers(new Map(newGameManager.getPlayers()));
-        debug("Game manager initialized for solo");
+        log.debug("Game manager initialized for solo");
       }
     });
 
     socket.on("disconnect", () => {
-      debug("Socket disconnected");
+      log.debug("Socket disconnected");
     });
 
     socket.connect();

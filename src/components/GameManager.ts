@@ -1,3 +1,7 @@
+import { createLogger } from "../lib/utils/logger";
+
+const log = createLogger("GameManager");
+
 export type GameMode = "none" | "tag" | "collectible" | "race";
 
 export interface GameState {
@@ -33,9 +37,6 @@ export class GameManager {
     onPlayerUpdate?: (players: Map<string, Player>) => void;
   };
 
-  // gated logger for GameManager (no-op unless DEV)
-  private gmDebug: (...args: unknown[]) => void = () => {};
-
   // Scoring constants
   private readonly MAX_TAG_SCORE = 300;
   private readonly MILLISECONDS_PER_SECOND = 1000;
@@ -49,17 +50,6 @@ export class GameManager {
     };
     this.players = new Map();
     this.callbacks = {};
-
-    // initialize gmDebug if import.meta.env.DEV is available
-    try {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore - import.meta may not be available in all environments
-      if (import.meta && import.meta.env && import.meta.env.DEV) {
-        this.gmDebug = (...args: unknown[]) => console.log(...args);
-      }
-    } catch {
-      // ignore
-    }
   }
 
   setCallbacks(callbacks: {
@@ -100,7 +90,7 @@ export class GameManager {
     // 1 minute default for faster playtesting (dynamic: +1min per player above 2)
     // Allow solo practice (0 players) or real games with 2+ players; block single-player
     if (this.players.size === 1) {
-      this.gmDebug("Need at least 2 players to start tag game");
+      log.debug("Need at least 2 players to start tag game");
       return false;
     }
 
@@ -131,13 +121,13 @@ export class GameManager {
     this.callbacks.onPlayerUpdate?.(this.players);
     // Log only in dev
     if (this.gameState.itPlayerId) {
-      this.gmDebug(
+      log.debug(
         `Tag game started! ${
           this.players.get(this.gameState.itPlayerId)?.name
         } is IT!`
       );
     } else {
-      this.gmDebug(`Tag game started (solo practice)`);
+      log.debug(`Tag game started (solo practice)`);
     }
     return true;
   }
@@ -181,7 +171,7 @@ export class GameManager {
 
     this.callbacks.onGameStateUpdate?.(this.gameState);
     this.callbacks.onPlayerUpdate?.(this.players);
-    this.gmDebug(
+    log.debug(
       `${tagger.name} tagged ${tagged.name}! ${tagged.name} is now IT!`
     );
     return true;
@@ -212,7 +202,7 @@ export class GameManager {
       }))
       .sort((a, b) => b.score - a.score);
 
-    this.gmDebug("Game ended! Final scores:", results);
+    log.debug("Game ended! Final scores:", results);
 
     // Reset player states
     this.players.forEach((player) => {
