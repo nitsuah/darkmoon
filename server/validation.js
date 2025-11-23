@@ -78,15 +78,15 @@ export const validateChatMessage = (message) => {
 };
 
 /**
+ * Centralized list of valid game modes.
+ */
+export const VALID_GAME_MODES = ["tag", "collectible", "race", "solo"];
+
+/**
  * Validate game mode
  * @param {unknown} mode - The game mode to validate
  * @returns {boolean} True if valid
  */
 export const validateGameMode = (mode) => {
-  return (
-    mode === "tag" ||
-    mode === "collectible" ||
-    mode === "race" ||
-    mode === "solo"
-  );
+  return typeof mode === "string" && VALID_GAME_MODES.includes(mode);
 };

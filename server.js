@@ -31,6 +31,30 @@ const RATE_LIMITS = {
 const rateLimitTrackers = new Map();
 
 /**
+ * Clean up old rate limit entries to prevent memory leaks
+ * Runs every 5 minutes
+ */
+setInterval(() => {
+  const now = Date.now();
+  const keysToDelete = [];
+
+  for (const [key, tracker] of rateLimitTrackers.entries()) {
+    // Delete entries that are 5 minutes past their reset time
+    if (now > tracker.resetTime + 300000) {
+      keysToDelete.push(key);
+    }
+  }
+
+  keysToDelete.forEach((key) => rateLimitTrackers.delete(key));
+
+  if (keysToDelete.length > 0) {
+    console.log(
+      `[Rate Limit Cleanup] Removed ${keysToDelete.length} stale entries`
+    );
+  }
+}, 300000); // Run every 5 minutes
+
+/**
  * Check if client exceeds rate limit
  */
 const checkRateLimit = (clientId, action, limit, windowMs = 1000) => {
@@ -343,8 +367,17 @@ ioServer.on("connection", (client) => {
       `User ${client.id} disconnected, there are currently ${ioServer.engine.clientsCount} users connected`
     );
 
-    //Delete ttheir client from the object
+    // Delete their client from the object
     delete clients[client.id];
+
+    // Clean up rate limit tracking for this client
+    const keysToDelete = [];
+    for (const key of rateLimitTrackers.keys()) {
+      if (key.startsWith(`${client.id}:`)) {
+        keysToDelete.push(key);
+      }
+    }
+    keysToDelete.forEach((key) => rateLimitTrackers.delete(key));
 
     ioServer.sockets.emit("move", clients);
   });

@@ -73,36 +73,36 @@
 
 ### 4. Server Lacks Input Validation
 
-**Status:** 🟡 SECURITY RISK  
-**Impact:** Vulnerable to position spoofing, chat flooding  
-**Files:** `server.js`  
-**Details:** No validation on move/chat events, trusts client data  
+**Status:** ✅ COMPLETED  
+**Impact:** Vulnerable to position spoofing, chat flooding (resolved)  
+**Files:** `server.js`, `server/validation.js`  
+**Details:** Resolved: Added validation schemas and rate limiting  
 **Owner:** [Assign]  
-**Due:** [Sprint 1]
+**Completed:** Sprint 1
 
-**Action Items:**
+**Completed:**
 
-- [ ] Add Zod schemas for socket events
-- [ ] Implement express-rate-limit
-- [ ] Validate position/rotation bounds
-- [ ] Add per-IP rate limits
+- [x] Add validation schemas for socket events
+- [x] Implement rate limiting (Map-based tracker)
+- [x] Validate position/rotation bounds
+- [x] Add per-action rate limits (MOVE: 100/s, CHAT: 10/min, GAME: 5/s)
 
 ---
 
 ### 5. Duplicate Debug Logger (4 implementations)
 
-**Status:** 🟡 CODE SMELL  
-**Impact:** Inconsistent logging, harder to debug  
+**Status:** ✅ COMPLETED  
+**Impact:** Inconsistent logging, harder to debug (resolved)  
 **Files:** `Solo.tsx`, `PlayerCharacter.tsx`, `GameManager.ts`, `useBotAI.ts`  
-**Details:** Each file reimplements the same dev-only logger  
+**Details:** Resolved: Created `lib/utils/logger.ts` and implemented across all files  
 **Owner:** [Assign]  
-**Due:** [Sprint 1]
+**Completed:** Sprint 1
 
-**Action Items:**
+**Completed:**
 
-- [ ] Create `lib/utils/logger.ts` with namespaced logging
-- [ ] Replace all debug loggers with unified utility
-- [ ] Add log levels (debug, info, warn, error)
+- [x] Create `lib/utils/logger.ts` with namespaced logging
+- [x] Replace all debug loggers with unified utility
+- [x] Add log levels (debug, info, warn, error)
 
 ---
 
