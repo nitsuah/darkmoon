@@ -1,11 +1,10 @@
 import * as React from "react";
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Text } from "@react-three/drei";
 import { io, Socket } from "socket.io-client";
 import type { Clients } from "../types/socket";
 import PerformanceMonitor from "../components/PerformanceMonitor";
-import { QualityLevel } from "../components/QualitySettings";
 import UtilityMenu from "../components/UtilityMenu";
 import Tutorial from "../components/Tutorial";
 import HelpModal from "../components/HelpModal";
@@ -13,9 +12,7 @@ import ChatBox from "../components/ChatBox";
 import CollisionSystem from "../components/CollisionSystem";
 import GameManager, { GameState, Player } from "../components/GameManager";
 import GameUI from "../components/GameUI";
-import { W, A, S, D, Q, E, SHIFT, SPACE } from "../components/utils";
-import { MobileJoystick } from "../components/MobileJoystick";
-import { MobileButton } from "../components/MobileButton";
+import { MobileControls } from "../components/MobileControls";
 import SpacemanModel from "../components/SpacemanModel";
 import { BotCharacter } from "../components/characters/BotCharacter";
 import {
@@ -28,14 +25,19 @@ import { useNavigate } from "react-router-dom";
 import { filterProfanity } from "../lib/constants/profanity";
 import { createLogger, createTagLogger } from "../lib/utils/logger";
 import { BOT1_CONFIG, BOT2_CONFIG } from "../lib/constants/botConfigs";
-
-// Solo mode: no reconnection needed
-const MAX_CHAT_MESSAGES = 50;
+import { W, A, S, D, Q, E, SHIFT, SPACE } from "../components/utils";
+import { useNotifications } from "../lib/hooks/useNotifications";
+import { useMobileDetection } from "../lib/hooks/useMobileDetection";
+import { useRockPositions } from "../lib/hooks/useRockPositions";
+import { useQualitySettings } from "../lib/hooks/useQualitySettings";
+import { useMouseControls } from "../lib/hooks/useMouseControls";
+import { useChatMessages } from "../lib/hooks/useChatMessages";
 
 // Create loggers for this module
 const log = createLogger("Solo");
 const tagDebug = createTagLogger("Solo");
 
+// Local type definitions
 interface ChatMessage {
   id: string;
   playerId: string;
@@ -44,19 +46,12 @@ interface ChatMessage {
   timestamp: number;
 }
 
-interface Notification {
-  id: string;
-  message: string;
-  type: "success" | "info" | "warning" | "error";
-  timestamp: number;
-}
-
 const Solo: React.FC = () => {
   const navigate = useNavigate();
   const [socketClient, setSocketClient] = useState<Socket | null>(null);
   const clientsRef = useRef<Clients>({}); // Use ref to avoid re-render loops
   const [currentFPS, setCurrentFPS] = useState(60);
-  const [quality, setQuality] = useState<QualityLevel>("auto");
+  const { setQuality, qualitySettings } = useQualitySettings(currentFPS);
   const [isPaused, setIsPaused] = useState(false);
   const [keysPressed, setKeysPressed] = useState<{ [key: string]: boolean }>({
     [W]: false,
@@ -68,16 +63,10 @@ const Solo: React.FC = () => {
     [SHIFT]: false,
     [SPACE]: false,
   });
-  const [mouseControls, setMouseControls] = useState({
-    leftClick: false,
-    rightClick: false,
-    middleClick: false,
-    mouseX: 0,
-    mouseY: 0,
-  });
-  const [chatVisible, setChatVisible] = useState(false);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const { chatMessages, chatVisible, setChatVisible, addChatMessage } =
+    useChatMessages();
+  const { mouseControls, setMouseControls } = useMouseControls();
+  const { notifications, addNotification } = useNotifications();
   const [gameState, setGameState] = useState<GameState>({
     mode: "none",
     isActive: false,
@@ -119,24 +108,7 @@ const Solo: React.FC = () => {
   const mobileJetpackTrigger = useRef(false);
 
   // Detect if device is mobile/touch-enabled
-  const [isMobileDevice, setIsMobileDevice] = useState(false);
-  useEffect(() => {
-    const checkMobile = () => {
-      // Check for touch capability and small screen
-      const hasTouchScreen =
-        "ontouchstart" in window ||
-        (typeof window !== "undefined" &&
-          "navigator" in window &&
-          (window.navigator.maxTouchPoints > 0 ||
-            // @ts-expect-error - Legacy IE support
-            window.navigator.msMaxTouchPoints > 0));
-      const isSmallScreen = window.innerWidth <= 1024;
-      setIsMobileDevice(hasTouchScreen && isSmallScreen);
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  const isMobileDevice = useMobileDetection();
 
   // Solo mode: no reconnection refs needed
   const gameManager = useRef<GameManager | null>(null);
@@ -174,67 +146,8 @@ const Solo: React.FC = () => {
     return () => clearInterval(timerInterval);
   }, [gameState.isActive]);
 
-  // Quality presets
-  const getQualitySettings = (level: QualityLevel) => {
-    switch (level) {
-      case "low":
-        return {
-          shadows: false,
-          pixelRatio: 1,
-          antialias: false,
-        };
-      case "medium":
-        return {
-          shadows: true,
-          pixelRatio: Math.min(window.devicePixelRatio, 1.5),
-          antialias: true,
-        };
-      case "high":
-        return {
-          shadows: true,
-          pixelRatio: window.devicePixelRatio,
-          antialias: true,
-        };
-      default: // auto
-        return {
-          shadows: currentFPS >= 50,
-          pixelRatio: currentFPS >= 50 ? window.devicePixelRatio : 1,
-          antialias: currentFPS >= 40,
-        };
-    }
-  };
-
-  const qualitySettings = getQualitySettings(quality);
-
-  // Notification system
-  const addNotification = useCallback(
-    (message: string, type: Notification["type"] = "info") => {
-      const notification: Notification = {
-        id: `${Date.now()}-${Math.random()}`,
-        message,
-        type,
-        timestamp: Date.now(),
-      };
-      setNotifications((prev) => [...prev, notification]);
-      // Auto-remove after 4 seconds
-      setTimeout(() => {
-        setNotifications((prev) =>
-          prev.filter((n) => n.id !== notification.id)
-        );
-      }, 4000);
-    },
-    []
-  );
-
   // Generate stable rock positions once (prevents respawning every frame)
-  const rockPositions = useMemo(() => {
-    return [...Array(25)].map(() => ({
-      x: (Math.random() - 0.5) * 80,
-      z: (Math.random() - 0.5) * 80,
-      size: 0.5 + Math.random() * 1.5,
-      height: 0.3 + Math.random() * 0.7,
-    }));
-  }, []); // Empty dependency array = only generate once on mount
+  const rockPositions = useRockPositions();
 
   // Solo mode: no reconnection logic needed
   const connectSocket = useCallback(() => {
@@ -362,7 +275,7 @@ const Solo: React.FC = () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [chatVisible, botDebugMode]);
+  }, [chatVisible, botDebugMode, setChatVisible]);
 
   // Mouse controls
   useEffect(() => {
@@ -513,7 +426,7 @@ const Solo: React.FC = () => {
       window.removeEventListener("touchend", handleTouchEnd);
       window.removeEventListener("touchcancel", handleTouchEnd);
     };
-  }, []);
+  }, [setMouseControls]);
 
   // Player position tracking - use refs to avoid re-render loops
   const handlePlayerPositionUpdate = useCallback(
@@ -664,10 +577,7 @@ const Solo: React.FC = () => {
       timestamp: Date.now(),
     };
 
-    setChatMessages((prev) => {
-      const updated = [...prev, chatMessage];
-      return updated.slice(-MAX_CHAT_MESSAGES);
-    });
+    addChatMessage(chatMessage);
 
     socketClient.emit("chat-message", {
       message: filteredMessage,
@@ -701,10 +611,6 @@ const Solo: React.FC = () => {
       addNotification("Game ended", "info");
     }
   }, [addNotification]);
-
-  const handleQualityChange = (newQuality: QualityLevel) => {
-    setQuality(newQuality);
-  };
 
   const handleResumeGame = () => {
     setIsPaused(false);
@@ -922,44 +828,25 @@ const Solo: React.FC = () => {
 
       {/* Mobile Controls */}
       {isMobileDevice && (
-        <>
-          <MobileJoystick
-            side="left"
-            label="Move"
-            onMove={(x, y) => setJoystickMove({ x, y })}
-          />
-          {/* Right joystick (camera look) disabled - two-finger camera rotation not working on mobile */}
-          {/* <MobileJoystick
-            side="right"
-            label="Look"
-            onMove={(x, y) => setJoystickCamera({ x, y })}
-          /> */}
-          <MobileButton
-            position="bottom-right"
-            label="Jump"
-            onPress={() => {
-              setKeysPressed((prev) => ({ ...prev, [SPACE]: true }));
-            }}
-            onRelease={() => {
-              setKeysPressed((prev) => ({ ...prev, [SPACE]: false }));
-            }}
-            onDoubleTap={() => {
-              // Trigger jetpack via ref
-              mobileJetpackTrigger.current = true;
-              setKeysPressed((prev) => ({ ...prev, [SPACE]: true }));
-            }}
-          />
-          <MobileButton
-            position="bottom-center"
-            label="Sprint"
-            onPress={() => {
-              setKeysPressed((prev) => ({ ...prev, [SHIFT]: true }));
-            }}
-            onRelease={() => {
-              setKeysPressed((prev) => ({ ...prev, [SHIFT]: false }));
-            }}
-          />
-        </>
+        <MobileControls
+          onJoystickMove={(x, y) => setJoystickMove({ x, y })}
+          onJumpPress={() =>
+            setKeysPressed((prev) => ({ ...prev, [SPACE]: true }))
+          }
+          onJumpRelease={() =>
+            setKeysPressed((prev) => ({ ...prev, [SPACE]: false }))
+          }
+          onJumpDoubleTap={() => {
+            mobileJetpackTrigger.current = true;
+            setKeysPressed((prev) => ({ ...prev, [SPACE]: true }));
+          }}
+          onSprintPress={() =>
+            setKeysPressed((prev) => ({ ...prev, [SHIFT]: true }))
+          }
+          onSprintRelease={() =>
+            setKeysPressed((prev) => ({ ...prev, [SHIFT]: false }))
+          }
+        />
       )}
 
       {/* Game UI Overlay */}
@@ -1024,7 +911,7 @@ const Solo: React.FC = () => {
         onToggleChat={() => setChatVisible(!chatVisible)}
         isChatVisible={chatVisible}
         currentFPS={currentFPS}
-        onQualityChange={handleQualityChange}
+        onQualityChange={setQuality}
       />
 
       {/* Pause Menu */}
