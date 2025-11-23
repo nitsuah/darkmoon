@@ -1,15 +1,20 @@
 import * as React from "react";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Socket } from "socket.io-client";
 import * as THREE from "three";
 import type { Clients } from "../../types/socket";
-import CollisionSystem from "../CollisionSystem";
 import GameManager, { GameState } from "../GameManager";
 import { W, A, S, D, Q, E, SHIFT, SPACE } from "../utils";
 import SpacemanModel from "../SpacemanModel";
 import { getSoundManager } from "../SoundManager";
 import { createTagLogger } from "../../lib/utils/logger";
+import {
+  usePlayerPhysics,
+  PHYSICS_CONSTANTS,
+} from "../../lib/hooks/usePlayerPhysics";
+import { usePlayerCamera } from "../../lib/hooks/usePlayerCamera";
+import { usePlayerState } from "../../lib/hooks/usePlayerState";
 
 const tagDebug = createTagLogger("PlayerCharacter");
 
@@ -73,70 +78,50 @@ export const PlayerCharacter = React.forwardRef<
     onTagSuccess,
   } = props;
 
-  const meshRef = useRef<THREE.Group>(null);
-  const velocity = useRef(new THREE.Vector3());
-  const direction = useRef(new THREE.Vector3());
-  const cameraOffset = useRef(new THREE.Vector3(0, 3, -5)); // Camera position relative to player
-  const cameraRotation = useRef({ horizontal: 0, vertical: 0.2 }); // Track camera rotation
-  const skycam = useRef(false);
-  const previousMouse = useRef({ x: 0, y: 0 });
-  const isFirstMouse = useRef(true);
-  const collisionSystem = useRef(new CollisionSystem());
-  const lastTagCheck = useRef(0);
-  const frameCounter = useRef(0);
+  // Use custom hooks for organized state management
+  const playerState = usePlayerState();
+  const {
+    meshRef,
+    collisionSystemRef,
+    lastReportedPositionRef,
+    lastTagCheckRef,
+    frameCounterRef,
+    isPlayerFrozenRef,
+    playerFreezeEndTimeRef,
+  } = playerState;
 
-  // Track last reported position to avoid unnecessary updates
-  const lastReportedPosition = useRef(new THREE.Vector3(0, 0, 0));
-  const POSITION_UPDATE_THRESHOLD = 0.01; // Only update if moved > 1cm
+  const physics = usePlayerPhysics();
+  const {
+    velocityRef,
+    directionRef,
+    inputDirectionRef,
+    finalMovementRef,
+    isJumpingRef,
+    verticalVelocityRef,
+    jumpHoldTimeRef,
+    horizontalMomentumRef,
+    lastJumpTimeRef,
+    jetpackActiveRef,
+    isUsingRCSRef,
+    rcsTimeRemainingRef,
+    jetpackThrustSoundRef,
+    lastRCSSoundTimeRef,
+  } = physics;
 
-  // Player freeze state when tagged
-  const isPlayerFrozen = useRef(false);
-  const playerFreezeEndTime = useRef(0);
-
-  // Jump mechanics - True moon-like low gravity physics (1/6 Earth gravity)
-  const isJumping = useRef(false);
-  const verticalVelocity = useRef(0);
-  const jumpHoldTime = useRef(0); // Track how long space is held
-  const horizontalMomentum = useRef(new THREE.Vector3(0, 0, 0)); // Preserve momentum in air
-  const lastJumpTime = useRef(0); // For double-jump detection
-  const jetpackActive = useRef(false); // Track if jetpack mode is active
-  const isUsingRCS = useRef(false); // Track if RCS jets are active (SHIFT in air)
-
-  const jetpackThrustSound = useRef<{
-    osc: OscillatorNode;
-    gain: GainNode;
-  } | null>(null); // Track thrust sound
-  const lastRCSSoundTime = useRef(0); // Throttle RCS sound
-
-  // Reusable vectors to avoid allocations in animation loop
-  const inputDirectionRef = useRef(new THREE.Vector3());
-  const finalMovementRef = useRef(new THREE.Vector3());
-  const idealCameraPositionRef = useRef(new THREE.Vector3());
-  const skyTargetRef = useRef(new THREE.Vector3());
+  const camera = usePlayerCamera();
+  const {
+    cameraOffsetRef,
+    cameraRotationRef,
+    skycamRef,
+    previousMouseRef,
+    isFirstMouseRef,
+    idealCameraPositionRef,
+    skyTargetRef,
+  } = camera;
 
   // Dust effect state for landing
   const [showDustEffect, setShowDustEffect] = useState(false);
   const [showJetpackFlame, setShowJetpackFlame] = useState(false);
-
-  // Physics constants - tuned for heavier, floatier feel
-  const GRAVITY = 0.0005; // Reduced from 0.0008 for more floaty feel
-  const GROUND_Y = 0.5;
-  const AIR_RESISTANCE = 0.996; // Slightly more resistance for heavier feel
-  const HORIZONTAL_AIR_CONTROL = 0.5; // Reduced from 0.6 - less control in air
-  const MOMENTUM_PRESERVATION = 0.985; // Slightly more decay for heavier feel
-
-  // Jump physics (first jump)
-  const JUMP_INITIAL_FORCE = 0.1; // Reduced from 0.12 for heavier feel
-
-  // Jetpack physics (mobile double-tap triggered only)
-  const JETPACK_INITIAL_BOOST = 0.04; // Reduced for slower jetpack
-  const JETPACK_HOLD_FORCE = 0.05; // Reduced for slower, more controlled thrust
-  const JETPACK_MAX_HOLD_TIME = 2.5; // Increased from 1.5 - longer duration
-
-  // RCS jets (SHIFT in air)
-  const RCS_THRUST = 0.05; // Directional thrust strength
-  const RCS_MAX_DURATION = 3.0; // Can use RCS for 3 seconds
-  const rcsTimeRemaining = useRef(0); // Track RCS fuel
 
   // Expose reset and freeze functions to parent via ref
   React.useImperativeHandle(ref, () => ({
@@ -144,15 +129,15 @@ export const PlayerCharacter = React.forwardRef<
       if (meshRef.current) {
         meshRef.current.position.set(0, 0.5, 0);
       }
-      cameraRotation.current = { horizontal: 0, vertical: 0.2 };
-      velocity.current.set(0, 0, 0);
-      direction.current.set(0, 0, 0);
-      isJumping.current = false;
-      verticalVelocity.current = 0;
+      cameraRotationRef.current = { horizontal: 0, vertical: 0.2 };
+      velocityRef.current.set(0, 0, 0);
+      directionRef.current.set(0, 0, 0);
+      isJumpingRef.current = false;
+      verticalVelocityRef.current = 0;
     },
     freezePlayer: (duration: number) => {
-      isPlayerFrozen.current = true;
-      playerFreezeEndTime.current = Date.now() + duration;
+      isPlayerFrozenRef.current = true;
+      playerFreezeEndTimeRef.current = Date.now() + duration;
       tagDebug(`👤 Player frozen for ${duration}ms via ref`);
     },
   }));
@@ -168,11 +153,11 @@ export const PlayerCharacter = React.forwardRef<
   };
 
   useFrame((state, delta) => {
-    frameCounter.current++;
+    frameCounterRef.current++;
 
     if (!meshRef.current || isPaused) {
       // Debug: Log if we're not processing frames (every 100 frames)
-      if (frameCounter.current % 100 === 0) {
+      if (frameCounterRef.current % 100 === 0) {
         debug("Frame skipped:", { hasMesh: !!meshRef.current, isPaused });
       }
       return;
@@ -184,9 +169,9 @@ export const PlayerCharacter = React.forwardRef<
     const mobileJetpackTriggerRef = mobileJetpackTrigger;
 
     // Check if player is frozen after being tagged
-    if (isPlayerFrozen.current) {
-      if (now >= playerFreezeEndTime.current) {
-        isPlayerFrozen.current = false;
+    if (isPlayerFrozenRef.current) {
+      if (now >= playerFreezeEndTimeRef.current) {
+        isPlayerFrozenRef.current = false;
         tagDebug(`👤 Player unfrozen - can move again`);
       } else {
         // Player is frozen - show visual indicator and prevent movement
@@ -209,105 +194,105 @@ export const PlayerCharacter = React.forwardRef<
       mouseControls.rightClick ||
       mouseControls.middleClick
     ) {
-      if (isFirstMouse.current) {
-        previousMouse.current.x = mouseControls.mouseX;
-        previousMouse.current.y = mouseControls.mouseY;
-        isFirstMouse.current = false;
+      if (isFirstMouseRef.current) {
+        previousMouseRef.current.x = mouseControls.mouseX;
+        previousMouseRef.current.y = mouseControls.mouseY;
+        isFirstMouseRef.current = false;
       }
 
-      const deltaX = mouseControls.mouseX - previousMouse.current.x;
-      const deltaY = mouseControls.mouseY - previousMouse.current.y;
+      const deltaX = mouseControls.mouseX - previousMouseRef.current.x;
+      const deltaY = mouseControls.mouseY - previousMouseRef.current.y;
 
       const sensitivity = 0.002;
 
       if (bothMouseButtons) {
         // Both buttons: Rotate camera AND player (for movement control)
-        cameraRotation.current.horizontal -= deltaX * sensitivity;
-        cameraRotation.current.vertical += deltaY * sensitivity;
-        skycam.current = false;
+        cameraRotationRef.current.horizontal -= deltaX * sensitivity;
+        cameraRotationRef.current.vertical += deltaY * sensitivity;
+        skycamRef.current = false;
       } else if (mouseControls.rightClick) {
         // Right-click only: Rotate camera AND player facing (WoW style)
-        cameraRotation.current.horizontal -= deltaX * sensitivity;
-        cameraRotation.current.vertical += deltaY * sensitivity;
-        skycam.current = false;
+        cameraRotationRef.current.horizontal -= deltaX * sensitivity;
+        cameraRotationRef.current.vertical += deltaY * sensitivity;
+        skycamRef.current = false;
       } else if (mouseControls.middleClick) {
         // Middle-click: Rotate camera WITHOUT rotating player (peek mode)
-        skycam.current = true;
-        cameraRotation.current.horizontal -= deltaX * sensitivity;
-        cameraRotation.current.vertical += deltaY * sensitivity;
+        skycamRef.current = true;
+        cameraRotationRef.current.horizontal -= deltaX * sensitivity;
+        cameraRotationRef.current.vertical += deltaY * sensitivity;
       }
       // Left-click is now free for interactions (no camera control)
 
       // Clamp vertical rotation
-      cameraRotation.current.vertical = Math.max(
+      cameraRotationRef.current.vertical = Math.max(
         -Math.PI / 3,
-        Math.min(Math.PI / 3, cameraRotation.current.vertical)
+        Math.min(Math.PI / 3, cameraRotationRef.current.vertical)
       );
 
-      previousMouse.current.x = mouseControls.mouseX;
-      previousMouse.current.y = mouseControls.mouseY;
+      previousMouseRef.current.x = mouseControls.mouseX;
+      previousMouseRef.current.y = mouseControls.mouseY;
     } else {
-      isFirstMouse.current = true;
-      skycam.current = false;
+      isFirstMouseRef.current = true;
+      skycamRef.current = false;
     }
 
     // Joystick camera rotation
     if (joystickCamera.x !== 0 || joystickCamera.y !== 0) {
       const joystickSensitivity = 0.03;
-      cameraRotation.current.horizontal -=
+      cameraRotationRef.current.horizontal -=
         joystickCamera.x * joystickSensitivity * delta;
-      cameraRotation.current.vertical +=
+      cameraRotationRef.current.vertical +=
         joystickCamera.y * joystickSensitivity * delta;
     }
 
     // Keyboard camera rotation (A/D keys) - Also rotates character
     if (keysPressedRef.current[A]) {
-      cameraRotation.current.horizontal += 2 * delta; // Rotate left
+      cameraRotationRef.current.horizontal += 2 * delta; // Rotate left
       // Also rotate character to match camera direction
       if (meshRef.current) {
-        meshRef.current.rotation.y = cameraRotation.current.horizontal;
+        meshRef.current.rotation.y = cameraRotationRef.current.horizontal;
       }
     }
     if (keysPressedRef.current[D]) {
-      cameraRotation.current.horizontal -= 2 * delta; // Rotate right
+      cameraRotationRef.current.horizontal -= 2 * delta; // Rotate right
       // Also rotate character to match camera direction
       if (meshRef.current) {
-        meshRef.current.rotation.y = cameraRotation.current.horizontal;
+        meshRef.current.rotation.y = cameraRotationRef.current.horizontal;
       }
     }
 
     // Always clamp vertical rotation (from joystick too)
-    cameraRotation.current.vertical = Math.max(
+    cameraRotationRef.current.vertical = Math.max(
       -Math.PI / 3,
-      Math.min(Math.PI / 3, cameraRotation.current.vertical)
+      Math.min(Math.PI / 3, cameraRotationRef.current.vertical)
     );
 
     // Calculate camera offset based on rotation
     const distance = 5;
     const offsetX =
-      Math.sin(cameraRotation.current.horizontal) *
-      Math.cos(cameraRotation.current.vertical) *
+      Math.sin(cameraRotationRef.current.horizontal) *
+      Math.cos(cameraRotationRef.current.vertical) *
       distance;
-    const offsetY = Math.sin(cameraRotation.current.vertical) * distance + 3;
+    const offsetY = Math.sin(cameraRotationRef.current.vertical) * distance + 3;
     const offsetZ =
-      Math.cos(cameraRotation.current.horizontal) *
-      Math.cos(cameraRotation.current.vertical) *
+      Math.cos(cameraRotationRef.current.horizontal) *
+      Math.cos(cameraRotationRef.current.vertical) *
       distance;
 
-    cameraOffset.current.set(offsetX, offsetY, offsetZ);
+    cameraOffsetRef.current.set(offsetX, offsetY, offsetZ);
 
     // If player is frozen, skip movement but allow camera controls
-    if (isPlayerFrozen.current) {
+    if (isPlayerFrozenRef.current) {
       // Update camera position but don't process movement
       state.camera.position
         .copy(meshRef.current.position)
-        .add(cameraOffset.current);
+        .add(cameraOffsetRef.current);
       state.camera.lookAt(meshRef.current.position);
       return;
     }
 
     // Calculate direction based on keys pressed and camera rotation
-    direction.current.set(0, 0, 0);
+    directionRef.current.set(0, 0, 0);
 
     const hasKeyboardInput =
       keysPressedRef.current[W] ||
@@ -319,7 +304,7 @@ export const PlayerCharacter = React.forwardRef<
     // Calculate speed (used for movement and jump momentum)
     // Jetpack mode: fixed slower speed (sprint has no effect)
     // Normal mode: sprint = 5, walk = 2
-    const speed = jetpackActive.current
+    const speed = jetpackActiveRef.current
       ? 1.5
       : keysPressedRef.current[SHIFT]
       ? 5
@@ -333,52 +318,56 @@ export const PlayerCharacter = React.forwardRef<
 
       // Calculate forward and right vectors based on camera rotation
       forward.set(
-        -Math.sin(cameraRotation.current.horizontal),
+        -Math.sin(cameraRotationRef.current.horizontal),
         0,
-        -Math.cos(cameraRotation.current.horizontal)
+        -Math.cos(cameraRotationRef.current.horizontal)
       );
       right.set(
-        Math.cos(cameraRotation.current.horizontal),
+        Math.cos(cameraRotationRef.current.horizontal),
         0,
-        -Math.sin(cameraRotation.current.horizontal)
+        -Math.sin(cameraRotationRef.current.horizontal)
       );
 
       // Both mouse buttons: auto-run forward
       if (bothMouseButtons) {
-        direction.current.add(forward);
+        directionRef.current.add(forward);
       }
 
       // Keyboard input (can combine with mouse movement)
       if (keysPressedRef.current[W]) {
-        direction.current.add(forward);
+        directionRef.current.add(forward);
       }
       if (keysPressedRef.current[S]) {
-        direction.current.sub(forward);
+        directionRef.current.sub(forward);
       }
       if (keysPressedRef.current[Q]) {
-        direction.current.sub(right);
+        directionRef.current.sub(right);
       }
       if (keysPressedRef.current[E]) {
-        direction.current.add(right);
+        directionRef.current.add(right);
       }
 
       // Joystick input (Y is forward/back, X is left/right)
       if (hasJoystickInput) {
-        direction.current.add(forward.clone().multiplyScalar(-joystickMove.y));
-        direction.current.add(right.clone().multiplyScalar(joystickMove.x));
+        directionRef.current.add(
+          forward.clone().multiplyScalar(-joystickMove.y)
+        );
+        directionRef.current.add(right.clone().multiplyScalar(joystickMove.x));
       }
 
       // Normalize direction
-      if (direction.current.length() > 0) {
-        direction.current.normalize();
-        velocity.current.copy(direction.current).multiplyScalar(speed * delta);
+      if (directionRef.current.length() > 0) {
+        directionRef.current.normalize();
+        velocityRef.current
+          .copy(directionRef.current)
+          .multiplyScalar(speed * delta);
 
         // Calculate new position with collision detection
         const currentPosition = meshRef.current.position.clone();
-        const newPosition = currentPosition.clone().add(velocity.current);
+        const newPosition = currentPosition.clone().add(velocityRef.current);
 
         // Check for collisions and get resolved position
-        const resolvedPosition = collisionSystem.current.checkCollision(
+        const resolvedPosition = collisionSystemRef.current.checkCollision(
           currentPosition,
           newPosition
         );
@@ -397,7 +386,7 @@ export const PlayerCharacter = React.forwardRef<
 
               // Handle collision
               if (
-                collisionSystem.current.checkPlayerCollision(
+                collisionSystemRef.current.checkPlayerCollision(
                   resolvedPosition,
                   otherPlayerPos
                 )
@@ -417,13 +406,13 @@ export const PlayerCharacter = React.forwardRef<
                 gameState.isActive &&
                 playerIsIt &&
                 distance < 1.0 &&
-                now - lastTagCheck.current > 3000
+                now - lastTagCheckRef.current > 3000
               ) {
                 // Player tagged the bot!
                 tagDebug(
                   `👤 PLAYER TAGGING ${clientId.toUpperCase()}! Distance: ${distance.toFixed(
                     2
-                  )}, Cooldown elapsed: ${now - lastTagCheck.current}ms`
+                  )}, Cooldown elapsed: ${now - lastTagCheckRef.current}ms`
                 );
                 tagDebug(
                   `  State before: Player isIT=${playerIsIt}, Bot isIT=false`
@@ -431,7 +420,7 @@ export const PlayerCharacter = React.forwardRef<
 
                 if (setPlayerIsIt) setPlayerIsIt(false);
                 if (setBotIsIt) setBotIsIt(true);
-                lastTagCheck.current = now;
+                lastTagCheckRef.current = now;
 
                 // Update GameManager to keep it in sync
                 if (gameManager) {
@@ -467,8 +456,8 @@ export const PlayerCharacter = React.forwardRef<
                 }
 
                 // Player should NOT freeze when tagging - only the tagged player freezes
-                // isPlayerFrozen.current = true; // REMOVED
-                // playerFreezeEndTime.current = now + PLAYER_FREEZE_DURATION; // REMOVED
+                // isPlayerFrozenRef.current = true; // REMOVED
+                // playerFreezeEndTimeRef.current = now + PLAYER_FREEZE_DURATION; // REMOVED
                 tagDebug(`  Player continues moving (no freeze for tagger)`);
                 tagDebug(
                   `  Bot will freeze for 3000ms (via gotTaggedTimestamp)`
@@ -539,7 +528,7 @@ export const PlayerCharacter = React.forwardRef<
                   setTimeout(() => confetti.remove(), 1500);
                 }
 
-                lastTagCheck.current = now;
+                lastTagCheckRef.current = now;
               }
 
               // Handle tagging (multiplayer mode - only if current player is 'it' and close enough)
@@ -548,7 +537,7 @@ export const PlayerCharacter = React.forwardRef<
                 gameState.mode === "tag" &&
                 currentPlayer?.isIt &&
                 distance < 1.0 &&
-                now - lastTagCheck.current > 1000
+                now - lastTagCheckRef.current > 1000
               ) {
                 // 1 second cooldown
 
@@ -624,7 +613,7 @@ export const PlayerCharacter = React.forwardRef<
                       taggedId: clientId,
                     });
                   }
-                  lastTagCheck.current = now;
+                  lastTagCheckRef.current = now;
                 }
               }
             }
@@ -663,20 +652,21 @@ export const PlayerCharacter = React.forwardRef<
 
     // Jump mechanics - Single jump only, no jetpack from jump
     // Jetpack only activates from mobile double-tap button
-    const isOnGround = meshRef.current.position.y <= GROUND_Y + 0.01;
+    const isOnGround =
+      meshRef.current.position.y <= PHYSICS_CONSTANTS.GROUND_Y + 0.01;
     const currentTime = Date.now();
 
-    if (keysPressedRef.current[SPACE] && isOnGround && !isJumping.current) {
+    if (keysPressedRef.current[SPACE] && isOnGround && !isJumpingRef.current) {
       // Check for mobile jetpack trigger only
       const mobileDoubleTap = mobileJetpackTriggerRef?.current || false;
 
       if (mobileDoubleTap) {
         // Mobile double-tap - activate jetpack mode
-        jetpackActive.current = true;
+        jetpackActiveRef.current = true;
         setShowJetpackFlame(true);
-        isJumping.current = true;
-        verticalVelocity.current = JETPACK_INITIAL_BOOST;
-        jumpHoldTime.current = 0;
+        isJumpingRef.current = true;
+        verticalVelocityRef.current = PHYSICS_CONSTANTS.JETPACK_INITIAL_BOOST;
+        jumpHoldTimeRef.current = 0;
         tagDebug(`🚀 Jetpack activated (mobile double-tap)!`);
 
         // Reset mobile trigger
@@ -695,15 +685,17 @@ export const PlayerCharacter = React.forwardRef<
         }
       } else {
         // Single jump - normal jump only (no jetpack from space bar)
-        jetpackActive.current = false;
-        isJumping.current = true;
-        verticalVelocity.current = JUMP_INITIAL_FORCE;
-        jumpHoldTime.current = 0;
-        lastJumpTime.current = currentTime;
+        jetpackActiveRef.current = false;
+        isJumpingRef.current = true;
+        verticalVelocityRef.current = PHYSICS_CONSTANTS.JUMP_INITIAL_FORCE;
+        jumpHoldTimeRef.current = 0;
+        lastJumpTimeRef.current = currentTime;
       }
 
       // Capture horizontal momentum at jump start
-      horizontalMomentum.current.copy(direction.current).multiplyScalar(speed);
+      horizontalMomentumRef.current
+        .copy(directionRef.current)
+        .multiplyScalar(speed);
 
       // Play jump sound with error handling
       try {
@@ -718,37 +710,39 @@ export const PlayerCharacter = React.forwardRef<
 
     // Apply jetpack thrust while space is held (only if jetpack active)
     if (
-      jetpackActive.current &&
-      isJumping.current &&
+      jetpackActiveRef.current &&
+      isJumpingRef.current &&
       keysPressedRef.current[SPACE]
     ) {
-      if (jumpHoldTime.current < JETPACK_MAX_HOLD_TIME) {
-        jumpHoldTime.current += delta;
+      if (jumpHoldTimeRef.current < PHYSICS_CONSTANTS.JETPACK_MAX_HOLD_TIME) {
+        jumpHoldTimeRef.current += delta;
         // Consistent, gentle thrust for floaty jetpack feel
         const thrustMultiplier =
-          1 - (jumpHoldTime.current / JETPACK_MAX_HOLD_TIME) * 0.3;
-        verticalVelocity.current +=
-          JETPACK_HOLD_FORCE * delta * thrustMultiplier;
+          1 -
+          (jumpHoldTimeRef.current / PHYSICS_CONSTANTS.JETPACK_MAX_HOLD_TIME) *
+            0.3;
+        verticalVelocityRef.current +=
+          PHYSICS_CONSTANTS.JETPACK_HOLD_FORCE * delta * thrustMultiplier;
 
         // Start thrust sound if not already playing
-        if (!jetpackThrustSound.current) {
+        if (!jetpackThrustSoundRef.current) {
           try {
             const soundMgr = getSoundManager();
             if (soundMgr) {
-              jetpackThrustSound.current = soundMgr.playJetpackThrustSound();
+              jetpackThrustSoundRef.current = soundMgr.playJetpackThrustSound();
             }
           } catch (error) {
             console.warn("Sound manager not ready for thrust sound:", error);
           }
         }
       }
-    } else if (jetpackThrustSound.current) {
+    } else if (jetpackThrustSoundRef.current) {
       // Stop thrust sound when space is released or jetpack ends
       try {
         const soundMgr = getSoundManager();
         if (soundMgr) {
-          soundMgr.stopJetpackThrustSound(jetpackThrustSound.current);
-          jetpackThrustSound.current = null;
+          soundMgr.stopJetpackThrustSound(jetpackThrustSoundRef.current);
+          jetpackThrustSoundRef.current = null;
         }
       } catch (error) {
         console.warn("Error stopping thrust sound:", error);
@@ -757,14 +751,14 @@ export const PlayerCharacter = React.forwardRef<
 
     // RCS jets (SHIFT in air) - directional thrust from QWEASD
     if (!isOnGround && keysPressedRef.current[SHIFT]) {
-      if (!isUsingRCS.current) {
-        isUsingRCS.current = true;
-        rcsTimeRemaining.current = RCS_MAX_DURATION;
+      if (!isUsingRCSRef.current) {
+        isUsingRCSRef.current = true;
+        rcsTimeRemainingRef.current = PHYSICS_CONSTANTS.RCS_MAX_DURATION;
         tagDebug("🎯 RCS jets activated!");
       }
 
-      if (rcsTimeRemaining.current > 0) {
-        rcsTimeRemaining.current -= delta;
+      if (rcsTimeRemainingRef.current > 0) {
+        rcsTimeRemainingRef.current -= delta;
 
         // Apply directional RCS thrust based on QWEASD input
         const rcsDirection = new THREE.Vector3();
@@ -781,13 +775,15 @@ export const PlayerCharacter = React.forwardRef<
         if (keysPressedRef.current[A]) rcsDirection.x += 1;
         if (keysPressedRef.current[D]) rcsDirection.x -= 1;
         if (keysPressedRef.current[Q])
-          verticalVelocity.current += RCS_THRUST * delta * 2; // Up
+          verticalVelocityRef.current +=
+            PHYSICS_CONSTANTS.RCS_THRUST * delta * 2; // Up
         if (keysPressedRef.current[E])
-          verticalVelocity.current -= RCS_THRUST * delta * 2; // Down
+          verticalVelocityRef.current -=
+            PHYSICS_CONSTANTS.RCS_THRUST * delta * 2; // Down
 
         // Play RCS sound when input is active (throttle to ~10 times per second)
-        if (hasRCSInput && currentTime - lastRCSSoundTime.current > 100) {
-          lastRCSSoundTime.current = currentTime;
+        if (hasRCSInput && currentTime - lastRCSSoundTimeRef.current > 100) {
+          lastRCSSoundTimeRef.current = currentTime;
           try {
             const soundMgr = getSoundManager();
             if (soundMgr) {
@@ -803,54 +799,58 @@ export const PlayerCharacter = React.forwardRef<
           rcsDirection.normalize();
           rcsDirection.applyAxisAngle(
             new THREE.Vector3(0, 1, 0),
-            -cameraRotation.current.horizontal
+            -cameraRotationRef.current.horizontal
           );
-          horizontalMomentum.current.add(
-            rcsDirection.multiplyScalar(RCS_THRUST * delta * 10)
+          horizontalMomentumRef.current.add(
+            rcsDirection.multiplyScalar(
+              PHYSICS_CONSTANTS.RCS_THRUST * delta * 10
+            )
           );
         }
       }
     } else if (isOnGround) {
       // Reset RCS when landing
-      isUsingRCS.current = false;
-      rcsTimeRemaining.current = RCS_MAX_DURATION;
+      isUsingRCSRef.current = false;
+      rcsTimeRemainingRef.current = PHYSICS_CONSTANTS.RCS_MAX_DURATION;
     }
 
-    // Apply moon gravity and physics while in air
-    if (isJumping.current || !isOnGround) {
-      // Very slow fall due to moon's low gravity
-      verticalVelocity.current -= GRAVITY;
-      verticalVelocity.current *= AIR_RESISTANCE;
-      meshRef.current.position.y += verticalVelocity.current;
+    // Apply moon PHYSICS_CONSTANTS.GRAVITY and physics while in air
+    if (isJumpingRef.current || !isOnGround) {
+      // Very slow fall due to moon's low PHYSICS_CONSTANTS.GRAVITY
+      verticalVelocityRef.current -= PHYSICS_CONSTANTS.GRAVITY;
+      verticalVelocityRef.current *= PHYSICS_CONSTANTS.AIR_RESISTANCE;
+      meshRef.current.position.y += verticalVelocityRef.current;
 
       // Preserve horizontal momentum with slight decay
-      horizontalMomentum.current.multiplyScalar(MOMENTUM_PRESERVATION);
+      horizontalMomentumRef.current.multiplyScalar(
+        PHYSICS_CONSTANTS.MOMENTUM_PRESERVATION
+      );
 
       // Allow some air control - blend player input with momentum
       inputDirectionRef.current
-        .copy(direction.current)
-        .multiplyScalar(speed * HORIZONTAL_AIR_CONTROL);
+        .copy(directionRef.current)
+        .multiplyScalar(speed * PHYSICS_CONSTANTS.HORIZONTAL_AIR_CONTROL);
       finalMovementRef.current
-        .copy(horizontalMomentum.current)
+        .copy(horizontalMomentumRef.current)
         .add(inputDirectionRef.current);
 
       meshRef.current.position.x += finalMovementRef.current.x * delta * 10;
       meshRef.current.position.z += finalMovementRef.current.z * delta * 10;
 
       // Check if landed
-      if (meshRef.current.position.y <= GROUND_Y) {
-        meshRef.current.position.y = GROUND_Y;
+      if (meshRef.current.position.y <= PHYSICS_CONSTANTS.GROUND_Y) {
+        meshRef.current.position.y = PHYSICS_CONSTANTS.GROUND_Y;
 
         // Capture landing velocity before resetting
-        const landingVelocity = Math.abs(verticalVelocity.current);
+        const landingVelocity = Math.abs(verticalVelocityRef.current);
 
-        isJumping.current = false;
-        jetpackActive.current = false;
+        isJumpingRef.current = false;
+        jetpackActiveRef.current = false;
         setShowJetpackFlame(false);
-        isUsingRCS.current = false;
-        verticalVelocity.current = 0;
-        jumpHoldTime.current = 0;
-        horizontalMomentum.current.set(0, 0, 0);
+        isUsingRCSRef.current = false;
+        verticalVelocityRef.current = 0;
+        jumpHoldTimeRef.current = 0;
+        horizontalMomentumRef.current.set(0, 0, 0);
 
         // Play landing sound scaled by impact velocity
         try {
@@ -873,24 +873,26 @@ export const PlayerCharacter = React.forwardRef<
     // Notify parent of position changes (only when position actually changes)
     if (onPositionUpdate && meshRef.current) {
       const currentPos = meshRef.current.position;
-      const distanceMoved = currentPos.distanceTo(lastReportedPosition.current);
+      const distanceMoved = currentPos.distanceTo(
+        lastReportedPositionRef.current
+      );
 
-      if (distanceMoved > POSITION_UPDATE_THRESHOLD) {
+      if (distanceMoved > PHYSICS_CONSTANTS.POSITION_UPDATE_THRESHOLD) {
         onPositionUpdate(currentPos.toArray() as [number, number, number]);
-        lastReportedPosition.current.copy(currentPos);
+        lastReportedPositionRef.current.copy(currentPos);
       }
     }
 
     // Smooth third-person camera follow with rotation
     idealCameraPositionRef.current.set(
-      meshRef.current.position.x + cameraOffset.current.x,
-      meshRef.current.position.y + cameraOffset.current.y,
-      meshRef.current.position.z + cameraOffset.current.z
+      meshRef.current.position.x + cameraOffsetRef.current.x,
+      meshRef.current.position.y + cameraOffsetRef.current.y,
+      meshRef.current.position.z + cameraOffsetRef.current.z
     );
 
     // Lerp camera position for smooth following
     // If skycam is active, raise the camera and lerp more slowly for a floating feel
-    if (skycam.current) {
+    if (skycamRef.current) {
       skyTargetRef.current.copy(idealCameraPositionRef.current);
       skyTargetRef.current.y += 12; // raise camera when in skycam
       state.camera.position.lerp(skyTargetRef.current, 0.06);
@@ -911,9 +913,9 @@ export const PlayerCharacter = React.forwardRef<
 
   // Calculate current velocity for animation
   const currentVelocity: [number, number, number] = [
-    velocity.current.x, // eslint-disable-line react-hooks/refs
-    velocity.current.y, // eslint-disable-line react-hooks/refs
-    velocity.current.z, // eslint-disable-line react-hooks/refs
+    velocityRef.current.x, // eslint-disable-line react-hooks/refs
+    velocityRef.current.y, // eslint-disable-line react-hooks/refs
+    velocityRef.current.z, // eslint-disable-line react-hooks/refs
   ];
 
   // Check if sprinting
@@ -927,9 +929,9 @@ export const PlayerCharacter = React.forwardRef<
         isIt={isIt}
         // Pass ref values for per-frame updates without React re-renders (R3F optimization pattern)
         velocity={currentVelocity} // eslint-disable-line react-hooks/refs
-        cameraRotation={cameraRotation.current.horizontal} // eslint-disable-line react-hooks/refs
+        cameraRotation={cameraRotationRef.current.horizontal} // eslint-disable-line react-hooks/refs
         isSprinting={isSprinting} // eslint-disable-line react-hooks/refs
-        isJetpackActive={jetpackActive.current} // eslint-disable-line react-hooks/refs
+        isJetpackActive={jetpackActiveRef.current} // eslint-disable-line react-hooks/refs
       />
       {/* Jetpack thrust visual effect */}
       {showJetpackFlame && (
