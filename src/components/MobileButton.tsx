@@ -6,6 +6,7 @@ interface MobileButtonProps {
   icon?: string;
   onPress: () => void;
   onRelease: () => void;
+  onDoubleTap?: () => void; // Optional double-tap handler
   position?: "bottom-center" | "bottom-right";
 }
 
@@ -14,17 +15,35 @@ export const MobileButton: React.FC<MobileButtonProps> = ({
   icon,
   onPress,
   onRelease,
+  onDoubleTap,
   position = "bottom-center",
 }) => {
   const buttonRef = useRef<HTMLDivElement>(null);
   const pressedRef = useRef(false);
+  const lastTapTimeRef = useRef(0);
+  const DOUBLE_TAP_WINDOW = 300; // ms - must match desktop double-jump window
 
   const handlePress = useCallback(() => {
     if (!pressedRef.current) {
       pressedRef.current = true;
+
+      // Check for double-tap
+      const currentTime = Date.now();
+      const timeSinceLastTap = currentTime - lastTapTimeRef.current;
+
+      if (
+        onDoubleTap &&
+        timeSinceLastTap < DOUBLE_TAP_WINDOW &&
+        timeSinceLastTap > 0
+      ) {
+        // Double-tap detected!
+        onDoubleTap();
+      }
+
+      lastTapTimeRef.current = currentTime;
       onPress();
     }
-  }, [onPress]);
+  }, [onPress, onDoubleTap]);
 
   const handleRelease = useCallback(() => {
     if (pressedRef.current) {

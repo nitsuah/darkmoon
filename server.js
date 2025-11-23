@@ -127,11 +127,14 @@ ioServer.on("connection", (client) => {
 
   ioServer.sockets.emit("move", clients);
 
-  client.on("move", ({ id, rotation, position }) => {
-    clients[id].position = position;
-    clients[id].rotation = rotation;
+  // Use client.id from Socket instance to prevent position spoofing
+  client.on("move", ({ rotation, position }) => {
+    if (clients[client.id]) {
+      clients[client.id].position = position;
+      clients[client.id].rotation = rotation;
 
-    ioServer.sockets.emit("move", clients);
+      ioServer.sockets.emit("move", clients);
+    }
   });
 
   // Handle chat messages

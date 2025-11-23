@@ -116,7 +116,7 @@
   gap: 2rem;
   padding: 0 1rem;
   max-width: 1200px;
-  margin: 0 auto;
+  margin: -2rem auto 0 auto; /* Bring cards up closer to badges */
 }
 
 .mode-card {
@@ -136,23 +136,39 @@
 .mode-card-flip-container {
   perspective: 1000px;
   padding: 0;
-  min-height: 320px;
+  min-height: 420px; /* Increased from 320px for 30% larger cards */
   display: flex;
   align-items: stretch;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.4s ease;
 }
 
 .mode-card-flip-inner {
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 320px;
+  min-height: 420px; /* Increased from 320px */
   text-align: center;
-  transition: transform 0.6s;
+  transition: transform 0.6s, scale 0.4s ease;
   transform-style: preserve-3d;
 }
 
-.mode-card-flip-container:hover .mode-card-flip-inner {
-  transform: rotateY(180deg);
+/* Hover for desktop, active for mobile touch */
+.mode-card-flip-container:hover .mode-card-flip-inner,
+.mode-card-flip-container:active .mode-card-flip-inner,
+.mode-card-flip-container.flipped .mode-card-flip-inner {
+  transform: rotateY(180deg) scale(1.08); /* Add slight scale up on flip */
+}
+
+/* Prevent hover flip on mobile, use flipped class instead */
+@media (max-width: 1024px) {
+  .mode-card-flip-container:hover .mode-card-flip-inner {
+    transform: none;
+  }
+
+  .mode-card-flip-container.flipped .mode-card-flip-inner {
+    transform: rotateY(180deg) scale(1.08);
+  }
 }
 
 .mode-card-front,
@@ -160,10 +176,10 @@
   position: absolute;
   width: 100%;
   height: 100%;
-  min-height: 320px;
+  min-height: 420px; /* Increased from 320px for 30% larger cards */
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-  padding: 2.5rem 2rem;
+  padding: 3rem 2.5rem; /* Increased padding for larger cards */
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -420,57 +436,158 @@
 @media (max-width: 1024px) {
   .game-modes-grid {
     grid-template-columns: 1fr;
-    max-width: 500px;
+    max-width: 550px;
+    gap: 2rem;
   }
 
   .mode-card-flip-container {
-    min-height: 300px;
+    min-height: 380px;
   }
 
   .mode-card-flip-inner,
   .mode-card-front,
   .mode-card-back {
-    min-height: 300px;
+    min-height: 380px;
+  }
+
+  /* Convert feature list to grid for better mobile layout */
+  .flip-features-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem 1rem;
+    max-width: 100%;
+    padding: 0;
+  }
+
+  .flip-features-list li {
+    font-size: 0.85rem;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    text-align: center;
   }
 }
 
 @media (max-width: 768px) {
+  /* Make home page fullscreen on mobile */
+  .home-container {
+    min-height: 100vh;
+    min-height: calc(var(--vh, 1vh) * 100);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .hero-section {
+    flex-shrink: 0;
+    padding: 1.5rem 1rem;
+  }
+
   .hero-title {
     font-size: 2.5rem;
+    text-align: left; /* QA request: left align on mobile */
   }
 
   .hero-subtitle {
     font-size: 1.2rem;
+    text-align: left; /* QA request: left align on mobile */
   }
 
   .cta-play-button {
     padding: 1rem 2rem;
     font-size: 1.1rem;
+    margin: 0; /* QA request: no auto-centering on mobile */
   }
 
+  /* QA request: vertically stack badges on mobile */
+  .hero-badges {
+    flex-direction: column;
+    align-items: flex-start; /* Left align badges */
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+
+  .badge {
+    width: fit-content;
+  }
+
+  /* Ensure cards are visible and properly positioned */
   .game-modes-grid {
-    grid-template-columns: 1fr;
+    display: flex;
+    overflow-x: auto;
+    overflow-y: visible;
+    scroll-snap-type: x mandatory;
     gap: 1.5rem;
+    padding: 1rem 1rem 2rem 1rem;
+    max-width: 100%;
+    margin: auto 0 2rem 0; /* Push to bottom with margin */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(102, 126, 234, 0.5) rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+  }
+
+  .game-modes-grid::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .game-modes-grid::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+  }
+
+  .game-modes-grid::-webkit-scrollbar-thumb {
+    background: rgba(102, 126, 234, 0.5);
+    border-radius: 10px;
   }
 
   .mode-card-flip-container {
-    min-height: 240px;
+    flex: 0 0 85%;
+    max-width: 400px;
+    scroll-snap-align: center;
+    min-height: 380px; /* Reduced to fit better on mobile screens */
   }
 
   .mode-card-flip-inner,
   .mode-card-front,
   .mode-card-back {
-    min-height: 240px;
-    padding: 1.75rem 1.5rem;
+    min-height: 380px;
+    padding: 2rem 1.5rem;
+  }
+
+  /* QA request: minimal cards on mobile - hide descriptions */
+  .mode-card-front p {
+    display: none;
+  }
+
+  .mode-card-front h3 {
+    font-size: 1.15rem;
+    margin: 0.75rem 0;
+  }
+
+  .mode-icon {
+    font-size: 3.5rem; /* Larger emoji since we're hiding text */
   }
 
   .flip-features-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
     max-width: 100%;
   }
 
   .flip-features-list li {
     font-size: 0.8rem;
-    padding: 0.3rem 0;
+    padding: 0.5rem 0.25rem;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  .mode-card-back h3 {
+    margin-bottom: 1.25rem;
   }
 
   .section-title {
@@ -478,12 +595,12 @@
   }
 
   .home-container {
-    gap: 2.5rem;
-    padding: 1rem;
+    gap: 1.5rem;
+    padding: 1rem 0.5rem;
   }
 
   .hero-section {
-    padding: 2rem 1rem;
+    padding: 1.5rem 1rem;
   }
 }
 
@@ -499,6 +616,8 @@
   .cta-play-button {
     padding: 0.875rem 1.5rem;
     font-size: 1rem;
+    width: 90%;
+    max-width: 300px;
   }
 
   .hero-badges {
@@ -510,32 +629,58 @@
     padding: 0.4rem 0.8rem;
   }
 
+  .game-modes-grid {
+    padding: 0 0.5rem 1.5rem 0.5rem;
+    gap: 1rem;
+    margin-bottom: 1.5rem; /* Ensure it's visible above footer */
+  }
+
   .mode-card-flip-container {
-    min-height: 220px;
+    flex: 0 0 90%;
+    max-width: 350px;
+    min-height: 340px; /* Smaller for very small screens */
   }
 
   .mode-card-flip-inner,
   .mode-card-front,
   .mode-card-back {
-    min-height: 220px;
-    padding: 1.5rem 1rem;
+    min-height: 340px;
+    padding: 1.75rem 1.25rem;
   }
 
   .mode-icon {
     font-size: 2.5rem;
+    margin-bottom: 0.75rem;
   }
 
   .mode-card h3 {
-    font-size: 1.3rem;
+    font-size: 1.25rem;
+    margin: 0.5rem 0;
   }
 
   .mode-card p {
     font-size: 0.9rem;
+    margin: 0.5rem 0 1rem 0;
+  }
+
+  .mode-card-back h3 {
+    margin-bottom: 1rem;
+  }
+
+  .flip-features-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
   }
 
   .flip-features-list li {
     font-size: 0.75rem;
-    padding: 0.25rem 0;
+    padding: 0.5rem 0.25rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    text-align: center;
+    line-height: 1.2;
   }
 
   .home-container {

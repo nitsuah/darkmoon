@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Footer from "../components/Footer";
 // import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorBoundary from "../components/ErrorBoundary";
+import UtilityMenu from "../components/UtilityMenu";
 import "../styles/App.css";
 import "../styles/Home.css";
 
@@ -12,6 +13,55 @@ import "../styles/Home.css";
 
 const Home = () => {
   const navigate = useNavigate();
+  const [flippedCard, setFlippedCard] = React.useState<string | null>(null);
+
+  // Fix mobile browser address bar on home page
+  React.useEffect(() => {
+    const updateViewportHeight = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty("--vh", `${vh}px`);
+      document.documentElement.style.setProperty(
+        "--app-height",
+        `${window.innerHeight}px`
+      );
+    };
+
+    updateViewportHeight();
+
+    let resizeTimeout: ReturnType<typeof setTimeout>;
+    const debouncedUpdate = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(updateViewportHeight, 150);
+    };
+
+    window.addEventListener("resize", debouncedUpdate);
+    window.addEventListener("orientationchange", updateViewportHeight);
+
+    return () => {
+      window.removeEventListener("resize", debouncedUpdate);
+      window.removeEventListener("orientationchange", updateViewportHeight);
+      clearTimeout(resizeTimeout);
+    };
+  }, []);
+
+  // Handle card flip on mobile (tap to flip, tap again to navigate)
+  const handleCardInteraction = (cardId: string, navigateTo?: string) => {
+    // On mobile, first tap flips, second tap navigates
+    if (window.innerWidth <= 1024) {
+      if (flippedCard === cardId && navigateTo) {
+        navigate(navigateTo);
+      } else {
+        setFlippedCard(cardId);
+        // Auto-flip back after 4 seconds on mobile
+        setTimeout(() => {
+          setFlippedCard(null);
+        }, 4000);
+      }
+    } else if (navigateTo) {
+      // On desktop, click navigates immediately
+      navigate(navigateTo);
+    }
+  };
 
   const renderHome = () => (
     <div className="home-container">
@@ -35,8 +85,10 @@ const Home = () => {
       {/* Game Modes Grid */}
       <div className="game-modes-grid">
         <div
-          className="mode-card mode-card-solo mode-card-flip-container"
-          onClick={() => navigate("/solo")}
+          className={`mode-card mode-card-solo mode-card-flip-container ${
+            flippedCard === "solo" ? "flipped" : ""
+          }`}
+          onClick={() => handleCardInteraction("solo", "/solo")}
           onKeyDown={(e) => e.key === "Enter" && navigate("/solo")}
           role="button"
           tabIndex={0}
@@ -63,7 +115,17 @@ const Home = () => {
           </div>
         </div>
 
-        <div className="mode-card mode-card-disabled mode-card-flip-container">
+        <div
+          className={`mode-card mode-card-disabled mode-card-flip-container ${
+            flippedCard === "multiplayer" ? "flipped" : ""
+          }`}
+          onClick={() => handleCardInteraction("multiplayer")}
+          onKeyDown={(e) =>
+            e.key === "Enter" && handleCardInteraction("multiplayer")
+          }
+          role="button"
+          tabIndex={0}
+        >
           <div className="mode-card-flip-inner">
             <div className="mode-card-front">
               <div className="mode-icon">👥</div>
@@ -88,10 +150,20 @@ const Home = () => {
           </div>
         </div>
 
-        <div className="mode-card mode-card-disabled mode-card-flip-container">
+        <div
+          className={`mode-card mode-card-disabled mode-card-flip-container ${
+            flippedCard === "tournament" ? "flipped" : ""
+          }`}
+          onClick={() => handleCardInteraction("tournament")}
+          onKeyDown={(e) =>
+            e.key === "Enter" && handleCardInteraction("tournament")
+          }
+          role="button"
+          tabIndex={0}
+        >
           <div className="mode-card-flip-inner">
             <div className="mode-card-front">
-              <div className="mode-icon">�</div>
+              <div className="mode-icon">🏆</div>
               <h3>Tournament</h3>
               <p>Ranked competitive matches</p>
               <div className="mode-status status-coming-soon">
@@ -138,6 +210,9 @@ const Home = () => {
         </div>
 
         {renderHome()}
+
+        {/* Utility Menu (theme toggle only on home page) */}
+        <UtilityMenu />
 
         <div
           style={{

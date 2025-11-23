@@ -137,6 +137,15 @@ export class CollisionSystem {
     // Check collision with all boundaries
     for (const boundary of this.boundaries) {
       if (playerBox.intersectsBox(boundary)) {
+        // If player is above the rock (jumping/jetpacking over it), allow movement
+        const playerBottomY = newPosition.y - 0.5;
+        const boundaryTopY = boundary.max.y;
+
+        if (playerBottomY > boundaryTopY + 0.2) {
+          // Player is clearly above the obstacle, allow movement
+          continue;
+        }
+
         // Collision detected, calculate the best position to move to
         return this.resolveCollision(currentPosition, newPosition, boundary);
       }
