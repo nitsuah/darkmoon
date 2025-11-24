@@ -145,9 +145,7 @@ export const PlayerCharacter = React.forwardRef<
   // gated debug logger - only logs in dev
   const debug = (...args: unknown[]) => {
     // Vite exposes import.meta.env.DEV; fall back to false if undefined
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    if (import.meta && import.meta.env && import.meta.env.DEV) {
+    if (import.meta?.env?.DEV) {
       console.log(...args);
     }
   };
@@ -451,8 +449,8 @@ export const PlayerCharacter = React.forwardRef<
                   if (soundMgr) {
                     soundMgr.playTagSound();
                   }
-                } catch (error) {
-                  console.warn("Sound manager not ready for tag sound:", error);
+                } catch {
+                  // Sound manager not ready - silently continue
                 }
 
                 // Player should NOT freeze when tagging - only the tagged player freezes
@@ -680,8 +678,8 @@ export const PlayerCharacter = React.forwardRef<
           if (soundMgr) {
             soundMgr.playJetpackActivateSound();
           }
-        } catch (error) {
-          console.warn("Sound manager not ready for jetpack sound:", error);
+        } catch {
+          // Sound manager not ready - silently continue
         }
       } else {
         // Single jump - normal jump only (no jetpack from space bar)
@@ -703,8 +701,8 @@ export const PlayerCharacter = React.forwardRef<
         if (soundMgr) {
           soundMgr.playJumpSound();
         }
-      } catch (error) {
-        console.warn("Sound manager not ready for jump sound:", error);
+      } catch {
+        // Sound manager not ready - silently continue
       }
     }
 
@@ -731,8 +729,8 @@ export const PlayerCharacter = React.forwardRef<
             if (soundMgr) {
               jetpackThrustSoundRef.current = soundMgr.playJetpackThrustSound();
             }
-          } catch (error) {
-            console.warn("Sound manager not ready for thrust sound:", error);
+          } catch {
+            // Sound manager not ready - silently continue
           }
         }
       }
@@ -744,8 +742,8 @@ export const PlayerCharacter = React.forwardRef<
           soundMgr.stopJetpackThrustSound(jetpackThrustSoundRef.current);
           jetpackThrustSoundRef.current = null;
         }
-      } catch (error) {
-        console.warn("Error stopping thrust sound:", error);
+      } catch {
+        // Sound manager not ready - silently continue
       }
     }
 
@@ -789,8 +787,8 @@ export const PlayerCharacter = React.forwardRef<
             if (soundMgr) {
               soundMgr.playRCSSound();
             }
-          } catch (error) {
-            console.warn("Sound manager not ready for RCS sound:", error);
+          } catch {
+            // Sound manager not ready - silently continue
           }
         }
 
@@ -858,8 +856,8 @@ export const PlayerCharacter = React.forwardRef<
           if (soundMgr) {
             soundMgr.playLandingSoundScaled(landingVelocity);
           }
-        } catch (error) {
-          console.warn("Sound manager not ready for landing sound:", error);
+        } catch {
+          // Sound manager not ready - silently continue
         }
 
         // Trigger dust effect on hard landing (velocity > 0.02)
