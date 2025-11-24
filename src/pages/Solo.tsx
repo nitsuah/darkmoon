@@ -74,6 +74,8 @@ const Solo: React.FC = () => {
   const [localPlayerId] = useState(
     () => `local-${Math.random().toString(36).slice(2, 8)}`
   );
+  // Memoize current player ID (avoids repeated conditional checks)
+  const currentPlayerId = socketClient?.id || localPlayerId;
   const [joystickMove, setJoystickMove] = useState({ x: 0, y: 0 });
   // joystickCamera removed - right joystick (camera look) disabled on mobile
 
@@ -499,13 +501,14 @@ const Solo: React.FC = () => {
 
             // FORCE a bot to be IT in debug mode (never the player)
             const itPlayerId = newGameState.itPlayerId;
-            const playerId = socketClient?.id || localPlayerId;
 
-            if (itPlayerId === playerId) {
+            if (itPlayerId === currentPlayerId) {
               // Player was randomly selected as IT - change it to bot-1
               newGameState.itPlayerId = "bot-1";
               gameManager.current["gameState"] = newGameState;
-              gameManager.current.updatePlayer(playerId, { isIt: false });
+              gameManager.current.updatePlayer(currentPlayerId, {
+                isIt: false,
+              });
               gameManager.current.updatePlayer("bot-1", { isIt: true });
               setPlayerIsIt(false);
               setBotIsIt(true);
@@ -557,7 +560,6 @@ const Solo: React.FC = () => {
 
       // Show correct notification based on who is IT
       const itPlayerId = newGameState.itPlayerId;
-      const currentPlayerId = socketClient?.id || localPlayerId;
 
       if (itPlayerId === currentPlayerId) {
         addNotification("Tag game started! You're IT!", "warning");
@@ -672,7 +674,7 @@ const Solo: React.FC = () => {
           mouseControls={mouseControls}
           clients={clientsRef.current}
           gameManager={gameManager.current}
-          currentPlayerId={socketClient?.id || localPlayerId}
+          currentPlayerId={currentPlayerId}
           joystickMove={joystickMove}
           joystickCamera={{ x: 0, y: 0 }} // Disabled - right joystick removed
           lastWalkSoundTimeRef={lastWalkSoundTime}
@@ -706,13 +708,17 @@ const Solo: React.FC = () => {
               handleTag("bot-1", "bot-2", "🤖 Bot1 tagged Bot2!");
             } else {
               // Bot tagged player
-              const playerId = socketClient?.id || localPlayerId;
               setBotIsIt(false);
               setPlayerIsIt(true);
               if (playerCharacterRef.current) {
                 playerCharacterRef.current.freezePlayer(3000);
               }
-              handleTag("bot-1", playerId, "🤖 Bot tagged Player!", "warning");
+              handleTag(
+                "bot-1",
+                currentPlayerId,
+                "🤖 Bot tagged Player!",
+                "warning"
+              );
             }
           }}
           onPositionUpdate={handleBot1PositionUpdate}
@@ -805,7 +811,7 @@ const Solo: React.FC = () => {
       <GameUI
         gameState={gameState}
         players={gamePlayers}
-        currentPlayerId={socketClient?.id || localPlayerId}
+        currentPlayerId={currentPlayerId}
         onStartGame={handleStartTagGame}
         onEndGame={handleEndGame}
         botDebugMode={botDebugMode}
@@ -880,7 +886,7 @@ const Solo: React.FC = () => {
         onToggle={() => setChatVisible(!chatVisible)}
         messages={chatMessages}
         onSendMessage={handleSendMessage}
-        currentPlayerId={socketClient?.id || localPlayerId}
+        currentPlayerId={currentPlayerId}
       />
     </div>
   );
