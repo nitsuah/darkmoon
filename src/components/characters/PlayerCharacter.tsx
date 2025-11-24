@@ -15,6 +15,7 @@ import {
 } from "../../lib/hooks/usePlayerPhysics";
 import { usePlayerCamera } from "../../lib/hooks/usePlayerCamera";
 import { usePlayerState } from "../../lib/hooks/usePlayerState";
+import { computeDirection, computeSpeed } from "../../lib/hooks/usePlayerMovement";
 
 const tagDebug = createTagLogger("PlayerCharacter");
 
@@ -299,66 +300,27 @@ export const PlayerCharacter = React.forwardRef<
       keysPressedRef.current[E];
     const hasJoystickInput = joystickMove.x !== 0 || joystickMove.y !== 0;
 
-    // Calculate speed (used for movement and jump momentum)
-    // Jetpack mode: fixed slower speed (sprint has no effect)
-    // Normal mode: sprint = 5, walk = 2
-    const speed = jetpackActiveRef.current
-      ? 1.5
-      : keysPressedRef.current[SHIFT]
-      ? 5
-      : 2;
+    // Calculate speed using helper
+    const speed = computeSpeed(jetpackActiveRef.current, keysPressedRef.current[SHIFT]);
 
     // WoW-style auto-run: both mouse buttons held = move forward
     if (bothMouseButtons || hasKeyboardInput || hasJoystickInput) {
-      // Movement relative to camera direction
-      const forward = new THREE.Vector3();
-      const right = new THREE.Vector3();
-
-      // Calculate forward and right vectors based on camera rotation
-      forward.set(
-        -Math.sin(cameraRotationRef.current.horizontal),
-        0,
-        -Math.cos(cameraRotationRef.current.horizontal)
-      );
-      right.set(
-        Math.cos(cameraRotationRef.current.horizontal),
-        0,
-        -Math.sin(cameraRotationRef.current.horizontal)
+      // Compute direction via helper
+      const dir = computeDirection(
+        cameraRotationRef.current.horizontal,
+        joystickMove,
+        {
+          W: keysPressedRef.current[W],
+          S: keysPressedRef.current[S],
+          Q: keysPressedRef.current[Q],
+          E: keysPressedRef.current[E],
+        },
+        bothMouseButtons
       );
 
-      // Both mouse buttons: auto-run forward
-      if (bothMouseButtons) {
-        directionRef.current.add(forward);
-      }
-
-      // Keyboard input (can combine with mouse movement)
-      if (keysPressedRef.current[W]) {
-        directionRef.current.add(forward);
-      }
-      if (keysPressedRef.current[S]) {
-        directionRef.current.sub(forward);
-      }
-      if (keysPressedRef.current[Q]) {
-        directionRef.current.sub(right);
-      }
-      if (keysPressedRef.current[E]) {
-        directionRef.current.add(right);
-      }
-
-      // Joystick input (Y is forward/back, X is left/right)
-      if (hasJoystickInput) {
-        directionRef.current.add(
-          forward.clone().multiplyScalar(-joystickMove.y)
-        );
-        directionRef.current.add(right.clone().multiplyScalar(joystickMove.x));
-      }
-
-      // Normalize direction
-      if (directionRef.current.length() > 0) {
-        directionRef.current.normalize();
-        velocityRef.current
-          .copy(directionRef.current)
-          .multiplyScalar(speed * delta);
+      if (dir && dir.length() > 0) {
+        directionRef.current.copy(dir);
+        velocityRef.current.copy(directionRef.current).multiplyScalar(speed * delta);
 
         // Calculate new position with collision detection
         const currentPosition = meshRef.current.position.clone();
@@ -369,6 +331,7 @@ export const PlayerCharacter = React.forwardRef<
           currentPosition,
           newPosition
         );
+
 
         // Check for player-to-player collisions and tagging
         const myId = socketClient?.id || currentPlayerId;
