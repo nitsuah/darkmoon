@@ -3,6 +3,11 @@ import * as THREE from "three";
 import { processTagging } from "../usePlayerTagging";
 import GameManager from "../../../components/GameManager";
 
+// Mock the sound manager so playTagSound doesn't throw during tests
+vi.mock("../../../components/SoundManager", () => ({
+  getSoundManager: () => ({ playTagSound: vi.fn() }),
+}));
+
 describe("usePlayerTagging.processTagging", () => {
   let gameManager: GameManager;
   let clients: Record<string, { position: [number, number, number] }>;
@@ -40,9 +45,8 @@ describe("usePlayerTagging.processTagging", () => {
     // Setup tag game
     gameManager.startTagGame(60);
 
-    // Ensure p1 is IT
+    // Force p1 to be IT for test determinism
     const itId = gameManager.getGameState().itPlayerId as string;
-    // Force it to be p1 for test determinism
     gameManager.updatePlayer(itId, { isIt: false });
     gameManager.updatePlayer("p1", { isIt: true });
     gameManager.getGameState().itPlayerId = "p1";
@@ -78,7 +82,7 @@ describe("usePlayerTagging.processTagging", () => {
     expect(setPlayerIsIt).toHaveBeenCalledWith(false);
     expect(setBotIsIt).toHaveBeenCalledWith(true);
     expect(setBot1GotTagged).toHaveBeenCalled();
-    expect(socketClient!.emit.mock.calls.length).toBeGreaterThanOrEqual(1);
+    expect(socketClient!.emit).toHaveBeenCalled();
   });
 
   it("multiplayer tagging calls gameManager.tagPlayer and emits event", () => {
@@ -124,6 +128,6 @@ describe("usePlayerTagging.processTagging", () => {
 
     expect(tagged).toBe(true);
     expect(tagSpy).toHaveBeenCalled();
-    expect(socketClient!.emit.mock.calls.length).toBeGreaterThanOrEqual(1);
+    expect(socketClient!.emit).toHaveBeenCalled();
   });
 });
