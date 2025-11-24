@@ -283,6 +283,7 @@ manualChunks: {
    - SpacemanModel.tsx 3D geometry (load on game start, not home page)
 
 3. **Image optimization:**
+
    ```bash
    # Assets to optimize:
    src/assets/twitter-512.png (68KB - can be WebP)

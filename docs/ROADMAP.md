@@ -14,7 +14,7 @@ Transform Darkmoon from a multiplayer tech demo into a production-ready 3D socia
 
 ## Roadmap Overview
 
-```
+```bash
 Q4 2025: Foundation & Mobile Fix (v1.1)
 ├── Fix critical mobile issues
 ├── Refactor monolithic components
@@ -113,7 +113,7 @@ Q4 2026: Platform Expansion (v3.0)
 
 **Current structure:**
 
-```
+```bash
 Solo.tsx (1,002 lines)
 ├── State management (20+ useState)
 ├── Socket connection logic
@@ -124,7 +124,7 @@ Solo.tsx (1,002 lines)
 
 **New structure:**
 
-```
+```bash
 pages/Solo/
 ├── index.tsx (150 lines) - Orchestration only
 ├── hooks/
