@@ -63,6 +63,16 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
 
     // Use native events with passive: false to allow preventDefault
     const touchStartHandler = (e: globalThis.TouchEvent) => {
+      // Non-fatal debug log - helps during device testing without polluting production logs
+      try {
+        console.debug("MobileJoystick touchstart", {
+          side,
+          touches: e.touches.length,
+        });
+      } catch {
+        /* ignore */
+      }
+
       e.preventDefault();
       e.stopPropagation();
 
@@ -109,10 +119,47 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
       }
     };
 
+    // Pointer events provide unified handling on many devices (including some Android and Windows touchscreens)
+    const pointerDownHandler = (e: globalThis.PointerEvent) => {
+      try {
+        console.debug("MobileJoystick pointerdown", {
+          side,
+          pointerType: e.pointerType,
+        });
+      } catch {
+        /* ignore */
+      }
+
+      // Only handle primary pointers
+      if (e.isPrimary === false) return;
+      e.preventDefault?.();
+      e.stopPropagation?.();
+
+      touchIdRef.current = e.pointerId;
+      base.classList.add("active");
+      activeRef.current = true;
+      handleMove(e.clientX, e.clientY);
+    };
+
+    const pointerMoveHandler = (e: globalThis.PointerEvent) => {
+      if (!activeRef.current) return;
+      handleMove(e.clientX, e.clientY);
+    };
+
+    const pointerUpHandler = (e: globalThis.PointerEvent) => {
+      const ended = touchIdRef.current === e.pointerId;
+      if (ended) handleEnd();
+    };
+
     base.addEventListener("touchstart", touchStartHandler, { passive: false });
     base.addEventListener("touchmove", touchMoveHandler, { passive: false });
     base.addEventListener("touchend", touchEndHandler, { passive: false });
     base.addEventListener("touchcancel", touchEndHandler, { passive: false });
+
+    base.addEventListener("pointerdown", pointerDownHandler);
+    base.addEventListener("pointermove", pointerMoveHandler);
+    base.addEventListener("pointerup", pointerUpHandler);
+    base.addEventListener("pointercancel", pointerUpHandler);
 
     // Cleanup on unmount
     return () => {
@@ -120,6 +167,11 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
       base.removeEventListener("touchmove", touchMoveHandler);
       base.removeEventListener("touchend", touchEndHandler);
       base.removeEventListener("touchcancel", touchEndHandler);
+
+      base.removeEventListener("pointerdown", pointerDownHandler);
+      base.removeEventListener("pointermove", pointerMoveHandler);
+      base.removeEventListener("pointerup", pointerUpHandler);
+      base.removeEventListener("pointercancel", pointerUpHandler);
       if (activeRef.current) {
         handleEnd();
       }

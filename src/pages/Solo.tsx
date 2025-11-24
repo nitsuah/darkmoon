@@ -1,8 +1,6 @@
 import * as React from "react";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Canvas } from "@react-three/fiber";
-import { Text } from "@react-three/drei";
-import { io, Socket } from "socket.io-client";
+import { type Socket } from "socket.io-client";
 import type { Clients } from "../types/socket";
 import PerformanceMonitor from "../components/PerformanceMonitor";
 import UtilityMenu from "../components/UtilityMenu";
@@ -13,18 +11,16 @@ import CollisionSystem from "../components/CollisionSystem";
 import GameManager, { GameState, Player } from "../components/GameManager";
 import GameUI from "../components/GameUI";
 import { MobileControls } from "../components/MobileControls";
-import SpacemanModel from "../components/SpacemanModel";
-import { BotCharacter } from "../components/characters/BotCharacter";
-import {
-  PlayerCharacter,
-  type PlayerCharacterHandle,
-} from "../components/characters/PlayerCharacter";
+import type { PlayerCharacterHandle } from "../components/characters/PlayerCharacter";
 import "../styles/App.css";
 import PauseMenu from "../components/PauseMenu";
 import { useNavigate } from "react-router-dom";
 import { filterProfanity } from "../lib/constants/profanity";
 import { createLogger, createTagLogger } from "../lib/utils/logger";
+import { useSoloGame } from "../lib/hooks/useSoloGame";
+import { useSocketConnection } from "../lib/hooks/useSocketConnection";
 import { BOT1_CONFIG, BOT2_CONFIG } from "../lib/constants/botConfigs";
+import SoloScene from "./Solo/components/SoloScene";
 import { W, A, S, D, Q, E, SHIFT, SPACE } from "../components/utils";
 import { useNotifications } from "../lib/hooks/useNotifications";
 import { useMobileDetection } from "../lib/hooks/useMobileDetection";
@@ -88,8 +84,7 @@ const Solo: React.FC = () => {
   const bot2PositionRef = useRef<[number, number, number]>([8, 0.5, -8]);
 
   const [playerIsIt, setPlayerIsIt] = useState(true); // Player starts as IT
-  const [botIsIt, setBotIsIt] = useState(false);
-  const [bot2IsIt, setBot2IsIt] = useState(false);
+  // Bot IT states are tracked via GameManager; local flags removed
 
   // Timestamps for when bots get tagged (to trigger freeze)
   const [bot1GotTagged, setBot1GotTagged] = useState(0);
@@ -158,81 +153,69 @@ const Solo: React.FC = () => {
   // Generate stable rock positions once (prevents respawning every frame)
   const rockPositions = useRockPositions();
 
-  // Solo mode: no reconnection logic needed
-  const connectSocket = useCallback(() => {
-    const serverUrl =
-      import.meta.env.VITE_SOCKET_SERVER_URL || window.location.origin;
-    const socket = io(serverUrl, {
-      transports: ["websocket"],
-      reconnection: false, // Disable auto-reconnection for solo mode
-      reconnectionAttempts: 0,
-      reconnectionDelay: 0,
-      autoConnect: false, // Don't connect automatically
-    });
+  const { initializeForSocket } = useSoloGame();
 
-    socket.on("connect", () => {
-      log.debug("Socket connected:", socket.id);
+  // Create and connect socket using shared hook (solo mode disables auto-reconnect)
+  const { getSocket, connect: connectSocket } = useSocketConnection({
+    autoConnect: false,
+    ioOptions: { reconnection: false },
+  });
 
-      // Initialize game manager
-      if (!gameManager.current) {
-        const newGameManager = new GameManager();
-
-        // Add solo player
-        const soloPlayer: Player = {
-          id: socket.id || "solo",
-          name: "Solo Player",
-          position: [0, 1, 0],
-          rotation: ZERO_ROTATION,
-          isIt: false,
-        };
-        newGameManager.addPlayer(soloPlayer);
-
-        // Add bot player so tag game can start (needs 2+ players)
-        const botPlayer: Player = {
-          id: "bot-1",
-          name: "Bot",
-          position: [5, 0.5, -5],
-          rotation: ZERO_ROTATION,
-          isIt: false,
-        };
-        newGameManager.addPlayer(botPlayer);
-
-        // Set up callbacks to sync state
-        newGameManager.setCallbacks({
-          onGameStateUpdate: (state) => {
-            setGameState(state);
-          },
-          onPlayerUpdate: (players) => {
-            setGamePlayers(new Map(players));
-            // Sync IT status from GameManager to local state
-            const soloPlayerId = socket.id || "solo";
-            const soloPlayer = players.get(soloPlayerId);
-            const bot1Player = players.get("bot-1");
-            const bot2Player = players.get("bot-2");
-            if (soloPlayer) setPlayerIsIt(soloPlayer.isIt || false);
-            if (bot1Player) setBotIsIt(bot1Player.isIt || false);
-            if (bot2Player) setBot2IsIt(bot2Player.isIt || false);
-          },
-        });
-
-        gameManager.current = newGameManager;
-        setGamePlayers(new Map(newGameManager.getPlayers()));
-        log.debug("Game manager initialized for solo");
-      }
-    });
-
-    socket.on("disconnect", () => {
-      log.debug("Socket disconnected");
-    });
-
-    socket.connect();
-    setSocketClient(socket);
-  }, []);
-
-  // Socket connection setup
+  // Mirror hook socket into local state for components that expect Socket | null
   useEffect(() => {
-    connectSocket();
-    // Solo mode: no cleanup needed since we don't auto-reconnect
+    const s = getSocket();
+    if (s) setSocketClient(s as Socket);
+  }, [getSocket]);
+
+  // Socket connection setup - connect once on mount
+  useEffect(() => {
+    const socket = connectSocket();
+    // Setup initial game manager once socket connects
+    const onConnect = () => {
+      const s = getSocket() || socket;
+      if (!s) return;
+      log.debug("Socket connected:", s.id);
+
+      // Initialize game manager via hook helper
+      if (!gameManager.current) {
+        const manager = initializeForSocket(s, {
+          setGamePlayers: setGamePlayers as (m: Map<string, Player>) => void,
+          setGameState: setGameState as (s: GameState) => void,
+          setPlayerIsIt: setPlayerIsIt as (v: boolean) => void,
+        });
+        gameManager.current = manager;
+      }
+    };
+
+    // Ensure we add listener to socket returned by connectSocket
+    try {
+      const s = getSocket() || socket;
+      if (s && s.on) {
+        s.on("connect", onConnect);
+      }
+    } catch {
+      // ignore
+    }
+
+    // Connect if needed
+    try {
+      if (socket && socket.connect) {
+        socket.connect();
+      }
+    } catch {
+      // ignore
+    }
+
+    return () => {
+      try {
+        const s = getSocket() || socket;
+        if (s && s.off) {
+          s.off("connect", onConnect);
+        }
+      } catch {
+        // ignore
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -526,7 +509,6 @@ const Solo: React.FC = () => {
               });
               gameManager.current.updatePlayer("bot-1", { isIt: true });
               setPlayerIsIt(false);
-              setBotIsIt(true);
               tagDebug(
                 "🎮 Forced bot-1 to be IT (debug mode - player cannot be IT)"
               );
@@ -640,161 +622,37 @@ const Solo: React.FC = () => {
       <Tutorial />
       <HelpModal />
 
-      <Canvas
-        shadows={qualitySettings.shadows}
-        camera={{ position: [0, 5, 10], fov: 60 }}
-        dpr={qualitySettings.pixelRatio}
-        gl={{ antialias: qualitySettings.antialias }}
-      >
-        {/* Lighting */}
-        <ambientLight intensity={0.3} />
-        <directionalLight
-          position={[10, 10, 5]}
-          intensity={1}
-          castShadow={qualitySettings.shadows}
-        />
-
-        {/* Grid helper for ground reference */}
-        <gridHelper args={[100, 100]} />
-
-        {/* Moon terrain with craters and shadows */}
-        {/* Moon surface - Large flat plane */}
-        <mesh
-          receiveShadow
-          rotation={[-Math.PI / 2, 0, 0]}
-          position={[0, 0, 0]}
-        >
-          <planeGeometry args={[100, 100]} />
-          <meshStandardMaterial color="#888888" />
-        </mesh>
-
-        {/* Scattered Moon Rocks (collision obstacles) */}
-        {rockPositions.map((rock, i) => (
-          <mesh
-            key={`rock-${i}`}
-            position={[rock.x, rock.height / 2, rock.z]}
-            castShadow
-            receiveShadow
-          >
-            <boxGeometry args={[rock.size, rock.height, rock.size]} />
-            <meshStandardMaterial color="#666666" />
-          </mesh>
-        ))}
-
-        {/* Player Character */}
-        <PlayerCharacter
-          ref={playerCharacterRef}
-          keysPressedRef={keysPressedRef}
-          socketClient={socketClient}
-          mouseControls={mouseControls}
-          clients={clientsRef.current}
-          gameManager={gameManager.current}
-          currentPlayerId={currentPlayerId}
-          joystickMove={joystickMove}
-          joystickCamera={{ x: 0, y: 0 }} // Disabled - right joystick removed
-          lastWalkSoundTimeRef={lastWalkSoundTime}
-          isPaused={isPaused}
-          onPositionUpdate={handlePlayerPositionUpdate}
-          playerIsIt={playerIsIt}
-          setPlayerIsIt={setPlayerIsIt}
-          setBotIsIt={setBotIsIt}
-          setBot1GotTagged={setBot1GotTagged}
-          setBot2GotTagged={setBot2GotTagged}
-          setGameState={setGameState}
-          showHitboxes={false}
-          mobileJetpackTrigger={mobileJetpackTrigger}
-          onTagSuccess={() => addNotification("You tagged the bot!", "success")}
-        />
-
-        {/* Bot Character 1 - Always present in solo mode */}
-        <BotCharacter
-          targetPosition={
-            botDebugMode ? bot2PositionRef.current : playerPositionRef.current
-          }
-          isIt={botIsIt}
-          targetIsIt={botDebugMode ? bot2IsIt : playerIsIt}
-          isPaused={isPaused}
-          onTagTarget={() => {
-            if (botDebugMode) {
-              // Bot1 tagged Bot2
-              setBotIsIt(false);
-              setBot2IsIt(true);
-              setBot2GotTagged(Date.now());
-              handleTag("bot-1", "bot-2", "🤖 Bot1 tagged Bot2!");
-            } else {
-              // Bot tagged player
-              setBotIsIt(false);
-              setPlayerIsIt(true);
-              if (playerCharacterRef.current) {
-                playerCharacterRef.current.freezePlayer(3000);
-              }
-              handleTag(
-                "bot-1",
-                currentPlayerId,
-                "🤖 Bot tagged Player!",
-                "warning"
-              );
-            }
-          }}
-          onPositionUpdate={handleBot1PositionUpdate}
-          gameState={gameState}
-          collisionSystem={collisionSystemRef}
-          gotTaggedTimestamp={bot1GotTagged}
-          config={BOT1_CONFIG}
-          color="#ff8888"
-        />
-
-        {/* Bot Character 2 - Only in debug mode */}
-        {botDebugMode && (
-          <BotCharacter
-            targetPosition={bot1PositionRef.current}
-            isIt={bot2IsIt}
-            targetIsIt={botIsIt}
-            isPaused={isPaused}
-            onTagTarget={() => {
-              // Bot2 tagged Bot1
-              setBot2IsIt(false);
-              setBotIsIt(true);
-              setBot1GotTagged(Date.now());
-              handleTag("bot-2", "bot-1", "🤖 Bot2 tagged Bot1!");
-            }}
-            onPositionUpdate={handleBot2PositionUpdate}
-            gameState={gameState}
-            collisionSystem={collisionSystemRef}
-            gotTaggedTimestamp={bot2GotTagged}
-            config={BOT2_CONFIG}
-            color="#88ff88"
-            labelColor="#00ff00"
-          />
-        )}
-
-        {/* Other connected players */}
-        {Object.entries(clientsRef.current)
-          .filter(([id]) => id !== "bot-1" && id !== "bot-2") // Exclude bots - they're rendered as BotCharacter components
-          .map(([id, client]) => {
-            const player = gameManager.current?.getPlayers().get(id);
-            const isIt = player?.isIt || false;
-
-            return (
-              <group key={id} position={client.position}>
-                <SpacemanModel
-                  color={isIt ? "#ff4444" : "#4a90e2"}
-                  isIt={isIt}
-                />
-                {/* Player name label */}
-                <Text
-                  position={[0, 2, 0]}
-                  fontSize={0.3}
-                  color="white"
-                  anchorX="center"
-                  anchorY="middle"
-                >
-                  {player?.name || id.slice(-4)}
-                </Text>
-              </group>
-            );
-          })}
-      </Canvas>
+      <SoloScene
+        qualitySettings={qualitySettings}
+        rockPositions={rockPositions}
+        playerCharacterRef={playerCharacterRef}
+        keysPressedRef={keysPressedRef}
+        socketClient={socketClient}
+        mouseControls={mouseControls}
+        clients={clientsRef.current}
+        gameManager={gameManager.current}
+        currentPlayerId={currentPlayerId}
+        joystickMove={joystickMove}
+        lastWalkSoundTimeRef={lastWalkSoundTime}
+        isPaused={isPaused}
+        onPositionUpdate={handlePlayerPositionUpdate}
+        playerIsIt={playerIsIt}
+        setPlayerIsIt={setPlayerIsIt}
+        setBot1GotTagged={setBot1GotTagged}
+        setBot2GotTagged={setBot2GotTagged}
+        setGameState={setGameState}
+        botDebugMode={botDebugMode}
+        bot1Position={bot1PositionRef.current}
+        bot2Position={bot2PositionRef.current}
+        collisionSystemRef={collisionSystemRef}
+        handleBot1PositionUpdate={handleBot1PositionUpdate}
+        handleBot2PositionUpdate={handleBot2PositionUpdate}
+        handleTag={handleTag}
+        bot1GotTagged={bot1GotTagged}
+        bot2GotTagged={bot2GotTagged}
+        BOT1_CONFIG={BOT1_CONFIG}
+        BOT2_CONFIG={BOT2_CONFIG}
+      />
 
       {/* Mobile Controls */}
       {isMobileDevice && (
