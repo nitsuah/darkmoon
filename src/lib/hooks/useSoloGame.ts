@@ -101,21 +101,31 @@ export const attachToConnection = (
     // Initialize game manager when socket connects
     initializeForSocket(s, handlers);
   };
+  // Type guard for objects that expose event methods like socket.io clients
+  const isEvented = (
+    v: unknown
+  ): v is {
+    on?: (ev: string, cb: (...args: unknown[]) => void) => void;
+    off?: (ev: string, cb?: (...args: unknown[]) => void) => void;
+    connect?: () => void;
+  } =>
+    typeof v === "object" &&
+    v !== null &&
+    (typeof (v as { on?: unknown }).on === "function" ||
+      typeof (v as { connect?: unknown }).connect === "function");
 
   try {
     const s = getSocket() || socket;
-    const sRec = s as unknown as Record<string, unknown> | null;
-    if (sRec && typeof sRec["on"] === "function") {
-      (sRec["on"] as (...args: unknown[]) => void)("connect", onConnect);
+    if (isEvented(s) && typeof s.on === "function") {
+      s.on("connect", onConnect);
     }
   } catch {
     // ignore
   }
 
   try {
-    const socketRec = socket as unknown as Record<string, unknown> | null;
-    if (socketRec && typeof socketRec["connect"] === "function") {
-      (socketRec["connect"] as (...args: unknown[]) => void)();
+    if (isEvented(socket) && typeof socket.connect === "function") {
+      socket.connect();
     }
   } catch {
     // ignore
@@ -125,9 +135,8 @@ export const attachToConnection = (
   return () => {
     try {
       const s = getSocket() || socket;
-      const sRec = s as unknown as Record<string, unknown> | null;
-      if (sRec && typeof sRec["off"] === "function") {
-        (sRec["off"] as (...args: unknown[]) => void)("connect", onConnect);
+      if (isEvented(s) && typeof s.off === "function") {
+        s.off("connect", onConnect);
       }
     } catch {
       // ignore

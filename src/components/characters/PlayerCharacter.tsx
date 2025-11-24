@@ -24,6 +24,10 @@ import {
   computeDirection,
   computeSpeed,
 } from "../../lib/hooks/usePlayerMovement";
+import {
+  computeJetpackThrust,
+  shouldActivateJetpackFromMobile,
+} from "../../lib/hooks/useJetpack";
 
 const tagDebug = createTagLogger("PlayerCharacter");
 
@@ -433,7 +437,7 @@ export const PlayerCharacter = React.forwardRef<
       // Check for mobile jetpack trigger only
       const mobileDoubleTap = mobileJetpackTriggerRef?.current || false;
 
-      if (mobileDoubleTap) {
+      if (shouldActivateJetpackFromMobile(mobileDoubleTap)) {
         // Mobile double-tap - activate jetpack mode
         jetpackActiveRef.current = true;
         setShowJetpackFlame(true);
@@ -453,8 +457,8 @@ export const PlayerCharacter = React.forwardRef<
           if (soundMgr) {
             soundMgr.playJetpackActivateSound();
           }
-        } catch {
-          // Sound manager not ready - silently continue
+        } catch (e) {
+          void e;
         }
       } else {
         // Single jump - normal jump only (no jetpack from space bar)
@@ -489,13 +493,12 @@ export const PlayerCharacter = React.forwardRef<
     ) {
       if (jumpHoldTimeRef.current < PHYSICS_CONSTANTS.JETPACK_MAX_HOLD_TIME) {
         jumpHoldTimeRef.current += delta;
-        // Consistent, gentle thrust for floaty jetpack feel
-        const thrustMultiplier =
-          1 -
-          (jumpHoldTimeRef.current / PHYSICS_CONSTANTS.JETPACK_MAX_HOLD_TIME) *
-            0.3;
-        verticalVelocityRef.current +=
-          PHYSICS_CONSTANTS.JETPACK_HOLD_FORCE * delta * thrustMultiplier;
+        // Compute thrust using helper
+        const thrust = computeJetpackThrust(jumpHoldTimeRef.current, delta, {
+          JETPACK_MAX_HOLD_TIME: PHYSICS_CONSTANTS.JETPACK_MAX_HOLD_TIME,
+          JETPACK_HOLD_FORCE: PHYSICS_CONSTANTS.JETPACK_HOLD_FORCE,
+        });
+        verticalVelocityRef.current += thrust;
 
         // Start thrust sound if not already playing
         if (!jetpackThrustSoundRef.current) {
@@ -504,8 +507,8 @@ export const PlayerCharacter = React.forwardRef<
             if (soundMgr) {
               jetpackThrustSoundRef.current = soundMgr.playJetpackThrustSound();
             }
-          } catch {
-            // Sound manager not ready - silently continue
+          } catch (e) {
+            void e;
           }
         }
       }
