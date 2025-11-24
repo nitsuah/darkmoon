@@ -585,6 +585,32 @@ const Solo: React.FC = () => {
     navigate("/");
   };
 
+  // Helper to handle tag events and update game state
+  const handleTag = useCallback(
+    (
+      taggerId: string,
+      taggedId: string,
+      message: string,
+      notificationType: "info" | "success" | "warning" | "error" = "info"
+    ) => {
+      tagDebug(message);
+      addNotification(message, notificationType);
+
+      // Update GameManager
+      if (gameManager.current) {
+        gameManager.current.updatePlayer(taggerId, { isIt: false });
+        gameManager.current.updatePlayer(taggedId, { isIt: true });
+        const newState = {
+          ...gameManager.current.getGameState(),
+          itPlayerId: taggedId,
+        };
+        gameManager.current["gameState"] = newState;
+        setGameState(newState);
+      }
+    },
+    [addNotification]
+  );
+
   return (
     <div
       style={{
@@ -674,45 +700,19 @@ const Solo: React.FC = () => {
           onTagTarget={() => {
             if (botDebugMode) {
               // Bot1 tagged Bot2
-              tagDebug("🤖 Bot1 tagged Bot2!");
               setBotIsIt(false);
               setBot2IsIt(true);
               setBot2GotTagged(Date.now());
-              addNotification("Bot1 tagged Bot2!", "info");
-
-              // Update GameManager
-              if (gameManager.current) {
-                gameManager.current.updatePlayer("bot-1", { isIt: false });
-                gameManager.current.updatePlayer("bot-2", { isIt: true });
-                const newState = {
-                  ...gameManager.current.getGameState(),
-                  itPlayerId: "bot-2",
-                };
-                gameManager.current["gameState"] = newState;
-                setGameState(newState);
-              }
+              handleTag("bot-1", "bot-2", "🤖 Bot1 tagged Bot2!");
             } else {
               // Bot tagged player
-              tagDebug("🤖 Bot tagged Player!");
+              const playerId = socketClient?.id || localPlayerId;
               setBotIsIt(false);
               setPlayerIsIt(true);
               if (playerCharacterRef.current) {
                 playerCharacterRef.current.freezePlayer(3000);
               }
-              addNotification("You've been tagged! You're IT now!", "warning");
-
-              // Update GameManager
-              if (gameManager.current) {
-                const playerId = socketClient?.id || localPlayerId;
-                gameManager.current.updatePlayer("bot-1", { isIt: false });
-                gameManager.current.updatePlayer(playerId, { isIt: true });
-                const newState = {
-                  ...gameManager.current.getGameState(),
-                  itPlayerId: playerId,
-                };
-                gameManager.current["gameState"] = newState;
-                setGameState(newState);
-              }
+              handleTag("bot-1", playerId, "🤖 Bot tagged Player!", "warning");
             }
           }}
           onPositionUpdate={handleBot1PositionUpdate}
@@ -732,23 +732,10 @@ const Solo: React.FC = () => {
             isPaused={isPaused}
             onTagTarget={() => {
               // Bot2 tagged Bot1
-              tagDebug("🤖 Bot2 tagged Bot1!");
               setBot2IsIt(false);
               setBotIsIt(true);
               setBot1GotTagged(Date.now());
-              addNotification("Bot2 tagged Bot1!", "info");
-
-              // Update GameManager
-              if (gameManager.current) {
-                gameManager.current.updatePlayer("bot-2", { isIt: false });
-                gameManager.current.updatePlayer("bot-1", { isIt: true });
-                const newState = {
-                  ...gameManager.current.getGameState(),
-                  itPlayerId: "bot-1",
-                };
-                gameManager.current["gameState"] = newState;
-                setGameState(newState);
-              }
+              handleTag("bot-2", "bot-1", "🤖 Bot2 tagged Bot1!");
             }}
             onPositionUpdate={handleBot2PositionUpdate}
             gameState={gameState}
