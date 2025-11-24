@@ -74,6 +74,10 @@ export default [
             ...react.configs.recommended.rules,
             ...reactHooks.configs.recommended.rules,
             ...jsxA11y.configs.recommended.rules,
+            // React-Three-Fiber uses lowercase intrinsic names for geometries/materials
+            // which triggers `react/jsx-pascal-case`. Disable that rule project-wide
+            // but only for our source files so real JSX components still follow PascalCase.
+            'react/jsx-pascal-case': 'off',
             'react/react-in-jsx-scope': 'off',
             'react/prop-types': 'off',
             'react/no-unknown-property': [
