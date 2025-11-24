@@ -20,13 +20,30 @@ export const useSocketConnection = (opts: UseSocketOptions = {}) => {
   const createSocket = useCallback(() => {
     if (socketRef.current) return socketRef.current;
 
+    const getEnvVar = (key: string) => {
+      try {
+        // Vite exposes import.meta.env in browser builds
+        if (typeof import.meta !== "undefined") {
+          // Safe narrow: import.meta may not have env at runtime in some test envs
+          // Use optional chaining to avoid throwing
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const meta: any = import.meta;
+          const val = meta?.env?.[key];
+          if (typeof val === "string" && val.length > 0) return val;
+        }
+      } catch {
+        // ignore
+      }
+      if (typeof process !== "undefined" && process.env) {
+        const val = process.env[key as keyof NodeJS.ProcessEnv];
+        if (typeof val === "string" && val.length > 0) return val;
+      }
+      return undefined;
+    };
+
     const resolvedUrl =
       serverUrl ||
-      // Prefer Vite env via import.meta if available, but fall back to process.env
-      (typeof import.meta !== "undefined" &&
-        (import.meta as unknown as { env?: Record<string, string> }).env
-          ?.VITE_SOCKET_SERVER_URL) ||
-      (typeof process !== "undefined" && process.env?.VITE_SOCKET_SERVER_URL) ||
+      getEnvVar("VITE_SOCKET_SERVER_URL") ||
       (typeof window !== "undefined"
         ? window.location.origin
         : "http://localhost:3000");

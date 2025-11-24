@@ -179,9 +179,9 @@ const Solo: React.FC = () => {
       // Initialize game manager via hook helper
       if (!gameManager.current) {
         const manager = initializeForSocket(s, {
-          setGamePlayers: setGamePlayers as (m: Map<string, Player>) => void,
-          setGameState: setGameState as (s: GameState) => void,
-          setPlayerIsIt: setPlayerIsIt as (v: boolean) => void,
+          setGamePlayers,
+          setGameState,
+          setPlayerIsIt,
         });
         gameManager.current = manager;
       }

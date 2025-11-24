@@ -1,4 +1,6 @@
 import { useCallback, useRef } from "react";
+import type { Dispatch, SetStateAction } from "react";
+import { BOT1_CONFIG } from "../constants/botConfigs";
 import GameManager, {
   type GameState,
   type Player,
@@ -16,9 +18,9 @@ export const useSoloGame = () => {
         setGameState,
         setPlayerIsIt,
       }: {
-        setGamePlayers: (m: Map<string, Player>) => void;
-        setGameState: (s: GameState) => void;
-        setPlayerIsIt: (v: boolean) => void;
+        setGamePlayers: Dispatch<SetStateAction<Map<string, Player>>>;
+        setGameState: Dispatch<SetStateAction<GameState>>;
+        setPlayerIsIt: Dispatch<SetStateAction<boolean>>;
       }
     ) => {
       if (gameManagerRef.current) return gameManagerRef.current;
@@ -39,7 +41,7 @@ export const useSoloGame = () => {
       const botPlayer: Player = {
         id: "bot-1",
         name: "Bot",
-        position: [5, 0.5, -5],
+        position: BOT1_CONFIG.initialPosition,
         rotation: [0, 0, 0],
         isIt: false,
       };

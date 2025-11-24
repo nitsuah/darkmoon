@@ -64,14 +64,10 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
     // Use native events with passive: false to allow preventDefault
     const touchStartHandler = (e: globalThis.TouchEvent) => {
       // Non-fatal debug log - helps during device testing without polluting production logs
-      try {
-        console.debug("MobileJoystick touchstart", {
-          side,
-          touches: e.touches.length,
-        });
-      } catch {
-        /* ignore */
-      }
+      console.debug("MobileJoystick touchstart", {
+        side,
+        touches: e.touches.length,
+      });
 
       e.preventDefault();
       e.stopPropagation();
@@ -121,14 +117,10 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
 
     // Pointer events provide unified handling on many devices (including some Android and Windows touchscreens)
     const pointerDownHandler = (e: globalThis.PointerEvent) => {
-      try {
-        console.debug("MobileJoystick pointerdown", {
-          side,
-          pointerType: e.pointerType,
-        });
-      } catch {
-        /* ignore */
-      }
+      console.debug("MobileJoystick pointerdown", {
+        side,
+        pointerType: e.pointerType,
+      });
 
       // Only handle primary pointers
       if (e.isPrimary === false) return;

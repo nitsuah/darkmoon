@@ -55,7 +55,18 @@ setInterval(() => {
 }, 300000); // Run every 5 minutes
 
 /**
- * Check if client exceeds rate limit
+ * Check if client exceeds rate limit for a given action within a time window.
+ *
+ * @param {string} clientId - Unique identifier for the client (e.g., socket ID).
+ * @param {string} action - The action to rate limit (e.g., "MOVE", "CHAT").
+ * @param {number} limit - Maximum number of allowed actions within the window.
+ * @param {number} [windowMs=1000] - Time window in milliseconds for the rate limit.
+ * @returns {boolean} Returns true if the client has exceeded the limit (should block action), false otherwise.
+ *
+ * Notes:
+ * - The function stores a simple per-client+action counter and a reset time.
+ * - When the window expires the counter is reset.
+ * - Stale entries are cleaned up every 5 minutes by a background interval.
  */
 const checkRateLimit = (clientId, action, limit, windowMs = 1000) => {
   const now = Date.now();

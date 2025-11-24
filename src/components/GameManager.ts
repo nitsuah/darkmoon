@@ -2,7 +2,7 @@ import { createLogger } from "../lib/utils/logger";
 
 const log = createLogger("GameManager");
 
-export type GameMode = "none" | "tag" | "collectible" | "race";
+export type GameMode = "none" | "tag" | "collectible" | "race" | "solo";
 
 export interface GameState {
   mode: GameMode;
