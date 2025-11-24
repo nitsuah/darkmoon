@@ -22,13 +22,33 @@ export const useSocketConnection = (opts: UseSocketOptions = {}) => {
 
     const resolvedUrl =
       serverUrl ||
-      (import.meta.env.VITE_SOCKET_SERVER_URL as string) ||
-      window.location.origin;
+      // Prefer Vite env via import.meta if available, but fall back to process.env
+      (typeof import.meta !== "undefined" &&
+        (import.meta as unknown as { env?: Record<string, string> }).env
+          ?.VITE_SOCKET_SERVER_URL) ||
+      (typeof process !== "undefined" && process.env?.VITE_SOCKET_SERVER_URL) ||
+      (typeof window !== "undefined"
+        ? window.location.origin
+        : "http://localhost:3000");
 
-    const socket = io(resolvedUrl, {
+    // Ensure common defaults used across the app/tests
+    const normalizedIoOptionsLocal: Parameters<typeof io>[1] = {
       transports: ["websocket"],
+      autoConnect,
       ...ioOptions,
-    });
+    };
+
+    // If reconnection is explicitly disabled, make the attempts/delay explicit
+    if (normalizedIoOptionsLocal.reconnection === false) {
+      if (normalizedIoOptionsLocal.reconnectionAttempts === undefined) {
+        normalizedIoOptionsLocal.reconnectionAttempts = 0;
+      }
+      if (normalizedIoOptionsLocal.reconnectionDelay === undefined) {
+        normalizedIoOptionsLocal.reconnectionDelay = 0;
+      }
+    }
+
+    const socket = io(resolvedUrl, normalizedIoOptionsLocal);
 
     socketRef.current = socket;
 
@@ -36,7 +56,7 @@ export const useSocketConnection = (opts: UseSocketOptions = {}) => {
     socket.on("disconnect", () => setIsConnected(false));
 
     return socket;
-  }, [serverUrl, ioOptions]);
+  }, [serverUrl, ioOptions, autoConnect]);
 
   const connect = useCallback(() => {
     const socket = createSocket();

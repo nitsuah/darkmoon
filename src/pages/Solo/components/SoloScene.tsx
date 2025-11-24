@@ -76,6 +76,12 @@ export const SoloScene: React.FC<Props> = ({
   BOT1_CONFIG,
   BOT2_CONFIG,
 }) => {
+  // When running in a Node/test environment there is no DOM. Avoid rendering
+  // react-three-fiber Canvas and Three.js components which depend on browser
+  // globals (document/window). Tests can still exercise non-3D logic.
+  if (typeof document === "undefined") {
+    return null;
+  }
   return (
     <Canvas
       shadows={qualitySettings.shadows}
