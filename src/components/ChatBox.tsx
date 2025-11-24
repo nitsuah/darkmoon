@@ -1,13 +1,6 @@
 import * as React from "react";
 import { useState, useEffect, useRef } from "react";
-
-interface ChatMessage {
-  id: string;
-  playerId: string;
-  playerName: string;
-  message: string;
-  timestamp: number;
-}
+import { ChatMessage } from "../lib/hooks/useChatMessages";
 
 interface ChatBoxProps {
   isVisible: boolean;

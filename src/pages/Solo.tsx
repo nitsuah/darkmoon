@@ -91,9 +91,7 @@ const Solo: React.FC = () => {
   const [bot2GotTagged, setBot2GotTagged] = useState(0);
 
   // Bot debug mode - enables 2 bots playing each other with faster games
-  // Can be enabled via: window.enableBotDebug() or UI button
   const [botDebugMode, setBotDebugMode] = useState(false); // Default false - user must enable
-  const [showHitboxes, setShowHitboxes] = useState(false);
   const debugRestartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
@@ -530,25 +528,6 @@ const Solo: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [botDebugMode, addNotification, gameState.isActive]);
 
-  // Dev utilities
-  useEffect(() => {
-    // Expose bot debug toggle to console
-    window.enableBotDebug = () => {
-      setBotDebugMode(true);
-      setShowHitboxes(true);
-    };
-
-    window.disableBotDebug = () => {
-      setBotDebugMode(false);
-      setShowHitboxes(false);
-    };
-
-    return () => {
-      delete window.enableBotDebug;
-      delete window.disableBotDebug;
-    };
-  }, [botDebugMode]);
-
   const handleSendMessage = (message: string) => {
     if (!socketClient) return;
 
@@ -679,7 +658,7 @@ const Solo: React.FC = () => {
           setBot1GotTagged={setBot1GotTagged}
           setBot2GotTagged={setBot2GotTagged}
           setGameState={setGameState}
-          showHitboxes={showHitboxes}
+          showHitboxes={false}
           mobileJetpackTrigger={mobileJetpackTrigger}
           onTagSuccess={() => addNotification("You tagged the bot!", "success")}
         />
