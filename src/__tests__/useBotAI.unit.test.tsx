@@ -46,10 +46,7 @@ function mountHook() {
       targetIsIt: false,
       onTagTarget: () => {},
       onPositionUpdate: () => {},
-      gameState: { mode: "tag", isActive: true } as unknown as Record<
-        string,
-        unknown
-      >,
+      gameState: { mode: "tag", isActive: true, timeRemaining: 0, scores: {} },
       collisionSystem: fakeCollision,
       gotTaggedTimestamp: undefined,
       config: {
