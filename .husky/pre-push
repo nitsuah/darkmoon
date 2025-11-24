@@ -20,8 +20,9 @@ if command -v npm >/dev/null 2>&1; then
     echo "✓ Running lint..."
     npm run lint || exit 1
     
-    echo "✓ Running tests..."
-    npm run test:ci || exit 1
+    echo "✓ Running tests (Vitest single worker)..."
+    # Limit Vitest to a single worker to avoid intermittent IPC channel closed errors on Windows/CI
+    VITEST_MAX_WORKERS=1 npm run test:ci || exit 1
     
     echo "✅ All pre-push checks passed!"
 else
