@@ -794,9 +794,6 @@ const Solo: React.FC = () => {
               </group>
             );
           })}
-
-        {/* Debug: OrbitControls for camera testing */}
-        {/* <OrbitControls /> */}
       </Canvas>
 
       {/* Mobile Controls */}
