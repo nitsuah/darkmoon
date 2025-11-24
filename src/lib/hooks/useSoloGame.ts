@@ -7,12 +7,15 @@ import GameManager, {
 } from "../../components/GameManager";
 import type { Socket } from "socket.io-client";
 
+// Accept either a real Socket or a lightweight object with an optional id for tests
+type SocketLike = Socket | { id?: string };
+
 export const useSoloGame = () => {
   const gameManagerRef = useRef<GameManager | null>(null);
 
   const initializeForSocket = useCallback(
     (
-      socket: Socket,
+      socket: SocketLike,
       {
         setGamePlayers,
         setGameState,

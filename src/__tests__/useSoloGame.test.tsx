@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
 import React, { useEffect } from "react";
 import { useSoloGame } from "../lib/hooks/useSoloGame";
-import type { Socket } from "socket.io-client";
 
 type HookReturn = ReturnType<typeof useSoloGame>;
 
@@ -23,10 +22,7 @@ describe("useSoloGame", () => {
 
     render(<Harness />);
 
-    const fakeSocket: MinimalSocket = { id: "fake" };
-    // Minimal Socket stub matching the properties used by the hook
-    // The hook only reads `id` so this lightweight typed stub is sufficient for the test
-    const socketStub = fakeSocket as unknown as Socket;
+    const socketStub: MinimalSocket = { id: "fake" };
 
     const manager = outRef.current!.initializeForSocket(socketStub, {
       setGamePlayers: () => {},
