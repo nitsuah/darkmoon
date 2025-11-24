@@ -36,6 +36,9 @@ import {
   type ChatMessage,
 } from "../lib/hooks/useChatMessages";
 
+// Constants
+const ZERO_ROTATION: [number, number, number] = [0, 0, 0];
+
 // Create loggers for this module
 const log = createLogger("Solo");
 const tagDebug = createTagLogger("Solo");
@@ -179,7 +182,7 @@ const Solo: React.FC = () => {
           id: socket.id || "solo",
           name: "Solo Player",
           position: [0, 1, 0],
-          rotation: [0, 0, 0],
+          rotation: ZERO_ROTATION,
           isIt: false,
         };
         newGameManager.addPlayer(soloPlayer);
@@ -188,8 +191,8 @@ const Solo: React.FC = () => {
         const botPlayer: Player = {
           id: "bot-1",
           name: "Bot",
-          position: [-5, 0.5, -5],
-          rotation: [0, 0, 0],
+          position: [5, 0.5, -5],
+          rotation: ZERO_ROTATION,
           isIt: false,
         };
         newGameManager.addPlayer(botPlayer);
@@ -447,7 +450,7 @@ const Solo: React.FC = () => {
     (position: [number, number, number]) => {
       bot1PositionRef.current = position;
       // Update clients ref so PlayerCharacter can detect bot for tagging (no re-render)
-      clientsRef.current["bot-1"] = { position, rotation: [0, 0, 0] };
+      clientsRef.current["bot-1"] = { position, rotation: ZERO_ROTATION };
     },
     []
   );
@@ -456,7 +459,7 @@ const Solo: React.FC = () => {
     (position: [number, number, number]) => {
       bot2PositionRef.current = position;
       // Update clients ref so PlayerCharacter can detect bot for tagging (no re-render)
-      clientsRef.current["bot-2"] = { position, rotation: [0, 0, 0] };
+      clientsRef.current["bot-2"] = { position, rotation: ZERO_ROTATION };
     },
     []
   );
@@ -498,7 +501,7 @@ const Solo: React.FC = () => {
         id: "bot-2",
         name: "Bot2",
         position: [8, 0.5, -8], // Match BOT2_CONFIG initial position
-        rotation: [0, 0, 0],
+        rotation: ZERO_ROTATION,
         isIt: false,
       };
       gameManager.current.addPlayer(bot2Player);
