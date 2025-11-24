@@ -36,4 +36,23 @@ if (typeof console !== 'undefined') {
         }
         _warn(...args)
     }
+
+    const _error = console.error.bind(console)
+    console.error = (...args: any[]) => {
+        try {
+            const msg = String(args[0] ?? '')
+            // also suppress react runtime casing/unknown-prop errors printed as errors
+            if (
+                msg.includes('is using incorrect casing') ||
+                msg.includes('is unrecognized in this browser') ||
+                msg.includes('React does not recognize the') ||
+                msg.includes('Received `true` for a non-boolean attribute')
+            ) {
+                return
+            }
+        } catch {
+            // fallthrough
+        }
+        _error(...args)
+    }
 }
