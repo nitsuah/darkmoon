@@ -9,7 +9,7 @@
 
 ### Current Structure (Issues)
 
-```
+```bash
 src/
 ├── components/         # Mixed concerns (200+ line files)
 │   ├── GameManager.ts  # ✅ Good
@@ -26,7 +26,7 @@ src/
 
 ### Recommended Structure
 
-```
+```bash
 src/
 ├── components/
 │   ├── game/           # NEW: Game-specific components
@@ -445,7 +445,7 @@ describe("Solo page integration", () => {
 
 ## CSS Module Pattern
 
-**Before: Global CSS**
+### **Before: Global CSS**
 
 ```css
 /* App.css */
@@ -458,7 +458,7 @@ describe("Solo page integration", () => {
 }
 ```
 
-**After: CSS Modules**
+### **After: CSS Modules**
 
 ```css
 /* Button.module.css */
@@ -570,7 +570,7 @@ export const typography = {
 
 **Current monolithic server.js → Modular structure:**
 
-```
+```bash
 server/
 ├── index.js              # Entry point
 ├── app.js                # Express app setup
