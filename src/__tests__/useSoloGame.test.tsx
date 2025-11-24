@@ -7,7 +7,7 @@ import type { Socket } from "socket.io-client";
 type HookReturn = ReturnType<typeof useSoloGame>;
 
 // Minimal socket test-double: only the properties initializeForSocket uses
-type MinimalSocket = Partial<{ id: string }>;
+type MinimalSocket = { id?: string };
 
 describe("useSoloGame", () => {
   it("initializes GameManager for socket", () => {
@@ -24,14 +24,15 @@ describe("useSoloGame", () => {
     render(<Harness />);
 
     const fakeSocket: MinimalSocket = { id: "fake" };
-    const manager = outRef.current!.initializeForSocket(
-      fakeSocket as unknown as Socket,
-      {
-        setGamePlayers: () => {},
-        setGameState: () => {},
-        setPlayerIsIt: () => {},
-      }
-    );
+    // Minimal Socket stub matching the properties used by the hook
+    // The hook only reads `id` so this lightweight typed stub is sufficient for the test
+    const socketStub = fakeSocket as unknown as Socket;
+
+    const manager = outRef.current!.initializeForSocket(socketStub, {
+      setGamePlayers: () => {},
+      setGameState: () => {},
+      setPlayerIsIt: () => {},
+    });
 
     expect(manager).toBeDefined();
     expect(typeof manager.getPlayers).toBe("function");

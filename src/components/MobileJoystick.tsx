@@ -148,37 +148,49 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
     };
 
     // Prefer pointer events where supported
+    // Use strongly typed listeners where possible
     if (window.PointerEvent) {
       base.addEventListener(
         "pointerdown",
-        pointerDownHandler as unknown as globalThis.EventListener
+        pointerDownHandler as globalThis.EventListener
       );
       base.addEventListener(
         "pointermove",
-        pointerMoveHandler as unknown as globalThis.EventListener
+        pointerMoveHandler as globalThis.EventListener
       );
       base.addEventListener(
         "pointerup",
-        pointerUpHandler as unknown as globalThis.EventListener
+        pointerUpHandler as globalThis.EventListener
       );
       base.addEventListener(
         "pointercancel",
-        pointerUpHandler as unknown as globalThis.EventListener
+        pointerUpHandler as globalThis.EventListener
       );
     } else {
       // Fallback to touch events for older browsers
-      base.addEventListener("touchstart", touchStartHandler, {
+      const touchOptions: globalThis.AddEventListenerOptions = {
         passive: false,
-      } as unknown as Record<string, unknown>);
-      base.addEventListener("touchmove", touchMoveHandler, {
-        passive: false,
-      } as unknown as Record<string, unknown>);
-      base.addEventListener("touchend", touchEndHandler, {
-        passive: false,
-      } as unknown as Record<string, unknown>);
-      base.addEventListener("touchcancel", touchEndHandler, {
-        passive: false,
-      } as unknown as Record<string, unknown>);
+      };
+      base.addEventListener(
+        "touchstart",
+        touchStartHandler as globalThis.EventListener,
+        touchOptions
+      );
+      base.addEventListener(
+        "touchmove",
+        touchMoveHandler as globalThis.EventListener,
+        touchOptions
+      );
+      base.addEventListener(
+        "touchend",
+        touchEndHandler as globalThis.EventListener,
+        touchOptions
+      );
+      base.addEventListener(
+        "touchcancel",
+        touchEndHandler as globalThis.EventListener,
+        touchOptions
+      );
     }
 
     // Cleanup on unmount
@@ -186,36 +198,36 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
       if (window.PointerEvent) {
         base.removeEventListener(
           "pointerdown",
-          pointerDownHandler as unknown as globalThis.EventListener
+          pointerDownHandler as globalThis.EventListener
         );
         base.removeEventListener(
           "pointermove",
-          pointerMoveHandler as unknown as globalThis.EventListener
+          pointerMoveHandler as globalThis.EventListener
         );
         base.removeEventListener(
           "pointerup",
-          pointerUpHandler as unknown as globalThis.EventListener
+          pointerUpHandler as globalThis.EventListener
         );
         base.removeEventListener(
           "pointercancel",
-          pointerUpHandler as unknown as globalThis.EventListener
+          pointerUpHandler as globalThis.EventListener
         );
       } else {
         base.removeEventListener(
           "touchstart",
-          touchStartHandler as unknown as globalThis.EventListener
+          touchStartHandler as globalThis.EventListener
         );
         base.removeEventListener(
           "touchmove",
-          touchMoveHandler as unknown as globalThis.EventListener
+          touchMoveHandler as globalThis.EventListener
         );
         base.removeEventListener(
           "touchend",
-          touchEndHandler as unknown as globalThis.EventListener
+          touchEndHandler as globalThis.EventListener
         );
         base.removeEventListener(
           "touchcancel",
-          touchEndHandler as unknown as globalThis.EventListener
+          touchEndHandler as globalThis.EventListener
         );
       }
       if (activeRef.current) {
