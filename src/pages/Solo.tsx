@@ -131,6 +131,13 @@ const Solo: React.FC = () => {
     setKeysPressed((prev) => ({ ...prev, [key]: pressed }));
   }, []);
 
+  // Helper to sync game state from manager
+  const syncGameState = useCallback(() => {
+    if (gameManager.current) {
+      setGameState(gameManager.current.getGameState());
+    }
+  }, []);
+
   // Game timer update - runs every second when game is active
   useEffect(() => {
     if (!gameState.isActive || !gameManager.current) return;
@@ -138,12 +145,12 @@ const Solo: React.FC = () => {
     const timerInterval = setInterval(() => {
       if (gameManager.current && gameState.isActive) {
         gameManager.current.updateGameTimer(1); // Update by 1 second
-        setGameState(gameManager.current.getGameState());
+        syncGameState();
       }
     }, 1000); // Every 1 second
 
     return () => clearInterval(timerInterval);
-  }, [gameState.isActive]);
+  }, [gameState.isActive, syncGameState]);
 
   // Generate stable rock positions once (prevents respawning every frame)
   const rockPositions = useRockPositions();
@@ -467,7 +474,7 @@ const Solo: React.FC = () => {
         if (gameManager.current) {
           tagDebug("🎮 Bot debug mode: Starting new tag game!");
           gameManager.current.startTagGame();
-          setGameState(gameManager.current.getGameState());
+          syncGameState();
         }
       }, 3000);
     }
@@ -479,7 +486,7 @@ const Solo: React.FC = () => {
         debugRestartTimeoutRef.current = null;
       }
     };
-  }, [botDebugMode, gameState.isActive, gameState.mode]);
+  }, [botDebugMode, gameState.isActive, gameState.mode, syncGameState]);
 
   // Add/remove Bot2 when debug mode toggles
   useEffect(() => {
@@ -579,10 +586,10 @@ const Solo: React.FC = () => {
   const handleEndGame = useCallback(() => {
     if (gameManager.current) {
       gameManager.current.endGame();
-      setGameState(gameManager.current.getGameState());
+      syncGameState();
       addNotification("Game ended", "info");
     }
-  }, [addNotification]);
+  }, [syncGameState, addNotification]);
 
   const handleResumeGame = () => {
     setIsPaused(false);
