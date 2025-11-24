@@ -15,7 +15,15 @@ import {
 } from "../../lib/hooks/usePlayerPhysics";
 import { usePlayerCamera } from "../../lib/hooks/usePlayerCamera";
 import { usePlayerState } from "../../lib/hooks/usePlayerState";
-import { computeDirection, computeSpeed } from "../../lib/hooks/usePlayerMovement";
+import {
+  resolveMovement,
+  detectPlayerCollision,
+} from "../../lib/hooks/usePlayerCollision";
+import { processTagging } from "../../lib/hooks/usePlayerTagging";
+import {
+  computeDirection,
+  computeSpeed,
+} from "../../lib/hooks/usePlayerMovement";
 
 const tagDebug = createTagLogger("PlayerCharacter");
 
@@ -301,7 +309,10 @@ export const PlayerCharacter = React.forwardRef<
     const hasJoystickInput = joystickMove.x !== 0 || joystickMove.y !== 0;
 
     // Calculate speed using helper
-    const speed = computeSpeed(jetpackActiveRef.current, keysPressedRef.current[SHIFT]);
+    const speed = computeSpeed(
+      jetpackActiveRef.current,
+      keysPressedRef.current[SHIFT]
+    );
 
     // WoW-style auto-run: both mouse buttons held = move forward
     if (bothMouseButtons || hasKeyboardInput || hasJoystickInput) {
@@ -320,264 +331,65 @@ export const PlayerCharacter = React.forwardRef<
 
       if (dir && dir.length() > 0) {
         directionRef.current.copy(dir);
-        velocityRef.current.copy(directionRef.current).multiplyScalar(speed * delta);
+        velocityRef.current
+          .copy(directionRef.current)
+          .multiplyScalar(speed * delta);
 
         // Calculate new position with collision detection
         const currentPosition = meshRef.current.position.clone();
         const newPosition = currentPosition.clone().add(velocityRef.current);
 
         // Check for collisions and get resolved position
-        const resolvedPosition = collisionSystemRef.current.checkCollision(
+        const resolvedPosition = resolveMovement(
+          collisionSystemRef.current,
           currentPosition,
           newPosition
         );
 
-
-        // Check for player-to-player collisions and tagging
+        // Player collision + tagging logic handled by helper
         const myId = socketClient?.id || currentPlayerId;
         if (myId && gameManager) {
-          const currentPlayer = gameManager.getPlayers().get(myId);
-          const gameState = gameManager.getGameState();
-          const now = Date.now();
-
+          // Simple push-back collision resolution for players
           for (const [clientId, clientData] of Object.entries(clients)) {
             if (clientId !== myId) {
               const otherPlayerPos = new THREE.Vector3(...clientData.position);
-              const distance = resolvedPosition.distanceTo(otherPlayerPos);
 
-              // Handle collision
               if (
-                collisionSystemRef.current.checkPlayerCollision(
+                detectPlayerCollision(
+                  collisionSystemRef.current,
                   resolvedPosition,
                   otherPlayerPos
                 )
               ) {
-                // Simple push-back collision resolution
                 const pushDirection = resolvedPosition
                   .clone()
                   .sub(otherPlayerPos)
                   .normalize();
                 resolvedPosition.add(pushDirection.multiplyScalar(0.1));
               }
-
-              // Handle tagging bot in solo mode (only during active tag game)
-              if (
-                (clientId === "bot-1" || clientId === "bot-2") &&
-                gameState.mode === "tag" &&
-                gameState.isActive &&
-                playerIsIt &&
-                distance < 1.0 &&
-                now - lastTagCheckRef.current > 3000
-              ) {
-                // Player tagged the bot!
-                tagDebug(
-                  `👤 PLAYER TAGGING ${clientId.toUpperCase()}! Distance: ${distance.toFixed(
-                    2
-                  )}, Cooldown elapsed: ${now - lastTagCheckRef.current}ms`
-                );
-                tagDebug(
-                  `  State before: Player isIT=${playerIsIt}, Bot isIT=false`
-                );
-
-                if (setPlayerIsIt) setPlayerIsIt(false);
-                if (setBotIsIt) setBotIsIt(true);
-                lastTagCheckRef.current = now;
-
-                // Update GameManager to keep it in sync
-                if (gameManager) {
-                  gameManager.updatePlayer(currentPlayerId, { isIt: false });
-                  gameManager.updatePlayer(clientId, { isIt: true });
-                }
-
-                // Update gameState with new IT player
-                if (setGameState) {
-                  setGameState((prev) => ({
-                    ...prev,
-                    itPlayerId: clientId,
-                  }));
-                }
-
-                // Trigger bot freeze by setting timestamp (only tagged player freezes)
-                if (clientId === "bot-1" && setBot1GotTagged) {
-                  tagDebug(`  Calling setBot1GotTagged(${now})`);
-                  setBot1GotTagged(now);
-                } else if (clientId === "bot-2" && setBot2GotTagged) {
-                  tagDebug(`  Calling setBot2GotTagged(${now})`);
-                  setBot2GotTagged(now);
-                }
-
-                // Play success tag sound (player tagged bot)
-                try {
-                  const soundMgr = getSoundManager();
-                  if (soundMgr) {
-                    soundMgr.playTagSound();
-                  }
-                } catch {
-                  // Sound manager not ready - silently continue
-                }
-
-                // Player should NOT freeze when tagging - only the tagged player freezes
-                // isPlayerFrozenRef.current = true; // REMOVED
-                // playerFreezeEndTimeRef.current = now + PLAYER_FREEZE_DURATION; // REMOVED
-                tagDebug(`  Player continues moving (no freeze for tagger)`);
-                tagDebug(
-                  `  Bot will freeze for 3000ms (via gotTaggedTimestamp)`
-                );
-                tagDebug(
-                  `  State after: Player should become NOT IT, Bot should become IT and freeze`
-                );
-
-                // Notify parent component
-                onTagSuccess?.();
-
-                // Victory celebration effects
-                const flashOverlay = document.createElement("div");
-                flashOverlay.style.position = "fixed";
-                flashOverlay.style.top = "0";
-                flashOverlay.style.left = "0";
-                flashOverlay.style.width = "100%";
-                flashOverlay.style.height = "100%";
-                flashOverlay.style.backgroundColor = "rgba(0, 255, 100, 0.3)";
-                flashOverlay.style.pointerEvents = "none";
-                flashOverlay.style.zIndex = "9999";
-                flashOverlay.style.animation = "fadeOut 0.8s ease-out";
-                document.body.appendChild(flashOverlay);
-                setTimeout(() => flashOverlay.remove(), 800);
-
-                // Show victory text with fireworks
-                const victoryText = document.createElement("div");
-                victoryText.textContent = "🎉🎆 TAG! 🎇🎉";
-                victoryText.style.position = "fixed";
-                victoryText.style.top = "50%";
-                victoryText.style.left = "50%";
-                victoryText.style.transform = "translate(-50%, -50%)";
-                victoryText.style.fontSize = "72px";
-                victoryText.style.fontWeight = "bold";
-                victoryText.style.color = "#FFD700";
-                victoryText.style.textShadow =
-                  "0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.5)";
-                victoryText.style.pointerEvents = "none";
-                victoryText.style.zIndex = "10000";
-                victoryText.style.animation =
-                  "popIn 0.5s ease-out, fadeOut 1s ease-out 0.5s";
-                document.body.appendChild(victoryText);
-                setTimeout(() => victoryText.remove(), 1500);
-
-                // Confetti burst!
-                for (let i = 0; i < 50; i++) {
-                  const confetti = document.createElement("div");
-                  confetti.textContent = ["🎉", "🎊", "⭐", "✨", "💫"][
-                    Math.floor(Math.random() * 5)
-                  ];
-                  confetti.style.position = "fixed";
-                  confetti.style.left = "50%";
-                  confetti.style.top = "50%";
-                  confetti.style.fontSize = "24px";
-                  confetti.style.pointerEvents = "none";
-                  confetti.style.zIndex = "9998";
-
-                  const angle = (Math.PI * 2 * i) / 50;
-                  const velocity = 200 + Math.random() * 200;
-                  const tx = Math.cos(angle) * velocity;
-                  const ty = Math.sin(angle) * velocity;
-
-                  confetti.style.animation = `confettiBurst 1.5s ease-out forwards`;
-                  confetti.style.setProperty("--tx", `${tx}px`);
-                  confetti.style.setProperty("--ty", `${ty}px`);
-
-                  document.body.appendChild(confetti);
-                  setTimeout(() => confetti.remove(), 1500);
-                }
-
-                lastTagCheckRef.current = now;
-              }
-
-              // Handle tagging (multiplayer mode - only if current player is 'it' and close enough)
-              if (
-                gameState.isActive &&
-                gameState.mode === "tag" &&
-                currentPlayer?.isIt &&
-                distance < 1.0 &&
-                now - lastTagCheckRef.current > 1000
-              ) {
-                // 1 second cooldown
-
-                debug(`Attempting to tag player ${clientId}`);
-                if (gameManager.tagPlayer(myId, clientId)) {
-                  // Play tag sound
-                  const soundMgr = getSoundManager();
-                  soundMgr.playTagSound();
-
-                  // Victory celebration effects
-                  // Flash screen green briefly
-                  const flashOverlay = document.createElement("div");
-                  flashOverlay.style.position = "fixed";
-                  flashOverlay.style.top = "0";
-                  flashOverlay.style.left = "0";
-                  flashOverlay.style.width = "100%";
-                  flashOverlay.style.height = "100%";
-                  flashOverlay.style.backgroundColor = "rgba(0, 255, 100, 0.3)";
-                  flashOverlay.style.pointerEvents = "none";
-                  flashOverlay.style.zIndex = "9999";
-                  flashOverlay.style.animation = "fadeOut 0.8s ease-out";
-                  document.body.appendChild(flashOverlay);
-                  setTimeout(() => flashOverlay.remove(), 800);
-
-                  // Show victory text with fireworks
-                  const victoryText = document.createElement("div");
-                  victoryText.textContent = "🎉🎆 TAG! 🎇🎉";
-                  victoryText.style.position = "fixed";
-                  victoryText.style.top = "50%";
-                  victoryText.style.left = "50%";
-                  victoryText.style.transform = "translate(-50%, -50%)";
-                  victoryText.style.fontSize = "72px";
-                  victoryText.style.fontWeight = "bold";
-                  victoryText.style.color = "#FFD700";
-                  victoryText.style.textShadow =
-                    "0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.5)";
-                  victoryText.style.pointerEvents = "none";
-                  victoryText.style.zIndex = "10000";
-                  victoryText.style.animation =
-                    "popIn 0.5s ease-out, fadeOut 1s ease-out 0.5s";
-                  document.body.appendChild(victoryText);
-                  setTimeout(() => victoryText.remove(), 1500);
-
-                  // Confetti burst!
-                  for (let i = 0; i < 50; i++) {
-                    const confetti = document.createElement("div");
-                    confetti.textContent = ["🎉", "🎊", "⭐", "✨", "💫"][
-                      Math.floor(Math.random() * 5)
-                    ];
-                    confetti.style.position = "fixed";
-                    confetti.style.left = "50%";
-                    confetti.style.top = "50%";
-                    confetti.style.fontSize = "24px";
-                    confetti.style.pointerEvents = "none";
-                    confetti.style.zIndex = "9998";
-
-                    const angle = (Math.PI * 2 * i) / 50;
-                    const velocity = 200 + Math.random() * 200;
-                    const tx = Math.cos(angle) * velocity;
-                    const ty = Math.sin(angle) * velocity;
-
-                    confetti.style.animation = `confettiBurst 1.5s ease-out forwards`;
-                    confetti.style.setProperty("--tx", `${tx}px`);
-                    confetti.style.setProperty("--ty", `${ty}px`);
-
-                    document.body.appendChild(confetti);
-                    setTimeout(() => confetti.remove(), 1500);
-                  }
-
-                  if (socketClient) {
-                    socketClient.emit("player-tagged", {
-                      taggerId: myId,
-                      taggedId: clientId,
-                    });
-                  }
-                  lastTagCheckRef.current = now;
-                }
-              }
             }
+          }
+
+          // Delegate tagging to helper to keep PlayerCharacter smaller
+          try {
+            processTagging({
+              resolvedPosition,
+              clients,
+              myId,
+              gameManager,
+              lastTagCheckRef,
+              playerIsIt,
+              setPlayerIsIt,
+              setBotIsIt,
+              setBot1GotTagged,
+              setBot2GotTagged,
+              setGameState,
+              onTagSuccess,
+              socketClient,
+            });
+          } catch (e) {
+            // best-effort; keep original behavior if helper throws
+            void e;
           }
         }
 
