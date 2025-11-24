@@ -61,27 +61,6 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
     const base = baseRef.current;
     if (!base) return;
 
-    // Debug positioning on mount (development only)
-    if (import.meta.env.DEV) {
-      const rect = base.getBoundingClientRect();
-      const computed = window.getComputedStyle(base.parentElement!);
-      console.log(`[JOYSTICK ${side}] Mounted at:`, {
-        rect: {
-          top: rect.top,
-          bottom: rect.bottom,
-          left: rect.left,
-          right: rect.right,
-        },
-        computed: {
-          position: computed.position,
-          top: computed.top,
-          bottom: computed.bottom,
-          left: computed.left,
-          right: computed.right,
-        },
-      });
-    }
-
     // Use native events with passive: false to allow preventDefault
     const touchStartHandler = (e: globalThis.TouchEvent) => {
       e.preventDefault();
@@ -99,7 +78,6 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
       });
 
       if (touch) {
-        console.log(`[JOYSTICK ${side}] Touch start detected`);
         touchIdRef.current = touch.identifier;
         base.classList.add("active");
         activeRef.current = true;
@@ -127,7 +105,6 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
         (t) => t.identifier === touchIdRef.current
       );
       if (touchEnded) {
-        console.log(`[JOYSTICK ${side}] Touch end detected`);
         handleEnd();
       }
     };

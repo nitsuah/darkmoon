@@ -31,20 +31,14 @@ import { useMobileDetection } from "../lib/hooks/useMobileDetection";
 import { useRockPositions } from "../lib/hooks/useRockPositions";
 import { useQualitySettings } from "../lib/hooks/useQualitySettings";
 import { useMouseControls } from "../lib/hooks/useMouseControls";
-import { useChatMessages } from "../lib/hooks/useChatMessages";
+import {
+  useChatMessages,
+  type ChatMessage,
+} from "../lib/hooks/useChatMessages";
 
 // Create loggers for this module
 const log = createLogger("Solo");
 const tagDebug = createTagLogger("Solo");
-
-// Local type definitions
-interface ChatMessage {
-  id: string;
-  playerId: string;
-  playerName: string;
-  message: string;
-  timestamp: number;
-}
 
 const Solo: React.FC = () => {
   const navigate = useNavigate();
@@ -542,20 +536,12 @@ const Solo: React.FC = () => {
     window.enableBotDebug = () => {
       setBotDebugMode(true);
       setShowHitboxes(true);
-      console.log("✅ Bot debug mode ENABLED - 2 bots will play tag");
     };
 
     window.disableBotDebug = () => {
       setBotDebugMode(false);
       setShowHitboxes(false);
-      console.log("❌ Bot debug mode DISABLED");
     };
-
-    if (!botDebugMode) {
-      console.log(
-        "💡 Bot Debug Mode: Type window.enableBotDebug() to enable 2 bots playing tag"
-      );
-    }
 
     return () => {
       delete window.enableBotDebug;

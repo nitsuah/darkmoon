@@ -31,9 +31,6 @@ class SoundManager {
           !(window as Window & { webkitAudioContext?: typeof AudioContext })
             .webkitAudioContext)
       ) {
-        console.log(
-          "AudioContext not available, skipping audio initialization"
-        );
         return;
       }
 
@@ -51,8 +48,6 @@ class SoundManager {
       this.sfxGain = this.audioContext.createGain();
       this.sfxGain.gain.value = this.sfxVolume;
       this.sfxGain.connect(this.audioContext.destination);
-
-      console.log("SoundManager initialized");
     } catch (error) {
       console.error("Failed to initialize audio context:", error);
     }
@@ -64,7 +59,6 @@ class SoundManager {
   public async resumeAudioContext() {
     if (this.audioContext && this.audioContext.state === "suspended") {
       await this.audioContext.resume();
-      console.log("Audio context resumed");
     }
   }
 
@@ -176,8 +170,6 @@ class SoundManager {
       // Store reference to first oscillator for backwards compatibility
       this.backgroundMusic = drone1;
       this.isMusicPlaying = true;
-
-      console.log("Space-themed background music started");
     } catch (error) {
       console.error("Failed to start background music:", error);
     }
@@ -201,12 +193,8 @@ class SoundManager {
           if (this.backgroundMusic) {
             try {
               this.backgroundMusic.stop();
-            } catch (error) {
-              // Oscillator may already be stopped - log for debugging
-              console.warn(
-                "Oscillator already stopped or invalid state:",
-                error
-              );
+            } catch {
+              // Oscillator may already be stopped - silently continue
             }
             this.backgroundMusic = null;
           }
@@ -216,8 +204,6 @@ class SoundManager {
           if (this.musicGain && !this.isMuted) {
             this.musicGain.gain.value = this.musicVolume;
           }
-
-          console.log("Background music stopped");
         }, fadeOutTime * 1000);
       } catch (error) {
         console.error("Error stopping music:", error);
