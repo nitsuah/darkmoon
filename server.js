@@ -20,11 +20,14 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
       "https://darkmoon-dev.netlify.app",
     ];
 
-// Rate limiting configuration
+// Rate limiting configuration. Limits are applied per-client within a time
+// window (see checkRateLimit windowMs parameter). The default window used by
+// checkRateLimit is 1000ms (1 second) unless a different window is supplied
+// (e.g. chat uses a 60000ms window in some callers).
 const RATE_LIMITS = {
-  MOVE: 100, // Max 100 move events per second per client
-  CHAT: 10, // Max 10 chat messages per minute per client
-  GAME_ACTION: 5, // Max 5 game actions per second per client
+  MOVE: 100, // Max 100 move events per default window (typically 1s)
+  CHAT: 10, // Max 10 chat messages per default window (override to 60000ms for per-minute checks)
+  GAME_ACTION: 5, // Max 5 game actions per default window (typically 1s)
 };
 
 // Track rate limits per client

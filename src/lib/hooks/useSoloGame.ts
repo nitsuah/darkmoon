@@ -73,3 +73,64 @@ export const useSoloGame = () => {
 
   return { gameManagerRef, initializeForSocket } as const;
 };
+
+// Helper to attach GameManager lifecycle to a socket connection utility
+export const attachToConnection = (
+  getSocket: () => SocketLike | null,
+  connect: () => SocketLike | null,
+  initializeForSocket: (
+    socket: SocketLike,
+    handlers: {
+      setGamePlayers: Dispatch<SetStateAction<Map<string, Player>>>;
+      setGameState: Dispatch<SetStateAction<GameState>>;
+      setPlayerIsIt: Dispatch<SetStateAction<boolean>>;
+    }
+  ) => GameManager | null,
+  handlers: {
+    setGamePlayers: Dispatch<SetStateAction<Map<string, Player>>>;
+    setGameState: Dispatch<SetStateAction<GameState>>;
+    setPlayerIsIt: Dispatch<SetStateAction<boolean>>;
+  }
+): (() => void) => {
+  // Mirror the page-level connect logic here so Solo.tsx stays thin
+  const socket = connect();
+
+  const onConnect = () => {
+    const s = getSocket() || socket;
+    if (!s) return;
+    // Initialize game manager when socket connects
+    initializeForSocket(s, handlers);
+  };
+
+  try {
+    const s = getSocket() || socket;
+    const sRec = s as unknown as Record<string, unknown> | null;
+    if (sRec && typeof sRec["on"] === "function") {
+      (sRec["on"] as (...args: unknown[]) => void)("connect", onConnect);
+    }
+  } catch {
+    // ignore
+  }
+
+  try {
+    const socketRec = socket as unknown as Record<string, unknown> | null;
+    if (socketRec && typeof socketRec["connect"] === "function") {
+      (socketRec["connect"] as (...args: unknown[]) => void)();
+    }
+  } catch {
+    // ignore
+  }
+
+  // Return cleanup fn for useEffect
+  return () => {
+    try {
+      const s = getSocket() || socket;
+      const sRec = s as unknown as Record<string, unknown> | null;
+      if (sRec && typeof sRec["off"] === "function") {
+        (sRec["off"] as (...args: unknown[]) => void)("connect", onConnect);
+      }
+    } catch {
+      // ignore
+    }
+  };
+};

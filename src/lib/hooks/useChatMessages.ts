@@ -20,12 +20,11 @@ export const useChatMessages = () => {
 
   const addChatMessage = useCallback((message: ChatMessage) => {
     setChatMessages((prev) => {
-      const updated = [...prev, message];
-      // Keep only last MAX_CHAT_MESSAGES
-      if (updated.length > MAX_CHAT_MESSAGES) {
-        return updated.slice(-MAX_CHAT_MESSAGES);
+      // Only allocate/slice when at capacity
+      if (prev.length >= MAX_CHAT_MESSAGES) {
+        return [...prev.slice(-(MAX_CHAT_MESSAGES - 1)), message];
       }
-      return updated;
+      return [...prev, message];
     });
   }, []);
 

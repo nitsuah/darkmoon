@@ -22,17 +22,11 @@ export const useSocketConnection = (opts: UseSocketOptions = {}) => {
 
     const getEnvVar = (key: string) => {
       try {
-        // Vite exposes import.meta.env in browser builds
-        if (typeof import.meta !== "undefined") {
-          // Safe narrow: import.meta may not have env at runtime in some test envs
-          // Use an unknown-to-typed narrowing instead of `any` to satisfy eslint
-          const metaUnknown: unknown = import.meta;
-          const meta = metaUnknown as
-            | { env?: Record<string, string> }
-            | undefined;
-          const val = meta?.env?.[key];
-          if (typeof val === "string" && val.length > 0) return val;
-        }
+        // Vite exposes import.meta.env in browser builds. Use optional chaining
+        // directly; environments without env will evaluate to undefined.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const val = (import.meta as any)?.env?.[key];
+        if (typeof val === "string" && val.length > 0) return val;
       } catch {
         // ignore
       }

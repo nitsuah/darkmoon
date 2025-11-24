@@ -48,17 +48,15 @@ const Bots: React.FC<
   };
 
   // BOT1_CONFIG/BOT2_CONFIG may be Partial; merge safely with defaults
-  const effectiveBot1Config: FullBotConfig = Object.assign(
-    {},
-    DEFAULT_BOT_CONFIG,
-    BOT1_CONFIG || {}
-  );
+  const effectiveBot1Config: FullBotConfig = {
+    ...DEFAULT_BOT_CONFIG,
+    ...(BOT1_CONFIG || {}),
+  };
 
-  const effectiveBot2Config: FullBotConfig = Object.assign(
-    {},
-    DEFAULT_BOT_CONFIG,
-    BOT2_CONFIG || {}
-  );
+  const effectiveBot2Config: FullBotConfig = {
+    ...DEFAULT_BOT_CONFIG,
+    ...(BOT2_CONFIG || {}),
+  };
 
   return (
     <>

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 
@@ -20,7 +19,7 @@ if (typeof window !== 'undefined' && !window.ResizeObserver) {
 // Silence known noisy React-Three-Fiber DOM warnings during tests
 if (typeof console !== 'undefined') {
     const _warn = console.warn.bind(console)
-    console.warn = (...args: any[]) => {
+    console.warn = (...args: unknown[]) => {
         try {
             const msg = String(args[0] ?? '')
             // ignore casing and unknown DOM prop warnings from R3F in jsdom test env
@@ -38,7 +37,7 @@ if (typeof console !== 'undefined') {
     }
 
     const _error = console.error.bind(console)
-    console.error = (...args: any[]) => {
+    console.error = (...args: unknown[]) => {
         try {
             const msg = String(args[0] ?? '')
             // also suppress react runtime casing/unknown-prop errors printed as errors

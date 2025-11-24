@@ -8,6 +8,7 @@ import Tutorial from "../components/Tutorial";
 import HelpModal from "../components/HelpModal";
 import ChatBox from "../components/ChatBox";
 import CollisionSystem from "../components/CollisionSystem";
+import SoloHUD from "./Solo/components/SoloHUD";
 import GameManager, { GameState, Player } from "../components/GameManager";
 import GameUI from "../components/GameUI";
 import { MobileControls } from "../components/MobileControls";
@@ -16,8 +17,8 @@ import "../styles/App.css";
 import PauseMenu from "../components/PauseMenu";
 import { useNavigate } from "react-router-dom";
 import { filterProfanity } from "../lib/constants/profanity";
-import { createLogger, createTagLogger } from "../lib/utils/logger";
-import { useSoloGame } from "../lib/hooks/useSoloGame";
+import { createTagLogger } from "../lib/utils/logger";
+import { useSoloGame, attachToConnection } from "../lib/hooks/useSoloGame";
 import { useSocketConnection } from "../lib/hooks/useSocketConnection";
 import { BOT1_CONFIG, BOT2_CONFIG } from "../lib/constants/botConfigs";
 import SoloScene from "./Solo/components/SoloScene";
@@ -36,7 +37,6 @@ import {
 const ZERO_ROTATION: [number, number, number] = [0, 0, 0];
 
 // Create loggers for this module
-const log = createLogger("Solo");
 const tagDebug = createTagLogger("Solo");
 
 const Solo: React.FC = () => {
@@ -167,55 +167,20 @@ const Solo: React.FC = () => {
     if (s) setSocketClient(s as Socket);
   }, [getSocket]);
 
-  // Socket connection setup - connect once on mount
+  // Socket connection setup - use attachToConnection helper so lifecycle is
+  // encapsulated in the hook and Solo.tsx remains thinner.
   useEffect(() => {
-    const socket = connectSocket();
-    // Setup initial game manager once socket connects
-    const onConnect = () => {
-      const s = getSocket() || socket;
-      if (!s) return;
-      log.debug("Socket connected:", s.id);
-
-      // Initialize game manager via hook helper
-      if (!gameManager.current) {
-        const manager = initializeForSocket(s, {
-          setGamePlayers,
-          setGameState,
-          setPlayerIsIt,
-        });
-        gameManager.current = manager;
+    const cleanup = attachToConnection(
+      getSocket,
+      connectSocket,
+      initializeForSocket,
+      {
+        setGamePlayers,
+        setGameState,
+        setPlayerIsIt,
       }
-    };
-
-    // Ensure we add listener to socket returned by connectSocket
-    try {
-      const s = getSocket() || socket;
-      if (s && s.on) {
-        s.on("connect", onConnect);
-      }
-    } catch {
-      // ignore
-    }
-
-    // Connect if needed
-    try {
-      if (socket && socket.connect) {
-        socket.connect();
-      }
-    } catch {
-      // ignore
-    }
-
-    return () => {
-      try {
-        const s = getSocket() || socket;
-        if (s && s.off) {
-          s.off("connect", onConnect);
-        }
-      } catch {
-        // ignore
-      }
-    };
+    );
+    return cleanup;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -627,6 +592,36 @@ const Solo: React.FC = () => {
         bot2GotTagged={bot2GotTagged}
         BOT1_CONFIG={BOT1_CONFIG}
         BOT2_CONFIG={BOT2_CONFIG}
+      />
+      <SoloHUD
+        isMobileDevice={isMobileDevice}
+        onJoystickMove={(x, y) => setJoystickMove({ x, y })}
+        onJumpPress={() => setKeyState(SPACE, true)}
+        onJumpRelease={() => setKeyState(SPACE, false)}
+        onJumpDoubleTap={() => {
+          mobileJetpackTrigger.current = true;
+          setKeyState(SPACE, true);
+        }}
+        onSprintPress={() => setKeyState(SHIFT, true)}
+        onSprintRelease={() => setKeyState(SHIFT, false)}
+        gameState={gameState}
+        players={gamePlayers}
+        currentPlayerId={currentPlayerId}
+        onStartGame={handleStartTagGame}
+        onEndGame={handleEndGame}
+        botDebugMode={botDebugMode}
+        onToggleDebug={() => setBotDebugMode((prev) => !prev)}
+        notifications={notifications}
+        currentFPS={currentFPS}
+        setQuality={setQuality}
+        isPaused={isPaused}
+        onResume={handleResumeGame}
+        onRestart={() => window.location.reload()}
+        onQuit={handleQuitGame}
+        chatVisible={chatVisible}
+        setChatVisible={setChatVisible}
+        chatMessages={chatMessages}
+        onSendMessage={handleSendMessage}
       />
 
       {/* Mobile Controls */}

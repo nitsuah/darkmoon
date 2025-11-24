@@ -55,7 +55,7 @@ export class CharacterControls {
       (key) => keysPressed[key] === true
     );
 
-    var play = "";
+    let play = "";
     if (directionPressed && this.toggleRun) {
       play = "Run";
     } else if (directionPressed) {
