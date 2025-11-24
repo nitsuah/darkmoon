@@ -1,6 +1,7 @@
 import React from "react";
 import { BotCharacter } from "../../../components/characters/BotCharacter";
-import type { SoloSceneProps, BotConfig } from "./SoloScene.types";
+import type { SoloSceneProps } from "./SoloScene.types";
+import type { BotConfig as FullBotConfig } from "../../../components/characters/useBotAI";
 import type { GameState } from "../../../components/GameManager";
 
 const Bots: React.FC<
@@ -32,7 +33,7 @@ const Bots: React.FC<
   BOT2_CONFIG,
 }) => {
   // keep default bot config merging inline to preserve behavior
-  const DEFAULT_BOT_CONFIG = {
+  const DEFAULT_BOT_CONFIG: FullBotConfig = {
     botSpeed: 1.5,
     sprintSpeed: 4,
     fleeSpeed: 1.2,
@@ -44,16 +45,20 @@ const Bots: React.FC<
     chaseRadius: 8,
     initialPosition: [0, 0.5, 0],
     label: "Bot",
-  } as unknown as BotConfig;
+  };
 
-  const effectiveBot1Config: BotConfig = {
-    ...DEFAULT_BOT_CONFIG,
-    ...BOT1_CONFIG,
-  } as unknown as BotConfig;
-  const effectiveBot2Config: BotConfig = {
-    ...DEFAULT_BOT_CONFIG,
-    ...BOT2_CONFIG,
-  } as unknown as BotConfig;
+  // BOT1_CONFIG/BOT2_CONFIG may be Partial; merge safely with defaults
+  const effectiveBot1Config: FullBotConfig = Object.assign(
+    {},
+    DEFAULT_BOT_CONFIG,
+    BOT1_CONFIG || {}
+  );
+
+  const effectiveBot2Config: FullBotConfig = Object.assign(
+    {},
+    DEFAULT_BOT_CONFIG,
+    BOT2_CONFIG || {}
+  );
 
   return (
     <>
@@ -74,8 +79,7 @@ const Bots: React.FC<
         }
         collisionSystem={collisionSystemRef}
         gotTaggedTimestamp={bot1GotTagged}
-        // cast via unknown to satisfy strict typing without using `any`
-        config={effectiveBot1Config as unknown as BotConfig}
+        config={effectiveBot1Config}
         color="#ff8888"
       />
 
@@ -97,8 +101,7 @@ const Bots: React.FC<
           }
           collisionSystem={collisionSystemRef}
           gotTaggedTimestamp={bot2GotTagged}
-          // cast via unknown to satisfy strict typing without using `any`
-          config={effectiveBot2Config as unknown as BotConfig}
+          config={effectiveBot2Config}
           color="#88ff88"
           labelColor="#00ff00"
         />

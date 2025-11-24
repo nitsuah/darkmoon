@@ -21,11 +21,12 @@ export type QualitySettings = {
 };
 
 export type MouseControls = {
-  mouseX?: number;
-  mouseY?: number;
-  leftClick?: boolean;
-  rightClick?: boolean;
-} | null;
+  mouseX: number;
+  mouseY: number;
+  leftClick: boolean;
+  rightClick: boolean;
+  middleClick: boolean;
+};
 
 export type BotConfig = Partial<BotAIConfig>;
 
@@ -51,7 +52,7 @@ export type SoloSceneProps = {
   setBotIsIt?: (v: boolean) => void;
   setBot1GotTagged: (t: number) => void;
   setBot2GotTagged: (t: number) => void;
-  setGameState: (s: GameState) => void;
+  setGameState: React.Dispatch<React.SetStateAction<GameState>>;
   botDebugMode: boolean;
   bot1Position: [number, number, number];
   bot2Position: [number, number, number];

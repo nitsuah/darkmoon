@@ -58,7 +58,7 @@ export const SoloScene: React.FC<Props> = ({
       />
 
       <Players
-        playerCharacterRef={playerCharacterRef}
+        ref={playerCharacterRef}
         keysPressedRef={keysPressedRef}
         socketClient={socketClient}
         mouseControls={mouseControls}
