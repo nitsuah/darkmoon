@@ -126,6 +126,11 @@ const Solo: React.FC = () => {
     keysPressedRef.current = keysPressed;
   }, [keysPressed]);
 
+  // Helper to update individual key states
+  const setKeyState = useCallback((key: string, pressed: boolean) => {
+    setKeysPressed((prev) => ({ ...prev, [key]: pressed }));
+  }, []);
+
   // Game timer update - runs every second when game is active
   useEffect(() => {
     if (!gameState.isActive || !gameManager.current) return;
@@ -250,7 +255,7 @@ const Solo: React.FC = () => {
       const key = e.key.toLowerCase();
       if ([W, A, S, D, Q, E, SHIFT, SPACE, " "].includes(key)) {
         e.preventDefault();
-        setKeysPressed((prev) => ({ ...prev, [key]: true }));
+        setKeyState(key, true);
       }
     };
 
@@ -258,7 +263,7 @@ const Solo: React.FC = () => {
       const key = e.key.toLowerCase();
       if ([W, A, S, D, Q, E, SHIFT, SPACE, " "].includes(key)) {
         e.preventDefault();
-        setKeysPressed((prev) => ({ ...prev, [key]: false }));
+        setKeyState(key, false);
       }
     };
 
@@ -269,7 +274,7 @@ const Solo: React.FC = () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [chatVisible, botDebugMode, setChatVisible]);
+  }, [chatVisible, botDebugMode, setChatVisible, setKeyState]);
 
   // Mouse controls
   useEffect(() => {
@@ -788,22 +793,14 @@ const Solo: React.FC = () => {
       {isMobileDevice && (
         <MobileControls
           onJoystickMove={(x, y) => setJoystickMove({ x, y })}
-          onJumpPress={() =>
-            setKeysPressed((prev) => ({ ...prev, [SPACE]: true }))
-          }
-          onJumpRelease={() =>
-            setKeysPressed((prev) => ({ ...prev, [SPACE]: false }))
-          }
+          onJumpPress={() => setKeyState(SPACE, true)}
+          onJumpRelease={() => setKeyState(SPACE, false)}
           onJumpDoubleTap={() => {
             mobileJetpackTrigger.current = true;
-            setKeysPressed((prev) => ({ ...prev, [SPACE]: true }));
+            setKeyState(SPACE, true);
           }}
-          onSprintPress={() =>
-            setKeysPressed((prev) => ({ ...prev, [SHIFT]: true }))
-          }
-          onSprintRelease={() =>
-            setKeysPressed((prev) => ({ ...prev, [SHIFT]: false }))
-          }
+          onSprintPress={() => setKeyState(SHIFT, true)}
+          onSprintRelease={() => setKeyState(SHIFT, false)}
         />
       )}
 
