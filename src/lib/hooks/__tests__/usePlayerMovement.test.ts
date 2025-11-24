@@ -1,3 +1,4 @@
+import { describe, test, expect } from "vitest";
 import { computeDirection, computeSpeed } from "../usePlayerMovement";
 import * as THREE from "three";
 
@@ -29,7 +30,12 @@ describe("usePlayerMovement helpers", () => {
 
   test("computeDirection respects bothMouseButtons auto-run", () => {
     const cam = Math.PI / 4; // 45 deg
-    const dir = computeDirection(cam, { x: 0, y: 0 }, { W: false, S: false, Q: false, E: false }, true);
+    const dir = computeDirection(
+      cam,
+      { x: 0, y: 0 },
+      { W: false, S: false, Q: false, E: false },
+      true
+    );
     expect(dir.length()).toBeGreaterThan(0);
   });
 });
