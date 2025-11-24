@@ -114,7 +114,9 @@ describe("PlayerCharacter imperative handle", () => {
             mouseY: 0,
           }}
           clients={emptyClients}
-          gameManager={fakeGameManager}
+          gameManager={
+            fakeGameManager as unknown as import("../components/GameManager").GameManager
+          }
           currentPlayerId={"p1"}
           joystickMove={{ x: 0, y: 0 }}
           joystickCamera={{ x: 0, y: 0 }}
