@@ -584,31 +584,7 @@ const Solo: React.FC = () => {
     navigate("/");
   };
 
-  // Helper to handle tag events and update game state
-  const handleTag = useCallback(
-    (
-      taggerId: string,
-      taggedId: string,
-      message: string,
-      notificationType: "info" | "success" | "warning" | "error" = "info"
-    ) => {
-      tagDebug(message);
-      addNotification(message, notificationType);
-
-      // Update GameManager
-      if (gameManager.current) {
-        gameManager.current.updatePlayer(taggerId, { isIt: false });
-        gameManager.current.updatePlayer(taggedId, { isIt: true });
-        const newState = {
-          ...gameManager.current.getGameState(),
-          itPlayerId: taggedId,
-        };
-        gameManager.current["gameState"] = newState;
-        setGameState(newState);
-      }
-    },
-    [addNotification]
-  );
+  // Previously handled tag events here; logic now moves through GameManager callbacks
 
   return (
     <div
@@ -647,7 +623,6 @@ const Solo: React.FC = () => {
         collisionSystemRef={collisionSystemRef}
         handleBot1PositionUpdate={handleBot1PositionUpdate}
         handleBot2PositionUpdate={handleBot2PositionUpdate}
-        handleTag={handleTag}
         bot1GotTagged={bot1GotTagged}
         bot2GotTagged={bot2GotTagged}
         BOT1_CONFIG={BOT1_CONFIG}
