@@ -22,13 +22,14 @@ export const useSocketConnection = (opts: UseSocketOptions = {}) => {
 
     const getEnvVar = (key: string) => {
       try {
-        // Vite exposes import.meta.env in browser builds. Use optional chaining
-        // directly; environments without env will evaluate to undefined.
-        // Vite exposes import.meta.env in browser builds. Narrow the type safely.
-        const metaEnv = import.meta as unknown as {
-          env?: Record<string, unknown>;
-        };
-        const val = metaEnv?.env?.[key];
+        // Vite exposes import.meta.env in browser builds. Access it safely with
+        // a single narrow-check to avoid repetitive casts or unsafe `any` usage.
+        const meta =
+          typeof import.meta !== "undefined"
+            ? (import.meta as unknown as { env?: Record<string, unknown> })
+            : undefined;
+        const val =
+          meta?.env && typeof meta.env === "object" ? meta.env[key] : undefined;
         if (typeof val === "string" && val.length > 0) return val;
       } catch {
         // ignore
