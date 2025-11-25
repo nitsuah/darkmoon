@@ -7,9 +7,11 @@
 import SoundEngine from "./SoundEngine";
 import { applyVolumes } from "./soundHelpers";
 import { createOscillatorWithGain } from "./soundNodeFactory";
+import { createBackgroundMusic } from "./musicLayers";
 class SoundManager {
   private audioContext: AudioContext | null = null;
   private backgroundMusic: OscillatorNode | null = null;
+  private backgroundOscillators: OscillatorNode[] | null = null;
   private musicGain: GainNode | null = null;
   private sfxGain: GainNode | null = null;
   private engine: SoundEngine | null = null;
@@ -91,101 +93,22 @@ class SoundManager {
     try {
       this.resumeAudioContext();
 
-      // Create space-themed ambient music with multiple layers
-      const masterGain = ctx.createGain();
-      masterGain.gain.value = 1.0;
-      masterGain.connect(musicGain!);
+      // Use helper to build music layers and get oscillators
+      const { masterGain, oscillators } = createBackgroundMusic(
+        ctx,
+        musicGain!
+      );
 
-      // Deep space drone (very low frequencies)
-      const drone1 = ctx.createOscillator();
-      const drone2 = ctx.createOscillator();
-      const droneGain = ctx.createGain();
-      drone1.type = "sine";
-      drone1.frequency.value = 55; // A1 - very deep
-      drone2.type = "sine";
-      drone2.frequency.value = 82.5; // E2 - perfect fifth
-      droneGain.gain.value = 0.4;
-      drone1.connect(droneGain);
-      drone2.connect(droneGain);
-      droneGain.connect(masterGain);
-
-      // Mid-range ethereal pad
-      const pad1 = ctx.createOscillator();
-      const pad2 = ctx.createOscillator();
-      const pad3 = ctx.createOscillator();
-      const padGain = ctx.createGain();
-      const padFilter = ctx.createBiquadFilter();
-
-      pad1.type = "triangle";
-      pad1.frequency.value = 220; // A3
-      pad2.type = "triangle";
-      pad2.frequency.value = 329.63; // E4
-      pad3.type = "triangle";
-      pad3.frequency.value = 277.18; // C#4 - adds mystery
-
-      padFilter.type = "lowpass";
-      padFilter.frequency.value = 1200;
-      padFilter.Q.value = 0.5;
-      padGain.gain.value = 0.25;
-
-      pad1.connect(padFilter);
-      pad2.connect(padFilter);
-      pad3.connect(padFilter);
-      padFilter.connect(padGain);
-      padGain.connect(masterGain);
-
-      // Subtle shimmer (high frequencies for space atmosphere)
-      const shimmer = ctx.createOscillator();
-      const shimmerGain = ctx.createGain();
-      const shimmerFilter = ctx.createBiquadFilter();
-      shimmer.type = "sine";
-      shimmer.frequency.value = 880; // A5
-      shimmerFilter.type = "highpass";
-      shimmerFilter.frequency.value = 800;
-      shimmerGain.gain.value = 0.08;
-      shimmer.connect(shimmerFilter);
-      shimmerFilter.connect(shimmerGain);
-      shimmerGain.connect(masterGain);
-
-      // LFO for slow filter sweep (creates movement/breathing)
-      const lfo = ctx.createOscillator();
-      const lfoGain = ctx.createGain();
-      lfo.type = "sine";
-      lfo.frequency.value = 0.1; // Very slow - 10 second cycle
-      lfoGain.gain.value = 200; // Sweep range
-      lfo.connect(lfoGain);
-      lfoGain.connect(padFilter.frequency);
-
-      // LFO for shimmer tremolo
-      const shimmerLfo = ctx.createOscillator();
-      const shimmerLfoGain = ctx.createGain();
-      shimmerLfo.type = "sine";
-      shimmerLfo.frequency.value = 0.3; // Faster shimmer
-      shimmerLfoGain.gain.value = 0.03;
-      shimmerLfo.connect(shimmerLfoGain);
-      shimmerLfoGain.connect(shimmerGain.gain);
-
-      // Store all oscillators in array for easier management
-      const oscillators = [
-        drone1,
-        drone2,
-        pad1,
-        pad2,
-        pad3,
-        shimmer,
-        lfo,
-        shimmerLfo,
-      ];
-
-      // Start all oscillators
+      // Start oscillators
       oscillators.forEach((osc) => osc.start());
 
-      // Fade in music - increased from 3s to 5s for smoother start
+      // Fade in music
       masterGain.gain.setValueAtTime(0, ctx.currentTime);
       masterGain.gain.linearRampToValueAtTime(1.0, ctx.currentTime + 5.0);
 
-      // Store reference to first oscillator for backwards compatibility
-      this.backgroundMusic = drone1;
+      // Store reference to first oscillator and the oscillator list
+      this.backgroundMusic = oscillators[0] ?? null;
+      this.backgroundOscillators = oscillators;
       this.isMusicPlaying = true;
     } catch (error) {
       console.error("Failed to start background music:", error);
@@ -198,7 +121,7 @@ class SoundManager {
   public stopBackgroundMusic() {
     const ctx = this.getAudioContext();
     const musicGain = this.getMusicGain();
-    if (this.backgroundMusic && ctx && musicGain) {
+    if (this.backgroundOscillators && ctx && musicGain) {
       try {
         // Fade out over 4 seconds - increased from 2s for smoother end
         const fadeOutTime = 4.0;
@@ -209,14 +132,18 @@ class SoundManager {
 
         // Stop after fade completes
         setTimeout(() => {
-          if (this.backgroundMusic) {
-            try {
-              this.backgroundMusic.stop();
-            } catch {
-              // Oscillator may already be stopped - silently continue
-            }
-            this.backgroundMusic = null;
+          // Stop all created oscillators
+          if (this.backgroundOscillators) {
+            this.backgroundOscillators.forEach((osc) => {
+              try {
+                osc.stop();
+              } catch {
+                // ignore
+              }
+            });
+            this.backgroundOscillators = null;
           }
+          this.backgroundMusic = null;
           this.isMusicPlaying = false;
 
           // Restore music gain for next time
