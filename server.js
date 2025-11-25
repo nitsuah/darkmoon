@@ -1,5 +1,4 @@
 import express from "express";
-import Router from "express-promise-router";
 import { Server } from "socket.io";
 import cors from "cors";
 import {
@@ -93,8 +92,8 @@ const checkRateLimit = (clientId, action, limit, windowMs = 1000) => {
   return tracker.count > limit; // true if exceeded
 };
 
-// Create router
-const router = Router();
+// Create router (Express 5 has native async support)
+const router = express.Router();
 
 // Health check endpoint
 router.get("/health", (req, res) => {
