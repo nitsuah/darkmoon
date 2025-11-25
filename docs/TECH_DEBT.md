@@ -126,18 +126,16 @@
 
 ### 7. SoundManager.ts Too Large (621 lines)
 
-**Status:** 🟡 MAINTAINABILITY  
-**Impact:** Hard to extend with new sounds  
-**Files:** `src/components/SoundManager.ts`  
-**Details:** Procedural music + SFX + volume management all in one class  
-**Owner:** [Assign]  
-**Due:** [Sprint 3]
+**Status:** � IN PROGRESS — music layers extracted  
+**Impact:** Easier to reason about procedural music and test its parts  
+**Files:** `src/components/SoundManager.ts`, `src/components/musicLayers.ts`  
+**Details:** Procedural music was extracted into `musicLayers.ts`. `SoundManager` now delegates music-layer creation and manages orchestration. Remaining work: split SFX helpers and further reduce `SoundManager` body to ~150 lines.
 
 **Action Items:**
 
-- [ ] Extract `ProceduralMusic.ts`
-- [ ] Extract `SoundEffects.ts`
-- [ ] Extract `AudioContext.ts`
+- [x] Extract `ProceduralMusic.ts` (implemented as `musicLayers.ts`)
+- [ ] Extract `SoundEffects.ts` (split SFX helpers into separate module)
+- [ ] Extract `AudioContext.ts` (centralize AudioContext creation/management)
 - [ ] Keep SoundManager as orchestrator (~150 lines)
 
 ---
