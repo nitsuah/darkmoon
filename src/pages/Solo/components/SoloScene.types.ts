@@ -52,6 +52,7 @@ export type SoloSceneProps = {
   setBotIsIt?: (v: boolean) => void;
   setBot1GotTagged: (t: number) => void;
   setBot2GotTagged: (t: number) => void;
+  gameState: GameState;
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
   botDebugMode: boolean;
   bot1Position: [number, number, number];

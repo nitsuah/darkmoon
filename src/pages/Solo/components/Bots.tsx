@@ -1,8 +1,7 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { BotCharacter } from "../../../components/characters/BotCharacter";
 import type { SoloSceneProps } from "./SoloScene.types";
 import type { BotConfig as FullBotConfig } from "../../../components/characters/useBotAI";
-import type { GameState } from "../../../components/GameManager";
 
 const Bots: React.FC<
   Pick<
@@ -18,6 +17,10 @@ const Bots: React.FC<
     | "bot2GotTagged"
     | "BOT1_CONFIG"
     | "BOT2_CONFIG"
+    | "gameManager"
+    | "gameState"
+    | "setBot1GotTagged"
+    | "setBot2GotTagged"
   >
 > = ({
   botDebugMode,
@@ -31,6 +34,10 @@ const Bots: React.FC<
   bot2GotTagged,
   BOT1_CONFIG,
   BOT2_CONFIG,
+  gameManager,
+  gameState,
+  setBot1GotTagged,
+  setBot2GotTagged,
 }) => {
   // keep default bot config merging inline to preserve behavior
   const DEFAULT_BOT_CONFIG: FullBotConfig = {
@@ -58,23 +65,35 @@ const Bots: React.FC<
     ...(BOT2_CONFIG || {}),
   };
 
+  // Get bot IT status from game manager
+  const bot1IsIt = gameManager?.getPlayers().get("bot-1")?.isIt ?? false;
+  const bot2IsIt = gameManager?.getPlayers().get("bot-2")?.isIt ?? false;
+
+  // Bot tag callbacks - handle bot-to-bot tagging
+  const handleBot1TagTarget = useCallback(() => {
+    if (gameManager && bot1IsIt && bot2IsIt === false) {
+      gameManager.tagPlayer("bot-1", "bot-2");
+      setBot2GotTagged(Date.now());
+    }
+  }, [gameManager, bot1IsIt, bot2IsIt, setBot2GotTagged]);
+
+  const handleBot2TagTarget = useCallback(() => {
+    if (gameManager && bot2IsIt && bot1IsIt === false) {
+      gameManager.tagPlayer("bot-2", "bot-1");
+      setBot1GotTagged(Date.now());
+    }
+  }, [gameManager, bot2IsIt, bot1IsIt, setBot1GotTagged]);
+
   return (
     <>
       <BotCharacter
         targetPosition={botDebugMode ? bot2Position : [0, 0.5, 0]}
-        isIt={false}
-        targetIsIt={false}
+        isIt={bot1IsIt}
+        targetIsIt={bot2IsIt}
         isPaused={isPaused}
-        onTagTarget={() => {}}
+        onTagTarget={handleBot1TagTarget}
         onPositionUpdate={handleBot1PositionUpdate}
-        gameState={
-          {
-            mode: "none",
-            isActive: false,
-            timeRemaining: 0,
-            scores: {},
-          } as GameState
-        }
+        gameState={gameState}
         collisionSystem={collisionSystemRef}
         gotTaggedTimestamp={bot1GotTagged}
         config={effectiveBot1Config}
@@ -84,19 +103,12 @@ const Bots: React.FC<
       {botDebugMode && (
         <BotCharacter
           targetPosition={bot1Position}
-          isIt={false}
-          targetIsIt={false}
+          isIt={bot2IsIt}
+          targetIsIt={bot1IsIt}
           isPaused={isPaused}
-          onTagTarget={() => {}}
+          onTagTarget={handleBot2TagTarget}
           onPositionUpdate={handleBot2PositionUpdate}
-          gameState={
-            {
-              mode: "none",
-              isActive: false,
-              timeRemaining: 0,
-              scores: {},
-            } as GameState
-          }
+          gameState={gameState}
           collisionSystem={collisionSystemRef}
           gotTaggedTimestamp={bot2GotTagged}
           config={effectiveBot2Config}

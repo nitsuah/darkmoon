@@ -608,6 +608,7 @@ const Solo: React.FC = () => {
         setPlayerIsIt={setPlayerIsIt}
         setBot1GotTagged={setBot1GotTagged}
         setBot2GotTagged={setBot2GotTagged}
+        gameState={gameState}
         setGameState={setGameState}
         botDebugMode={botDebugMode}
         bot1Position={bot1PositionRef.current}
