@@ -105,6 +105,21 @@ export default [
                 },
             ],
             'react-hooks/set-state-in-effect': 'off',
+            // Prevent importing the Jest-oriented jest-dom entry directly.
+            // Use the vitest-compatible entry via the test setup file instead:
+            // import '@testing-library/jest-dom/vitest' in config/vitest.setup.ts
+            'no-restricted-imports': [
+                'error',
+                {
+                    paths: [
+                        {
+                            name: '@testing-library/jest-dom',
+                            message:
+                                "Importing '@testing-library/jest-dom' directly is not allowed. Use the vitest setup file which imports '@testing-library/jest-dom/vitest'.",
+                        },
+                    ],
+                },
+            ],
         },
         settings: {
             react: {

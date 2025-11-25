@@ -13,7 +13,7 @@
     "precommit": "lint-staged --config ./config/lint-staged.config.json",
     "ci": "npm run typecheck && npm run lint && npm run test:ci && npm run build",
     "test": "vitest --config ./config/vitest.config.ts",
-    "test:ci": "vitest run --coverage --config ./config/vitest.config.ts",
+    "test:ci": "node ./scripts/run-tests-inprocess.js",
     "test:run": "vitest run --config ./config/vitest.config.ts",
     "prepare": "husky install"
   },
