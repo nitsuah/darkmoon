@@ -10,6 +10,7 @@ async function main() {
     // in-process execution. If the runner doesn't honor this, tests may still
     // spawn workers, but overall this is more robust than spawning child
     // processes in some Windows environments.
+    // Tested with Vitest v4.0.4 - threads: false is honored in this version.
     await startVitest({
       config: "./config/vitest.config.ts",
       run: true,

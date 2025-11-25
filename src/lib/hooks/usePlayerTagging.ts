@@ -86,7 +86,10 @@ export function processTagging(params: TaggingParams): boolean {
         const soundMgr = getSoundManager();
         if (soundMgr) soundMgr.playTagSound();
       } catch (e) {
-        void e;
+        // Sound manager may not be ready during initialization
+        if (import.meta.env.DEV) {
+          console.warn("Failed to play tag sound:", e);
+        }
       }
 
       onTagSuccess?.();
