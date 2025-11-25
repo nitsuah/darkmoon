@@ -86,13 +86,15 @@ export const attachToConnection = (
       setGamePlayers: Dispatch<SetStateAction<Map<string, Player>>>;
       setGameState: Dispatch<SetStateAction<GameState>>;
       setPlayerIsIt: Dispatch<SetStateAction<boolean>>;
-    }
+    },
+    botConfig?: BotConfig
   ) => GameManager | null,
   handlers: {
     setGamePlayers: Dispatch<SetStateAction<Map<string, Player>>>;
     setGameState: Dispatch<SetStateAction<GameState>>;
     setPlayerIsIt: Dispatch<SetStateAction<boolean>>;
-  }
+  },
+  botConfig?: BotConfig
 ): (() => void) => {
   // Mirror the page-level connect logic here so Solo.tsx stays thin
   const socket = connect();
@@ -101,7 +103,7 @@ export const attachToConnection = (
     const s = getSocket() || socket;
     if (!s) return;
     // Initialize game manager when socket connects
-    initializeForSocket(s, handlers);
+    initializeForSocket(s, handlers, botConfig);
   };
   // Type guard for objects that expose event methods like socket.io clients
   const isEvented = (

@@ -173,11 +173,15 @@ const Solo: React.FC = () => {
   useEffect(() => {
     try {
       const maybeSocket = getSocket() || { id: localPlayerId };
-      const mgr = initializeForSocket(maybeSocket, {
-        setGamePlayers,
-        setGameState,
-        setPlayerIsIt,
-      });
+      const mgr = initializeForSocket(
+        maybeSocket,
+        {
+          setGamePlayers,
+          setGameState,
+          setPlayerIsIt,
+        },
+        botDebugMode ? BOT2_CONFIG : BOT1_CONFIG
+      );
       if (mgr) gameManager.current = mgr;
     } catch {
       // ignore initialization errors in tests or non-browser envs
@@ -191,7 +195,8 @@ const Solo: React.FC = () => {
         setGamePlayers,
         setGameState,
         setPlayerIsIt,
-      }
+      },
+      botDebugMode ? BOT2_CONFIG : BOT1_CONFIG
     );
 
     return () => {
