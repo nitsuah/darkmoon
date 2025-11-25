@@ -10,15 +10,22 @@ console.log(
   process.env.VITEST_MAX_WORKERS
 );
 
-const result = spawnSync(
-  process.platform === "win32" ? "npm.cmd" : "npm",
-  ["run", "test:ci"],
-  {
-    cwd,
-    stdio: "inherit",
-    shell: false,
-    env: { ...process.env },
-  }
-);
+// Run vitest directly using npx to avoid spawning an npm child process which
+// can trigger IPC issues in some Node/OS environments.
+const runner = process.platform === "win32" ? "npx.cmd" : "npx";
+const args = [
+  "vitest",
+  "run",
+  "--coverage",
+  "--config",
+  "./config/vitest.config.ts",
+];
+
+const result = spawnSync(runner, args, {
+  cwd,
+  stdio: "inherit",
+  shell: false,
+  env: { ...process.env },
+});
 
 process.exit(result.status ?? 1);
