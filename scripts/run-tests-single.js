@@ -41,5 +41,74 @@ for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
   }
 }
 
-// If we get here, all attempts failed. Exit with the last status code.
-process.exit((lastResult && lastResult.status) || 1);
+// If we get here, all attempts failed. Try a sequential per-file fallback to
+// avoid worker pool IPC crashes. This is slower but more robust on flaky
+// environments.
+try {
+  console.warn(
+    "Parallel test run failed — attempting sequential test run as fallback..."
+  );
+
+  const fs = await import("fs");
+  const path = await import("path");
+  const { readdirSync, statSync } = fs;
+
+  function collectTests(dir) {
+    const results = [];
+    const files = readdirSync(dir);
+    for (const f of files) {
+      const full = path.join(dir, f);
+      const st = statSync(full);
+      if (st.isDirectory()) {
+        results.push(...collectTests(full));
+      } else if (/\.test\.(t|j)sx?$/.test(f) || /\.(spec)\.(t|j)sx?$/.test(f)) {
+        results.push(full);
+      }
+    }
+    return results;
+  }
+
+  const testRoots = [path.join(cwd, "src"), path.join(cwd, "server")];
+  let testFiles = [];
+  for (const root of testRoots) {
+    try {
+      testFiles.push(...collectTests(root));
+    } catch {
+      // ignore missing directories
+    }
+  }
+
+  if (testFiles.length === 0) {
+    console.error(
+      "No test files found for sequential fallback. Exiting with last status."
+    );
+    process.exit((lastResult && lastResult.status) || 1);
+  }
+
+  for (const tf of testFiles) {
+    console.log(`Running test file: ${tf}`);
+    const res = spawnSync(
+      runner,
+      ["vitest", "run", tf, "--config", "./config/vitest.config.ts"],
+      {
+        cwd,
+        stdio: "inherit",
+        shell: false,
+        env: {
+          ...process.env,
+          VITEST_MAX_WORKERS: process.env.VITEST_MAX_WORKERS || "1",
+        },
+      }
+    );
+    if (res.status !== 0) {
+      console.error(`Test file failed: ${tf}`);
+      process.exit(res.status || 1);
+    }
+  }
+
+  // all sequential tests passed
+  process.exit(0);
+} catch (e) {
+  console.error("Sequential fallback failed:", e);
+  process.exit((lastResult && lastResult.status) || 1);
+}
