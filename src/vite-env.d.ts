@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+/// <reference types="./types/react-three-fiber-jsx-runtime" />
 
 interface ImportMetaEnv {
   readonly DEV: boolean;
