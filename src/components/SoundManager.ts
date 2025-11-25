@@ -4,11 +4,18 @@
  */
 
 /* eslint-disable no-undef */
+import SoundEngine from "./SoundEngine";
+import { applyVolumes } from "./soundHelpers";
+import { createOscillatorWithGain } from "./soundNodeFactory";
+import * as soundEffects from "./soundEffects";
+import { createBackgroundMusic } from "./musicLayers";
 class SoundManager {
   private audioContext: AudioContext | null = null;
   private backgroundMusic: OscillatorNode | null = null;
+  private backgroundOscillators: OscillatorNode[] | null = null;
   private musicGain: GainNode | null = null;
   private sfxGain: GainNode | null = null;
+  private engine: SoundEngine | null = null;
   private isMuted: boolean = false;
   private isMusicPlaying: boolean = false;
   private masterVolume: number = 0.3;
@@ -19,7 +26,22 @@ class SoundManager {
     // Initialize audio context on first user interaction
     if (typeof window !== "undefined") {
       this.initAudioContext();
+      this.engine = new SoundEngine();
+      this.engine.init();
     }
+  }
+
+  // Prefer engine-managed audio objects when available (engine.init creates them)
+  private getAudioContext(): AudioContext | null {
+    return this.engine?.audioContext ?? this.audioContext;
+  }
+
+  private getMusicGain(): GainNode | null {
+    return this.engine?.musicGain ?? this.musicGain;
+  }
+
+  private getSfxGain(): GainNode | null {
+    return this.engine?.sfxGain ?? this.sfxGain;
   }
 
   private initAudioContext() {
@@ -31,9 +53,6 @@ class SoundManager {
           !(window as Window & { webkitAudioContext?: typeof AudioContext })
             .webkitAudioContext)
       ) {
-        console.log(
-          "AudioContext not available, skipping audio initialization"
-        );
         return;
       }
 
@@ -51,8 +70,6 @@ class SoundManager {
       this.sfxGain = this.audioContext.createGain();
       this.sfxGain.gain.value = this.sfxVolume;
       this.sfxGain.connect(this.audioContext.destination);
-
-      console.log("SoundManager initialized");
     } catch (error) {
       console.error("Failed to initialize audio context:", error);
     }
@@ -62,122 +79,38 @@ class SoundManager {
    * Ensure audio context is running (required after user interaction on some browsers)
    */
   public async resumeAudioContext() {
-    if (this.audioContext && this.audioContext.state === "suspended") {
-      await this.audioContext.resume();
-      console.log("Audio context resumed");
-    }
+    const ctx = this.getAudioContext();
+    if (ctx && ctx.state === "suspended") await ctx.resume();
   }
 
   /**
    * Start background music (ambient space-themed procedural music)
    */
   public startBackgroundMusic() {
-    if (!this.audioContext || this.isMusicPlaying || this.isMuted) return;
+    const ctx = this.getAudioContext();
+    const musicGain = this.getMusicGain();
+    if (!ctx || !musicGain || this.isMusicPlaying || this.isMuted) return;
 
     try {
       this.resumeAudioContext();
 
-      // Create space-themed ambient music with multiple layers
-      const masterGain = this.audioContext.createGain();
-      masterGain.gain.value = 1.0;
-      masterGain.connect(this.musicGain!);
-
-      // Deep space drone (very low frequencies)
-      const drone1 = this.audioContext.createOscillator();
-      const drone2 = this.audioContext.createOscillator();
-      const droneGain = this.audioContext.createGain();
-      drone1.type = "sine";
-      drone1.frequency.value = 55; // A1 - very deep
-      drone2.type = "sine";
-      drone2.frequency.value = 82.5; // E2 - perfect fifth
-      droneGain.gain.value = 0.4;
-      drone1.connect(droneGain);
-      drone2.connect(droneGain);
-      droneGain.connect(masterGain);
-
-      // Mid-range ethereal pad
-      const pad1 = this.audioContext.createOscillator();
-      const pad2 = this.audioContext.createOscillator();
-      const pad3 = this.audioContext.createOscillator();
-      const padGain = this.audioContext.createGain();
-      const padFilter = this.audioContext.createBiquadFilter();
-
-      pad1.type = "triangle";
-      pad1.frequency.value = 220; // A3
-      pad2.type = "triangle";
-      pad2.frequency.value = 329.63; // E4
-      pad3.type = "triangle";
-      pad3.frequency.value = 277.18; // C#4 - adds mystery
-
-      padFilter.type = "lowpass";
-      padFilter.frequency.value = 1200;
-      padFilter.Q.value = 0.5;
-      padGain.gain.value = 0.25;
-
-      pad1.connect(padFilter);
-      pad2.connect(padFilter);
-      pad3.connect(padFilter);
-      padFilter.connect(padGain);
-      padGain.connect(masterGain);
-
-      // Subtle shimmer (high frequencies for space atmosphere)
-      const shimmer = this.audioContext.createOscillator();
-      const shimmerGain = this.audioContext.createGain();
-      const shimmerFilter = this.audioContext.createBiquadFilter();
-      shimmer.type = "sine";
-      shimmer.frequency.value = 880; // A5
-      shimmerFilter.type = "highpass";
-      shimmerFilter.frequency.value = 800;
-      shimmerGain.gain.value = 0.08;
-      shimmer.connect(shimmerFilter);
-      shimmerFilter.connect(shimmerGain);
-      shimmerGain.connect(masterGain);
-
-      // LFO for slow filter sweep (creates movement/breathing)
-      const lfo = this.audioContext.createOscillator();
-      const lfoGain = this.audioContext.createGain();
-      lfo.type = "sine";
-      lfo.frequency.value = 0.1; // Very slow - 10 second cycle
-      lfoGain.gain.value = 200; // Sweep range
-      lfo.connect(lfoGain);
-      lfoGain.connect(padFilter.frequency);
-
-      // LFO for shimmer tremolo
-      const shimmerLfo = this.audioContext.createOscillator();
-      const shimmerLfoGain = this.audioContext.createGain();
-      shimmerLfo.type = "sine";
-      shimmerLfo.frequency.value = 0.3; // Faster shimmer
-      shimmerLfoGain.gain.value = 0.03;
-      shimmerLfo.connect(shimmerLfoGain);
-      shimmerLfoGain.connect(shimmerGain.gain);
-
-      // Store all oscillators in array for easier management
-      const oscillators = [
-        drone1,
-        drone2,
-        pad1,
-        pad2,
-        pad3,
-        shimmer,
-        lfo,
-        shimmerLfo,
-      ];
-
-      // Start all oscillators
-      oscillators.forEach((osc) => osc.start());
-
-      // Fade in music - increased from 3s to 5s for smoother start
-      masterGain.gain.setValueAtTime(0, this.audioContext.currentTime);
-      masterGain.gain.linearRampToValueAtTime(
-        1.0,
-        this.audioContext.currentTime + 5.0
+      // Use helper to build music layers and get oscillators
+      const { masterGain, oscillators } = createBackgroundMusic(
+        ctx,
+        musicGain!
       );
 
-      // Store reference to first oscillator for backwards compatibility
-      this.backgroundMusic = drone1;
-      this.isMusicPlaying = true;
+      // Start oscillators
+      oscillators.forEach((osc) => osc.start());
 
-      console.log("Space-themed background music started");
+      // Fade in music
+      masterGain.gain.setValueAtTime(0, ctx.currentTime);
+      masterGain.gain.linearRampToValueAtTime(1.0, ctx.currentTime + 5.0);
+
+      // Store reference to first oscillator and the oscillator list
+      this.backgroundMusic = oscillators[0] ?? null;
+      this.backgroundOscillators = oscillators;
+      this.isMusicPlaying = true;
     } catch (error) {
       console.error("Failed to start background music:", error);
     }
@@ -187,37 +120,37 @@ class SoundManager {
    * Stop background music (with fade out)
    */
   public stopBackgroundMusic() {
-    if (this.backgroundMusic && this.audioContext && this.musicGain) {
+    const ctx = this.getAudioContext();
+    const musicGain = this.getMusicGain();
+    if (this.backgroundOscillators && ctx && musicGain) {
       try {
         // Fade out over 4 seconds - increased from 2s for smoother end
         const fadeOutTime = 4.0;
-        this.musicGain.gain.linearRampToValueAtTime(
+        musicGain.gain.linearRampToValueAtTime(
           0,
-          this.audioContext.currentTime + fadeOutTime
+          ctx.currentTime + fadeOutTime
         );
 
         // Stop after fade completes
         setTimeout(() => {
-          if (this.backgroundMusic) {
-            try {
-              this.backgroundMusic.stop();
-            } catch (error) {
-              // Oscillator may already be stopped - log for debugging
-              console.warn(
-                "Oscillator already stopped or invalid state:",
-                error
-              );
-            }
-            this.backgroundMusic = null;
+          // Stop all created oscillators
+          if (this.backgroundOscillators) {
+            this.backgroundOscillators.forEach((osc) => {
+              try {
+                osc.stop();
+              } catch {
+                // ignore
+              }
+            });
+            this.backgroundOscillators = null;
           }
+          this.backgroundMusic = null;
           this.isMusicPlaying = false;
 
           // Restore music gain for next time
           if (this.musicGain && !this.isMuted) {
             this.musicGain.gain.value = this.musicVolume;
           }
-
-          console.log("Background music stopped");
         }, fadeOutTime * 1000);
       } catch (error) {
         console.error("Error stopping music:", error);
@@ -229,34 +162,14 @@ class SoundManager {
    * Play walking sound effect
    */
   public playWalkSound() {
-    if (!this.audioContext || this.isMuted) return;
-
+    const ctx = this.getAudioContext();
+    const sfxGain = this.getSfxGain();
+    if (!ctx || !sfxGain || this.isMuted) return;
     try {
       this.resumeAudioContext();
-
-      const osc = this.audioContext.createOscillator();
-      const gainNode = this.audioContext.createGain();
-
-      osc.type = "sine";
-      osc.frequency.value = 80 + Math.random() * 20; // Random variation
-
-      gainNode.gain.value = 0;
-      gainNode.gain.linearRampToValueAtTime(
-        this.sfxVolume * 0.3,
-        this.audioContext.currentTime + 0.01
-      );
-      gainNode.gain.exponentialRampToValueAtTime(
-        0.001,
-        this.audioContext.currentTime + 0.15
-      );
-
-      osc.connect(gainNode);
-      gainNode.connect(this.sfxGain!);
-
-      osc.start(this.audioContext.currentTime);
-      osc.stop(this.audioContext.currentTime + 0.15);
+      soundEffects.playWalkSoundImpl(ctx, sfxGain, this.sfxVolume);
     } catch {
-      // Silently fail for sound effects
+      // ignore
     }
   }
 
@@ -264,38 +177,14 @@ class SoundManager {
    * Play jump sound effect
    */
   public playJumpSound() {
-    if (!this.audioContext || this.isMuted) return;
-
+    const ctx = this.getAudioContext();
+    const sfxGain = this.getSfxGain();
+    if (!ctx || !sfxGain || this.isMuted) return;
     try {
       this.resumeAudioContext();
-
-      const osc = this.audioContext.createOscillator();
-      const gainNode = this.audioContext.createGain();
-
-      osc.type = "square";
-      osc.frequency.setValueAtTime(200, this.audioContext.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(
-        400,
-        this.audioContext.currentTime + 0.1
-      );
-
-      gainNode.gain.value = 0;
-      gainNode.gain.linearRampToValueAtTime(
-        this.sfxVolume * 0.5,
-        this.audioContext.currentTime + 0.01
-      );
-      gainNode.gain.exponentialRampToValueAtTime(
-        0.001,
-        this.audioContext.currentTime + 0.2
-      );
-
-      osc.connect(gainNode);
-      gainNode.connect(this.sfxGain!);
-
-      osc.start(this.audioContext.currentTime);
-      osc.stop(this.audioContext.currentTime + 0.2);
+      soundEffects.playJumpSoundImpl(ctx, sfxGain, this.sfxVolume);
     } catch {
-      // Silently fail
+      // ignore
     }
   }
 
@@ -303,38 +192,14 @@ class SoundManager {
    * Play landing sound effect
    */
   public playLandSound() {
-    if (!this.audioContext || this.isMuted) return;
-
+    const ctx = this.getAudioContext();
+    const sfxGain = this.getSfxGain();
+    if (!ctx || !sfxGain || this.isMuted) return;
     try {
       this.resumeAudioContext();
-
-      const osc = this.audioContext.createOscillator();
-      const gainNode = this.audioContext.createGain();
-
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(150, this.audioContext.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(
-        50,
-        this.audioContext.currentTime + 0.15
-      );
-
-      gainNode.gain.value = 0;
-      gainNode.gain.linearRampToValueAtTime(
-        this.sfxVolume * 0.6,
-        this.audioContext.currentTime + 0.01
-      );
-      gainNode.gain.exponentialRampToValueAtTime(
-        0.001,
-        this.audioContext.currentTime + 0.15
-      );
-
-      osc.connect(gainNode);
-      gainNode.connect(this.sfxGain!);
-
-      osc.start(this.audioContext.currentTime);
-      osc.stop(this.audioContext.currentTime + 0.15);
+      soundEffects.playLandSoundImpl(ctx, sfxGain, this.sfxVolume);
     } catch {
-      // Silently fail
+      // ignore
     }
   }
 
@@ -342,42 +207,14 @@ class SoundManager {
    * Play tag sound (when player tags another) - SUCCESS VERSION
    */
   public playTagSound() {
-    if (!this.audioContext || this.isMuted) return;
-
+    const ctx = this.getAudioContext();
+    const sfxGain = this.getSfxGain();
+    if (!ctx || !sfxGain || this.isMuted) return;
     try {
       this.resumeAudioContext();
-
-      const osc = this.audioContext.createOscillator();
-      const gainNode = this.audioContext.createGain();
-
-      osc.type = "sawtooth";
-      osc.frequency.setValueAtTime(440, this.audioContext.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(
-        880,
-        this.audioContext.currentTime + 0.1
-      );
-      osc.frequency.exponentialRampToValueAtTime(
-        440,
-        this.audioContext.currentTime + 0.2
-      );
-
-      gainNode.gain.value = 0;
-      gainNode.gain.linearRampToValueAtTime(
-        this.sfxVolume * 0.7,
-        this.audioContext.currentTime + 0.01
-      );
-      gainNode.gain.exponentialRampToValueAtTime(
-        0.001,
-        this.audioContext.currentTime + 0.3
-      );
-
-      osc.connect(gainNode);
-      gainNode.connect(this.sfxGain!);
-
-      osc.start(this.audioContext.currentTime);
-      osc.stop(this.audioContext.currentTime + 0.3);
+      soundEffects.playTagSoundImpl(ctx, sfxGain, this.sfxVolume);
     } catch {
-      // Silently fail
+      // ignore
     }
   }
 
@@ -385,39 +222,14 @@ class SoundManager {
    * Play tagged sound (when player gets tagged) - FAILURE VERSION
    */
   public playTaggedSound() {
-    if (!this.audioContext || this.isMuted) return;
-
+    const ctx = this.getAudioContext();
+    const sfxGain = this.getSfxGain();
+    if (!ctx || !sfxGain || this.isMuted) return;
     try {
       this.resumeAudioContext();
-
-      const osc = this.audioContext.createOscillator();
-      const gainNode = this.audioContext.createGain();
-
-      // Descending tone for "you got tagged"
-      osc.type = "square";
-      osc.frequency.setValueAtTime(440, this.audioContext.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(
-        220,
-        this.audioContext.currentTime + 0.15
-      );
-
-      gainNode.gain.value = 0;
-      gainNode.gain.linearRampToValueAtTime(
-        this.sfxVolume * 0.6,
-        this.audioContext.currentTime + 0.01
-      );
-      gainNode.gain.exponentialRampToValueAtTime(
-        0.001,
-        this.audioContext.currentTime + 0.25
-      );
-
-      osc.connect(gainNode);
-      gainNode.connect(this.sfxGain!);
-
-      osc.start(this.audioContext.currentTime);
-      osc.stop(this.audioContext.currentTime + 0.25);
+      soundEffects.playTaggedSoundImpl(ctx, sfxGain, this.sfxVolume);
     } catch {
-      // Silently fail
+      // ignore
     }
   }
 
@@ -425,49 +237,14 @@ class SoundManager {
    * Play jetpack activation sound (double-jump trigger)
    */
   public playJetpackActivateSound() {
-    if (!this.audioContext || this.isMuted) return;
-
+    const ctx = this.getAudioContext();
+    const sfxGain = this.getSfxGain();
+    if (!ctx || !sfxGain || this.isMuted) return;
     try {
       this.resumeAudioContext();
-
-      const osc = this.audioContext.createOscillator();
-      const gainNode = this.audioContext.createGain();
-      const filter = this.audioContext.createBiquadFilter();
-
-      // Whoosh-like sound with filter sweep
-      osc.type = "sawtooth";
-      osc.frequency.setValueAtTime(100, this.audioContext.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(
-        300,
-        this.audioContext.currentTime + 0.2
-      );
-
-      filter.type = "lowpass";
-      filter.frequency.setValueAtTime(400, this.audioContext.currentTime);
-      filter.frequency.exponentialRampToValueAtTime(
-        2000,
-        this.audioContext.currentTime + 0.2
-      );
-      filter.Q.value = 5;
-
-      gainNode.gain.value = 0;
-      gainNode.gain.linearRampToValueAtTime(
-        this.sfxVolume * 0.5,
-        this.audioContext.currentTime + 0.05
-      );
-      gainNode.gain.exponentialRampToValueAtTime(
-        0.001,
-        this.audioContext.currentTime + 0.3
-      );
-
-      osc.connect(filter);
-      filter.connect(gainNode);
-      gainNode.connect(this.sfxGain!);
-
-      osc.start(this.audioContext.currentTime);
-      osc.stop(this.audioContext.currentTime + 0.3);
+      soundEffects.playJetpackActivateSoundImpl(ctx, sfxGain, this.sfxVolume);
     } catch {
-      // Silently fail
+      // ignore
     }
   }
 
@@ -479,37 +256,16 @@ class SoundManager {
     osc: OscillatorNode;
     gain: GainNode;
   } | null {
-    if (!this.audioContext || this.isMuted) return null;
-
+    const ctx = this.getAudioContext();
+    const sfxGain = this.getSfxGain();
+    if (!ctx || !sfxGain || this.isMuted) return null;
     try {
       this.resumeAudioContext();
-
-      const osc = this.audioContext.createOscillator();
-      const gainNode = this.audioContext.createGain();
-      const filter = this.audioContext.createBiquadFilter();
-
-      // Constant thrust noise
-      osc.type = "sawtooth";
-      osc.frequency.value = 80;
-
-      filter.type = "lowpass";
-      filter.frequency.value = 800;
-      filter.Q.value = 2;
-
-      // Fade in quickly
-      gainNode.gain.value = 0;
-      gainNode.gain.linearRampToValueAtTime(
-        this.sfxVolume * 0.3,
-        this.audioContext.currentTime + 0.05
+      return soundEffects.playJetpackThrustSoundImpl(
+        ctx,
+        sfxGain,
+        this.sfxVolume
       );
-
-      osc.connect(filter);
-      filter.connect(gainNode);
-      gainNode.connect(this.sfxGain!);
-
-      osc.start(this.audioContext.currentTime);
-
-      return { osc, gain: gainNode };
     } catch {
       return null;
     }
@@ -524,25 +280,12 @@ class SoundManager {
       gain: GainNode;
     } | null
   ) {
-    if (!thrustSound || !this.audioContext) return;
-
+    const ctx = this.getAudioContext();
+    if (!thrustSound || !ctx) return;
     try {
-      // Fade out quickly
-      thrustSound.gain.gain.linearRampToValueAtTime(
-        0.001,
-        this.audioContext.currentTime + 0.1
-      );
-
-      // Stop after fade
-      setTimeout(() => {
-        try {
-          thrustSound.osc.stop();
-        } catch {
-          // Already stopped
-        }
-      }, 100);
+      soundEffects.stopJetpackThrustSoundImpl(thrustSound, ctx);
     } catch {
-      // Silently fail
+      // ignore
     }
   }
 
@@ -550,33 +293,28 @@ class SoundManager {
    * Play RCS jet burst sound
    */
   public playRCSSound() {
-    if (!this.audioContext || this.isMuted) return;
+    const ctx = this.getAudioContext();
+    const sfxGain = this.getSfxGain();
+    if (!ctx || !sfxGain || this.isMuted) return;
 
     try {
       this.resumeAudioContext();
 
-      const osc = this.audioContext.createOscillator();
-      const gainNode = this.audioContext.createGain();
+      const { osc, gain } = createOscillatorWithGain(ctx, "square", 150);
 
       // Short burst
-      osc.type = "square";
-      osc.frequency.value = 150;
-
-      gainNode.gain.value = 0;
-      gainNode.gain.linearRampToValueAtTime(
+      gain.gain.value = 0;
+      gain.gain.linearRampToValueAtTime(
         this.sfxVolume * 0.25,
-        this.audioContext.currentTime + 0.01
+        ctx.currentTime + 0.01
       );
-      gainNode.gain.exponentialRampToValueAtTime(
-        0.001,
-        this.audioContext.currentTime + 0.08
-      );
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
 
-      osc.connect(gainNode);
-      gainNode.connect(this.sfxGain!);
+      osc.connect(gain);
+      gain.connect(sfxGain!);
 
-      osc.start(this.audioContext.currentTime);
-      osc.stop(this.audioContext.currentTime + 0.08);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.08);
     } catch {
       // Silently fail
     }
@@ -586,32 +324,31 @@ class SoundManager {
    * Play sprint footstep sound (faster, higher pitch than walk)
    */
   public playSprintSound() {
-    if (!this.audioContext || this.isMuted) return;
+    const ctx = this.getAudioContext();
+    const sfxGain = this.getSfxGain();
+    if (!ctx || !sfxGain || this.isMuted) return;
 
     try {
       this.resumeAudioContext();
 
-      const osc = this.audioContext.createOscillator();
-      const gainNode = this.audioContext.createGain();
+      const { osc, gain } = createOscillatorWithGain(
+        ctx,
+        "sine",
+        120 + Math.random() * 30
+      );
 
-      osc.type = "sine";
-      osc.frequency.value = 120 + Math.random() * 30; // Higher than walk
-
-      gainNode.gain.value = 0;
-      gainNode.gain.linearRampToValueAtTime(
+      gain.gain.value = 0;
+      gain.gain.linearRampToValueAtTime(
         this.sfxVolume * 0.35,
-        this.audioContext.currentTime + 0.01
+        ctx.currentTime + 0.01
       );
-      gainNode.gain.exponentialRampToValueAtTime(
-        0.001,
-        this.audioContext.currentTime + 0.12
-      );
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
 
-      osc.connect(gainNode);
-      gainNode.connect(this.sfxGain!);
+      osc.connect(gain);
+      gain.connect(sfxGain!);
 
-      osc.start(this.audioContext.currentTime);
-      osc.stop(this.audioContext.currentTime + 0.12);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.12);
     } catch {
       // Silently fail
     }
@@ -621,39 +358,32 @@ class SoundManager {
    * Play landing thud sound (scaled by velocity)
    */
   public playLandingSoundScaled(velocity: number) {
-    if (!this.audioContext || this.isMuted) return;
+    const ctx = this.getAudioContext();
+    const sfxGain = this.getSfxGain();
+    if (!ctx || !sfxGain || this.isMuted) return;
 
     try {
       this.resumeAudioContext();
 
-      const osc = this.audioContext.createOscillator();
-      const gainNode = this.audioContext.createGain();
-
       // Scale impact by velocity (clamp between 0.1 and 1.0)
       const impact = Math.min(1.0, Math.max(0.1, velocity * 2));
 
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(180, this.audioContext.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(
-        40,
-        this.audioContext.currentTime + 0.2
-      );
+      const { osc, gain } = createOscillatorWithGain(ctx, "sine", 180);
+      osc.frequency.setValueAtTime(180, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.2);
 
-      gainNode.gain.value = 0;
-      gainNode.gain.linearRampToValueAtTime(
+      gain.gain.value = 0;
+      gain.gain.linearRampToValueAtTime(
         this.sfxVolume * 0.6 * impact,
-        this.audioContext.currentTime + 0.01
+        ctx.currentTime + 0.01
       );
-      gainNode.gain.exponentialRampToValueAtTime(
-        0.001,
-        this.audioContext.currentTime + 0.2
-      );
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
 
-      osc.connect(gainNode);
-      gainNode.connect(this.sfxGain!);
+      osc.connect(gain);
+      gain.connect(sfxGain!);
 
-      osc.start(this.audioContext.currentTime);
-      osc.stop(this.audioContext.currentTime + 0.2);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.2);
     } catch {
       // Silently fail
     }
@@ -665,9 +395,11 @@ class SoundManager {
   public toggleMute() {
     this.isMuted = !this.isMuted;
 
-    if (this.sfxGain && this.musicGain) {
-      this.sfxGain.gain.value = this.isMuted ? 0 : this.sfxVolume;
-      this.musicGain.gain.value = this.isMuted ? 0 : this.musicVolume;
+    const sfxGain = this.getSfxGain();
+    const musicGain = this.getMusicGain();
+    if (sfxGain && musicGain) {
+      sfxGain.gain.value = this.isMuted ? 0 : this.sfxVolume;
+      musicGain.gain.value = this.isMuted ? 0 : this.musicVolume;
     }
 
     return this.isMuted;
@@ -698,12 +430,14 @@ class SoundManager {
   }
 
   private updateVolumes() {
-    if (this.musicGain && !this.isMuted) {
-      this.musicGain.gain.value = this.musicVolume * this.masterVolume;
-    }
-    if (this.sfxGain && !this.isMuted) {
-      this.sfxGain.gain.value = this.sfxVolume * this.masterVolume;
-    }
+    applyVolumes(
+      this.getMusicGain(),
+      this.getSfxGain(),
+      this.musicVolume,
+      this.sfxVolume,
+      this.masterVolume,
+      this.isMuted
+    );
   }
 
   /**

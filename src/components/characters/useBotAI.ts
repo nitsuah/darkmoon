@@ -4,20 +4,9 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import CollisionSystem from "../CollisionSystem";
 import { GameState } from "../GameManager";
+import { createTagLogger } from "../../lib/utils/logger";
 
-// Tag debug logger with timestamps
-const __isDev =
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  (typeof import.meta !== "undefined" && import.meta?.env?.DEV) ||
-  (typeof process !== "undefined" && process.env?.NODE_ENV !== "production");
-
-const tagDebug = (...args: unknown[]) => {
-  if (__isDev) {
-    const timestamp = new Date().toISOString().split("T")[1].slice(0, -1);
-    console.log(`[TAG ${timestamp}]`, ...args);
-  }
-};
+const tagDebug = createTagLogger("BotAI");
 
 // Flee speed multiplier for non-IT bots - intentionally slower (70%) so IT bot can catch them
 // This makes the game more playable by allowing the chasing bot to successfully tag fleeing bots

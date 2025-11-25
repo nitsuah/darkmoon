@@ -15,7 +15,7 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
   const baseRef = useRef<HTMLDivElement>(null);
   const knobRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef(false);
-  const touchIdRef = useRef<number | null>(null);
+  const pointerIdRef = useRef<number | null>(null);
 
   const maxDistance = 50; // Max distance knob can move from center
 
@@ -53,7 +53,7 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
     knobRef.current.style.transform = "translate(-50%, -50%)";
     baseRef.current.classList.remove("active");
     activeRef.current = false;
-    touchIdRef.current = null;
+    pointerIdRef.current = null;
     onMove(0, 0);
   }, [onMove]);
 
@@ -61,33 +61,16 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
     const base = baseRef.current;
     if (!base) return;
 
-    // Debug positioning on mount (development only)
-    if (import.meta.env.DEV) {
-      const rect = base.getBoundingClientRect();
-      const computed = window.getComputedStyle(base.parentElement!);
-      console.log(`[JOYSTICK ${side}] Mounted at:`, {
-        rect: {
-          top: rect.top,
-          bottom: rect.bottom,
-          left: rect.left,
-          right: rect.right,
-        },
-        computed: {
-          position: computed.position,
-          top: computed.top,
-          bottom: computed.bottom,
-          left: computed.left,
-          right: computed.right,
-        },
-      });
+    pointerIdRef.current = null;
+    // Prevent browser gestures (scroll/zoom) interfering with joystick
+    try {
+      base.style.touchAction = "none";
+    } catch (err) {
+      void err;
     }
-
-    // Use native events with passive: false to allow preventDefault
     const touchStartHandler = (e: globalThis.TouchEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      // Find first touch that's within this joystick's bounds
+      // Fallback for older devices without pointer events
+      // Only claim the first relevant touch (pointer-first). If already tracking a touch, ignore others.
       const rect = base.getBoundingClientRect();
       const touch = Array.from(e.touches).find((t) => {
         return (
@@ -98,51 +81,200 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
         );
       });
 
-      if (touch) {
-        console.log(`[JOYSTICK ${side}] Touch start detected`);
-        touchIdRef.current = touch.identifier;
+      if (touch && pointerIdRef.current == null) {
+        // Claim this touch
+        pointerIdRef.current = touch.identifier;
         base.classList.add("active");
         activeRef.current = true;
+        // Prevent default only when we've claimed the touch to avoid blocking two-finger gestures elsewhere
+        e.preventDefault();
+        e.stopPropagation();
         handleMove(touch.clientX, touch.clientY);
       }
     };
 
     const touchMoveHandler = (e: globalThis.TouchEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (!activeRef.current) return;
+      if (!activeRef.current || pointerIdRef.current == null) return;
 
       const touch = Array.from(e.touches).find(
-        (t) => t.identifier === touchIdRef.current
+        (t) => t.identifier === pointerIdRef.current
       );
       if (touch) {
+        // Only prevent default if we're actively tracking this touch
+        e.preventDefault();
+        e.stopPropagation();
         handleMove(touch.clientX, touch.clientY);
       }
     };
 
     const touchEndHandler = (e: globalThis.TouchEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const touchEnded = !Array.from(e.touches).some(
-        (t) => t.identifier === touchIdRef.current
+      if (pointerIdRef.current == null) return;
+      const stillActive = Array.from(e.touches).some(
+        (t) => t.identifier === pointerIdRef.current
       );
-      if (touchEnded) {
-        console.log(`[JOYSTICK ${side}] Touch end detected`);
+      if (!stillActive) {
+        // Only call preventDefault if we were tracking a touch (to avoid interfering with other gestures)
+        e.preventDefault();
+        e.stopPropagation();
+        pointerIdRef.current = null;
         handleEnd();
       }
     };
 
-    base.addEventListener("touchstart", touchStartHandler, { passive: false });
-    base.addEventListener("touchmove", touchMoveHandler, { passive: false });
-    base.addEventListener("touchend", touchEndHandler, { passive: false });
-    base.addEventListener("touchcancel", touchEndHandler, { passive: false });
+    // Pointer events provide unified handling on many devices (including some Android and Windows touchscreens)
+    const pointerDownHandler = (e: globalThis.PointerEvent) => {
+      // Prefer pointer events for unified handling (mouse, touch, pen)
+      if (!base) return;
+      // If already tracking a pointer, ignore others (pointer-first)
+      if (pointerIdRef.current != null) return;
+
+      try {
+        base.setPointerCapture?.(e.pointerId);
+      } catch {
+        // ignore if pointer capture not supported
+      }
+
+      // Claim this pointer and prevent defaults to avoid scrolling while joystick is active
+      e.preventDefault();
+      e.stopPropagation();
+
+      pointerIdRef.current = e.pointerId;
+      base.classList.add("active");
+      activeRef.current = true;
+      handleMove(e.clientX, e.clientY);
+    };
+
+    const pointerMoveHandler = (e: globalThis.PointerEvent) => {
+      // Only respond to the tracked pointer
+      if (!activeRef.current || pointerIdRef.current !== e.pointerId) return;
+      handleMove(e.clientX, e.clientY);
+    };
+
+    const pointerUpHandler = (e: globalThis.PointerEvent) => {
+      if (pointerIdRef.current === e.pointerId) {
+        try {
+          base.releasePointerCapture?.(e.pointerId);
+        } catch {
+          // ignore
+        }
+        pointerIdRef.current = null;
+        handleEnd();
+      }
+    };
+
+    // Prefer pointer events where supported
+    // Use strongly typed listeners where possible
+    const touchOptions: globalThis.AddEventListenerOptions = { passive: false };
+
+    if (window.PointerEvent) {
+      base.addEventListener(
+        "pointerdown",
+        pointerDownHandler as globalThis.EventListener
+      );
+
+      // pointermove/pointerup normally delivered to element when pointer capture is used.
+      // Some devices/browsers don't support pointer capture; add window-level fallbacks.
+      base.addEventListener(
+        "pointermove",
+        pointerMoveHandler as globalThis.EventListener
+      );
+      base.addEventListener(
+        "pointerup",
+        pointerUpHandler as globalThis.EventListener
+      );
+      base.addEventListener(
+        "pointercancel",
+        pointerUpHandler as globalThis.EventListener
+      );
+
+      // Fallbacks on window so movement/ups are tracked even when pointer leaves base
+      window.addEventListener(
+        "pointermove",
+        pointerMoveHandler as globalThis.EventListener
+      );
+      window.addEventListener(
+        "pointerup",
+        pointerUpHandler as globalThis.EventListener
+      );
+      window.addEventListener(
+        "pointercancel",
+        pointerUpHandler as globalThis.EventListener
+      );
+    }
+
+    // Touch fallback for older browsers (iOS Safari, older Android)
+    base.addEventListener(
+      "touchstart",
+      touchStartHandler as globalThis.EventListener,
+      touchOptions
+    );
+    // Track touch moves/ends on window to ensure we receive events when finger moves off the base
+    window.addEventListener(
+      "touchmove",
+      touchMoveHandler as globalThis.EventListener,
+      touchOptions
+    );
+    window.addEventListener(
+      "touchend",
+      touchEndHandler as globalThis.EventListener,
+      touchOptions
+    );
+    window.addEventListener(
+      "touchcancel",
+      touchEndHandler as globalThis.EventListener,
+      touchOptions
+    );
 
     // Cleanup on unmount
     return () => {
-      base.removeEventListener("touchstart", touchStartHandler);
-      base.removeEventListener("touchmove", touchMoveHandler);
-      base.removeEventListener("touchend", touchEndHandler);
-      base.removeEventListener("touchcancel", touchEndHandler);
+      if (window.PointerEvent) {
+        base.removeEventListener(
+          "pointerdown",
+          pointerDownHandler as globalThis.EventListener
+        );
+        base.removeEventListener(
+          "pointermove",
+          pointerMoveHandler as globalThis.EventListener
+        );
+        base.removeEventListener(
+          "pointerup",
+          pointerUpHandler as globalThis.EventListener
+        );
+        base.removeEventListener(
+          "pointercancel",
+          pointerUpHandler as globalThis.EventListener
+        );
+
+        window.removeEventListener(
+          "pointermove",
+          pointerMoveHandler as globalThis.EventListener
+        );
+        window.removeEventListener(
+          "pointerup",
+          pointerUpHandler as globalThis.EventListener
+        );
+        window.removeEventListener(
+          "pointercancel",
+          pointerUpHandler as globalThis.EventListener
+        );
+      }
+
+      base.removeEventListener(
+        "touchstart",
+        touchStartHandler as globalThis.EventListener
+      );
+      window.removeEventListener(
+        "touchmove",
+        touchMoveHandler as globalThis.EventListener
+      );
+      window.removeEventListener(
+        "touchend",
+        touchEndHandler as globalThis.EventListener
+      );
+      window.removeEventListener(
+        "touchcancel",
+        touchEndHandler as globalThis.EventListener
+      );
       if (activeRef.current) {
         handleEnd();
       }

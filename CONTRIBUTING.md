@@ -134,6 +134,49 @@ npm test -- --coverage
 - Follow existing test patterns in the codebase
 - Aim for meaningful test coverage, not 100%
 
+### Vitest (CI) and Windows / CI stability
+
+We run tests in-process to avoid intermittent worker IPC crashes (EPIPE / ERR_IPC_CHANNEL_CLOSED) that can occur on some CI runners and Windows/node combinations. The project exposes a stable programmatic runner at:
+
+```
+node ./scripts/run-tests-inprocess.js
+```
+
+Use the npm helper for CI:
+
+```
+npm run test:ci
+```
+
+This script runs the programmatic (in-process) Vitest runner with the repository's `config/vitest.config.ts` and produces coverage. Prefer this in CI and for pre-push checks.
+
+### jest-dom matcher registration
+
+The repository registers the vitest-compatible jest-dom entry in `config/vitest.setup.ts`:
+
+```ts
+import "@testing-library/jest-dom/vitest";
+```
+
+Do not import `@testing-library/jest-dom` directly inside test files — it targets Jest and can run before Vitest sets up globals, which causes errors like `ReferenceError: expect is not defined`. ESLint enforces this rule via `no-restricted-imports`.
+
+If you hit test ordering or `expect` errors locally, run:
+
+```powershell
+# Windows (PowerShell)
+npm run test:ci
+
+# Linux/macOS
+npm run test:ci
+```
+
+If problems persist, try clearing caches and re-running:
+
+```
+npm test -- --clearCache
+rm -rf node_modules/.cache
+```
+
 ## 🚢 Deployment
 
 ### Environment Variables

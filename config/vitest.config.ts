@@ -9,12 +9,6 @@ export default defineConfig({
             provider: 'v8',
             reporter: ['text', 'json', 'html'],
         },
-        pool: 'threads',
-        // @ts-expect-error - poolOptions types are incomplete in vitest 4
-        poolOptions: {
-            threads: {
-                singleThread: true,
-            },
-        },
+        // Use default pool (let Vitest pick the best runner for the environment)
     },
 })

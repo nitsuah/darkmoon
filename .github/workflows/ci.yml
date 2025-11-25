@@ -9,6 +9,8 @@ on:
 jobs:
   build-test-lint:
     runs-on: ubuntu-latest
+    env:
+      VITEST_MAX_WORKERS: 1
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

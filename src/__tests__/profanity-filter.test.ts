@@ -58,10 +58,17 @@ describe("Profanity Filter", () => {
 
     it("should handle empty or null text gracefully", () => {
       expect(filterProfanity("")).toBe("");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect(filterProfanity(null as any)).toBe(null);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect(filterProfanity(undefined as any)).toBe(undefined);
+      // Use a small wrapper function to exercise null / undefined inputs without unsafe casts
+      const callNullable = (t: string | null | undefined) => {
+        // filterProfanity is typed to accept string and return string. We want to
+        // ensure runtime behavior when null/undefined is passed is preserved. Use
+        // a narrow @ts-expect-error to indicate intentional unsafe input for test.
+        // @ts-expect-error intentional runtime test for null/undefined
+        return filterProfanity(t);
+      };
+
+      expect(callNullable(null)).toBe(null);
+      expect(callNullable(undefined)).toBe(undefined);
     });
 
     it("should accept custom words to filter", () => {

@@ -1,15 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-// import Spline from '@splinetool/react-spline';
 import Footer from "../components/Footer";
-// import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorBoundary from "../components/ErrorBoundary";
 import UtilityMenu from "../components/UtilityMenu";
 import "../styles/App.css";
 import "../styles/Home.css";
-
-// CONSTANTS - Spline temporarily disabled to debug React bundling issue
-// const SPLINE_SCENE = `https://prod.spline.design/lwFGUGO5nCfnnDQU/scene.splinecode`;
 
 const Home = () => {
   const navigate = useNavigate();

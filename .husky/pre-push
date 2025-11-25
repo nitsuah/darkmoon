@@ -20,8 +20,8 @@ if command -v npm >/dev/null 2>&1; then
     echo "✓ Running lint..."
     npm run lint || exit 1
     
-    echo "✓ Running tests..."
-    npm run test:ci || exit 1
+    echo "✓ Running tests (Vitest in-process runner)..."
+    node ./scripts/run-tests-inprocess.js || exit 1
     
     echo "✅ All pre-push checks passed!"
 else

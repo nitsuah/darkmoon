@@ -2,6 +2,12 @@ import express from "express";
 import Router from "express-promise-router";
 import { Server } from "socket.io";
 import cors from "cors";
+import {
+  validatePosition,
+  validateRotation,
+  validateChatMessage,
+  validateGameMode,
+} from "./server/validation.js";
 
 // Environment configuration
 const PORT = process.env.PORT || 4444;
@@ -13,6 +19,79 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
       "https://deploy-preview-*--darkmoon-dev.netlify.app",
       "https://darkmoon-dev.netlify.app",
     ];
+
+// Rate limiting configuration. Limits are applied per-client within a time
+// window (see checkRateLimit windowMs parameter). The default window used by
+// checkRateLimit is 1000ms (1 second) unless a different window is supplied
+// (e.g. chat uses a 60000ms window in some callers).
+const RATE_LIMITS = {
+  MOVE: 100, // Max 100 move events per default window (typically 1s)
+  CHAT: 10, // Max 10 chat messages per default window (override to 60000ms for per-minute checks)
+  GAME_ACTION: 5, // Max 5 game actions per default window (typically 1s)
+};
+
+// Track rate limits per client
+const rateLimitTrackers = new Map();
+
+/**
+ * Clean up old rate limit entries to prevent memory leaks
+ * Runs every 5 minutes
+ */
+setInterval(() => {
+  const now = Date.now();
+  const keysToDelete = [];
+
+  for (const [key, tracker] of rateLimitTrackers.entries()) {
+    // Delete entries that are 5 minutes past their reset time
+    if (now > tracker.resetTime + 300000) {
+      keysToDelete.push(key);
+    }
+  }
+
+  keysToDelete.forEach((key) => rateLimitTrackers.delete(key));
+
+  if (keysToDelete.length > 0) {
+    console.log(
+      `[Rate Limit Cleanup] Removed ${keysToDelete.length} stale entries`
+    );
+  }
+}, 300000); // Run every 5 minutes
+
+/**
+ * Check if client exceeds rate limit for a given action within a time window.
+ *
+ * @param {string} clientId - Unique identifier for the client (e.g., socket ID).
+ * @param {string} action - The action to rate limit (e.g., "MOVE", "CHAT").
+ * @param {number} limit - Maximum number of allowed actions within the window.
+ * @param {number} [windowMs=1000] - Time window in milliseconds for the rate limit.
+ * @returns {boolean} Returns true if the client has exceeded the limit (should block action), false otherwise.
+ *
+ * Notes:
+ * - The function stores a simple per-client+action counter and a reset time.
+ * - When the window expires the counter is reset.
+ * - Stale entries are cleaned up every 5 minutes by a background interval.
+ */
+const checkRateLimit = (clientId, action, limit, windowMs = 1000) => {
+  const now = Date.now();
+  const key = `${clientId}:${action}`;
+
+  if (!rateLimitTrackers.has(key)) {
+    rateLimitTrackers.set(key, { count: 1, resetTime: now + windowMs });
+    return false; // Not exceeded
+  }
+
+  const tracker = rateLimitTrackers.get(key);
+
+  if (now > tracker.resetTime) {
+    // Reset window
+    tracker.count = 1;
+    tracker.resetTime = now + windowMs;
+    return false;
+  }
+
+  tracker.count++;
+  return tracker.count > limit; // true if exceeded
+};
 
 // Create router
 const router = Router();
@@ -129,6 +208,25 @@ ioServer.on("connection", (client) => {
 
   // Use client.id from Socket instance to prevent position spoofing
   client.on("move", ({ rotation, position }) => {
+    // Rate limit check
+    if (checkRateLimit(client.id, "move", RATE_LIMITS.MOVE)) {
+      console.warn(`Rate limit exceeded for ${client.id} on move events`);
+      return;
+    }
+
+    // Validate input
+    if (!validatePosition(position)) {
+      console.warn(`Invalid position from ${client.id}:`, position);
+      client.emit("error", { message: "Invalid position data" });
+      return;
+    }
+
+    if (!validateRotation(rotation)) {
+      console.warn(`Invalid rotation from ${client.id}:`, rotation);
+      client.emit("error", { message: "Invalid rotation data" });
+      return;
+    }
+
     if (clients[client.id]) {
       clients[client.id].position = position;
       clients[client.id].rotation = rotation;
@@ -139,6 +237,20 @@ ioServer.on("connection", (client) => {
 
   // Handle chat messages
   client.on("chat-message", async (message) => {
+    // Rate limit check (10 messages per minute)
+    if (checkRateLimit(client.id, "chat", RATE_LIMITS.CHAT, 60000)) {
+      console.warn(`Rate limit exceeded for ${client.id} on chat`);
+      client.emit("error", { message: "Slow down! Too many messages." });
+      return;
+    }
+
+    // Validate message
+    if (!validateChatMessage(message)) {
+      console.warn(`Invalid chat message from ${client.id}`);
+      client.emit("error", { message: "Invalid message format" });
+      return;
+    }
+
     console.log(`Chat message from ${client.id}: ${message.message}`);
 
     // Basic profanity filter (configurable in CHAT_PROFANITY) - use helper
@@ -186,6 +298,19 @@ ioServer.on("connection", (client) => {
 
   // Handle game start
   client.on("game-start", (gameData) => {
+    // Rate limit game actions
+    if (checkRateLimit(client.id, "game", RATE_LIMITS.GAME_ACTION)) {
+      console.warn(`Rate limit exceeded for ${client.id} on game actions`);
+      return;
+    }
+
+    // Validate game mode
+    if (gameData && !validateGameMode(gameData.mode)) {
+      console.warn(`Invalid game mode from ${client.id}:`, gameData.mode);
+      client.emit("game-error", { message: "Invalid game mode" });
+      return;
+    }
+
     console.log(`Game start requested by ${client.id}:`, gameData);
 
     const playerCount = Object.keys(clients).length;
@@ -256,8 +381,17 @@ ioServer.on("connection", (client) => {
       `User ${client.id} disconnected, there are currently ${ioServer.engine.clientsCount} users connected`
     );
 
-    //Delete ttheir client from the object
+    // Delete their client from the object
     delete clients[client.id];
+
+    // Clean up rate limit tracking for this client
+    const keysToDelete = [];
+    for (const key of rateLimitTrackers.keys()) {
+      if (key.startsWith(`${client.id}:`)) {
+        keysToDelete.push(key);
+      }
+    }
+    keysToDelete.forEach((key) => rateLimitTrackers.delete(key));
 
     ioServer.sockets.emit("move", clients);
   });
