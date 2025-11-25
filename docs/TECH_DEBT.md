@@ -1,9 +1,9 @@
 # Tech Debt Tracker
 
-**Last Updated:** November 23, 2025  
-**Status:** Actively tracked, see [L7_ENGINEERING_REVIEW.md](./L7_ENGINEERING_REVIEW.md) for full analysis
+**Last Updated:** November 25, 2025  
+**Status:** Actively tracked
 
-> **Note:** This document tracks immediate tech debt items. For long-term planning, see [ROADMAP.md](./ROADMAP.md)
+> **Note:** This document tracks actionable tech debt items. See QA issues in [TODO.md](./TODO.md)
 
 ---
 
@@ -273,6 +273,5 @@ _(Move items here as they're resolved)_
 
 **Related Documents:**
 
-- [L7_ENGINEERING_REVIEW.md](./L7_ENGINEERING_REVIEW.md) - Detailed analysis
-- [ROADMAP.md](./ROADMAP.md) - Long-term product plan
-- [TODO.md](./TODO.md) - QA checklist and bugs
+- [TODO.md](./TODO.md) - QA checklist and open bugs
+- [archive/](./archive/) - Historical analysis and planning docs
