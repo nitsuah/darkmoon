@@ -2,7 +2,6 @@ import React from "react";
 import { render, screen } from "@testing-library/react";
 import { expect, describe, it, vi } from "vitest";
 import App from "../pages/App";
-import "@testing-library/jest-dom";
 
 // Mock socket.io-client to prevent real connections
 vi.mock("socket.io-client", () => ({
