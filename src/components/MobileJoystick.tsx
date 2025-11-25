@@ -70,9 +70,7 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
     }
     const touchStartHandler = (e: globalThis.TouchEvent) => {
       // Fallback for older devices without pointer events
-      e.preventDefault();
-      e.stopPropagation();
-
+      // Only claim the first relevant touch (pointer-first). If already tracking a touch, ignore others.
       const rect = base.getBoundingClientRect();
       const touch = Array.from(e.touches).find((t) => {
         return (
@@ -83,34 +81,41 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
         );
       });
 
-      if (touch) {
+      if (touch && pointerIdRef.current == null) {
+        // Claim this touch
         pointerIdRef.current = touch.identifier;
         base.classList.add("active");
         activeRef.current = true;
+        // Prevent default only when we've claimed the touch to avoid blocking two-finger gestures elsewhere
+        e.preventDefault();
+        e.stopPropagation();
         handleMove(touch.clientX, touch.clientY);
       }
     };
 
     const touchMoveHandler = (e: globalThis.TouchEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (!activeRef.current) return;
+      if (!activeRef.current || pointerIdRef.current == null) return;
 
       const touch = Array.from(e.touches).find(
         (t) => t.identifier === pointerIdRef.current
       );
       if (touch) {
+        // Only prevent default if we're actively tracking this touch
+        e.preventDefault();
+        e.stopPropagation();
         handleMove(touch.clientX, touch.clientY);
       }
     };
 
     const touchEndHandler = (e: globalThis.TouchEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
+      if (pointerIdRef.current == null) return;
       const stillActive = Array.from(e.touches).some(
         (t) => t.identifier === pointerIdRef.current
       );
       if (!stillActive) {
+        // Only call preventDefault if we were tracking a touch (to avoid interfering with other gestures)
+        e.preventDefault();
+        e.stopPropagation();
         pointerIdRef.current = null;
         handleEnd();
       }
@@ -120,13 +125,16 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
     const pointerDownHandler = (e: globalThis.PointerEvent) => {
       // Prefer pointer events for unified handling (mouse, touch, pen)
       if (!base) return;
-      if (e.isPrimary === false) return;
+      // If already tracking a pointer, ignore others (pointer-first)
+      if (pointerIdRef.current != null) return;
+
       try {
         base.setPointerCapture?.(e.pointerId);
       } catch {
         // ignore if pointer capture not supported
       }
 
+      // Claim this pointer and prevent defaults to avoid scrolling while joystick is active
       e.preventDefault();
       e.stopPropagation();
 
@@ -137,7 +145,8 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
     };
 
     const pointerMoveHandler = (e: globalThis.PointerEvent) => {
-      if (!activeRef.current) return;
+      // Only respond to the tracked pointer
+      if (!activeRef.current || pointerIdRef.current !== e.pointerId) return;
       handleMove(e.clientX, e.clientY);
     };
 
