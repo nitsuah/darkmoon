@@ -167,9 +167,22 @@ const Solo: React.FC = () => {
     if (s) setSocketClient(s as Socket);
   }, [getSocket]);
 
-  // Socket connection setup - use attachToConnection helper so lifecycle is
-  // encapsulated in the hook and Solo.tsx remains thinner.
+  // Socket connection setup - ensure a local GameManager exists even if the
+  // socket never connects (solo practice). Attach real socket lifecycle
+  // afterwards so the manager is reused when the socket connects.
   useEffect(() => {
+    try {
+      const maybeSocket = getSocket() || { id: localPlayerId };
+      const mgr = initializeForSocket(maybeSocket, {
+        setGamePlayers,
+        setGameState,
+        setPlayerIsIt,
+      });
+      if (mgr) gameManager.current = mgr;
+    } catch {
+      // ignore initialization errors in tests or non-browser envs
+    }
+
     const cleanup = attachToConnection(
       getSocket,
       connectSocket,
@@ -180,7 +193,16 @@ const Solo: React.FC = () => {
         setPlayerIsIt,
       }
     );
-    return cleanup;
+
+    return () => {
+      try {
+        if (cleanup) {
+          cleanup();
+        }
+      } catch {
+        // ignore
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
