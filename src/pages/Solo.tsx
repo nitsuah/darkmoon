@@ -73,7 +73,7 @@ const Solo: React.FC = () => {
   const [localPlayerId] = useState(
     () => `local-${Math.random().toString(36).slice(2, 8)}`
   );
-  // Memoize current player ID (avoids repeated conditional checks)
+  // Derived current player ID: prefer socketClient.id when connected, otherwise use the stable localPlayerId
   const currentPlayerId = socketClient?.id || localPlayerId;
   const [joystickMove, setJoystickMove] = useState({ x: 0, y: 0 });
   // joystickCamera removed - right joystick (camera look) disabled on mobile
