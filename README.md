@@ -1,7 +1,8 @@
 # DARKMOON.DEV
 
 [![CI](https://github.com/Nitsuah-Labs/multi/actions/workflows/ci.yml/badge.svg)](https://github.com/Nitsuah-Labs/multi/actions)
-[![Netlify Status](https://api.netlify.com/api/v1/badges/your-badge-id/deploy-status)](https://app.netlify.com/sites/your-site/deploys)
+
+[![Netlify Status](https://api.netlify.com/api/v1/badges/your-badge-id/deploy-status)](https://app.netlify.com/sites/darkmoon-dev/deploys)
 
 > Real-time multiplayer 3D tag game built with React Three Fiber, Socket.io, and Vite
 
