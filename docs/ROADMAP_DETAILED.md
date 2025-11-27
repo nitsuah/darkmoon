@@ -433,7 +433,7 @@ export const createLogger = (namespace: string) => {
 
 **Tasks:**
 
-- [ ] Implement authentication (Supabase or Firebase Auth)
+- [ ] Implement authentication (Neon db)
 - [ ] Create user profile system
 - [ ] Add persistent stats (games played, wins, total tags)
 - [ ] Implement XP/leveling system
