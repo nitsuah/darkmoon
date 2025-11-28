@@ -4,7 +4,7 @@
 
 | Metric           | Value | Notes                                                    |
 | ---------------- | ----- | -------------------------------------------------------- |
-| Code Coverage    | ~70%  | Estimated from 41 test files covering 64 source files    |
+| Code Coverage    | 70%   | Estimated from 41 test files covering 64 source files    |
 | Build Time       | ~5s   | Vite production build (estimated)                        |
 | Bundle Size      | TBD   | Not yet measured (run `npm run build` for actual size)   |
 | Test Files       | 41    | Vitest unit and integration tests                        |
