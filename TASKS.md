@@ -1,24 +1,10 @@
 # Tasks
 
-## v1.0
-
-- [x] Set up CI/CD pipeline with GitHub Actions
-- [x] Created initial project structure
-- [x] Implement multiplayer functionality with Socket.io
-- [x] Build 3D scene with React Three Fiber
-- [x] Desktop controls (WASD, mouse)
-- [x] Tagging game mechanics
-- [x] Solo mode with AI bots
-- [x] Basic mobile UI components (joystick, buttons)
-- [x] Dark mode toggle
-- [x] Test suite with Vitest
-- [x] Pre-commit hooks (Husky + lint-staged)
-- [x] ESLint and Prettier configuration
-- [x] TypeScript strict mode setup
-- [x] Netlify deployment configuration
-- [x] WebSocket server with health check
+## Done
 
 ## In Progress
+
+### v2.1: Critical Mobile inputs
 
 - [ ] Fix mobile touch controls (joystick responsiveness)
 - [ ] Fix mobile UI layout (home page cards visibility)
