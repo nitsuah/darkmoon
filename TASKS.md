@@ -1,6 +1,6 @@
 # Tasks
 
-## Done
+## v1.0
 
 - [x] Set up CI/CD pipeline with GitHub Actions
 - [x] Created initial project structure
@@ -26,7 +26,7 @@
 
 ## Todo
 
-### Phase 1: Critical Mobile Fixes
+### v2.1: Critical Mobile Fixes
 
 - [ ] Add touch event logging to MobileJoystick.tsx
 - [ ] Test on physical iOS (Safari) and Android (Chrome) devices
@@ -37,7 +37,7 @@
 - [ ] Ensure game UI adapts to portrait/landscape orientation
 - [ ] Move dark mode toggle to accessible position on mobile
 
-### Phase 2: Code Architecture Refactoring
+### v2.2: Code Architecture Refactoring
 
 - [ ] Decompose Solo.tsx (1,002 lines → modular structure)
 - [ ] Extract useSocketConnection hook
@@ -53,7 +53,7 @@
 - [ ] Extract useJetpack hook
 - [ ] Create unified logger utility (lib/utils/logger.ts)
 
-### Phase 3: Server Hardening
+### v2.3: Server Hardening
 
 - [ ] Add server input validation (Zod schemas)
 - [ ] Implement rate limiting (express-rate-limit)
@@ -64,7 +64,7 @@
 - [ ] Create health check dashboard
 - [ ] Implement graceful shutdown
 
-### Phase 4: Performance Optimization
+### v2.4: Performance Optimization
 
 - [ ] Analyze bundle with visualizer
 - [ ] Implement route-based code splitting
@@ -73,7 +73,7 @@
 - [ ] Remove unused dependencies
 - [ ] Optimize Three.js imports
 
-### Phase 5: Testing
+### v2.5: Testing
 
 - [ ] Increase test coverage to 85%
 - [ ] Add mobile touch interaction tests

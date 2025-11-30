@@ -2,7 +2,7 @@
 
 > Transform Darkmoon from a multiplayer tech demo into a production-ready 3D social gaming platform with exceptional mobile experience, scalable infrastructure, and engaging gameplay loops.
 
-## Q4 2025: Foundation & Mobile Fix (IN PROGRESS) 🚀
+## 2025Q4: 🚀 Foundation & Mobile Fix
 
 - [x] Project structure and CI/CD pipeline setup
 - [x] Basic multiplayer functionality with Socket.io
@@ -17,7 +17,7 @@
 - [ ] Add server input validation and rate limiting
 - [ ] Add error monitoring and structured logging
 
-## Q1 2026: Polish & Performance (Planned) 🏗️
+## 2026Q1: 🏗️ Polish & Performance
 
 - [ ] Bundle optimization (reduce by 25%, target <500KB)
 - [ ] Route-based code splitting and lazy loading
@@ -30,7 +30,7 @@
 - [ ] Debug overlay (FPS, network stats)
 - [ ] Lighthouse score >90
 
-## Q2 2026: Features & Scale (Planned) 🎮
+## 2026Q2: 🎮 Features & Scale
 
 - [ ] Collectibles Mode (gather orbs, power-ups, leaderboard)
 - [ ] Race Mode (checkpoints, lap timing, ghost racers)
@@ -42,7 +42,7 @@
 - [ ] PostgreSQL database (user accounts, game history)
 - [ ] Horizontal scaling infrastructure (500+ concurrent users)
 
-## Q3 2026: Social & Monetization (Planned) 💰
+## 2026Q3: 💰 Social & Monetization
 
 - [ ] Friends system
 - [ ] Private lobbies (invite-only)
@@ -56,7 +56,7 @@
 - [ ] Battle pass system ($10/season)
 - [ ] Ad network integration (optional ads for boosts)
 
-## Q4 2026: Platform Expansion (Planned) 📱
+## 2026Q4: 📱 Platform Expansion
 
 - [ ] React Native mobile app (Expo)
 - [ ] Native touch controls optimization
@@ -66,7 +66,7 @@
 - [ ] Electron desktop wrapper (optional)
 - [ ] Steam integration (optional)
 
-## Future: UX & Community Enhancements 🌟
+## 2027: 🌟 UX & Community Enhancements
 
 - [ ] In-game voice chat (WebRTC)
 - [ ] Service worker for offline support
