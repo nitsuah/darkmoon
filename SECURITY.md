@@ -54,4 +54,4 @@ When we receive a security bug report, we will:
 1. Confirm the problem and determine affected versions
 2. Audit code to find any similar problems
 3. Prepare fixes for all supported versions
-4. Release new versions as soon as possible.  We aim to release security patches within 30 days of confirming a vulnerability, but this timeline may vary depending on the complexity and severity of the issue. Public disclosure will occur after a patch is available.
+4. Release new versions as soon as possible. We aim to release security patches within 30 days of confirming a vulnerability, but this timeline may vary depending on the complexity and severity of the issue. Public disclosure will occur after a patch is available.
