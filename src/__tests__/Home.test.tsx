@@ -9,12 +9,10 @@ describe("Home Page", () => {
   it("renders the main header", () => {
     render(
       <ThemeProvider>
-        <BrowserRouter
-          future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-        >
+        <BrowserRouter>
           <Home />
         </BrowserRouter>
-      </ThemeProvider>
+      </ThemeProvider>,
     );
     // Text now has spaces between PLAY, moon emoji, and DARKMOON
     expect(screen.getByText(/PLAY.*DARKMOON/i)).toBeInTheDocument();

@@ -38,9 +38,7 @@ const App = () => {
   return (
     <ThemeProvider>
       <ErrorBoundary>
-        <Router
-          future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-        >
+        <Router>
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
               <Route path="/" element={<Home />} />
