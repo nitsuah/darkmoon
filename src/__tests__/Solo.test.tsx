@@ -59,14 +59,9 @@ describe("Solo Component", () => {
 
   const renderWithTheme = (component: React.ReactElement) => {
     return render(
-      <BrowserRouter
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}
-      >
+      <BrowserRouter>
         <ThemeProvider>{component}</ThemeProvider>
-      </BrowserRouter>
+      </BrowserRouter>,
     );
   };
 
@@ -105,7 +100,7 @@ describe("Solo Component", () => {
 
     // Get the move event handler
     const moveCall = mockSocket.on.mock.calls.find(
-      (call: unknown[]) => call[0] === "move"
+      (call: unknown[]) => call[0] === "move",
     );
     const moveHandler = moveCall
       ? (moveCall[1] as (
@@ -115,7 +110,7 @@ describe("Solo Component", () => {
               position: [number, number, number];
               rotation: [number, number, number];
             }
-          >
+          >,
         ) => void)
       : undefined;
 
@@ -144,7 +139,7 @@ describe("Solo Component", () => {
     renderWithTheme(<Solo />);
 
     const moveCall = mockSocket.on.mock.calls.find(
-      (call: unknown[]) => call[0] === "move"
+      (call: unknown[]) => call[0] === "move",
     );
     const moveHandler = moveCall
       ? (moveCall[1] as (
@@ -154,7 +149,7 @@ describe("Solo Component", () => {
               position: [number, number, number];
               rotation: [number, number, number];
             }
-          >
+          >,
         ) => void)
       : undefined;
 
