@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@splinetool/react-spline": "^2.2.6",
-    "@splinetool/runtime": "^0.9.82",
+    "@splinetool/runtime": "^1.12.6",
     "cors": "^2.8.5",
     "express": "^5.2.0",
     "prettier": "^2.4.1",
