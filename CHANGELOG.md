@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Refactored ROADMAP.md to quarterly format with checkboxes
+- Bumped vitest from 4.0.4 to 4.0.15
+- Bumped @vitest/coverage-v8 from 4.0.4 to 4.0.15
+- Synced react-dom to 19.2.3 to match react version
 
 ## [1.0.0] - 2025-11-23
 

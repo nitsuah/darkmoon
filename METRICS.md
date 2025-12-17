@@ -12,8 +12,8 @@
 | Source Files     | 64    | TypeScript/TSX files in src/ (excluding tests and types) |
 | Lines of Code    | ~8K   | Estimated (excluding node_modules and generated files)   |
 | API Routes       | 1     | WebSocket server with /health endpoint                   |
-| Dependencies     | 16    | Production dependencies (see package.json)               |
-| Dev Dependencies | 23    | Development and testing tools                            |
+| Dependencies     | 9     | Production dependencies (see package.json)               |
+| Dev Dependencies | 22    | Development and testing tools                            |
 
 ## Health
 
@@ -22,7 +22,7 @@
 | Open Issues      | TBD        | Check GitHub issues                         |
 | Open PRs         | TBD        | Check GitHub pull requests                  |
 | Health Score     | TBD        | Overseer will calculate                     |
-| Last Updated     | 2025-11-27 | Last metrics refresh                        |
+| Last Updated     | 2025-12-17 | Last metrics refresh                        |
 | CI Status        | ✅ Passing | All tests passing, build successful         |
 | TypeScript       | ✅ Strict  | Strict mode enabled, 0 type errors          |
 | Linting          | ✅ Clean   | ESLint with --max-warnings=0                |

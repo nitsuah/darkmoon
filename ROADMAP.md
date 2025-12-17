@@ -9,12 +9,12 @@
 - [x] React Three Fiber 3D scene rendering
 - [x] Desktop gameplay mechanics (WASD, mouse controls, tagging)
 - [x] Solo mode with AI bots
+- [x] Create unified logger utility
+- [x] Add server input validation and rate limiting
 - [ ] Fix mobile touch controls (joystick and camera rotation)
 - [ ] Fix mobile UI layout (home page cards, landscape controls)
 - [ ] Refactor Solo.tsx (1,002 lines → modular structure with hooks)
 - [ ] Refactor PlayerCharacter.tsx (900 lines → 5 hooks)
-- [ ] Create unified logger utility
-- [ ] Add server input validation and rate limiting
 - [ ] Add error monitoring and structured logging
 
 ## 2026Q1: 🏗️ Polish & Performance
