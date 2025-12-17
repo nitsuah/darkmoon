@@ -21,7 +21,7 @@
     "three": "^0.180.0"
   },
   "dependencies": {
-    "@splinetool/react-spline": "^2.2.6",
+    "@splinetool/react-spline": "^4.1.0",
     "@splinetool/runtime": "^1.12.16",
     "cors": "^2.8.5",
     "express": "^5.2.0",
