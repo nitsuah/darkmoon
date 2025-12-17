@@ -10,7 +10,7 @@ import { MobileButton } from "../components/MobileButton";
 import React from "react";
 
 describe("MobileJoystick", () => {
-  let mockOnMove: ReturnType<typeof vi.fn>;
+  let mockOnMove: (x: number, y: number) => void;
 
   beforeEach(() => {
     mockOnMove = vi.fn();
@@ -18,17 +18,17 @@ describe("MobileJoystick", () => {
 
   it("should render joystick container", () => {
     const { container } = render(
-      <MobileJoystick onMove={mockOnMove} side="left" label="Move" />
+      <MobileJoystick onMove={mockOnMove} side="left" label="Move" />,
     );
     expect(container.querySelector(".joystick-container")).toBeTruthy();
   });
 
   it("should support left and right side positioning", () => {
     const { container: leftContainer } = render(
-      <MobileJoystick onMove={mockOnMove} side="left" label="Move" />
+      <MobileJoystick onMove={mockOnMove} side="left" label="Move" />,
     );
     const { container: rightContainer } = render(
-      <MobileJoystick onMove={mockOnMove} side="right" label="Look" />
+      <MobileJoystick onMove={mockOnMove} side="right" label="Look" />,
     );
 
     const leftJoystick = leftContainer.querySelector(".joystick-container");
@@ -40,14 +40,14 @@ describe("MobileJoystick", () => {
 
   it("should have proper label", () => {
     const { getByText } = render(
-      <MobileJoystick onMove={mockOnMove} side="left" label="Move" />
+      <MobileJoystick onMove={mockOnMove} side="left" label="Move" />,
     );
     expect(getByText("Move")).toBeTruthy();
   });
 
   it("should call onMove callback when prop is provided", () => {
     const { container } = render(
-      <MobileJoystick onMove={mockOnMove} side="left" label="Move" />
+      <MobileJoystick onMove={mockOnMove} side="left" label="Move" />,
     );
 
     const joystick = container.querySelector(".joystick-container");
@@ -59,8 +59,8 @@ describe("MobileJoystick", () => {
 });
 
 describe("MobileButton", () => {
-  let mockOnPress: ReturnType<typeof vi.fn>;
-  let mockOnRelease: ReturnType<typeof vi.fn>;
+  let mockOnPress: () => void;
+  let mockOnRelease: () => void;
 
   beforeEach(() => {
     mockOnPress = vi.fn();
@@ -74,7 +74,7 @@ describe("MobileButton", () => {
         onRelease={mockOnRelease}
         label="Jump"
         position="bottom-right"
-      />
+      />,
     );
     expect(getByText("Jump")).toBeTruthy();
   });
@@ -86,7 +86,7 @@ describe("MobileButton", () => {
         onRelease={mockOnRelease}
         label="Jump"
         position="bottom-right"
-      />
+      />,
     );
 
     const button = container.querySelector(".mobile-button");
@@ -104,7 +104,7 @@ describe("MobileButton", () => {
         onRelease={mockOnRelease}
         label="Jump"
         position="bottom-right"
-      />
+      />,
     );
 
     const button = container.querySelector(".mobile-button");
@@ -122,7 +122,7 @@ describe("MobileButton", () => {
         onRelease={mockOnRelease}
         label="Jump"
         position="bottom-right"
-      />
+      />,
     );
 
     const button = container.querySelector(".mobile-button");
@@ -136,7 +136,7 @@ describe("MobileButton", () => {
         onRelease={mockOnRelease}
         label="Sprint"
         position="bottom-center"
-      />
+      />,
     );
 
     const button = container.querySelector(".mobile-button");
@@ -150,7 +150,7 @@ describe("MobileButton", () => {
         onRelease={mockOnRelease}
         label="Custom Label"
         position="bottom-right"
-      />
+      />,
     );
 
     expect(getByText("Custom Label")).toBeTruthy();
@@ -172,7 +172,7 @@ describe("Mobile Controls Integration", () => {
           label="Jump"
           position="bottom-right"
         />
-      </div>
+      </div>,
     );
 
     const joystick = container.querySelector(".joystick-container");
@@ -192,7 +192,7 @@ describe("Mobile Controls Integration", () => {
       <div>
         <MobileJoystick onMove={onMove} side="left" label="Move" />
         <MobileJoystick onMove={onCamera} side="right" label="Look" />
-      </div>
+      </div>,
     );
 
     const joysticks = container.querySelectorAll(".joystick-container");
@@ -213,7 +213,7 @@ describe("Mobile Controls Integration", () => {
           label="Jump"
           position="bottom-right"
         />
-      </div>
+      </div>,
     );
 
     // Labels should be accessible

@@ -17,7 +17,7 @@ describe("Movement Integration Tests", () => {
       };
 
       const directionPressed = DIRECTIONS.some(
-        (key) => keysPressed[key] === true
+        (key) => keysPressed[key] === true,
       );
       expect(directionPressed).toBe(true);
     });
@@ -45,7 +45,7 @@ describe("Movement Integration Tests", () => {
       };
 
       const directionPressed = DIRECTIONS.some(
-        (key) => keysPressed[key] === true
+        (key) => keysPressed[key] === true,
       );
       expect(directionPressed).toBe(false);
     });
@@ -61,7 +61,7 @@ describe("Movement Integration Tests", () => {
         };
 
         const directionPressed = DIRECTIONS.some(
-          (key) => keysPressed[key] === true
+          (key) => keysPressed[key] === true,
         );
         expect(directionPressed).toBe(true);
       });
@@ -69,11 +69,8 @@ describe("Movement Integration Tests", () => {
   });
 
   describe("Position Update Synchronization", () => {
-    let mockSocket: {
-      emit: ReturnType<typeof vi.fn>;
-      on: ReturnType<typeof vi.fn>;
-      id: string;
-    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let mockSocket: any;
 
     beforeEach(() => {
       mockSocket = {
@@ -277,11 +274,8 @@ describe("Movement Integration Tests", () => {
   });
 
   describe("Socket Event Ordering", () => {
-    let mockSocket: {
-      emit: ReturnType<typeof vi.fn>;
-      on: ReturnType<typeof vi.fn>;
-      eventHandlers: Map<string, (data: unknown) => void>;
-    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let mockSocket: any;
 
     beforeEach(() => {
       mockSocket = {
