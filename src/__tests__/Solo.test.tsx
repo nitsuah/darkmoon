@@ -5,7 +5,6 @@ import { act } from "react";
 import { BrowserRouter } from "react-router-dom";
 import { ThemeProvider } from "../contexts/ThemeContext";
 import Solo from "../pages/Solo";
-import type { Socket } from "socket.io-client";
 import { io } from "socket.io-client";
 
 // Mock socket.io-client
@@ -30,7 +29,7 @@ vi.mock("@react-three/drei", () => ({
   OrbitControls: () => <div data-testid="orbit-controls" />,
 }));
 
-interface MockSocket extends Partial<Socket> {
+interface MockSocket {
   on: ReturnType<typeof vi.fn>;
   off: ReturnType<typeof vi.fn>;
   disconnect: ReturnType<typeof vi.fn>;
@@ -46,7 +45,8 @@ describe("Solo Component", () => {
       on: vi.fn(),
       off: vi.fn(),
       disconnect: vi.fn(),
-      connect: vi.fn(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      connect: vi.fn().mockReturnValue({} as any),
       id: "test-socket-id",
     };
 

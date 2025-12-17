@@ -2,13 +2,17 @@
 
 ## Done
 
+- [x] Bump vitest from 4.0.4 to 4.0.15
+- [x] Bump @vitest/coverage-v8 from 4.0.4 to 4.0.15
+- [x] Sync react-dom to 19.2.3 to match react version
+- [x] Documentation compliance updates
+
 ## In Progress
 
 ### v2.1: Critical Mobile inputs
 
 - [ ] Fix mobile touch controls (joystick responsiveness)
 - [ ] Fix mobile UI layout (home page cards visibility)
-- [ ] Documentation compliance updates
 
 ## Todo
 
