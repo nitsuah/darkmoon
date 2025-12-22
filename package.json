@@ -48,7 +48,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "husky": "^8.0.0",
     "jsdom": "^27.3.0",
-    "lint-staged": "^16.2.6",
+    "lint-staged": "^16.2.7",
     "nodemon": "^3.1.11",
     "prettier": "^3.7.4",
     "rollup-plugin-visualizer": "^6.0.5",
