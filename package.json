@@ -54,7 +54,7 @@
     "rollup-plugin-visualizer": "^6.0.5",
     "socket.io-client": "^4.8.3",
     "vite-plugin-bundle-analyzer": "^0.0.1",
-    "vitest": "^4.0.15"
+    "vitest": "^4.0.17"
   },
   "optionalDependencies": {
     "@rollup/rollup-win32-x64-msvc": "^4.54.0"
