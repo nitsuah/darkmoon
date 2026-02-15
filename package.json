@@ -57,6 +57,6 @@
     "vitest": "^4.0.15"
   },
   "optionalDependencies": {
-    "@rollup/rollup-win32-x64-msvc": "^4.54.0"
+    "@rollup/rollup-win32-x64-msvc": "^4.57.1"
   }
 }
