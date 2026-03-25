@@ -18,7 +18,10 @@
     "prepare": "husky"
   },
   "overrides": {
-    "three": "^0.180.0"
+    "three": "^0.180.0",
+    "flatted": "^3.4.2",
+    "socket.io-parser": "^4.2.6",
+    "ajv": "^6.14.0"
   },
   "dependencies": {
     "@splinetool/react-spline": "^4.1.0",
