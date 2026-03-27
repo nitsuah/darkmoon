@@ -1,76 +1,67 @@
-# 🗺️ DARKMOON Roadmap
+# Roadmap
 
-> Transform Darkmoon from a multiplayer tech demo into a production-ready 3D social gaming platform with exceptional mobile experience, scalable infrastructure, and engaging gameplay loops.
+Last Updated: 2026-03-27
 
-## 2025Q4: 🚀 Foundation & Mobile Fix
+> Darkmoon is currently a browser game with solo practice live in production and multiplayer still positioned as a future mode. The roadmap prioritizes packaging reliability, honest product messaging, and mobile playability before expansion work.
 
-- [x] Project structure and CI/CD pipeline setup
-- [x] Basic multiplayer functionality with Socket.io
-- [x] React Three Fiber 3D scene rendering
-- [x] Desktop gameplay mechanics (WASD, mouse controls, tagging)
-- [x] Solo mode with AI bots
-- [x] Create unified logger utility
-- [x] Add server input validation and rate limiting
-- [ ] Fix mobile touch controls (joystick and camera rotation)
-- [ ] Fix mobile UI layout (home page cards, landscape controls)
-- [ ] Refactor Solo.tsx (1,002 lines → modular structure with hooks)
-- [ ] Refactor PlayerCharacter.tsx (900 lines → 5 hooks)
-- [ ] Add error monitoring and structured logging
+## 2025 Q4 (Status: Completed)
 
-## 2026Q1: 🏗️ Polish & Performance
+- [x] Establish the core browser game foundation.
+	- Shipped: React + Vite app, 3D gameplay scene, live solo route, and supporting CI/governance docs.
 
-- [ ] Bundle optimization (reduce by 25%, target <500KB)
-- [ ] Route-based code splitting and lazy loading
-- [ ] Test coverage enhancement (60% → 85%)
-- [ ] Mobile touch interaction tests
-- [ ] CSS architecture refactor (migrate to CSS Modules)
-- [ ] Design token system implementation
-- [ ] Storybook for component development
-- [ ] Playwright E2E testing
-- [ ] Debug overlay (FPS, network stats)
-- [ ] Lighthouse score >90
+- [x] Land baseline gameplay infrastructure.
+	- Shipped: AI-supported solo practice, shared gameplay modules, Socket.io server, health endpoint, validation helpers, and in-memory rate limiting.
 
-## 2026Q2: 🎮 Features & Scale
+## 2026 Q1 (Status: In Progress)
 
-- [ ] Collectibles Mode (gather orbs, power-ups, leaderboard)
-- [ ] Race Mode (checkpoints, lap timing, ghost racers)
-- [ ] Team Tag (2v2/3v3, team chat, matchmaking)
-- [ ] User authentication (Supabase Auth)
-- [ ] User profiles and persistent stats
-- [ ] XP/leveling and achievement system
-- [ ] Redis integration (sessions, game state, leaderboards)
-- [ ] PostgreSQL database (user accounts, game history)
-- [ ] Horizontal scaling infrastructure (500+ concurrent users)
+- [ ] Production Packaging Reliability (Committed)
+	- Objective: fix the broken Docker production build and document a validated run path.
+	- Why Now: the current Docker build fails in audit, which blocks dependable release validation.
+	- Exit Criteria: `.dockerignore` added, image builds cleanly, and runtime instructions are proven.
 
-## 2026Q3: 💰 Social & Monetization
+- [ ] Solo-Live Product Honesty (Committed)
+	- Objective: align README, features, and roadmap language with the deployed state where solo is live and multiplayer is not yet available.
+	- Why Now: current messaging overstates shipped multiplayer capability.
+	- Exit Criteria: docs consistently distinguish live functionality from planned modes.
 
-- [ ] Friends system
-- [ ] Private lobbies (invite-only)
-- [ ] Spectator mode
-- [ ] Emote system
-- [ ] Player reporting/moderation
-- [ ] Replay sharing (Twitter/Discord)
-- [ ] Character skins (5 free, 20 premium)
-- [ ] Jetpack trails and tag effects
-- [ ] Cosmetic shop with Stripe integration
-- [ ] Battle pass system ($10/season)
-- [ ] Ad network integration (optional ads for boosts)
+- [ ] Mobile Playability Validation (Committed)
+	- Objective: verify and fix touch controls plus responsive layout on real devices.
+	- Why Now: solo mode is the only live experience, so mobile issues are release-quality defects.
+	- Exit Criteria: device-tested controls, responsive home/game UI, and regression coverage for mobile interactions.
 
-## 2026Q4: 📱 Platform Expansion
+## 2026 Q2 (Status: Planned)
 
-- [ ] React Native mobile app (Expo)
-- [ ] Native touch controls optimization
-- [ ] Push notifications
-- [ ] iOS App Store submission
-- [ ] Google Play Store submission
-- [ ] Electron desktop wrapper (optional)
-- [ ] Steam integration (optional)
+- [ ] Multiplayer Readiness Gate (Committed)
+	- Objective: define and satisfy the minimum bar for turning multiplayer from roadmap promise into deployable experience.
+	- Scope: deployment topology, CORS/origin contract, structured logging, graceful shutdown, and operational visibility.
+	- Exit Criteria: documented launch checklist and validated server hardening tasks complete.
 
-## 2027: 🌟 UX & Community Enhancements
+- [ ] Documentation and Metrics Integrity (Committed)
+	- Objective: add missing architecture/API docs and replace estimated metrics with measured values.
+	- Scope: `ARCHITECTURE.md`, `API.md`, `METRICS.md` refresh, and deployment/runbook cross-links.
+	- Exit Criteria: contributors can understand the system and trust the reported metrics.
 
-- [ ] In-game voice chat (WebRTC)
-- [ ] Service worker for offline support
-- [ ] Component documentation and developer guides
-- [ ] Community moderation tools
-- [ ] Content creator tools (replay system)
-- [ ] Enhanced accessibility features
+- [ ] Refactor Backlog Re-Baselining (Exploratory)
+	- Objective: re-scope remaining large-file refactors against the current codebase rather than outdated line counts.
+	- Exit Criteria: only high-value refactors remain on the roadmap, each tied to testability or reliability outcomes.
+
+## 2026 Q3 (Status: Planned)
+
+- [ ] Live Multiplayer Expansion (Committed)
+	- Objective: ship the first public multiplayer-capable experience once the readiness gate is passed.
+	- Scope: lobby readiness, connection resilience, basic social/session expectations, and rollout safety.
+	- Exit Criteria: multiplayer moves from "coming soon" to validated playable mode.
+
+- [ ] Gameplay Mode Growth (Exploratory)
+	- Objective: evaluate race, collectibles, and tournament-style progression after core live modes stabilize.
+	- Exit Criteria: one additional mode is prioritized based on observed user demand and technical readiness.
+
+## 2026 Q4 (Status: Exploratory)
+
+- [ ] Identity, Progression, and Social Layer
+	- Objective: consider profiles, stats, friends, and moderation only after the live gameplay foundation is stable.
+	- Exit Criteria: decision record defines which account/social systems are worth building next.
+
+- [ ] Platform Expansion
+	- Objective: assess whether native mobile wrappers or other platform packaging materially improve adoption.
+	- Exit Criteria: feasibility decision backed by usage and maintenance cost evidence.
