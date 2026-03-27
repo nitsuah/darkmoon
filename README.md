@@ -3,20 +3,17 @@
 [![CI](https://github.com/nitsuah/darkmoon/actions/workflows/ci.yml/badge.svg)](https://github.com/nitsuah/darkmoon/actions)
 [![Netlify Status](https://api.netlify.com/api/v1/badges/2ae05c81-761a-4d3a-91ac-dcd5980d48d3/deploy-status)](https://app.netlify.com/projects/darkmoon-dev/deploys)
 
-> Real-time multiplayer 3D tag game built with React 19, Three Fiber, Socket.io, and Vite
+> Solo-live 3D browser tag game built with React 19, Three Fiber, Socket.io, and Vite. Multiplayer remains in progress.
 
 **Live Demo:** [darkmoon.dev](https://darkmoon.dev)
 
 ## ✨ Features
 
-- 🎮 **Multiplayer 3D Gameplay** — Real-time player synchronization with React Three Fiber
-- 🤖 **Solo Mode with AI Bots** — Practice against intelligent bot opponents
-- 🔌 **WebSocket Communication** — Low-latency networking via Socket.io
-- ⚡ **Modern Tooling** — Vite for lightning-fast builds and HMR
-- 📱 **Mobile Support** — Touch controls and responsive design
-- 🧪 **Full Test Suite** — Vitest + Testing Library with coverage reporting
-- 🚀 **CI/CD Pipeline** — GitHub Actions with automated quality checks
-- 🎨 **Code Quality** — ESLint, Prettier, TypeScript strict mode, pre-commit hooks
+- `[shipped]` **Solo Mode with AI Bots** — Practice against intelligent bot opponents on the live site.
+- `[in-progress]` **Multiplayer 3D Gameplay** — Multiplayer foundations exist, but the deployed experience is still solo-first.
+- `[shipped]` **WebSocket Server Foundation** — Socket.io and server validation are in place for future live modes.
+- `[in-progress]` **Mobile Support** — Responsive layout and touch controls exist, but device validation is still open.
+- `[shipped]` **Modern Tooling** — Vite, Vitest, ESLint, Prettier, TypeScript, and CI are wired into the repo.
 
 ## 🚀 Quick Start
 
@@ -32,7 +29,7 @@ npm install
 npm run dev
 ```
 
-Visit `http://localhost:4444` to play!
+Visit `http://localhost:4444` to play locally. The live site currently presents solo mode as the shipped experience.
 
 ## 🤝 Contributing
 

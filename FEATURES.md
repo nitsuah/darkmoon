@@ -1,15 +1,17 @@
 # DARKMOON Features
 
+Status guide: `[shipped]` is live today, `[in-progress]` is partially implemented or awaiting validation, and `[planned]` remains roadmap work.
+
 ## Game Modes
 
-### 🎮 Multiplayer Tag
+### 🎮 Multiplayer Tag `[in-progress]`
 
 - **Real-time Multiplayer**: WebSocket-based synchronization with Socket.io for low-latency gameplay
 - **Lobby System**: Join public rooms with up to 20 players
 - **Tag Mechanics**: Distance-based tagging with cooldown system
 - **Player Sync**: Smooth position, rotation, and animation synchronization
 
-### 🤖 Solo Mode with AI Bots
+### 🤖 Solo Mode with AI Bots `[shipped]`
 
 - **Bot AI**: Intelligent bots with pathfinding and tagging behavior
 - **Configurable Difficulty**: Adjustable bot speed and reaction time
@@ -26,7 +28,7 @@
 - **Jetpack/Jump**: Spacebar for jump and double-jump mechanics
 - **Tag Action**: Click to tag nearby players
 
-### 📱 Mobile Controls
+### 📱 Mobile Controls `[in-progress]`
 
 - **Virtual Joystick**: Touch-based movement control for mobile devices
 - **Two-Finger Camera**: Swipe rotation for camera control
@@ -53,7 +55,7 @@
 - **Landing Page**: Hero section with game mode cards
 - **Toast Notifications**: User feedback for connections, tags, and errors
 
-### 🔊 Audio (Planned)
+### 🔊 Audio `[planned]`
 
 - **Sound Effects**: Tag sounds, jump sounds, ambient audio
 - **Music**: Background music with volume controls
