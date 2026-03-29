@@ -5,20 +5,19 @@
 # Stage 1: Dependencies
 # Installs production dependencies
 # ================================
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 WORKDIR /app
 
 # Copy package files for caching
 COPY package*.json ./
 
-# Install only production dependencies
-RUN npm ci --only=production
+RUN npm pkg delete scripts.prepare && npm ci --omit=dev
 
 # ================================
 # Stage 2: Builder
 # Builds the application
 # ================================
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 
 # Copy package files

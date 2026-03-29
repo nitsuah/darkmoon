@@ -115,7 +115,7 @@ router.get("/", async (req, res) => {
 });
 
 // Everything else that's not index 404s
-router.use("*", (req, res) => {
+router.use("/*", (req, res) => {
   res.status(404).send({ message: "Not Found" });
 });
 
