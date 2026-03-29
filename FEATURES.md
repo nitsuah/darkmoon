@@ -4,19 +4,20 @@ Status guide: `[shipped]` is live today, `[in-progress]` is partially implemente
 
 ## Game Modes
 
-### 🎮 Multiplayer Tag `[in-progress]`
 
-- **Real-time Multiplayer**: WebSocket-based synchronization with Socket.io for low-latency gameplay
-- **Lobby System**: Join public rooms with up to 20 players
-- **Tag Mechanics**: Distance-based tagging with cooldown system
-- **Player Sync**: Smooth position, rotation, and animation synchronization
-
-### 🤖 Solo Mode with AI Bots `[shipped]`
+### 🤖 Solo Mode with AI Bots `[shipped/live]`
 
 - **Bot AI**: Intelligent bots with pathfinding and tagging behavior
 - **Configurable Difficulty**: Adjustable bot speed and reaction time
 - **Practice Mode**: Play offline to learn mechanics without pressure
 - **Bot Coordination**: Multiple bots with independent AI decision-making
+
+### 🎮 Multiplayer Tag `[planned]`
+
+- **Real-time Multiplayer**: WebSocket-based synchronization with Socket.io (not live)
+- **Lobby System**: Planned for future release
+- **Tag Mechanics**: Planned for future release
+- **Player Sync**: Planned for future release
 
 ## Player Controls
 
