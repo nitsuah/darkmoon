@@ -36,11 +36,11 @@ RUN npm run build
 # Stage 3: Runner
 # Runs the application in production
 # ================================
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 
 # Set production environment
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 # Create non-root user for security
 RUN addgroup --system --gid 1001 nodejs

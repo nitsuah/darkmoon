@@ -39,18 +39,20 @@ export default defineConfig({
         rollupOptions: {
             output: {
                 manualChunks(id) {
+                    const normalizedId = id.replace(/\\/g, '/');
+
                     if (
-                        id.includes('/node_modules/react/') ||
-                        id.includes('/node_modules/react-dom/') ||
-                        id.includes('/node_modules/react-router-dom/')
+                        normalizedId.includes('/node_modules/react/') ||
+                        normalizedId.includes('/node_modules/react-dom/') ||
+                        normalizedId.includes('/node_modules/react-router-dom/')
                     ) {
                         return 'react-vendor';
                     }
 
                     if (
-                        id.includes('/node_modules/three/') ||
-                        id.includes('/node_modules/@react-three/fiber/') ||
-                        id.includes('/node_modules/@react-three/drei/')
+                        normalizedId.includes('/node_modules/three/') ||
+                        normalizedId.includes('/node_modules/@react-three/fiber/') ||
+                        normalizedId.includes('/node_modules/@react-three/drei/')
                     ) {
                         return 'three-vendor';
                     }
