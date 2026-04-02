@@ -38,9 +38,24 @@ export default defineConfig({
         },
         rollupOptions: {
             output: {
-                manualChunks: {
-                    'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-                    'three-vendor': ['three', '@react-three/fiber', '@react-three/drei']
+                manualChunks(id) {
+                    if (
+                        id.includes('/node_modules/react/') ||
+                        id.includes('/node_modules/react-dom/') ||
+                        id.includes('/node_modules/react-router-dom/')
+                    ) {
+                        return 'react-vendor';
+                    }
+
+                    if (
+                        id.includes('/node_modules/three/') ||
+                        id.includes('/node_modules/@react-three/fiber/') ||
+                        id.includes('/node_modules/@react-three/drei/')
+                    ) {
+                        return 'three-vendor';
+                    }
+
+                    return undefined;
                 }
             }
         }
