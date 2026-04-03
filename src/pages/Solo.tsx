@@ -611,6 +611,7 @@ const Solo: React.FC = () => {
         gameState={gameState}
         setGameState={setGameState}
         botDebugMode={botDebugMode}
+        playerPosition={playerPositionRef.current}
         bot1Position={bot1PositionRef.current}
         bot2Position={bot2PositionRef.current}
         collisionSystemRef={collisionSystemRef}
