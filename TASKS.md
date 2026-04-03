@@ -1,6 +1,6 @@
 # Tasks
 
-Last Updated: 2026-03-27
+Last Updated: 2026-04-03 (pmo/q2-2026-planning)
 
 ## Done
 
@@ -31,6 +31,11 @@ Last Updated: 2026-03-27
   - Priority: P1
   - Problem: the site feels static outside of actual gameplay; improving interactivity increases perceived quality and engagement before a player even starts a game.
   - Acceptance Criteria: game cards, stat panels, and navigation have consistent hover/focus states; page transitions are smooth; Lighthouse performance score does not regress.
+
+- [ ] **[Q2-CEO] Open-source safety scrub** — sanitize repository content to remove potentially sensitive, proprietary, or over-specific company and resume details before broader sharing/open sourcing.
+  - Priority: P1
+  - Problem: historical examples may include details that are too specific for public exposure.
+  - Acceptance Criteria: sensitive examples are removed or anonymized; docs are reviewed for proprietary references; a final pass confirms public-share readiness.
 
 - [ ] Fix the Docker production build path.
   - Priority: P0
