@@ -55,9 +55,9 @@ export type SoloSceneProps = {
   gameState: GameState;
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
   botDebugMode: boolean;
-  playerPosition: [number, number, number];
-  bot1Position: [number, number, number];
-  bot2Position: [number, number, number];
+  playerPositionRef: React.RefObject<[number, number, number]>;
+  bot1PositionRef: React.RefObject<[number, number, number]>;
+  bot2PositionRef: React.RefObject<[number, number, number]>;
   handleBot1PositionUpdate: (p: [number, number, number]) => void;
   handleBot2PositionUpdate: (p: [number, number, number]) => void;
   collisionSystemRef: React.RefObject<CollisionSystem>;

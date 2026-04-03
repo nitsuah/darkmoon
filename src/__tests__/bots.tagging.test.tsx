@@ -1,7 +1,6 @@
 /**
  * @jest-environment jsdom
  */
-import "@testing-library/jest-dom";
 import React from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
@@ -10,7 +9,13 @@ import Bots from "../pages/Solo/components/Bots";
 import type CollisionSystem from "../components/CollisionSystem";
 
 vi.mock("../components/characters/BotCharacter", () => ({
-  BotCharacter: ({ onTagTarget, config }: { onTagTarget: () => void; config: { label?: string } }) => (
+  BotCharacter: ({
+    onTagTarget,
+    config,
+  }: {
+    onTagTarget: () => void;
+    config: { label?: string };
+  }) => (
     <button onClick={onTagTarget} data-testid={`tag-${config.label || "bot"}`}>
       trigger-tag
     </button>
@@ -40,15 +45,24 @@ describe("Bots tagging behavior", () => {
     manager.updatePlayer("player-1", { isIt: false });
 
     const fakeCollisionRef = { current: null as unknown as CollisionSystem };
+    const playerPosRef: React.MutableRefObject<[number, number, number]> = {
+      current: [0, 0.5, 0],
+    };
+    const bot1PosRef: React.MutableRefObject<[number, number, number]> = {
+      current: [0.5, 0.5, 0],
+    };
+    const bot2PosRef: React.MutableRefObject<[number, number, number]> = {
+      current: [8, 0.5, -8],
+    };
 
     render(
       <Bots
         botDebugMode={false}
         currentPlayerId="player-1"
         playerIsIt={false}
-        playerPosition={[0, 0.5, 0]}
-        bot1Position={[0.5, 0.5, 0]}
-        bot2Position={[8, 0.5, -8]}
+        playerPositionRef={playerPosRef}
+        bot1PositionRef={bot1PosRef}
+        bot2PositionRef={bot2PosRef}
         isPaused={false}
         handleBot1PositionUpdate={() => {}}
         handleBot2PositionUpdate={() => {}}
@@ -61,7 +75,7 @@ describe("Bots tagging behavior", () => {
         gameState={manager.getGameState()}
         setBot1GotTagged={() => {}}
         setBot2GotTagged={() => {}}
-      />
+      />,
     );
 
     fireEvent.click(screen.getByTestId("tag-Bot1"));

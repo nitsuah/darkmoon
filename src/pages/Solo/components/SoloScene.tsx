@@ -29,9 +29,9 @@ export const SoloScene: React.FC<Props> = ({
   gameState,
   setGameState,
   botDebugMode,
-  playerPosition,
-  bot1Position,
-  bot2Position,
+  playerPositionRef,
+  bot1PositionRef,
+  bot2PositionRef,
   handleBot1PositionUpdate,
   handleBot2PositionUpdate,
   collisionSystemRef,
@@ -87,9 +87,9 @@ export const SoloScene: React.FC<Props> = ({
         botDebugMode={botDebugMode}
         currentPlayerId={currentPlayerId}
         playerIsIt={playerIsIt}
-        playerPosition={playerPosition}
-        bot1Position={bot1Position}
-        bot2Position={bot2Position}
+        playerPositionRef={playerPositionRef}
+        bot1PositionRef={bot1PositionRef}
+        bot2PositionRef={bot2PositionRef}
         isPaused={isPaused}
         handleBot1PositionUpdate={handleBot1PositionUpdate}
         handleBot2PositionUpdate={handleBot2PositionUpdate}

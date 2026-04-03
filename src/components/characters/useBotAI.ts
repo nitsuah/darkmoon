@@ -27,7 +27,7 @@ export interface BotConfig {
 }
 
 export interface BotAIProps {
-  targetPosition: [number, number, number];
+  targetPositionRef: React.RefObject<[number, number, number]>;
   isPaused: boolean;
   isIt: boolean;
   targetIsIt: boolean;
@@ -51,7 +51,7 @@ export interface BotAIRefs {
  * Returns refs instead of values to avoid triggering re-renders
  */
 export function useBotAI({
-  targetPosition,
+  targetPositionRef,
   isPaused,
   isIt,
   targetIsIt,
@@ -70,7 +70,7 @@ export function useBotAI({
   const botVelocityRef = useRef<[number, number, number]>([0, 0, 0]);
   const lastPosition = useRef(new THREE.Vector3(...config.initialPosition));
   const lastReportedPosition = useRef(
-    new THREE.Vector3(...config.initialPosition)
+    new THREE.Vector3(...config.initialPosition),
   );
   const POSITION_UPDATE_THRESHOLD = 0.01; // Only update if moved > 1cm
   const isSprintingRef = useRef(false);
@@ -87,12 +87,12 @@ export function useBotAI({
       isPausedAfterTag.current = true;
       pauseEndTime.current = gotTaggedTimestamp + config.pauseAfterTag;
       tagDebug(
-        `[${config.label}] Got tagged! Freezing for ${config.pauseAfterTag}ms until ${pauseEndTime.current}`
+        `[${config.label}] Got tagged! Freezing for ${config.pauseAfterTag}ms until ${pauseEndTime.current}`,
       );
       tagDebug(
         `[${config.label}] Current time: ${Date.now()}, End time: ${
           pauseEndTime.current
-        }`
+        }`,
       );
     }
   }, [gotTaggedTimestamp, config.pauseAfterTag, config.label]);
@@ -118,7 +118,9 @@ export function useBotAI({
     }
 
     const botPos = meshRef.current.position;
-    const targetPos = new THREE.Vector3(...targetPosition);
+    const targetPos = new THREE.Vector3(
+      ...(targetPositionRef.current ?? [0, 0, 0]),
+    );
     const distance = botPos.distanceTo(targetPos);
 
     // Calculate velocity for animation
@@ -158,14 +160,14 @@ export function useBotAI({
         const newPos = new THREE.Vector3(
           botPos.x + direction.x * currentSpeed * delta,
           botPos.y,
-          botPos.z + direction.z * currentSpeed * delta
+          botPos.z + direction.z * currentSpeed * delta,
         );
 
         // Check collision with environment
         if (collisionSystem.current) {
           const resolved = collisionSystem.current.checkCollision(
             currentPos,
-            newPos
+            newPos,
           );
           botPos.x = resolved.x;
           botPos.z = resolved.z;
@@ -181,8 +183,8 @@ export function useBotAI({
         // Tag the target!
         tagDebug(
           `🤖 ${config.label} TAGGING TARGET! Distance: ${distance.toFixed(
-            2
-          )}, Cooldown elapsed: ${now - lastTagTime.current}ms`
+            2,
+          )}, Cooldown elapsed: ${now - lastTagTime.current}ms`,
         );
         lastTagTime.current = now;
         tagDebug(`  ${config.label} continues moving (no freeze for tagger)`);
@@ -204,14 +206,14 @@ export function useBotAI({
         const newPos = new THREE.Vector3(
           botPos.x + direction.x * fleeSpeed * delta,
           botPos.y,
-          botPos.z + direction.z * fleeSpeed * delta
+          botPos.z + direction.z * fleeSpeed * delta,
         );
 
         // Check collision with environment
         if (collisionSystem.current) {
           const resolved = collisionSystem.current.checkCollision(
             currentPos,
-            newPos
+            newPos,
           );
           botPos.x = resolved.x;
           botPos.z = resolved.z;

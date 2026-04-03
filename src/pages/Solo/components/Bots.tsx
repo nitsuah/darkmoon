@@ -7,8 +7,8 @@ const Bots: React.FC<
   Pick<
     SoloSceneProps,
     | "botDebugMode"
-    | "bot1Position"
-    | "bot2Position"
+    | "bot1PositionRef"
+    | "bot2PositionRef"
     | "isPaused"
     | "handleBot1PositionUpdate"
     | "handleBot2PositionUpdate"
@@ -23,12 +23,12 @@ const Bots: React.FC<
     | "setBot2GotTagged"
     | "currentPlayerId"
     | "playerIsIt"
-    | "playerPosition"
+    | "playerPositionRef"
   >
 > = ({
   botDebugMode,
-  bot1Position,
-  bot2Position,
+  bot1PositionRef,
+  bot2PositionRef,
   isPaused,
   handleBot1PositionUpdate,
   handleBot2PositionUpdate,
@@ -43,7 +43,7 @@ const Bots: React.FC<
   setBot2GotTagged,
   currentPlayerId,
   playerIsIt,
-  playerPosition,
+  playerPositionRef,
 }) => {
   // keep default bot config merging inline to preserve behavior
   const DEFAULT_BOT_CONFIG: FullBotConfig = {
@@ -74,15 +74,23 @@ const Bots: React.FC<
   // Get bot IT status from game manager
   const bot1IsIt = gameManager?.getPlayers().get("bot-1")?.isIt ?? false;
   const bot2IsIt = gameManager?.getPlayers().get("bot-2")?.isIt ?? false;
+  // Derive player isIt from gameManager to avoid stale React-state race windows
+  const playerIsItFromManager =
+    gameManager?.getPlayers().get(currentPlayerId)?.isIt ?? playerIsIt;
 
   // Bot tag callbacks - handle bot-to-bot tagging
   const handleBot1TagTarget = useCallback(() => {
-    if (!gameManager || !bot1IsIt || !gameState.isActive || gameState.mode !== "tag") {
+    if (
+      !gameManager ||
+      !bot1IsIt ||
+      !gameState.isActive ||
+      gameState.mode !== "tag"
+    ) {
       return;
     }
 
     const targetId = botDebugMode ? "bot-2" : currentPlayerId;
-    const targetIsAlreadyIt = botDebugMode ? bot2IsIt : playerIsIt;
+    const targetIsAlreadyIt = botDebugMode ? bot2IsIt : playerIsItFromManager;
 
     if (!targetIsAlreadyIt && gameManager.tagPlayer("bot-1", targetId)) {
       if (botDebugMode) {
@@ -97,7 +105,7 @@ const Bots: React.FC<
     botDebugMode,
     currentPlayerId,
     bot2IsIt,
-    playerIsIt,
+    playerIsItFromManager,
     setBot2GotTagged,
   ]);
 
@@ -111,9 +119,9 @@ const Bots: React.FC<
   return (
     <>
       <BotCharacter
-        targetPosition={botDebugMode ? bot2Position : playerPosition}
+        targetPositionRef={botDebugMode ? bot2PositionRef : playerPositionRef}
         isIt={bot1IsIt}
-        targetIsIt={botDebugMode ? bot2IsIt : playerIsIt}
+        targetIsIt={botDebugMode ? bot2IsIt : playerIsItFromManager}
         isPaused={isPaused}
         onTagTarget={handleBot1TagTarget}
         onPositionUpdate={handleBot1PositionUpdate}
@@ -126,7 +134,7 @@ const Bots: React.FC<
 
       {botDebugMode && (
         <BotCharacter
-          targetPosition={bot1Position}
+          targetPositionRef={bot1PositionRef}
           isIt={bot2IsIt}
           targetIsIt={bot1IsIt}
           isPaused={isPaused}
