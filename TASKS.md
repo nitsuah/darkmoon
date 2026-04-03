@@ -1,6 +1,6 @@
 # Tasks
 
-Last Updated: 2026-04-03 (pmo/q2-2026-planning)
+Last Updated: 2026-04-03
 
 ## Done
 
@@ -22,7 +22,7 @@ Last Updated: 2026-04-03 (pmo/q2-2026-planning)
   - Problem: bot-to-bot tagging works but player-to-bot and bot-to-player tagging is broken or inconsistent, making the game unplayable in mixed mode.
   - Acceptance Criteria: players can tag bots using the same mechanics bots use on each other; bot-to-player tagging registers correctly; regression tests or a documented test scenario covers both directions.
 
-- [ ] **[Q2-CEO] 21st.dev component integration pass** — replace or augment key game site UI surfaces (lobby, scoreboard, game over, nav) with 21st.dev components to improve visual quality and interactivity.
+- [ ] **[Q2-CEO] 21st.dev component integration pass** — replace or augment key game site UI surfaces (lobby, scoreboard, game-over, nav) with 21st.dev components to improve visual quality and interactivity.
   - Priority: P1
   - Problem: current UI is functional but prototype-grade; 21st.dev components can significantly improve look, feel, and animation quality without a full rewrite.
   - Acceptance Criteria: at least lobby, scoreboard, and game-over screens use 21st.dev components; hover states, transitions, and layout quality are demonstrably improved; no regression in game functionality.
