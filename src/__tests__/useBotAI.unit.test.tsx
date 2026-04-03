@@ -40,7 +40,7 @@ function mountHook() {
 
   const TestComp = () => {
     const refs = useBotAI({
-      targetPosition: [1, 0, 0],
+      targetPositionRef: { current: [1, 0, 0] },
       isPaused: false,
       isIt: true,
       targetIsIt: false,
