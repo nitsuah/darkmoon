@@ -17,6 +17,21 @@ Last Updated: 2026-03-27
 
 ## Todo
 
+- [ ] **[Q2-CEO] Fix player tag system** — players cannot tag bots (and bots cannot reliably tag players back); the hit-detection and tagging collision logic needs to be fixed and symmetrical.
+  - Priority: P0
+  - Problem: bot-to-bot tagging works but player-to-bot and bot-to-player tagging is broken or inconsistent, making the game unplayable in mixed mode.
+  - Acceptance Criteria: players can tag bots using the same mechanics bots use on each other; bot-to-player tagging registers correctly; regression tests or a documented test scenario covers both directions.
+
+- [ ] **[Q2-CEO] 21st.dev component integration pass** — replace or augment key game site UI surfaces (lobby, scoreboard, game over, nav) with 21st.dev components to improve visual quality and interactivity.
+  - Priority: P1
+  - Problem: current UI is functional but prototype-grade; 21st.dev components can significantly improve look, feel, and animation quality without a full rewrite.
+  - Acceptance Criteria: at least lobby, scoreboard, and game-over screens use 21st.dev components; hover states, transitions, and layout quality are demonstrably improved; no regression in game functionality.
+
+- [ ] **[Q2-CEO] UI/UX interactivity improvements** — improve micro-interactions, card layouts, and overall interactivity across the site using 21st.dev patterns.
+  - Priority: P1
+  - Problem: the site feels static outside of actual gameplay; improving interactivity increases perceived quality and engagement before a player even starts a game.
+  - Acceptance Criteria: game cards, stat panels, and navigation have consistent hover/focus states; page transitions are smooth; Lighthouse performance score does not regress.
+
 - [ ] Fix the Docker production build path.
   - Priority: P0
   - Problem: the documented Docker build path is currently broken.
