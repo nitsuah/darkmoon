@@ -17,7 +17,7 @@ Last Updated: 2026-04-03
 
 ### CEO Priorities
 - [ ] **21st.dev components integration**: leverage 21st.dev component library to enhance the look, feel, and interactivity of the game site — replace or augment existing UI surfaces with higher-quality, more interactive components.
-- [ ] **Player tag system fix**: players currently cannot tag bots (and bots cannot tag players back consistently); fix the hit-detection and tagging logic so player-bot interactions are symmetrical and reliable.
+- [x] **Player tag system fix**: players currently cannot tag bots (and bots cannot tag players back consistently); fix the hit-detection and tagging logic so player-bot interactions are symmetrical and reliable.
 - [ ] **UI/UX polish pass using 21st.dev**: apply improved card layouts, transitions, and interactive states to the game lobby, scoreboard, and game-over screens.
 - [ ] **Open-source safety scrub**: remove or anonymize any sensitive, proprietary, or employer-identifying content so the repo can be shared publicly without exposing confidential details.
 

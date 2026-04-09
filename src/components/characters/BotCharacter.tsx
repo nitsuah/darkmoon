@@ -13,7 +13,7 @@ const tagDebug = (...args: unknown[]) => {
 };
 
 export interface BotCharacterProps {
-  targetPosition: [number, number, number];
+  targetPositionRef: React.RefObject<[number, number, number]>;
   isPaused: boolean;
   onPositionUpdate: (position: [number, number, number]) => void;
   isIt: boolean;
@@ -33,7 +33,7 @@ export interface BotCharacterProps {
  * Used for both Bot1 and Bot2 with different configs
  */
 export const BotCharacter: React.FC<BotCharacterProps> = ({
-  targetPosition,
+  targetPositionRef,
   isPaused,
   onPositionUpdate,
   isIt,
@@ -53,14 +53,14 @@ export const BotCharacter: React.FC<BotCharacterProps> = ({
   useEffect(() => {
     if (gotTaggedTimestamp && gotTaggedTimestamp > 0) {
       tagDebug(
-        `[BotCharacter ${config.label}] gotTaggedTimestamp prop changed to: ${gotTaggedTimestamp}`
+        `[BotCharacter ${config.label}] gotTaggedTimestamp prop changed to: ${gotTaggedTimestamp}`,
       );
     }
   }, [gotTaggedTimestamp, config.label]);
 
   // Use bot AI hook for movement and behavior logic
   const { velocity, isSprinting } = useBotAI({
-    targetPosition,
+    targetPositionRef,
     isPaused,
     isIt,
     targetIsIt,

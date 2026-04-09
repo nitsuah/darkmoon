@@ -67,11 +67,11 @@ const Solo: React.FC = () => {
     scores: {},
   });
   const [gamePlayers, setGamePlayers] = useState<Map<string, Player>>(
-    new Map()
+    new Map(),
   );
   // Generate stable local ID using useState with lazy initializer (React-approved pattern)
   const [localPlayerId] = useState(
-    () => `local-${Math.random().toString(36).slice(2, 8)}`
+    () => `local-${Math.random().toString(36).slice(2, 8)}`,
   );
   // Derived current player ID: prefer socketClient.id when connected, otherwise use the stable localPlayerId
   const currentPlayerId = socketClient?.id || localPlayerId;
@@ -93,7 +93,7 @@ const Solo: React.FC = () => {
   // Bot debug mode - enables 2 bots playing each other with faster games
   const [botDebugMode, setBotDebugMode] = useState(false); // Default false - user must enable
   const debugRestartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
+    null,
   );
 
   // Mobile jetpack trigger (set to true when double-tap detected)
@@ -180,7 +180,7 @@ const Solo: React.FC = () => {
           setGameState,
           setPlayerIsIt,
         },
-        botDebugMode ? BOT2_CONFIG : BOT1_CONFIG
+        botDebugMode ? BOT2_CONFIG : BOT1_CONFIG,
       );
       if (mgr) gameManager.current = mgr;
     } catch {
@@ -196,7 +196,7 @@ const Solo: React.FC = () => {
         setGameState,
         setPlayerIsIt,
       },
-      botDebugMode ? BOT2_CONFIG : BOT1_CONFIG
+      botDebugMode ? BOT2_CONFIG : BOT1_CONFIG,
     );
 
     return () => {
@@ -417,7 +417,7 @@ const Solo: React.FC = () => {
     (position: [number, number, number]) => {
       playerPositionRef.current = position;
     },
-    []
+    [],
   );
 
   // Bot position tracking - use refs to avoid re-render loops AND update clients object for collision
@@ -427,7 +427,7 @@ const Solo: React.FC = () => {
       // Update clients ref so PlayerCharacter can detect bot for tagging (no re-render)
       clientsRef.current["bot-1"] = { position, rotation: ZERO_ROTATION };
     },
-    []
+    [],
   );
 
   const handleBot2PositionUpdate = useCallback(
@@ -436,7 +436,7 @@ const Solo: React.FC = () => {
       // Update clients ref so PlayerCharacter can detect bot for tagging (no re-render)
       clientsRef.current["bot-2"] = { position, rotation: ZERO_ROTATION };
     },
-    []
+    [],
   );
 
   // Bot debug mode auto-restart when game ends
@@ -502,7 +502,7 @@ const Solo: React.FC = () => {
               gameManager.current.updatePlayer("bot-1", { isIt: true });
               setPlayerIsIt(false);
               tagDebug(
-                "🎮 Forced bot-1 to be IT (debug mode - player cannot be IT)"
+                "🎮 Forced bot-1 to be IT (debug mode - player cannot be IT)",
               );
             }
 
@@ -611,8 +611,9 @@ const Solo: React.FC = () => {
         gameState={gameState}
         setGameState={setGameState}
         botDebugMode={botDebugMode}
-        bot1Position={bot1PositionRef.current}
-        bot2Position={bot2PositionRef.current}
+        playerPositionRef={playerPositionRef}
+        bot1PositionRef={bot1PositionRef}
+        bot2PositionRef={bot2PositionRef}
         collisionSystemRef={collisionSystemRef}
         handleBot1PositionUpdate={handleBot1PositionUpdate}
         handleBot2PositionUpdate={handleBot2PositionUpdate}
@@ -701,10 +702,10 @@ const Solo: React.FC = () => {
                 notification.type === "success"
                   ? "rgba(0, 200, 0, 0.9)"
                   : notification.type === "warning"
-                  ? "rgba(255, 165, 0, 0.9)"
-                  : notification.type === "error"
-                  ? "rgba(200, 0, 0, 0.9)"
-                  : "rgba(74, 144, 226, 0.9)",
+                    ? "rgba(255, 165, 0, 0.9)"
+                    : notification.type === "error"
+                      ? "rgba(200, 0, 0, 0.9)"
+                      : "rgba(74, 144, 226, 0.9)",
               color: "white",
               borderRadius: "6px",
               fontFamily: "monospace",
