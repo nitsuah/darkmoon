@@ -56,6 +56,7 @@ export type SoloSceneProps = {
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
   botDebugMode: boolean;
   playerPositionRef: React.RefObject<[number, number, number]>;
+  playerMeshRef: React.RefObject<any>;
   bot1PositionRef: React.RefObject<[number, number, number]>;
   bot2PositionRef: React.RefObject<[number, number, number]>;
   handleBot1PositionUpdate: (p: [number, number, number]) => void;

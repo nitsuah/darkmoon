@@ -90,12 +90,14 @@ export function useBotAI({
         `[${config.label}] Got tagged! Freezing for ${config.pauseAfterTag}ms until ${pauseEndTime.current}`,
       );
       tagDebug(
-        `[${config.label}] Current time: ${Date.now()}, End time: ${
-          pauseEndTime.current
-        }`,
+        `[${config.label}] Current time: ${Date.now()}, End time: ${pauseEndTime.current}`,
       );
+      // Force bot to update isIt state after pause
+      setTimeout(() => {
+        tagDebug(`[${config.label}] Pause ended, checking isIt: ${isIt}`);
+      }, config.pauseAfterTag + 10);
     }
-  }, [gotTaggedTimestamp, config.pauseAfterTag, config.label]);
+  }, [gotTaggedTimestamp, config.pauseAfterTag, config.label, isIt]);
 
   useFrame((_state, delta) => {
     if (!meshRef.current || isPaused) return;
@@ -106,7 +108,11 @@ export function useBotAI({
     if (isPausedAfterTag.current) {
       if (now >= pauseEndTime.current) {
         isPausedAfterTag.current = false;
-        tagDebug(`[${config.label}] Freeze ended at ${now}`);
+        tagDebug(`[${config.label}] Freeze ended at ${now}, isIt: ${isIt}`);
+        // After pause, check if bot is now IT and should chase
+        if (isIt) {
+          tagDebug(`[${config.label}] Bot is now IT after pause, will chase player.`);
+        }
       } else {
         // Bot is frozen, show visual indicator by slightly pulsing scale
         const pulse = 1 + Math.sin(now * 0.01) * 0.1;
@@ -130,7 +136,7 @@ export function useBotAI({
     lastPosition.current.copy(currentPosVec);
 
     // Behavior depends on who is IT (only during active tag games)
-    if (isIt && gameState.isActive && gameState.mode === "tag") {
+    if (isIt && gameState.isActive && gameState.mode === "tag" && !isPausedAfterTag.current) {
       // Bot is IT - chase target
       if (distance > config.tagDistance) {
         // Sprint burst logic - IT bot sprints more aggressively
@@ -190,7 +196,7 @@ export function useBotAI({
         tagDebug(`  ${config.label} continues moving (no freeze for tagger)`);
         onTagTarget();
       }
-    } else if (targetIsIt && gameState.isActive && gameState.mode === "tag") {
+    } else if (targetIsIt && gameState.isActive && gameState.mode === "tag" && !isPausedAfterTag.current) {
       // Target is IT - flee when within detection radius
       // Non-IT bot moves SLOWER so it can be caught (for debugging)
       if (distance < config.chaseRadius) {

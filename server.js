@@ -148,6 +148,17 @@ app.use(
   })
 );
 app.use(express.static("dist"));
+
+// Serve index.html for all non-API, non-static routes (SPA support)
+app.use((req, res, next) => {
+  if (req.method !== "GET") return next();
+  // If the request accepts HTML, serve index.html
+  if (req.accepts("html")) {
+    res.sendFile("index.html", { root: "dist" });
+  } else {
+    next();
+  }
+});
 app.use(router);
 
 const server = app.listen(PORT, () => {

@@ -52,15 +52,16 @@ export interface PlayerCharacterProps {
   lastWalkSoundTimeRef: React.MutableRefObject<number>;
   isPaused: boolean;
   onPositionUpdate?: (position: [number, number, number]) => void;
-  playerIsIt?: boolean;
-  setPlayerIsIt?: (isIt: boolean) => void;
-  setBotIsIt?: (isIt: boolean) => void;
   setBot1GotTagged?: (timestamp: number) => void;
   setBot2GotTagged?: (timestamp: number) => void;
   setGameState?: React.Dispatch<React.SetStateAction<GameState>>;
   showHitboxes?: boolean;
   mobileJetpackTrigger?: React.MutableRefObject<boolean>;
   onTagSuccess?: () => void;
+  // Added for IT state management
+  playerIsIt?: boolean;
+  setPlayerIsIt?: (isIt: boolean) => void;
+  setBotIsIt?: (isIt: boolean) => void;
 }
 
 export interface PlayerCharacterHandle {
@@ -106,6 +107,9 @@ export const PlayerCharacter = React.forwardRef<
     playerFreezeEndTimeRef,
   } = playerState;
 
+  // Lower the position update threshold for real-time bot tracking
+  const POSITION_UPDATE_THRESHOLD = 0.001;
+
   const physics = usePlayerPhysics();
   const {
     velocityRef,
@@ -140,11 +144,12 @@ export const PlayerCharacter = React.forwardRef<
   const [showJetpackFlame, setShowJetpackFlame] = useState(false);
   const lookIndicatorRef = React.useRef<THREE.Group>(null);
 
+
   // Expose reset and freeze functions to parent via ref
   React.useImperativeHandle(ref, () => ({
     resetPosition: () => {
       if (meshRef.current) {
-        meshRef.current.position.set(0, 0.5, 0);
+        meshRef.current.position.set(0, 0.0, 0);
       }
       cameraRotationRef.current = { horizontal: 0, vertical: 0.2 };
       velocityRef.current.set(0, 0, 0);
@@ -158,6 +163,24 @@ export const PlayerCharacter = React.forwardRef<
       tagDebug(`👤 Player frozen for ${duration}ms via ref`);
     },
   }));
+
+  // Listen for bot tag event and freeze player, and set global freeze timestamp for bot logic
+  React.useEffect(() => {
+    function handleFreezePlayer() {
+      // Use the same freeze duration as bot cooldown (1500ms)
+      isPlayerFrozenRef.current = true;
+      const freezeUntil = Date.now() + 1500;
+      playerFreezeEndTimeRef.current = freezeUntil;
+      if (typeof window !== "undefined") {
+        window.__playerFreezeUntil = freezeUntil;
+      }
+      tagDebug("👤 Player frozen for 1500ms after being tagged by bot");
+    }
+    window.addEventListener("player-tagged-by-bot", handleFreezePlayer);
+    return () => {
+      window.removeEventListener("player-tagged-by-bot", handleFreezePlayer);
+    };
+  }, []);
 
   // gated debug logger - only logs in dev
   const debug = (...args: unknown[]) => {
@@ -312,12 +335,12 @@ export const PlayerCharacter = React.forwardRef<
     const isAiming = mouseControls.rightClick;
     const speed = computeSpeed(
       jetpackActiveRef.current,
-      keysPressedRef.current[SHIFT] && !isAiming
+      keysPressedRef.current[SHIFT] && !mouseControls.rightClick
     );
 
     // Middle-click look indicator: preview where ADS/right-click aim will face.
     if (lookIndicatorRef.current) {
-      if (mouseControls.middleClick) {
+      if (mouseControls.leftClick) {
         const lookForward = new THREE.Vector3(
           -Math.sin(cameraRotationRef.current.horizontal),
           0,
@@ -523,116 +546,7 @@ export const PlayerCharacter = React.forwardRef<
     ) {
       if (jumpHoldTimeRef.current < PHYSICS_CONSTANTS.JETPACK_MAX_HOLD_TIME) {
         jumpHoldTimeRef.current += delta;
-        <>
-          <group ref={meshRef} position={[0, 0.5, 0]}>
-            <SpacemanModel
-              color={isIt ? "#ff4444" : "#4a90e2"}
-              isIt={isIt}
-              // Pass ref values for per-frame updates without React re-renders (R3F optimization pattern)
-              velocity={currentVelocity} // eslint-disable-line react-hooks/refs
-              cameraRotation={cameraRotationRef.current.horizontal} // eslint-disable-line react-hooks/refs
-              isSprinting={isSprinting} // eslint-disable-line react-hooks/refs
-              isJetpackActive={jetpackActiveRef.current} // eslint-disable-line react-hooks/refs
-            />
-            {/* ADS anchor indicator near the player while middle-click aiming */}
-            {mouseControls.middleClick && (
-              <mesh position={[0, 1.25, -0.6]}>
-                <sphereGeometry args={[0.04, 10, 10]} />
-                <meshBasicMaterial color="#00e5ff" />
-              </mesh>
-            )}
-            {/* Jetpack thrust visual effect */}
-            {showJetpackFlame && (
-              <group position={[0, -0.5, 0]}>
-                {/* Flame cone */}
-                <mesh rotation={[Math.PI, 0, 0]}>
-                  <coneGeometry args={[0.15, 0.4, 8]} />
-                  <meshStandardMaterial
-                    color="#ff6600"
-                    opacity={0.7}
-                    transparent
-                    // eslint-disable-next-line react/no-unknown-property
-                    emissive="#ff4400"
-                    // eslint-disable-next-line react/no-unknown-property
-                    emissiveIntensity={1.5}
-                  />
-                </mesh>
-                {/* Inner bright core */}
-                <mesh position={[0, 0.1, 0]} rotation={[Math.PI, 0, 0]}>
-                  <coneGeometry args={[0.08, 0.25, 8]} />
-                  <meshStandardMaterial
-                    color="#ffff00"
-                    opacity={0.9}
-                    transparent
-                    // eslint-disable-next-line react/no-unknown-property
-                    emissive="#ffff00"
-                    // eslint-disable-next-line react/no-unknown-property
-                    emissiveIntensity={2}
-                  />
-                </mesh>
-              </group>
-            )}
-            {/* Landing dust effect */}
-            {showDustEffect && (
-              <group position={[0, -0.4, 0]}>
-                {[...Array(8)].map((_, i) => {
-                  const angle = (i / 8) * Math.PI * 2;
-                  const radius = 0.3 + (i % 2) * 0.2; // Alternating radii for variation
-                  return (
-                    <mesh
-                      key={i}
-                      position={[
-                        Math.cos(angle) * radius,
-                        0.1,
-                        Math.sin(angle) * radius,
-                      ]}
-                    >
-                      <sphereGeometry args={[0.05, 8, 8]} />
-                      <meshBasicMaterial
-                        color="#999999"
-                        opacity={0.6}
-                        transparent
-                      />
-                    </mesh>
-                  );
-                })}
-              </group>
-            )}
-
-            {/* Debug hitbox visualization */}
-            {props.showHitboxes && (
-              <mesh>
-                <sphereGeometry args={[0.5, 16, 16]} />
-                <meshBasicMaterial
-                  color="#00ff00"
-                  wireframe={true}
-                  opacity={0.3}
-                  transparent
-                />
-              </mesh>
-            )}
-          </group>
-
-          <group ref={lookIndicatorRef} visible={false}>
-            <mesh>
-              <ringGeometry args={[0.22, 0.34, 24]} />
-              <meshBasicMaterial color="#00e5ff" transparent opacity={0.85} />
-            </mesh>
-          </group>
-        </>
-        // Rotate direction by camera angle
-        if (rcsDirection.length() > 0) {
-          rcsDirection.normalize();
-          rcsDirection.applyAxisAngle(
-            new THREE.Vector3(0, 1, 0),
-            -cameraRotationRef.current.horizontal
-          );
-          horizontalMomentumRef.current.add(
-            rcsDirection.multiplyScalar(
-              PHYSICS_CONSTANTS.RCS_THRUST * delta * 10
-            )
-          );
-        }
+        // (RCS code removed: rcsDirection is undefined and this was stray code)
       }
     } else if (isOnGround) {
       // Reset RCS when landing
@@ -703,7 +617,7 @@ export const PlayerCharacter = React.forwardRef<
         lastReportedPositionRef.current
       );
 
-      if (distanceMoved > PHYSICS_CONSTANTS.POSITION_UPDATE_THRESHOLD) {
+      if (distanceMoved > POSITION_UPDATE_THRESHOLD) {
         onPositionUpdate(currentPos.toArray() as [number, number, number]);
         lastReportedPositionRef.current.copy(currentPos);
       }
@@ -748,7 +662,7 @@ export const PlayerCharacter = React.forwardRef<
     const isSprinting = keysPressedRef.current[SHIFT];
 
   // Precompute dust meshes to avoid const declarations in JSX
-  let dustMeshes: JSX.Element[] = [];
+  let dustMeshes: React.ReactElement[] = [];
   if (showDustEffect) {
     dustMeshes = Array.from({ length: 8 }, (_, i) => {
       const angle = (i / 8) * Math.PI * 2;

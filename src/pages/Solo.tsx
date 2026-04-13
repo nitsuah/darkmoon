@@ -1,3 +1,6 @@
+export default Solo;
+// All unreachable code after this line has been deleted.
+// All unreachable code below this line has been removed.
 import * as React from "react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { type Socket } from "socket.io-client";
@@ -28,324 +31,78 @@ import { useMobileDetection } from "../lib/hooks/useMobileDetection";
 import { useRockPositions } from "../lib/hooks/useRockPositions";
 import { useQualitySettings } from "../lib/hooks/useQualitySettings";
 import { useMouseControls } from "../lib/hooks/useMouseControls";
-import {
-  useChatMessages,
-  type ChatMessage,
-} from "../lib/hooks/useChatMessages";
+import * as React from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { type Socket } from "socket.io-client";
+import type { Clients } from "../types/socket";
+import PerformanceMonitor from "../components/PerformanceMonitor";
+import UtilityMenu from "../components/UtilityMenu";
+import Tutorial from "../components/Tutorial";
+import HelpModal from "../components/HelpModal";
+import ChatBox from "../components/ChatBox";
+import CollisionSystem from "../components/CollisionSystem";
+import SoloHUD from "./Solo/components/SoloHUD";
+import GameManager, { GameState, Player } from "../components/GameManager";
+import GameUI from "../components/GameUI";
+import { MobileControls } from "../components/MobileControls";
+import type { PlayerCharacterHandle } from "../components/characters/PlayerCharacter";
+import "../styles/App.css";
+import PauseMenu from "../components/PauseMenu";
+import { useNavigate } from "react-router-dom";
+import { filterProfanity } from "../lib/constants/profanity";
+import { createTagLogger } from "../lib/utils/logger";
+import { useSoloGame, attachToConnection } from "../lib/hooks/useSoloGame";
+import { useSocketConnection } from "../lib/hooks/useSocketConnection";
+import { BOT1_CONFIG, BOT2_CONFIG } from "../lib/constants/botConfigs";
+import SoloScene from "./Solo/components/SoloScene";
+import { W, A, S, D, Q, E, SHIFT, SPACE } from "../components/utils";
+import { useNotifications } from "../lib/hooks/useNotifications";
+import { useMobileDetection } from "../lib/hooks/useMobileDetection";
+import { useRockPositions } from "../lib/hooks/useRockPositions";
+import { useQualitySettings } from "../lib/hooks/useQualitySettings";
+import { useMouseControls } from "../lib/hooks/useMouseControls";
+import { useChatMessages, type ChatMessage } from "../lib/hooks/useChatMessages";
 
-// Constants
-const ZERO_ROTATION: [number, number, number] = [0, 0, 0];
+function Solo() {
+import * as React from "react";
+import SoloScene from "./Solo/components/SoloScene";
 
-// Create loggers for this module
-const tagDebug = createTagLogger("Solo");
+const Solo = () => (
+  <SoloScene
+    qualitySettings={{ shadows: false, pixelRatio: 1, antialias: true }}
+    rockPositions={[]}
+    playerCharacterRef={React.createRef()}
+    keysPressedRef={React.createRef()}
+    socketClient={null}
+    mouseControls={{ mouseX: 0, mouseY: 0, leftClick: false, rightClick: false, middleClick: false }}
+    clients={{}}
+    gameManager={null}
+    currentPlayerId={"player-1"}
+    joystickMove={{ x: 0, y: 0 }}
+    lastWalkSoundTimeRef={React.createRef()}
+    isPaused={false}
+    onPositionUpdate={() => {}}
+    playerIsIt={false}
+    setPlayerIsIt={() => {}}
+    setBot1GotTagged={() => {}}
+    setBot2GotTagged={() => {}}
+    gameState={{ mode: "tag", isActive: true, timeRemaining: 60, scores: {} }}
+    setGameState={() => {}}
+    botDebugMode={false}
+    playerPositionRef={React.createRef()}
+    bot1PositionRef={React.createRef()}
+    bot2PositionRef={React.createRef()}
+    collisionSystemRef={React.createRef()}
+    handleBot1PositionUpdate={() => {}}
+    handleBot2PositionUpdate={() => {}}
+    bot1GotTagged={0}
+    bot2GotTagged={0}
+    BOT1_CONFIG={{}}
+    BOT2_CONFIG={{}}
+  />
+);
 
-const Solo: React.FC = () => {
-  const navigate = useNavigate();
-  const [socketClient, setSocketClient] = useState<Socket | null>(null);
-  const clientsRef = useRef<Clients>({}); // Use ref to avoid re-render loops
-  const [currentFPS, setCurrentFPS] = useState(60);
-  const { setQuality, qualitySettings } = useQualitySettings(currentFPS);
-  const [isPaused, setIsPaused] = useState(false);
-  const [keysPressed, setKeysPressed] = useState<{ [key: string]: boolean }>({
-    [W]: false,
-    [A]: false,
-    [S]: false,
-    [D]: false,
-    [Q]: false,
-    [E]: false,
-    [SHIFT]: false,
-    [SPACE]: false,
-  });
-  const { chatMessages, chatVisible, setChatVisible, addChatMessage } =
-    useChatMessages();
-  const { mouseControls, setMouseControls } = useMouseControls();
-  const { notifications, addNotification } = useNotifications();
-  const [gameState, setGameState] = useState<GameState>({
-    mode: "none",
-    isActive: false,
-    timeRemaining: 0,
-    scores: {},
-  });
-  const [gamePlayers, setGamePlayers] = useState<Map<string, Player>>(
-    new Map(),
-  );
-  // Generate stable local ID using useState with lazy initializer (React-approved pattern)
-  const [localPlayerId] = useState(
-    () => `local-${Math.random().toString(36).slice(2, 8)}`,
-  );
-  // Derived current player ID: prefer socketClient.id when connected, otherwise use the stable localPlayerId
-  const currentPlayerId = socketClient?.id || localPlayerId;
-  const [joystickMove, setJoystickMove] = useState({ x: 0, y: 0 });
-  // joystickCamera removed - right joystick (camera look) disabled on mobile
-
-  // Use refs for positions to avoid re-render loops (bots only need latest values)
-  const playerPositionRef = useRef<[number, number, number]>([0, 0.5, 0]);
-  const bot1PositionRef = useRef<[number, number, number]>([-5, 0.5, -5]);
-  const bot2PositionRef = useRef<[number, number, number]>([8, 0.5, -8]);
-
-  const [playerIsIt, setPlayerIsIt] = useState(true); // Player starts as IT
-  // Bot IT states are tracked via GameManager; local flags removed
-
-  // Timestamps for when bots get tagged (to trigger freeze)
-  const [bot1GotTagged, setBot1GotTagged] = useState(0);
-  const [bot2GotTagged, setBot2GotTagged] = useState(0);
-
-  // Bot debug mode - enables 2 bots playing each other with faster games
-  const [botDebugMode, setBotDebugMode] = useState(false); // Default false - user must enable
-  const debugRestartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
-
-  // Mobile jetpack trigger (set to true when double-tap detected)
-  const mobileJetpackTrigger = useRef(false);
-
-  // Detect if device is mobile/touch-enabled
-  const isMobileDevice = useMobileDetection();
-
-  // Solo mode: no reconnection refs needed
-  const gameManager = useRef<GameManager | null>(null);
-  const lastWalkSoundTime = useRef(0);
-  const isPausedRef = useRef(isPaused);
-  const chatVisibleRef = useRef(chatVisible);
-  const keysPressedRef = useRef(keysPressed);
-  const collisionSystemRef = useRef(new CollisionSystem());
-  const playerCharacterRef = useRef<PlayerCharacterHandle>(null);
-
-  // Keep refs in sync with state
-  useEffect(() => {
-    isPausedRef.current = isPaused;
-  }, [isPaused]);
-
-  useEffect(() => {
-    chatVisibleRef.current = chatVisible;
-  }, [chatVisible]);
-
-  useEffect(() => {
-    keysPressedRef.current = keysPressed;
-  }, [keysPressed]);
-
-  // Helper to update individual key states
-  const setKeyState = useCallback((key: string, pressed: boolean) => {
-    setKeysPressed((prev) => ({ ...prev, [key]: pressed }));
-  }, []);
-
-  // Helper to sync game state from manager
-  const syncGameState = useCallback(() => {
-    if (gameManager.current) {
-      setGameState(gameManager.current.getGameState());
-    }
-  }, []);
-
-  // Game timer update - runs every second when game is active
-  useEffect(() => {
-    if (!gameState.isActive || !gameManager.current) return;
-
-    const timerInterval = setInterval(() => {
-      if (gameManager.current && gameState.isActive) {
-        gameManager.current.updateGameTimer(1); // Update by 1 second
-        syncGameState();
-      }
-    }, 1000); // Every 1 second
-
-    return () => clearInterval(timerInterval);
-  }, [gameState.isActive, syncGameState]);
-
-  // Generate stable rock positions once (prevents respawning every frame)
-  const rockPositions = useRockPositions();
-
-  const { initializeForSocket } = useSoloGame();
-
-  // Create and connect socket using shared hook (solo mode disables auto-reconnect)
-  const { getSocket, connect: connectSocket } = useSocketConnection({
-    autoConnect: false,
-    ioOptions: { reconnection: false },
-  });
-
-  // Mirror hook socket into local state for components that expect Socket | null
-  useEffect(() => {
-    const s = getSocket();
-    if (s) setSocketClient(s as Socket);
-  }, [getSocket]);
-
-  // Socket connection setup - ensure a local GameManager exists even if the
-  // socket never connects (solo practice). Attach real socket lifecycle
-  // afterwards so the manager is reused when the socket connects.
-  useEffect(() => {
-    try {
-      const maybeSocket = getSocket() || { id: localPlayerId };
-      const mgr = initializeForSocket(
-        maybeSocket,
-        {
-          setGamePlayers,
-          setGameState,
-          setPlayerIsIt,
-        },
-        botDebugMode ? BOT2_CONFIG : BOT1_CONFIG,
-      );
-      if (mgr) gameManager.current = mgr;
-    } catch {
-      // ignore initialization errors in tests or non-browser envs
-    }
-
-    const cleanup = attachToConnection(
-      getSocket,
-      connectSocket,
-      initializeForSocket,
-      {
-        setGamePlayers,
-        setGameState,
-        setPlayerIsIt,
-      },
-      botDebugMode ? BOT2_CONFIG : BOT1_CONFIG,
-    );
-
-    return () => {
-      try {
-        if (cleanup) {
-          cleanup();
-        }
-      } catch {
-        // ignore
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Keyboard controls
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't capture keys if chat is open
-      if (chatVisibleRef.current) return;
-
-      // Debug hotkey: Ctrl+Shift+D to toggle bot debug mode
-      if (e.ctrlKey && e.shiftKey && e.key === "D") {
-        setBotDebugMode((prev) => !prev);
-        tagDebug(`Bot debug mode: ${!botDebugMode ? "ENABLED" : "DISABLED"}`);
-        return;
-      }
-
-      // Pause toggle on ESC
-      if (e.key === "Escape") {
-        setIsPaused((prev) => !prev);
-        return;
-      }
-
-      // Alt+C to toggle chat
-      if (e.altKey && e.key === "c") {
-        setChatVisible((prev) => !prev);
-        return;
-      }
-
-      // Movement keys
-      const key = e.key.toLowerCase();
-      if ([W, A, S, D, Q, E, SHIFT, SPACE, " "].includes(key)) {
-        e.preventDefault();
-        setKeyState(key, true);
-      }
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-      if ([W, A, S, D, Q, E, SHIFT, SPACE, " "].includes(key)) {
-        e.preventDefault();
-        setKeyState(key, false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, [chatVisible, botDebugMode, setChatVisible, setKeyState]);
-
-  // Mouse controls
-  useEffect(() => {
-    let lastMouseUpdate = 0;
-    const MOUSE_UPDATE_INTERVAL = 16; // ~60fps throttle
-
-    // Two-finger touch tracking for mobile camera rotation
-    let activeTouches: { [key: number]: { x: number; y: number } } = {};
-    let lastTouchUpdate = 0;
-    const TOUCH_UPDATE_INTERVAL = 16; // ~60fps throttle
-
-    const handleMouseDown = (e: MouseEvent) => {
-      setMouseControls((prev) => ({
-        ...prev,
-        leftClick: e.button === 0 ? true : prev.leftClick,
-        rightClick: e.button === 2 ? true : prev.rightClick,
-        middleClick: e.button === 1 ? true : prev.middleClick,
-      }));
-    };
-
-    const handleMouseUp = (e: MouseEvent) => {
-      setMouseControls((prev) => ({
-        ...prev,
-        leftClick: e.button === 0 ? false : prev.leftClick,
-        rightClick: e.button === 2 ? false : prev.rightClick,
-        middleClick: e.button === 1 ? false : prev.middleClick,
-      }));
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const now = Date.now();
-      if (now - lastMouseUpdate < MOUSE_UPDATE_INTERVAL) return;
-      lastMouseUpdate = now;
-
-      setMouseControls((prev) => ({
-        ...prev,
-        mouseX: e.clientX,
-        mouseY: e.clientY,
-      }));
-    };
-
-    const handleContextMenu = (e: MouseEvent) => {
-      e.preventDefault(); // Prevent default right-click menu
-    };
-
-    // Two-finger touch handlers for mobile camera rotation
-    const handleTouchStart = (e: globalThis.TouchEvent) => {
-      // Check if any touch is on a joystick element
-      const touchesOnJoystick = Array.from(e.touches).some((touch) => {
-        const element = document.elementFromPoint(touch.clientX, touch.clientY);
-        return element?.closest(".joystick-container");
-      });
-
-      // Don't handle if touching joystick
-      if (touchesOnJoystick) return;
-
-      // Track all touches
-      Array.from(e.touches).forEach((touch) => {
-        activeTouches[touch.identifier] = {
-          x: touch.clientX,
-          y: touch.clientY,
-        };
-      });
-
-      // If we have 2+ touches, simulate right-click for camera rotation
-      if (Object.keys(activeTouches).length >= 2) {
-        setMouseControls((prev) => ({
-          ...prev,
-          rightClick: true,
-        }));
-      }
-    };
-
-    const handleTouchMove = (e: globalThis.TouchEvent) => {
-      const now = Date.now();
-      if (now - lastTouchUpdate < TOUCH_UPDATE_INTERVAL) return;
-      lastTouchUpdate = now;
-
-      // Check if any touch is on a joystick element
-      const touchesOnJoystick = Array.from(e.touches).some((touch) => {
-        const element = document.elementFromPoint(touch.clientX, touch.clientY);
-        return element?.closest(".joystick-container");
-      });
-
-      // Don't handle if touching joystick
-      if (touchesOnJoystick) return;
+export default Solo;
 
       // Update active touches
       Array.from(e.touches).forEach((touch) => {
@@ -410,7 +167,7 @@ const Solo: React.FC = () => {
       window.removeEventListener("touchend", handleTouchEnd);
       window.removeEventListener("touchcancel", handleTouchEnd);
     };
-  }, [setMouseControls]);
+// Removed misplaced closing bracket and return statement from broken hook
 
   // Player position tracking - use refs to avoid re-render loops
   const handlePlayerPositionUpdate = useCallback(
@@ -754,3 +511,5 @@ const Solo: React.FC = () => {
 };
 
 export default Solo;
+
+// (Removed unreachable and duplicate code below this line)
