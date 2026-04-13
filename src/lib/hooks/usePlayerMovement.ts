@@ -63,8 +63,30 @@ export function computeSpeed(jetpackActive: boolean, shiftPressed: boolean) {
   return shiftPressed ? 5 : 2;
 }
 
+/**
+ * Determine the desired character facing yaw.
+ * - While aiming (right click), the character should face camera yaw.
+ * - Otherwise, face movement direction when moving.
+ */
+export function computeFacingYaw(
+  movementDirection: THREE.Vector3,
+  cameraHorizontal: number,
+  isAiming: boolean,
+  currentYaw: number
+): number {
+  if (isAiming) {
+    return cameraHorizontal;
+  }
+
+  if (movementDirection.lengthSq() > 0.0001) {
+    return Math.atan2(movementDirection.x, movementDirection.z);
+  }
+
+  return currentYaw;
+}
+
 export default function usePlayerMovement() {
   // This module currently exports pure helpers; the default export is a small
   // object to make imports ergonomic if a hook shape is preferred later.
-  return { computeDirection, computeSpeed };
+  return { computeDirection, computeSpeed, computeFacingYaw };
 }
