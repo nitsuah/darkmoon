@@ -10,6 +10,12 @@ Last Updated: 2026-04-03
 
 ## In Progress
 
+## Unfinished / Next Up
+
+- [ ] Review debug mode and regular tag logic for edge cases and regressions.
+- [ ] Diagnose and fix any remaining issues where the bot does not chase the player or where tagging is inconsistent in solo mode.
+- [ ] Ensure all tag cooldowns and freeze logic are respected for both player and bot, and that tag-back is impossible during cooldown.
+
 - [ ] Stabilize mobile input and mobile layout on physical devices.
   - Priority: P0
   - Problem: mobile touch controls and responsive layout still lack device-level validation.
@@ -69,7 +75,8 @@ Last Updated: 2026-04-03
   - Problem: older refactor tasks no longer match the codebase hotspots.
   - Acceptance Criteria: only current, high-value refactors remain and each one ties back to reliability, testability, or performance.
 
-## Audit Notes
+
+## See also: docs/INSTRUCTIONS.md for agent handoff and workflow best practices.
 
 - Docker-first validation is blocked by the current production build failure.
 - The deployed site presents solo mode as live and multiplayer or tournament work as planned.
