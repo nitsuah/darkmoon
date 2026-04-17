@@ -4,15 +4,18 @@ Last Updated: 2026-04-03
 
 ## Done
 
-- [x] Validate the deployed solo gameplay entry path.
-- [x] Confirm the solo-mode modularization work already landed.
-- [x] Confirm baseline server-side validation and rate limiting are already implemented.
+- [x] **[Q2-CEO] Fix player tag system** — players cannot tag bots (and bots cannot reliably tag players back); the hit-detection and tagging collision logic needs to be fixed and symmetrical.
+  - Priority: P0
+  - Problem: bot-to-bot tagging works but player-to-bot and bot-to-player tagging is broken or inconsistent, making the game unplayable in mixed mode.
+  - Acceptance Criteria: players can tag bots using the same mechanics bots use on each other; bot-to-player tagging registers correctly; regression tests or a documented test scenario covers both directions.
+  - Completed: 2026-04-03
+  - Evidence: solo-mode bot AI now targets live player position and performs bot->player tag transfer through `GameManager.tagPlayer`; regression test `src/__tests__/bots.tagging.test.tsx` passes in Docker.
 
 ## In Progress
 
-## Unfinished / Next Up
+## Todo
 
-- [ ] Review debug mode and regular tag logic for edge cases and regressions.
+  - [ ] Review debug mode and regular tag logic for edge cases and regressions.
 - [ ] Diagnose and fix any remaining issues where the bot does not chase the player or where tagging is inconsistent in solo mode.
 - [ ] Ensure all tag cooldowns and freeze logic are respected for both player and bot, and that tag-back is impossible during cooldown.
 
@@ -20,15 +23,6 @@ Last Updated: 2026-04-03
   - Priority: P0
   - Problem: mobile touch controls and responsive layout still lack device-level validation.
   - Acceptance Criteria: joystick and camera controls work on iOS Safari and Android Chrome, home and game UI work in portrait and landscape, and regressions are covered.
-
-## Todo
-
-- [x] **[Q2-CEO] Fix player tag system** — players cannot tag bots (and bots cannot reliably tag players back); the hit-detection and tagging collision logic needs to be fixed and symmetrical.
-  - Priority: P0
-  - Problem: bot-to-bot tagging works but player-to-bot and bot-to-player tagging is broken or inconsistent, making the game unplayable in mixed mode.
-  - Acceptance Criteria: players can tag bots using the same mechanics bots use on each other; bot-to-player tagging registers correctly; regression tests or a documented test scenario covers both directions.
-  - Completed: 2026-04-03
-  - Evidence: solo-mode bot AI now targets live player position and performs bot->player tag transfer through `GameManager.tagPlayer`; regression test `src/__tests__/bots.tagging.test.tsx` passes in Docker.
 
 - [ ] **[Q2-CEO] 21st.dev component integration pass** — replace or augment key game site UI surfaces (lobby, scoreboard, game-over, nav) with 21st.dev components to improve visual quality and interactivity.
   - Priority: P1
