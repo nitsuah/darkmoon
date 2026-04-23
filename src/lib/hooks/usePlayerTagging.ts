@@ -57,36 +57,40 @@ export function processTagging(params: TaggingParams): boolean {
     const otherPlayerPos = new THREE.Vector3(...clientData.position);
     const distance = resolvedPosition.distanceTo(otherPlayerPos);
 
-    // Bot tagging (solo mode)
-    if (
-      (clientId === "bot-1" || clientId === "bot-2") &&
-      gameState.mode === "tag" &&
+    // Unified tagging logic for solo and multiplayer (player <-> bot, bot <-> player, player <-> player)
+    const currentPlayer = gameManager.getPlayers().get(myId);
+    const targetPlayer = gameManager.getPlayers().get(clientId);
+    const canTag =
       gameState.isActive &&
-      playerIsIt &&
+      gameState.mode === "tag" &&
+      currentPlayer?.isIt &&
+      !targetPlayer?.isIt &&
       distance < 1.0 &&
-      now - lastTagCheckRef.current > 3000
-    ) {
-      if (setPlayerIsIt) setPlayerIsIt(false);
-      if (setBotIsIt) setBotIsIt(true);
-      lastTagCheckRef.current = now;
+      now - lastTagCheckRef.current > 1000;
 
-      if (gameManager) {
-        gameManager.updatePlayer(myId, { isIt: false });
-        gameManager.updatePlayer(clientId, { isIt: true });
-      }
+    if (canTag) {
 
       if (setGameState) {
         setGameState((prev) => ({ ...prev, itPlayerId: clientId }));
       }
 
-      if (clientId === "bot-1" && setBot1GotTagged) setBot1GotTagged(now);
-      if (clientId === "bot-2" && setBot2GotTagged) setBot2GotTagged(now);
+
+      // Update IT state for React state sync (for test and UI correctness)
+      if (clientId === "bot-1") {
+        if (setBot1GotTagged) setBot1GotTagged(now);
+        if (setPlayerIsIt) setPlayerIsIt(false);
+        if (setBotIsIt) setBotIsIt(true);
+      }
+      if (clientId === "bot-2") {
+        if (setBot2GotTagged) setBot2GotTagged(now);
+        if (setPlayerIsIt) setPlayerIsIt(false);
+        if (setBotIsIt) setBotIsIt(true);
+      }
 
       try {
         const soundMgr = getSoundManager();
         if (soundMgr) soundMgr.playTagSound();
       } catch (e) {
-        // Sound manager may not be ready during initialization
         if (import.meta.env.DEV) {
           console.warn("Failed to play tag sound:", e);
         }
@@ -102,37 +106,17 @@ export function processTagging(params: TaggingParams): boolean {
         });
       }
 
-      tagged = true;
-      lastTagCheckRef.current = now;
-    }
-
-    // Multiplayer tagging
-    const currentPlayer = gameManager.getPlayers().get(myId);
-    if (
-      gameState.isActive &&
-      gameState.mode === "tag" &&
-      currentPlayer?.isIt &&
-      distance < 1.0 &&
-      now - lastTagCheckRef.current > 1000
-    ) {
-      if (gameManager.tagPlayer(myId, clientId)) {
-        try {
-          const soundMgr = getSoundManager();
-          if (soundMgr) soundMgr.playTagSound();
-        } catch (e) {
-          void e;
+      // Update game manager state
+      if (gameManager) {
+        gameManager.updatePlayer(myId, { isIt: false });
+        gameManager.updatePlayer(clientId, { isIt: true });
+        if (typeof gameManager.tagPlayer === "function") {
+          gameManager.tagPlayer(myId, clientId);
         }
-
-        if (socketClient) {
-          socketClient.emit("player-tagged", {
-            taggerId: myId,
-            taggedId: clientId,
-          });
-        }
-
-        lastTagCheckRef.current = now;
-        tagged = true;
       }
+
+      lastTagCheckRef.current = now;
+      tagged = true;
     }
   }
 

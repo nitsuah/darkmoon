@@ -88,6 +88,7 @@ export const SoloScene: React.FC<Props> = ({
         currentPlayerId={currentPlayerId}
         playerIsIt={playerIsIt}
         playerPositionRef={playerPositionRef}
+        playerMeshRef={playerMeshRef}
         bot1PositionRef={bot1PositionRef}
         bot2PositionRef={bot2PositionRef}
         isPaused={isPaused}

@@ -1,6 +1,7 @@
 import express from "express";
 import { Server } from "socket.io";
 import cors from "cors";
+import rateLimit from "express-rate-limit";
 import {
   validatePosition,
   validateRotation,
@@ -9,7 +10,7 @@ import {
 } from "./server/validation.js";
 
 // Environment configuration
-const PORT = process.env.PORT || 4444;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 4444;
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",")
   : [
@@ -114,10 +115,9 @@ router.get("/", async (req, res) => {
   });
 });
 
-// Everything else that's not index 404s
-router.use("/*", (req, res) => {
-  res.status(404).send({ message: "Not Found" });
-});
+
+// ...existing code...
+
 
 // Create express app and listen on specified port
 const app = express();
@@ -149,6 +149,25 @@ app.use(
   })
 );
 app.use(express.static("dist"));
+
+const httpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(httpLimiter);
+
+// Serve index.html for all non-API, non-static routes (SPA support)
+app.use((req, res, next) => {
+  if (req.method !== "GET") return next();
+  // If the request accepts HTML, serve index.html
+  if (req.accepts("html")) {
+    res.sendFile("index.html", { root: "dist" });
+  } else {
+    next();
+  }
+});
 app.use(router);
 
 const server = app.listen(PORT, () => {

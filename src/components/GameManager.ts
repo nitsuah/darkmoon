@@ -133,7 +133,9 @@ export class GameManager {
   }
 
   tagPlayer(taggerId: string, taggedId: string): boolean {
+    log.debug(`[TAG-TRACE] tagPlayer called with taggerId=${taggerId}, taggedId=${taggedId}`);
     if (this.gameState.mode !== "tag" || !this.gameState.isActive) {
+      log.debug(`[TAG-TRACE] Tag failed: Not in tag mode or inactive`);
       return false;
     }
 
@@ -141,13 +143,19 @@ export class GameManager {
     const tagged = this.players.get(taggedId);
 
     if (!tagger || !tagged || !tagger.isIt || tagged.isIt) {
+      log.debug(`[TAG-TRACE] Tag failed: tagger or tagged missing, or tagger not IT, or tagged already IT`, { tagger, tagged });
       return false;
     }
 
     // Check if enough time has passed since last tag (prevent spam)
     const now = Date.now();
     if (tagger.lastTagTime && now - tagger.lastTagTime < 2000) {
-      // 2 second cooldown
+      log.debug(`[TAG-TRACE] Tag failed: tagger cooldown (${now - tagger.lastTagTime}ms < 2000ms)`);
+      return false;
+    }
+    // Prevent the new IT from tagging back instantly (freeze/cooldown)
+    if (tagged.lastTagTime && now - tagged.lastTagTime < 1500) {
+      log.debug(`[TAG-TRACE] Tag failed: tagged freeze/cooldown (${now - tagged.lastTagTime}ms < 1500ms)`);
       return false;
     }
 

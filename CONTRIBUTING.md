@@ -336,3 +336,24 @@ MIT © 2025 Nitsuah Labs
 ---
 
 For questions or issues, please open an issue on GitHub or reach out to the maintainers.
+
+## 🐳 Docker & Pre-commit Hooks (Windows/WSL2)
+
+**If you are on Windows and want pre-commit hooks to work with Docker:**
+- You MUST use WSL2 (Ubuntu or similar) and clone the repo inside the WSL2 filesystem (e.g., `/home/youruser/code/darkmoon`).
+- Run all git and Docker commands from inside WSL2.
+- The pre-commit hook will run lint-staged in Docker and will work out of the box in this setup.
+- If you use Git Bash, PowerShell, or clone the repo on a Windows drive, Docker cannot reliably mount `.git` and the hook will fail.
+
+**If you are not using WSL2:**
+- You must have Node.js and npm installed on your host for pre-commit hooks to work.
+- Or, bypass the hook with `git commit --no-verify` (not recommended).
+
+See `.husky/pre-commit` for details.
+
+## 🐳 Docker Linting/Formatting
+
+- To check code style before commit, run `npm run lint:docker` (or rely on CI).
+- This runs lint-staged and all formatting/linting in a fresh Docker container.
+- No git hooks or host Node.js required.
+- CI will enforce lint/format/test on all PRs and pushes.

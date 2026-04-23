@@ -1,25 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Create a minimal mock AudioContext and related nodes to observe start/stop and gain ramps
-class MockGain {
-  gain: { value: number };
-  constructor() {
-    this.gain = { value: 1 };
-  }
-  setValueAtTime(_v: number, _t: number) {
-    void _v;
-    void _t;
-  }
-  linearRampToValueAtTime(_v: number, _t: number) {
-    void _v;
-    void _t;
-  }
-  exponentialRampToValueAtTime(_v: number, _t: number) {
-    void _v;
-    void _t;
-  }
-  connect() {}
-}
 
 class MockOscillator {
   started = false;
@@ -47,25 +28,23 @@ class MockOscillator {
   connect() {}
 }
 
-class MockBiquad {
-  type: string = "lowpass";
-  frequency = { value: 1000 };
-  Q = { value: 1 };
+class MockGain {
+  gain: {
+    value: number;
+    setValueAtTime: (v: number, t: number) => void;
+    linearRampToValueAtTime: (v: number, t: number) => void;
+    exponentialRampToValueAtTime: (v: number, t: number) => void;
+  };
+  constructor() {
+    this.gain = {
+      value: 1,
+      setValueAtTime: (_v: number, _t: number) => {},
+      linearRampToValueAtTime: (_v: number, _t: number) => {},
+      exponentialRampToValueAtTime: (_v: number, _t: number) => {},
+    };
+  }
   connect() {}
 }
-
-class MockAudioContext {
-  destination = {};
-  currentTime = 0;
-  state: "running" | "suspended" = "running";
-  createGain() {
-    return new MockGain();
-  }
-  createOscillator() {
-    return new MockOscillator();
-  }
-  createBiquadFilter() {
-    return new MockBiquad();
   }
   resume() {
     this.state = "running";
@@ -78,18 +57,25 @@ class MockAudioContext {
 
 let originalAudioContext: unknown;
 
+
 beforeEach(() => {
-  originalAudioContext = (globalThis as unknown as Record<string, unknown>)
-    .AudioContext;
-  (globalThis as unknown as Record<string, unknown>).AudioContext =
-    MockAudioContext;
+  originalAudioContext = (globalThis as any).AudioContext;
+  (globalThis as any).AudioContext = MockAudioContext;
+  // Patch window for SoundManager browser checks
+  if (!(globalThis as any).window) {
+    (globalThis as any).window = {};
+  }
+  (globalThis as any).window.AudioContext = MockAudioContext;
   vi.useFakeTimers();
   vi.resetModules();
 });
 
+
 afterEach(() => {
-  (globalThis as unknown as Record<string, unknown>).AudioContext =
-    originalAudioContext;
+  (globalThis as any).AudioContext = originalAudioContext;
+  if ((globalThis as any).window) {
+    delete (globalThis as any).window.AudioContext;
+  }
   vi.useRealTimers();
 });
 

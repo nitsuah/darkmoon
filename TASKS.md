@@ -4,25 +4,25 @@ Last Updated: 2026-04-03
 
 ## Done
 
-- [x] Validate the deployed solo gameplay entry path.
-- [x] Confirm the solo-mode modularization work already landed.
-- [x] Confirm baseline server-side validation and rate limiting are already implemented.
-
-## In Progress
-
-- [ ] Stabilize mobile input and mobile layout on physical devices.
-  - Priority: P0
-  - Problem: mobile touch controls and responsive layout still lack device-level validation.
-  - Acceptance Criteria: joystick and camera controls work on iOS Safari and Android Chrome, home and game UI work in portrait and landscape, and regressions are covered.
-
-## Todo
-
 - [x] **[Q2-CEO] Fix player tag system** — players cannot tag bots (and bots cannot reliably tag players back); the hit-detection and tagging collision logic needs to be fixed and symmetrical.
   - Priority: P0
   - Problem: bot-to-bot tagging works but player-to-bot and bot-to-player tagging is broken or inconsistent, making the game unplayable in mixed mode.
   - Acceptance Criteria: players can tag bots using the same mechanics bots use on each other; bot-to-player tagging registers correctly; regression tests or a documented test scenario covers both directions.
   - Completed: 2026-04-03
   - Evidence: solo-mode bot AI now targets live player position and performs bot->player tag transfer through `GameManager.tagPlayer`; regression test `src/__tests__/bots.tagging.test.tsx` passes in Docker.
+
+## In Progress
+
+## Todo
+
+  - [ ] Review debug mode and regular tag logic for edge cases and regressions.
+- [ ] Diagnose and fix any remaining issues where the bot does not chase the player or where tagging is inconsistent in solo mode.
+- [ ] Ensure all tag cooldowns and freeze logic are respected for both player and bot, and that tag-back is impossible during cooldown.
+
+- [ ] Stabilize mobile input and mobile layout on physical devices.
+  - Priority: P0
+  - Problem: mobile touch controls and responsive layout still lack device-level validation.
+  - Acceptance Criteria: joystick and camera controls work on iOS Safari and Android Chrome, home and game UI work in portrait and landscape, and regressions are covered.
 
 - [ ] **[Q2-CEO] 21st.dev component integration pass** — replace or augment key game site UI surfaces (lobby, scoreboard, game-over, nav) with 21st.dev components to improve visual quality and interactivity.
   - Priority: P1
@@ -69,7 +69,8 @@ Last Updated: 2026-04-03
   - Problem: older refactor tasks no longer match the codebase hotspots.
   - Acceptance Criteria: only current, high-value refactors remain and each one ties back to reliability, testability, or performance.
 
-## Audit Notes
+
+## See also: docs/INSTRUCTIONS.md for agent handoff and workflow best practices.
 
 - Docker-first validation is blocked by the current production build failure.
 - The deployed site presents solo mode as live and multiplayer or tournament work as planned.

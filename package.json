@@ -14,11 +14,12 @@
     "lint": "eslint src --config ./config/eslint.config.js --max-warnings=0 --cache",
     "lint:all": "eslint . --config ./config/eslint.config.js --max-warnings=0 --cache",
     "lint:fix": "eslint src --config ./config/eslint.config.js --max-warnings=0 --fix",
+    "lint:docker": "docker compose run --rm app npx lint-staged --config ./config/lint-staged.config.json",
     "precommit": "lint-staged --config ./config/lint-staged.config.json",
     "ci": "npm run typecheck && npm run lint && npm run test:ci && npm run build",
-    "test": "vitest --config ./config/vitest.config.ts",
-    "test:ci": "node ./scripts/run-tests-inprocess.js",
-    "test:run": "vitest run --config ./config/vitest.config.ts",
+    "test": "vitest --config ./config/vitest.config.ts --configLoader runner",
+    "test:ci": "vitest --config ./config/vitest.config.ts --configLoader runner",
+    "test:run": "vitest run --config ./config/vitest.config.ts --configLoader runner",
     "prepare": "husky"
   },
   "overrides": {
@@ -36,7 +37,8 @@
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.14.1",
     "socket.io": "^4.8.3",
-    "three": "^0.180.0"
+    "three": "^0.180.0",
+    "express-rate-limit": "^8.3.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
