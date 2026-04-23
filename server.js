@@ -1,6 +1,7 @@
 import express from "express";
 import { Server } from "socket.io";
 import cors from "cors";
+import rateLimit from "express-rate-limit";
 import {
   validatePosition,
   validateRotation,
@@ -148,6 +149,14 @@ app.use(
   })
 );
 app.use(express.static("dist"));
+
+const httpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(httpLimiter);
 
 // Serve index.html for all non-API, non-static routes (SPA support)
 app.use((req, res, next) => {
