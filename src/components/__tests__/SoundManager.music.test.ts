@@ -1,25 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Create a minimal mock AudioContext and related nodes to observe start/stop and gain ramps
-class MockGain {
-  gain: { value: number };
-  constructor() {
-    this.gain = { value: 1 };
-  }
-  setValueAtTime(_v: number, _t: number) {
-    void _v;
-    void _t;
-  }
-  linearRampToValueAtTime(_v: number, _t: number) {
-    void _v;
-    void _t;
-  }
-  exponentialRampToValueAtTime(_v: number, _t: number) {
-    void _v;
-    void _t;
-  }
-  connect() {}
-}
 
 class MockOscillator {
   started = false;
@@ -47,8 +28,35 @@ class MockOscillator {
   connect() {}
 }
 
+class MockGain {
+  gain: {
+    value: number;
+    setValueAtTime: (v: number, t: number) => void;
+    linearRampToValueAtTime: (v: number, t: number) => void;
+    exponentialRampToValueAtTime: (v: number, t: number) => void;
+  };
+  constructor() {
+    this.gain = {
+      value: 1,
+      setValueAtTime: (_v: number, _t: number) => {
+        void _v;
+        void _t;
+      },
+      linearRampToValueAtTime: (_v: number, _t: number) => {
+        void _v;
+        void _t;
+      },
+      exponentialRampToValueAtTime: (_v: number, _t: number) => {
+        void _v;
+        void _t;
+      },
+    };
+  }
+  connect() {}
+}
+
 class MockBiquad {
-  type: string = "lowpass";
+  type = "lowpass";
   frequency = { value: 1000 };
   Q = { value: 1 };
   connect() {}
@@ -57,39 +65,55 @@ class MockBiquad {
 class MockAudioContext {
   destination = {};
   currentTime = 0;
-  state: "running" | "suspended" = "running";
+  state: "closed" | "running" | "suspended" = "suspended";
+
   createGain() {
     return new MockGain();
   }
+
   createOscillator() {
     return new MockOscillator();
   }
+
   createBiquadFilter() {
     return new MockBiquad();
   }
+
   resume() {
     this.state = "running";
     return Promise.resolve();
   }
+
   close() {
     return Promise.resolve();
   }
 }
 
+type GlobalWithAudioContext = Record<string, unknown> & {
+  window?: Record<string, unknown>;
+};
+
 let originalAudioContext: unknown;
 
 beforeEach(() => {
-  originalAudioContext = (globalThis as unknown as Record<string, unknown>)
-    .AudioContext;
-  (globalThis as unknown as Record<string, unknown>).AudioContext =
-    MockAudioContext;
+  const globalWithAudioContext = globalThis as unknown as GlobalWithAudioContext;
+  originalAudioContext = globalWithAudioContext.AudioContext;
+  globalWithAudioContext.AudioContext = MockAudioContext;
+  // Patch window for SoundManager browser checks
+  if (!globalWithAudioContext.window) {
+    globalWithAudioContext.window = {};
+  }
+  globalWithAudioContext.window.AudioContext = MockAudioContext;
   vi.useFakeTimers();
   vi.resetModules();
 });
 
 afterEach(() => {
-  (globalThis as unknown as Record<string, unknown>).AudioContext =
-    originalAudioContext;
+  const globalWithAudioContext = globalThis as unknown as GlobalWithAudioContext;
+  globalWithAudioContext.AudioContext = originalAudioContext;
+  if (globalWithAudioContext.window) {
+    delete globalWithAudioContext.window.AudioContext;
+  }
   vi.useRealTimers();
 });
 

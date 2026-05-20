@@ -20,7 +20,7 @@ export interface BotCharacterProps {
   targetIsIt: boolean;
   onTagTarget: () => void;
   gameState: GameState;
-  collisionSystem: React.RefObject<CollisionSystem>;
+  collisionSystem: React.RefObject<CollisionSystem | null>;
   gotTaggedTimestamp?: number;
   showHitboxes?: boolean;
   config: BotConfig;
@@ -73,10 +73,16 @@ export const BotCharacter: React.FC<BotCharacterProps> = ({
     meshRef,
   });
 
+  // Patch initialPosition Y to 0.0 for flush floor spawn
+  const adjustedInitialPosition: [number, number, number] = [
+    config.initialPosition[0],
+    0.0,
+    config.initialPosition[2],
+  ];
   return (
     <group
       ref={meshRef}
-      position={config.initialPosition}
+      position={adjustedInitialPosition}
       rotation={[0, Math.PI, 0]}
     >
       <SpacemanModel

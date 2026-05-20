@@ -39,8 +39,12 @@ RUN npm run build
 FROM node:22-alpine AS runner
 WORKDIR /app
 
+
 # Set production environment
 ENV NODE_ENV=production
+
+# Install git for lint-staged/husky in Docker
+RUN apk add --no-cache git
 
 # Create non-root user for security
 RUN addgroup --system --gid 1001 nodejs
@@ -52,6 +56,11 @@ COPY --from=builder --chown=appuser:nodejs /app/dist ./dist
 COPY --from=builder --chown=appuser:nodejs /app/server.js ./server.js
 COPY --from=builder --chown=appuser:nodejs /app/server ./server
 COPY --from=builder --chown=appuser:nodejs /app/package*.json ./
+
+
+
+# Ensure .vite-temp is writable for Vitest (dev/CI workaround)
+RUN mkdir -p /app/node_modules/.vite-temp && chmod -R 777 /app/node_modules/.vite-temp
 
 # Switch to non-root user
 USER appuser

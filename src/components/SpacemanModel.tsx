@@ -160,7 +160,7 @@ const SpacemanModel: React.FC<SpacemanModelProps> = ({
   });
 
   return (
-    <group scale={0.5} rotation={[0, Math.PI, 0]}>
+    <group scale={0.5} rotation={[0, Math.PI, 0]} position={[0, -0.35, 0]}>
       {/* Body - cylinder */}
       <mesh castShadow position={[0, 0.6, 0]}>
         <cylinderGeometry args={[0.3, 0.35, 0.8, 16]} />

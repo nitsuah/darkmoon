@@ -23,6 +23,7 @@ import { processTagging } from "../../lib/hooks/usePlayerTagging";
 import {
   computeDirection,
   computeSpeed,
+  computeFacingYaw,
 } from "../../lib/hooks/usePlayerMovement";
 import {
   computeJetpackThrust,
@@ -30,6 +31,10 @@ import {
 } from "../../lib/hooks/useJetpack";
 
 const tagDebug = createTagLogger("PlayerCharacter");
+
+type WindowWithPlayerFreeze = typeof globalThis & {
+  __playerFreezeUntil?: number;
+};
 
 export interface PlayerCharacterProps {
   keysPressedRef: React.MutableRefObject<{ [key: string]: boolean }>;
@@ -49,15 +54,16 @@ export interface PlayerCharacterProps {
   lastWalkSoundTimeRef: React.MutableRefObject<number>;
   isPaused: boolean;
   onPositionUpdate?: (position: [number, number, number]) => void;
-  playerIsIt?: boolean;
-  setPlayerIsIt?: (isIt: boolean) => void;
-  setBotIsIt?: (isIt: boolean) => void;
   setBot1GotTagged?: (timestamp: number) => void;
   setBot2GotTagged?: (timestamp: number) => void;
   setGameState?: React.Dispatch<React.SetStateAction<GameState>>;
   showHitboxes?: boolean;
   mobileJetpackTrigger?: React.MutableRefObject<boolean>;
   onTagSuccess?: () => void;
+  // Added for IT state management
+  playerIsIt?: boolean;
+  setPlayerIsIt?: (isIt: boolean) => void;
+  setBotIsIt?: (isIt: boolean) => void;
 }
 
 export interface PlayerCharacterHandle {
@@ -103,6 +109,9 @@ export const PlayerCharacter = React.forwardRef<
     playerFreezeEndTimeRef,
   } = playerState;
 
+  // Lower the position update threshold for real-time bot tracking
+  const POSITION_UPDATE_THRESHOLD = 0.001;
+
   const physics = usePlayerPhysics();
   const {
     velocityRef,
@@ -135,12 +144,14 @@ export const PlayerCharacter = React.forwardRef<
   // Dust effect state for landing
   const [showDustEffect, setShowDustEffect] = useState(false);
   const [showJetpackFlame, setShowJetpackFlame] = useState(false);
+  const lookIndicatorRef = React.useRef<THREE.Group>(null);
+
 
   // Expose reset and freeze functions to parent via ref
   React.useImperativeHandle(ref, () => ({
     resetPosition: () => {
       if (meshRef.current) {
-        meshRef.current.position.set(0, 0.5, 0);
+        meshRef.current.position.set(0, 0.0, 0);
       }
       cameraRotationRef.current = { horizontal: 0, vertical: 0.2 };
       velocityRef.current.set(0, 0, 0);
@@ -154,6 +165,24 @@ export const PlayerCharacter = React.forwardRef<
       tagDebug(`👤 Player frozen for ${duration}ms via ref`);
     },
   }));
+
+  // Listen for bot tag event and freeze player, and set global freeze timestamp for bot logic
+  React.useEffect(() => {
+    function handleFreezePlayer() {
+      // Use the same freeze duration as bot cooldown (1500ms)
+      isPlayerFrozenRef.current = true;
+      const freezeUntil = Date.now() + 1500;
+      playerFreezeEndTimeRef.current = freezeUntil;
+      if (typeof window !== "undefined") {
+        (window as WindowWithPlayerFreeze).__playerFreezeUntil = freezeUntil;
+      }
+      tagDebug("👤 Player frozen for 1500ms after being tagged by bot");
+    }
+    window.addEventListener("player-tagged-by-bot", handleFreezePlayer);
+    return () => {
+      window.removeEventListener("player-tagged-by-bot", handleFreezePlayer);
+    };
+  }, [isPlayerFrozenRef, playerFreezeEndTimeRef]);
 
   // gated debug logger - only logs in dev
   const debug = (...args: unknown[]) => {
@@ -237,7 +266,7 @@ export const PlayerCharacter = React.forwardRef<
       // Clamp vertical rotation
       cameraRotationRef.current.vertical = Math.max(
         -Math.PI / 3,
-        Math.min(Math.PI / 3, cameraRotationRef.current.vertical),
+        Math.min(Math.PI / 3, cameraRotationRef.current.vertical)
       );
 
       previousMouseRef.current.x = mouseControls.mouseX;
@@ -259,23 +288,15 @@ export const PlayerCharacter = React.forwardRef<
     // Keyboard camera rotation (A/D keys) - Also rotates character
     if (keysPressedRef.current[A]) {
       cameraRotationRef.current.horizontal += 2 * delta; // Rotate left
-      // Also rotate character to match camera direction
-      if (meshRef.current) {
-        meshRef.current.rotation.y = cameraRotationRef.current.horizontal;
-      }
     }
     if (keysPressedRef.current[D]) {
       cameraRotationRef.current.horizontal -= 2 * delta; // Rotate right
-      // Also rotate character to match camera direction
-      if (meshRef.current) {
-        meshRef.current.rotation.y = cameraRotationRef.current.horizontal;
-      }
     }
 
     // Always clamp vertical rotation (from joystick too)
     cameraRotationRef.current.vertical = Math.max(
       -Math.PI / 3,
-      Math.min(Math.PI / 3, cameraRotationRef.current.vertical),
+      Math.min(Math.PI / 3, cameraRotationRef.current.vertical)
     );
 
     // Calculate camera offset based on rotation
@@ -313,10 +334,36 @@ export const PlayerCharacter = React.forwardRef<
     const hasJoystickInput = joystickMove.x !== 0 || joystickMove.y !== 0;
 
     // Calculate speed using helper
+    const isAiming = mouseControls.rightClick;
     const speed = computeSpeed(
       jetpackActiveRef.current,
-      keysPressedRef.current[SHIFT],
+      keysPressedRef.current[SHIFT] && !mouseControls.rightClick,
     );
+
+    // Middle-click look indicator: preview where ADS/right-click aim will face.
+    if (lookIndicatorRef.current) {
+      if (mouseControls.leftClick) {
+        const lookForward = new THREE.Vector3(
+          -Math.sin(cameraRotationRef.current.horizontal),
+          0,
+          -Math.cos(cameraRotationRef.current.horizontal)
+        );
+        const lookDistance = 6;
+        const lookPos = meshRef.current.position
+          .clone()
+          .add(lookForward.multiplyScalar(lookDistance));
+
+        lookIndicatorRef.current.visible = true;
+        lookIndicatorRef.current.position.set(lookPos.x, 0.03, lookPos.z);
+        lookIndicatorRef.current.rotation.set(
+          -Math.PI / 2,
+          0,
+          -cameraRotationRef.current.horizontal
+        );
+      } else {
+        lookIndicatorRef.current.visible = false;
+      }
+    }
 
     // WoW-style auto-run: both mouse buttons held = move forward
     if (bothMouseButtons || hasKeyboardInput || hasJoystickInput) {
@@ -330,7 +377,7 @@ export const PlayerCharacter = React.forwardRef<
           Q: keysPressedRef.current[Q],
           E: keysPressedRef.current[E],
         },
-        bothMouseButtons,
+        bothMouseButtons
       );
 
       if (dir && dir.length() > 0) {
@@ -347,7 +394,7 @@ export const PlayerCharacter = React.forwardRef<
         const resolvedPosition = resolveMovement(
           collisionSystemRef.current,
           currentPosition,
-          newPosition,
+          newPosition
         );
 
         // Player collision + tagging logic handled by helper
@@ -362,7 +409,7 @@ export const PlayerCharacter = React.forwardRef<
                 detectPlayerCollision(
                   collisionSystemRef.current,
                   resolvedPosition,
-                  otherPlayerPos,
+                  otherPlayerPos
                 )
               ) {
                 const pushDirection = resolvedPosition
@@ -402,7 +449,6 @@ export const PlayerCharacter = React.forwardRef<
 
         // Play footstep sounds (throttled to avoid spam) - different for walk vs sprint
         const now = Date.now();
-        const isSprinting = keysPressedRef.current[SHIFT];
         const footstepInterval = isSprinting ? 250 : 400; // Faster sounds when running
         if (now - lastWalkSoundTimeRef.current > footstepInterval) {
           const soundMgr = getSoundManager();
@@ -414,8 +460,17 @@ export const PlayerCharacter = React.forwardRef<
           lastWalkSoundTimeRef.current = now;
         }
 
-        // Character rotation is now controlled by A/D keys (camera rotation)
-        // and doesn't auto-rotate to movement direction for strafing support
+        const targetYaw = computeFacingYaw(
+          directionRef.current,
+          cameraRotationRef.current.horizontal,
+          isAiming,
+          meshRef.current.rotation.y
+        );
+        meshRef.current.rotation.y = THREE.MathUtils.lerp(
+          meshRef.current.rotation.y,
+          targetYaw,
+          0.2
+        );
 
         // Emit position to server
         if (socketClient) {
@@ -489,7 +544,7 @@ export const PlayerCharacter = React.forwardRef<
     if (
       jetpackActiveRef.current &&
       isJumpingRef.current &&
-      keysPressedRef.current[SPACE]
+      isSprinting
     ) {
       if (jumpHoldTimeRef.current < PHYSICS_CONSTANTS.JETPACK_MAX_HOLD_TIME) {
         jumpHoldTimeRef.current += delta;
@@ -550,12 +605,12 @@ export const PlayerCharacter = React.forwardRef<
         if (keysPressedRef.current[S]) rcsDirection.z -= 1;
         if (keysPressedRef.current[A]) rcsDirection.x += 1;
         if (keysPressedRef.current[D]) rcsDirection.x -= 1;
-        if (keysPressedRef.current[Q])
-          verticalVelocityRef.current +=
-            PHYSICS_CONSTANTS.RCS_THRUST * delta * 2; // Up
-        if (keysPressedRef.current[E])
-          verticalVelocityRef.current -=
-            PHYSICS_CONSTANTS.RCS_THRUST * delta * 2; // Down
+        if (keysPressedRef.current[Q]) {
+          verticalVelocityRef.current += PHYSICS_CONSTANTS.RCS_THRUST * delta * 2;
+        }
+        if (keysPressedRef.current[E]) {
+          verticalVelocityRef.current -= PHYSICS_CONSTANTS.RCS_THRUST * delta * 2;
+        }
 
         // Play RCS sound when input is active (throttle to ~10 times per second)
         if (hasRCSInput && currentTime - lastRCSSoundTimeRef.current > 100) {
@@ -578,9 +633,7 @@ export const PlayerCharacter = React.forwardRef<
             -cameraRotationRef.current.horizontal,
           );
           horizontalMomentumRef.current.add(
-            rcsDirection.multiplyScalar(
-              PHYSICS_CONSTANTS.RCS_THRUST * delta * 10,
-            ),
+            rcsDirection.multiplyScalar(PHYSICS_CONSTANTS.RCS_THRUST * delta * 10),
           );
         }
       }
@@ -599,7 +652,7 @@ export const PlayerCharacter = React.forwardRef<
 
       // Preserve horizontal momentum with slight decay
       horizontalMomentumRef.current.multiplyScalar(
-        PHYSICS_CONSTANTS.MOMENTUM_PRESERVATION,
+        PHYSICS_CONSTANTS.MOMENTUM_PRESERVATION
       );
 
       // Allow some air control - blend player input with momentum
@@ -650,10 +703,10 @@ export const PlayerCharacter = React.forwardRef<
     if (onPositionUpdate && meshRef.current) {
       const currentPos = meshRef.current.position;
       const distanceMoved = currentPos.distanceTo(
-        lastReportedPositionRef.current,
+        lastReportedPositionRef.current
       );
 
-      if (distanceMoved > PHYSICS_CONSTANTS.POSITION_UPDATE_THRESHOLD) {
+      if (distanceMoved > POSITION_UPDATE_THRESHOLD) {
         onPositionUpdate(currentPos.toArray() as [number, number, number]);
         lastReportedPositionRef.current.copy(currentPos);
       }
@@ -663,7 +716,7 @@ export const PlayerCharacter = React.forwardRef<
     idealCameraPositionRef.current.set(
       meshRef.current.position.x + cameraOffsetRef.current.x,
       meshRef.current.position.y + cameraOffsetRef.current.y,
-      meshRef.current.position.z + cameraOffsetRef.current.z,
+      meshRef.current.position.z + cameraOffsetRef.current.z
     );
 
     // Lerp camera position for smooth following
@@ -680,22 +733,45 @@ export const PlayerCharacter = React.forwardRef<
     state.camera.lookAt(
       meshRef.current.position.x,
       meshRef.current.position.y + 0.5,
-      meshRef.current.position.z,
+      meshRef.current.position.z
     );
   });
 
   const currentPlayer = gameManager?.getPlayers().get(currentPlayerId);
   const isIt = currentPlayer?.isIt || false;
 
+  /* eslint-disable react/no-unknown-property */
   // Calculate current velocity for animation
   const currentVelocity: [number, number, number] = [
     velocityRef.current.x,
     velocityRef.current.y,
     velocityRef.current.z,
   ];
-
-  // Check if sprinting
+  const currentCameraRotation = cameraRotationRef.current.horizontal;
   const isSprinting = keysPressedRef.current[SHIFT];
+  const isJetpackActive = jetpackActiveRef.current;
+
+  // Precompute dust meshes to avoid const declarations in JSX
+  let dustMeshes: React.ReactElement[] = [];
+  if (showDustEffect) {
+    dustMeshes = Array.from({ length: 8 }, (_, i) => {
+      const angle = (i / 8) * Math.PI * 2;
+      const radius = 0.3 + (i % 2) * 0.2;
+      return (
+        <mesh
+          key={i}
+          position={[
+            Math.cos(angle) * radius,
+            0.1,
+            Math.sin(angle) * radius,
+          ]}
+        >
+          <sphereGeometry args={[0.05, 8, 8]} />
+          <meshBasicMaterial color="#999999" opacity={0.6} transparent />
+        </mesh>
+      );
+    });
+  }
 
   // Player spawn at [0, 0.5, 0] - center of map, clear of all rocks
   return (
@@ -703,38 +779,31 @@ export const PlayerCharacter = React.forwardRef<
       <SpacemanModel
         color={isIt ? "#ff4444" : "#4a90e2"}
         isIt={isIt}
-        // Pass ref values for per-frame updates without React re-renders (R3F optimization pattern)
         velocity={currentVelocity}
-        cameraRotation={cameraRotationRef.current.horizontal}
+        cameraRotation={currentCameraRotation}
         isSprinting={isSprinting}
-        isJetpackActive={jetpackActiveRef.current}
+        isJetpackActive={isJetpackActive}
       />
       {/* Jetpack thrust visual effect */}
       {showJetpackFlame && (
         <group position={[0, -0.5, 0]}>
-          {/* Flame cone */}
           <mesh rotation={[Math.PI, 0, 0]}>
             <coneGeometry args={[0.15, 0.4, 8]} />
             <meshStandardMaterial
               color="#ff6600"
               opacity={0.7}
               transparent
-              // eslint-disable-next-line react/no-unknown-property
               emissive="#ff4400"
-              // eslint-disable-next-line react/no-unknown-property
               emissiveIntensity={1.5}
             />
           </mesh>
-          {/* Inner bright core */}
           <mesh position={[0, 0.1, 0]} rotation={[Math.PI, 0, 0]}>
             <coneGeometry args={[0.08, 0.25, 8]} />
             <meshStandardMaterial
               color="#ffff00"
               opacity={0.9}
               transparent
-              // eslint-disable-next-line react/no-unknown-property
               emissive="#ffff00"
-              // eslint-disable-next-line react/no-unknown-property
               emissiveIntensity={2}
             />
           </mesh>
@@ -742,25 +811,7 @@ export const PlayerCharacter = React.forwardRef<
       )}
       {/* Landing dust effect */}
       {showDustEffect && (
-        <group position={[0, -0.4, 0]}>
-          {[...Array(8)].map((_, i) => {
-            const angle = (i / 8) * Math.PI * 2;
-            const radius = 0.3 + (i % 2) * 0.2; // Alternating radii for variation
-            return (
-              <mesh
-                key={i}
-                position={[
-                  Math.cos(angle) * radius,
-                  0.1,
-                  Math.sin(angle) * radius,
-                ]}
-              >
-                <sphereGeometry args={[0.05, 8, 8]} />
-                <meshBasicMaterial color="#999999" opacity={0.6} transparent />
-              </mesh>
-            );
-          })}
-        </group>
+        <group position={[0, -0.4, 0]}>{dustMeshes}</group>
       )}
       {/* Debug hitbox visualization */}
       {props.showHitboxes && (
@@ -768,7 +819,6 @@ export const PlayerCharacter = React.forwardRef<
           <sphereGeometry args={[0.5, 16, 16]} />
           <meshBasicMaterial
             color="#00ff00"
-            // eslint-disable-next-line react/no-unknown-property
             wireframe={true}
             opacity={0.3}
             transparent
@@ -777,6 +827,7 @@ export const PlayerCharacter = React.forwardRef<
       )}
     </group>
   );
+  /* eslint-enable react/no-unknown-property */
 });
 
 PlayerCharacter.displayName = "PlayerCharacter";

@@ -20,10 +20,10 @@ const Bots: React.FC<
     | "gameManager"
     | "gameState"
     | "setBot1GotTagged"
-    | "setBot2GotTagged"
-    | "currentPlayerId"
-    | "playerIsIt"
-    | "playerPositionRef"
+      | "setBot2GotTagged"
+      | "currentPlayerId"
+      | "playerIsIt"
+      | "playerPositionRef"
   >
 > = ({
   botDebugMode,
@@ -78,24 +78,58 @@ const Bots: React.FC<
   const playerIsItFromManager =
     gameManager?.getPlayers().get(currentPlayerId)?.isIt ?? playerIsIt;
 
+  // Debug: Log IT state changes
+  React.useEffect(() => {
+    // Only log when IT state changes
+    console.log(
+      `[DEBUG] bot1IsIt: ${bot1IsIt}, bot2IsIt: ${bot2IsIt}, playerIsIt: ${playerIsItFromManager}`
+    );
+  }, [bot1IsIt, bot2IsIt, playerIsItFromManager]);
+
   // Bot tag callbacks - handle bot-to-bot tagging
+
   const handleBot1TagTarget = useCallback(() => {
+    console.log("[BOT-TAG-DEBUG] handleBot1TagTarget called", {
+      bot1IsIt,
+      isActive: gameState.isActive,
+      mode: gameState.mode,
+      currentPlayerId,
+      playerIsItFromManager,
+      bot2IsIt,
+      botDebugMode
+    });
     if (
       !gameManager ||
       !bot1IsIt ||
       !gameState.isActive ||
       gameState.mode !== "tag"
     ) {
+      console.log("[BOT-TAG-DEBUG] Bot1 cannot tag:", {
+        bot1IsIt,
+        isActive: gameState.isActive,
+        mode: gameState.mode,
+      });
       return;
     }
 
     const targetId = botDebugMode ? "bot-2" : currentPlayerId;
     const targetIsAlreadyIt = botDebugMode ? bot2IsIt : playerIsItFromManager;
 
-    if (!targetIsAlreadyIt && gameManager.tagPlayer("bot-1", targetId)) {
-      if (botDebugMode) {
-        setBot2GotTagged(Date.now());
-      }
+    if (!targetIsAlreadyIt) {
+      console.log(`[BOT-TAG-DEBUG] Bot1 attempting to tag ${targetId}`);
+      const result = gameManager.tagPlayer("bot-1", targetId);
+      console.log(`[BOT-TAG-DEBUG] gameManager.tagPlayer('bot-1', ${targetId}) returned:`, result);
+        if (result) {
+          if (botDebugMode) {
+            setBot2GotTagged(Date.now());
+          } else if (targetId === currentPlayerId && typeof window !== "undefined") {
+            // Trigger player freeze/cooldown after being tagged by bot
+            const event = new window.Event("player-tagged-by-bot");
+            window.dispatchEvent(event);
+          }
+        }
+    } else {
+      console.log(`[BOT-TAG-DEBUG] Bot1 target (${targetId}) is already IT, cannot tag.`);
     }
   }, [
     gameManager,
@@ -118,12 +152,32 @@ const Bots: React.FC<
 
   return (
     <>
+
       <BotCharacter
-        targetPositionRef={botDebugMode ? bot2PositionRef : playerPositionRef}
+        targetPositionRef={
+          botDebugMode
+            ? bot2PositionRef
+            : playerPositionRef // Always use the live player position ref, updated every frame
+        }
         isIt={bot1IsIt}
         targetIsIt={botDebugMode ? bot2IsIt : playerIsItFromManager}
         isPaused={isPaused}
-        onTagTarget={handleBot1TagTarget}
+        onTagTarget={() => {
+          const windowWithPlayerFreeze =
+            typeof window === "undefined"
+              ? undefined
+              : (window as typeof globalThis & { __playerFreezeUntil?: number });
+
+          // Prevent tag if player is frozen/cooldown
+          if (
+            windowWithPlayerFreeze?.__playerFreezeUntil &&
+            Date.now() < windowWithPlayerFreeze.__playerFreezeUntil
+          ) {
+            console.log("[BOT-TAG-DEBUG] Player is frozen/cooldown, cannot tag");
+            return;
+          }
+          handleBot1TagTarget();
+        }}
         onPositionUpdate={handleBot1PositionUpdate}
         gameState={gameState}
         collisionSystem={collisionSystemRef}

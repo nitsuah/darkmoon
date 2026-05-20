@@ -6,7 +6,7 @@ import * as THREE from "three";
  */
 export const PHYSICS_CONSTANTS = {
   GRAVITY: 0.0005, // Reduced for floaty moon-like feel
-  GROUND_Y: 0.5,
+  GROUND_Y: 0.0,
   AIR_RESISTANCE: 0.996, // Slightly more resistance for heavier feel
   HORIZONTAL_AIR_CONTROL: 0.5, // Reduced - less control in air
   MOMENTUM_PRESERVATION: 0.985, // Slightly more decay for heavier feel
