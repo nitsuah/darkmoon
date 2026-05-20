@@ -237,7 +237,7 @@ export const PlayerCharacter = React.forwardRef<
       // Clamp vertical rotation
       cameraRotationRef.current.vertical = Math.max(
         -Math.PI / 3,
-        Math.min(Math.PI / 3, cameraRotationRef.current.vertical)
+        Math.min(Math.PI / 3, cameraRotationRef.current.vertical),
       );
 
       previousMouseRef.current.x = mouseControls.mouseX;
@@ -275,7 +275,7 @@ export const PlayerCharacter = React.forwardRef<
     // Always clamp vertical rotation (from joystick too)
     cameraRotationRef.current.vertical = Math.max(
       -Math.PI / 3,
-      Math.min(Math.PI / 3, cameraRotationRef.current.vertical)
+      Math.min(Math.PI / 3, cameraRotationRef.current.vertical),
     );
 
     // Calculate camera offset based on rotation
@@ -315,7 +315,7 @@ export const PlayerCharacter = React.forwardRef<
     // Calculate speed using helper
     const speed = computeSpeed(
       jetpackActiveRef.current,
-      keysPressedRef.current[SHIFT]
+      keysPressedRef.current[SHIFT],
     );
 
     // WoW-style auto-run: both mouse buttons held = move forward
@@ -330,7 +330,7 @@ export const PlayerCharacter = React.forwardRef<
           Q: keysPressedRef.current[Q],
           E: keysPressedRef.current[E],
         },
-        bothMouseButtons
+        bothMouseButtons,
       );
 
       if (dir && dir.length() > 0) {
@@ -347,7 +347,7 @@ export const PlayerCharacter = React.forwardRef<
         const resolvedPosition = resolveMovement(
           collisionSystemRef.current,
           currentPosition,
-          newPosition
+          newPosition,
         );
 
         // Player collision + tagging logic handled by helper
@@ -362,7 +362,7 @@ export const PlayerCharacter = React.forwardRef<
                 detectPlayerCollision(
                   collisionSystemRef.current,
                   resolvedPosition,
-                  otherPlayerPos
+                  otherPlayerPos,
                 )
               ) {
                 const pushDirection = resolvedPosition
@@ -575,12 +575,12 @@ export const PlayerCharacter = React.forwardRef<
           rcsDirection.normalize();
           rcsDirection.applyAxisAngle(
             new THREE.Vector3(0, 1, 0),
-            -cameraRotationRef.current.horizontal
+            -cameraRotationRef.current.horizontal,
           );
           horizontalMomentumRef.current.add(
             rcsDirection.multiplyScalar(
-              PHYSICS_CONSTANTS.RCS_THRUST * delta * 10
-            )
+              PHYSICS_CONSTANTS.RCS_THRUST * delta * 10,
+            ),
           );
         }
       }
@@ -599,7 +599,7 @@ export const PlayerCharacter = React.forwardRef<
 
       // Preserve horizontal momentum with slight decay
       horizontalMomentumRef.current.multiplyScalar(
-        PHYSICS_CONSTANTS.MOMENTUM_PRESERVATION
+        PHYSICS_CONSTANTS.MOMENTUM_PRESERVATION,
       );
 
       // Allow some air control - blend player input with momentum
@@ -650,7 +650,7 @@ export const PlayerCharacter = React.forwardRef<
     if (onPositionUpdate && meshRef.current) {
       const currentPos = meshRef.current.position;
       const distanceMoved = currentPos.distanceTo(
-        lastReportedPositionRef.current
+        lastReportedPositionRef.current,
       );
 
       if (distanceMoved > PHYSICS_CONSTANTS.POSITION_UPDATE_THRESHOLD) {
@@ -663,7 +663,7 @@ export const PlayerCharacter = React.forwardRef<
     idealCameraPositionRef.current.set(
       meshRef.current.position.x + cameraOffsetRef.current.x,
       meshRef.current.position.y + cameraOffsetRef.current.y,
-      meshRef.current.position.z + cameraOffsetRef.current.z
+      meshRef.current.position.z + cameraOffsetRef.current.z,
     );
 
     // Lerp camera position for smooth following
@@ -680,7 +680,7 @@ export const PlayerCharacter = React.forwardRef<
     state.camera.lookAt(
       meshRef.current.position.x,
       meshRef.current.position.y + 0.5,
-      meshRef.current.position.z
+      meshRef.current.position.z,
     );
   });
 
@@ -689,9 +689,9 @@ export const PlayerCharacter = React.forwardRef<
 
   // Calculate current velocity for animation
   const currentVelocity: [number, number, number] = [
-    velocityRef.current.x, // eslint-disable-line react-hooks/refs
-    velocityRef.current.y, // eslint-disable-line react-hooks/refs
-    velocityRef.current.z, // eslint-disable-line react-hooks/refs
+    velocityRef.current.x,
+    velocityRef.current.y,
+    velocityRef.current.z,
   ];
 
   // Check if sprinting
@@ -704,10 +704,10 @@ export const PlayerCharacter = React.forwardRef<
         color={isIt ? "#ff4444" : "#4a90e2"}
         isIt={isIt}
         // Pass ref values for per-frame updates without React re-renders (R3F optimization pattern)
-        velocity={currentVelocity} // eslint-disable-line react-hooks/refs
-        cameraRotation={cameraRotationRef.current.horizontal} // eslint-disable-line react-hooks/refs
-        isSprinting={isSprinting} // eslint-disable-line react-hooks/refs
-        isJetpackActive={jetpackActiveRef.current} // eslint-disable-line react-hooks/refs
+        velocity={currentVelocity}
+        cameraRotation={cameraRotationRef.current.horizontal}
+        isSprinting={isSprinting}
+        isJetpackActive={jetpackActiveRef.current}
       />
       {/* Jetpack thrust visual effect */}
       {showJetpackFlame && (
