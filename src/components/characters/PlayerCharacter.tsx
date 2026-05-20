@@ -5,9 +5,7 @@ import { Socket } from "socket.io-client";
 import * as THREE from "three";
 import type { Clients } from "../../types/socket";
 import GameManager, { GameState } from "../GameManager";
-import { W, A, S, D, Q, E, SPACE } from "../utils";
-// Provide a fallback for SHIFT if not exported from utils
-const SHIFT = typeof window !== 'undefined' && 'Shift' || 'Shift';
+import { W, A, S, D, Q, E, SHIFT, SPACE } from "../utils";
 import SpacemanModel from "../SpacemanModel";
 import { getSoundManager } from "../SoundManager";
 import { createTagLogger } from "../../lib/utils/logger";
@@ -28,6 +26,7 @@ import {
   computeFacingYaw,
 } from "../../lib/hooks/usePlayerMovement";
 import {
+  computeJetpackThrust,
   shouldActivateJetpackFromMobile,
 } from "../../lib/hooks/useJetpack";
 
@@ -127,6 +126,8 @@ export const PlayerCharacter = React.forwardRef<
     jetpackActiveRef,
     isUsingRCSRef,
     rcsTimeRemainingRef,
+    jetpackThrustSoundRef,
+    lastRCSSoundTimeRef,
   } = physics;
 
   const camera = usePlayerCamera();
@@ -336,7 +337,7 @@ export const PlayerCharacter = React.forwardRef<
     const isAiming = mouseControls.rightClick;
     const speed = computeSpeed(
       jetpackActiveRef.current,
-      keysPressedRef.current[SHIFT] && !mouseControls.rightClick
+      keysPressedRef.current[SHIFT] && !mouseControls.rightClick,
     );
 
     // Middle-click look indicator: preview where ADS/right-click aim will face.
@@ -547,7 +548,94 @@ export const PlayerCharacter = React.forwardRef<
     ) {
       if (jumpHoldTimeRef.current < PHYSICS_CONSTANTS.JETPACK_MAX_HOLD_TIME) {
         jumpHoldTimeRef.current += delta;
-        // (RCS code removed: rcsDirection is undefined and this was stray code)
+        // Compute thrust using helper
+        const thrust = computeJetpackThrust(jumpHoldTimeRef.current, delta, {
+          JETPACK_MAX_HOLD_TIME: PHYSICS_CONSTANTS.JETPACK_MAX_HOLD_TIME,
+          JETPACK_HOLD_FORCE: PHYSICS_CONSTANTS.JETPACK_HOLD_FORCE,
+        });
+        verticalVelocityRef.current += thrust;
+
+        // Start thrust sound if not already playing
+        if (!jetpackThrustSoundRef.current) {
+          try {
+            const soundMgr = getSoundManager();
+            if (soundMgr) {
+              jetpackThrustSoundRef.current = soundMgr.playJetpackThrustSound();
+            }
+          } catch (e) {
+            void e;
+          }
+        }
+      }
+    } else if (jetpackThrustSoundRef.current) {
+      // Stop thrust sound when space is released or jetpack ends
+      try {
+        const soundMgr = getSoundManager();
+        if (soundMgr) {
+          soundMgr.stopJetpackThrustSound(jetpackThrustSoundRef.current);
+          jetpackThrustSoundRef.current = null;
+        }
+      } catch {
+        // Sound manager not ready - silently continue
+      }
+    }
+
+    // RCS jets (SHIFT in air) - directional thrust from QWEASD
+    if (!isOnGround && keysPressedRef.current[SHIFT]) {
+      if (!isUsingRCSRef.current) {
+        isUsingRCSRef.current = true;
+        rcsTimeRemainingRef.current = PHYSICS_CONSTANTS.RCS_MAX_DURATION;
+        tagDebug("🎯 RCS jets activated!");
+      }
+
+      if (rcsTimeRemainingRef.current > 0) {
+        rcsTimeRemainingRef.current -= delta;
+
+        // Apply directional RCS thrust based on QWEASD input
+        const rcsDirection = new THREE.Vector3();
+        const hasRCSInput =
+          keysPressedRef.current[W] ||
+          keysPressedRef.current[S] ||
+          keysPressedRef.current[A] ||
+          keysPressedRef.current[D] ||
+          keysPressedRef.current[Q] ||
+          keysPressedRef.current[E];
+
+        if (keysPressedRef.current[W]) rcsDirection.z += 1;
+        if (keysPressedRef.current[S]) rcsDirection.z -= 1;
+        if (keysPressedRef.current[A]) rcsDirection.x += 1;
+        if (keysPressedRef.current[D]) rcsDirection.x -= 1;
+        if (keysPressedRef.current[Q]) {
+          verticalVelocityRef.current += PHYSICS_CONSTANTS.RCS_THRUST * delta * 2;
+        }
+        if (keysPressedRef.current[E]) {
+          verticalVelocityRef.current -= PHYSICS_CONSTANTS.RCS_THRUST * delta * 2;
+        }
+
+        // Play RCS sound when input is active (throttle to ~10 times per second)
+        if (hasRCSInput && currentTime - lastRCSSoundTimeRef.current > 100) {
+          lastRCSSoundTimeRef.current = currentTime;
+          try {
+            const soundMgr = getSoundManager();
+            if (soundMgr) {
+              soundMgr.playRCSSound();
+            }
+          } catch {
+            // Sound manager not ready - silently continue
+          }
+        }
+
+        // Rotate direction by camera angle
+        if (rcsDirection.length() > 0) {
+          rcsDirection.normalize();
+          rcsDirection.applyAxisAngle(
+            new THREE.Vector3(0, 1, 0),
+            -cameraRotationRef.current.horizontal,
+          );
+          horizontalMomentumRef.current.add(
+            rcsDirection.multiplyScalar(PHYSICS_CONSTANTS.RCS_THRUST * delta * 10),
+          );
+        }
       }
     } else if (isOnGround) {
       // Reset RCS when landing
@@ -652,7 +740,7 @@ export const PlayerCharacter = React.forwardRef<
   const currentPlayer = gameManager?.getPlayers().get(currentPlayerId);
   const isIt = currentPlayer?.isIt || false;
 
-  /* eslint-disable react-hooks/refs, react/no-unknown-property */
+  /* eslint-disable react/no-unknown-property */
   // Calculate current velocity for animation
   const currentVelocity: [number, number, number] = [
     velocityRef.current.x,
@@ -739,7 +827,7 @@ export const PlayerCharacter = React.forwardRef<
       )}
     </group>
   );
-  /* eslint-enable react-hooks/refs, react/no-unknown-property */
+  /* eslint-enable react/no-unknown-property */
 });
 
 PlayerCharacter.displayName = "PlayerCharacter";
