@@ -1,7 +1,7 @@
-
-
-
 import * as React from "react";
+import type CollisionSystem from "../components/CollisionSystem";
+import type { GameState, Player } from "../components/GameManager";
+import type { PlayerCharacterHandle } from "../components/characters/PlayerCharacter";
 import { useSoloGame } from "../lib/hooks/useSoloGame";
 import { useSocketConnection } from "../lib/hooks/useSocketConnection";
 import SoloScene from "./Solo/components/SoloScene";
@@ -9,46 +9,58 @@ import SoloHUD from "./Solo/components/SoloHUD";
 
 // CAVEMAN MAKE SOLO SMALL. ONLY ORCHESTRATE. ALL LOGIC IN HOOKS, COMPONENTS.
 
-import { useRef, useState, useCallback } from "react";
-import { useNotifications } from "../lib/hooks/useNotifications";
+import { useRef, useState } from "react";
 import { useMobileDetection } from "../lib/hooks/useMobileDetection";
+import { useNotifications } from "../lib/hooks/useNotifications";
 import { useRockPositions } from "../lib/hooks/useRockPositions";
 import { useQualitySettings } from "../lib/hooks/useQualitySettings";
 import { useMouseControls } from "../lib/hooks/useMouseControls";
 import { useChatMessages } from "../lib/hooks/useChatMessages";
 import { BOT1_CONFIG, BOT2_CONFIG } from "../lib/constants/botConfigs";
-import { W, A, S, D, Q, E, SHIFT, SPACE } from "../components/utils";
 
 export default function Solo() {
   // CAVEMAN GET HOOKS
-  const { gameManagerRef, initializeForSocket } = useSoloGame();
-  const { getSocket, connect } = useSocketConnection();
-  const { notifications, addNotification } = useNotifications();
+  const { gameManagerRef } = useSoloGame();
+  const { getSocket } = useSocketConnection();
+  const { notifications } = useNotifications();
   const isMobileDevice = useMobileDetection();
   const rockPositions = useRockPositions();
-  const [currentFPS, setCurrentFPS] = useState(60);
-  const { quality, setQuality, qualitySettings } = useQualitySettings(currentFPS);
-  const { mouseControls, setMouseControls } = useMouseControls();
-  const { chatMessages, chatVisible, setChatVisible, addChatMessage } = useChatMessages();
+  const [currentFPS] = useState(60);
+  const { setQuality, qualitySettings } = useQualitySettings(currentFPS);
+  const { mouseControls } = useMouseControls();
+  const { chatMessages, chatVisible, setChatVisible } = useChatMessages();
 
   // CAVEMAN MAKE REFS
-  const playerCharacterRef = useRef(null);
-  const keysPressedRef = useRef({});
+  const playerCharacterRef = useRef<PlayerCharacterHandle | null>(null);
+  const keysPressedRef = useRef<Record<string, boolean>>({});
   const lastWalkSoundTimeRef = useRef(0);
-  const clientsRef = useRef({});
-  const gameManager = gameManagerRef;
-  const [gameState, setGameState] = useState({ mode: "none", isActive: false, timeRemaining: 0, scores: {} });
-  const [gamePlayers, setGamePlayers] = useState(new Map());
+  const clients = React.useMemo<
+    Record<
+      string,
+      {
+        position: [number, number, number];
+        rotation: [number, number, number];
+      }
+    >
+  >(() => ({}), []);
+  const gameManager = gameManagerRef.current; // eslint-disable-line react-hooks/refs
+  const [gameState, setGameState] = useState<GameState>({
+    mode: "none",
+    isActive: false,
+    timeRemaining: 0,
+    scores: {},
+  });
+  const [gamePlayers] = useState<Map<string, Player>>(new Map());
   const [playerIsIt, setPlayerIsIt] = useState(false);
   const [botDebugMode, setBotDebugMode] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [joystickMove, setJoystickMove] = useState({ x: 0, y: 0 });
   const [bot1GotTagged, setBot1GotTagged] = useState(0);
   const [bot2GotTagged, setBot2GotTagged] = useState(0);
-  const playerPositionRef = useRef([0, 0, 0]);
-  const bot1PositionRef = useRef([0, 0, 0]);
-  const bot2PositionRef = useRef([0, 0, 0]);
-  const collisionSystemRef = useRef(null);
+  const playerPositionRef = useRef<[number, number, number]>([0, 0, 0]);
+  const bot1PositionRef = useRef<[number, number, number]>([0, 0, 0]);
+  const bot2PositionRef = useRef<[number, number, number]>([0, 0, 0]);
+  const collisionSystemRef = useRef<CollisionSystem | null>(null);
   const currentPlayerId = getSocket()?.id || "solo";
 
   // CAVEMAN HANDLER (EXAMPLE, REAL LOGIC IN COMPONENTS)
@@ -56,7 +68,7 @@ export default function Solo() {
   const handleEndGame = () => {};
   const handleResumeGame = () => setIsPaused(false);
   const handleQuitGame = () => {};
-  const handleSendMessage = (msg) => {};
+  const handleSendMessage: (message: string) => void = () => {};
   const handleBot1PositionUpdate = () => {};
   const handleBot2PositionUpdate = () => {};
 
@@ -69,8 +81,8 @@ export default function Solo() {
         keysPressedRef={keysPressedRef}
         socketClient={getSocket()}
         mouseControls={mouseControls}
-        clients={clientsRef.current}
-        gameManager={gameManager.current}
+        clients={clients}
+        gameManager={gameManager}
         currentPlayerId={currentPlayerId}
         joystickMove={joystickMove}
         lastWalkSoundTimeRef={lastWalkSoundTimeRef}

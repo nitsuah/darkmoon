@@ -20,7 +20,7 @@ export interface BotCharacterProps {
   targetIsIt: boolean;
   onTagTarget: () => void;
   gameState: GameState;
-  collisionSystem: React.RefObject<CollisionSystem>;
+  collisionSystem: React.RefObject<CollisionSystem | null>;
   gotTaggedTimestamp?: number;
   showHitboxes?: boolean;
   config: BotConfig;

@@ -38,43 +38,81 @@ class MockGain {
   constructor() {
     this.gain = {
       value: 1,
-      setValueAtTime: (_v: number, _t: number) => {},
-      linearRampToValueAtTime: (_v: number, _t: number) => {},
-      exponentialRampToValueAtTime: (_v: number, _t: number) => {},
+      setValueAtTime: (_v: number, _t: number) => {
+        void _v;
+        void _t;
+      },
+      linearRampToValueAtTime: (_v: number, _t: number) => {
+        void _v;
+        void _t;
+      },
+      exponentialRampToValueAtTime: (_v: number, _t: number) => {
+        void _v;
+        void _t;
+      },
     };
   }
   connect() {}
 }
+
+class MockBiquad {
+  type = "lowpass";
+  frequency = { value: 1000 };
+  Q = { value: 1 };
+  connect() {}
+}
+
+class MockAudioContext {
+  destination = {};
+  currentTime = 0;
+  state: "closed" | "running" | "suspended" = "suspended";
+
+  createGain() {
+    return new MockGain();
   }
+
+  createOscillator() {
+    return new MockOscillator();
+  }
+
+  createBiquadFilter() {
+    return new MockBiquad();
+  }
+
   resume() {
     this.state = "running";
     return Promise.resolve();
   }
+
   close() {
     return Promise.resolve();
   }
 }
 
+type GlobalWithAudioContext = Record<string, unknown> & {
+  window?: Record<string, unknown>;
+};
+
 let originalAudioContext: unknown;
 
-
 beforeEach(() => {
-  originalAudioContext = (globalThis as any).AudioContext;
-  (globalThis as any).AudioContext = MockAudioContext;
+  const globalWithAudioContext = globalThis as unknown as GlobalWithAudioContext;
+  originalAudioContext = globalWithAudioContext.AudioContext;
+  globalWithAudioContext.AudioContext = MockAudioContext;
   // Patch window for SoundManager browser checks
-  if (!(globalThis as any).window) {
-    (globalThis as any).window = {};
+  if (!globalWithAudioContext.window) {
+    globalWithAudioContext.window = {};
   }
-  (globalThis as any).window.AudioContext = MockAudioContext;
+  globalWithAudioContext.window.AudioContext = MockAudioContext;
   vi.useFakeTimers();
   vi.resetModules();
 });
 
-
 afterEach(() => {
-  (globalThis as any).AudioContext = originalAudioContext;
-  if ((globalThis as any).window) {
-    delete (globalThis as any).window.AudioContext;
+  const globalWithAudioContext = globalThis as unknown as GlobalWithAudioContext;
+  globalWithAudioContext.AudioContext = originalAudioContext;
+  if (globalWithAudioContext.window) {
+    delete globalWithAudioContext.window.AudioContext;
   }
   vi.useRealTimers();
 });

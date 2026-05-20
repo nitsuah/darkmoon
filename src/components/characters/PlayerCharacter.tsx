@@ -28,11 +28,14 @@ import {
   computeFacingYaw,
 } from "../../lib/hooks/usePlayerMovement";
 import {
-  computeJetpackThrust,
   shouldActivateJetpackFromMobile,
 } from "../../lib/hooks/useJetpack";
 
 const tagDebug = createTagLogger("PlayerCharacter");
+
+type WindowWithPlayerFreeze = typeof globalThis & {
+  __playerFreezeUntil?: number;
+};
 
 export interface PlayerCharacterProps {
   keysPressedRef: React.MutableRefObject<{ [key: string]: boolean }>;
@@ -124,8 +127,6 @@ export const PlayerCharacter = React.forwardRef<
     jetpackActiveRef,
     isUsingRCSRef,
     rcsTimeRemainingRef,
-    jetpackThrustSoundRef,
-    lastRCSSoundTimeRef,
   } = physics;
 
   const camera = usePlayerCamera();
@@ -172,7 +173,7 @@ export const PlayerCharacter = React.forwardRef<
       const freezeUntil = Date.now() + 1500;
       playerFreezeEndTimeRef.current = freezeUntil;
       if (typeof window !== "undefined") {
-        window.__playerFreezeUntil = freezeUntil;
+        (window as WindowWithPlayerFreeze).__playerFreezeUntil = freezeUntil;
       }
       tagDebug("👤 Player frozen for 1500ms after being tagged by bot");
     }
@@ -180,7 +181,7 @@ export const PlayerCharacter = React.forwardRef<
     return () => {
       window.removeEventListener("player-tagged-by-bot", handleFreezePlayer);
     };
-  }, []);
+  }, [isPlayerFrozenRef, playerFreezeEndTimeRef]);
 
   // gated debug logger - only logs in dev
   const debug = (...args: unknown[]) => {
@@ -651,15 +652,16 @@ export const PlayerCharacter = React.forwardRef<
   const currentPlayer = gameManager?.getPlayers().get(currentPlayerId);
   const isIt = currentPlayer?.isIt || false;
 
+  /* eslint-disable react-hooks/refs, react/no-unknown-property */
   // Calculate current velocity for animation
   const currentVelocity: [number, number, number] = [
-    velocityRef.current.x, // eslint-disable-line react-hooks/refs
-    velocityRef.current.y, // eslint-disable-line react-hooks/refs
-    velocityRef.current.z, // eslint-disable-line react-hooks/refs
+    velocityRef.current.x,
+    velocityRef.current.y,
+    velocityRef.current.z,
   ];
-
-    // Check if sprinting (declared at the top level)
-    const isSprinting = keysPressedRef.current[SHIFT];
+  const currentCameraRotation = cameraRotationRef.current.horizontal;
+  const isSprinting = keysPressedRef.current[SHIFT];
+  const isJetpackActive = jetpackActiveRef.current;
 
   // Precompute dust meshes to avoid const declarations in JSX
   let dustMeshes: React.ReactElement[] = [];
@@ -690,9 +692,9 @@ export const PlayerCharacter = React.forwardRef<
         color={isIt ? "#ff4444" : "#4a90e2"}
         isIt={isIt}
         velocity={currentVelocity}
-        cameraRotation={cameraRotationRef.current.horizontal}
-          isSprinting={isSprinting} // Reference the top-level declaration
-        isJetpackActive={jetpackActiveRef.current}
+        cameraRotation={currentCameraRotation}
+        isSprinting={isSprinting}
+        isJetpackActive={isJetpackActive}
       />
       {/* Jetpack thrust visual effect */}
       {showJetpackFlame && (
@@ -737,6 +739,7 @@ export const PlayerCharacter = React.forwardRef<
       )}
     </group>
   );
+  /* eslint-enable react-hooks/refs, react/no-unknown-property */
 });
 
 PlayerCharacter.displayName = "PlayerCharacter";

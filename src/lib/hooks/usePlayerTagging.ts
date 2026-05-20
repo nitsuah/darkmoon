@@ -34,7 +34,6 @@ export function processTagging(params: TaggingParams): boolean {
     myId,
     gameManager,
     lastTagCheckRef,
-    playerIsIt,
     setPlayerIsIt,
     setBotIsIt,
     setBot1GotTagged,

@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from "react";
+import React, { useCallback } from "react";
 import { BotCharacter } from "../../../components/characters/BotCharacter";
 import type { SoloSceneProps } from "./SoloScene.types";
 import type { BotConfig as FullBotConfig } from "../../../components/characters/useBotAI";
@@ -20,11 +20,10 @@ const Bots: React.FC<
     | "gameManager"
     | "gameState"
     | "setBot1GotTagged"
-    | "setBot2GotTagged"
-    | "currentPlayerId"
-    | "playerIsIt"
-    | "playerPositionRef"
-    | "playerMeshRef"
+      | "setBot2GotTagged"
+      | "currentPlayerId"
+      | "playerIsIt"
+      | "playerPositionRef"
   >
 > = ({
   botDebugMode,
@@ -45,7 +44,6 @@ const Bots: React.FC<
   currentPlayerId,
   playerIsIt,
   playerPositionRef,
-  playerMeshRef,
 }) => {
   // keep default bot config merging inline to preserve behavior
   const DEFAULT_BOT_CONFIG: FullBotConfig = {
@@ -88,12 +86,6 @@ const Bots: React.FC<
     );
   }, [bot1IsIt, bot2IsIt, playerIsItFromManager]);
 
-  // Force a re-render when bot1IsIt changes to ensure bot AI logic is fresh
-  const [forceUpdate, setForceUpdate] = useState(0);
-  useEffect(() => {
-    setForceUpdate((n) => n + 1);
-  }, [bot1IsIt]);
-
   // Bot tag callbacks - handle bot-to-bot tagging
 
   const handleBot1TagTarget = useCallback(() => {
@@ -127,15 +119,15 @@ const Bots: React.FC<
       console.log(`[BOT-TAG-DEBUG] Bot1 attempting to tag ${targetId}`);
       const result = gameManager.tagPlayer("bot-1", targetId);
       console.log(`[BOT-TAG-DEBUG] gameManager.tagPlayer('bot-1', ${targetId}) returned:`, result);
-      if (result) {
-        if (botDebugMode) {
-          setBot2GotTagged(Date.now());
-        } else if (targetId === currentPlayerId && typeof window !== "undefined") {
-          // Trigger player freeze/cooldown after being tagged by bot
-          const event = new CustomEvent("player-tagged-by-bot");
-          window.dispatchEvent(event);
+        if (result) {
+          if (botDebugMode) {
+            setBot2GotTagged(Date.now());
+          } else if (targetId === currentPlayerId && typeof window !== "undefined") {
+            // Trigger player freeze/cooldown after being tagged by bot
+            const event = new window.Event("player-tagged-by-bot");
+            window.dispatchEvent(event);
+          }
         }
-      }
     } else {
       console.log(`[BOT-TAG-DEBUG] Bot1 target (${targetId}) is already IT, cannot tag.`);
     }
@@ -171,8 +163,16 @@ const Bots: React.FC<
         targetIsIt={botDebugMode ? bot2IsIt : playerIsItFromManager}
         isPaused={isPaused}
         onTagTarget={() => {
+          const windowWithPlayerFreeze =
+            typeof window === "undefined"
+              ? undefined
+              : (window as typeof globalThis & { __playerFreezeUntil?: number });
+
           // Prevent tag if player is frozen/cooldown
-          if (typeof window !== "undefined" && window.__playerFreezeUntil && Date.now() < window.__playerFreezeUntil) {
+          if (
+            windowWithPlayerFreeze?.__playerFreezeUntil &&
+            Date.now() < windowWithPlayerFreeze.__playerFreezeUntil
+          ) {
             console.log("[BOT-TAG-DEBUG] Player is frozen/cooldown, cannot tag");
             return;
           }

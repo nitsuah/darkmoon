@@ -187,10 +187,7 @@ describe("Solo Component", () => {
 
     expect(io).toHaveBeenCalledWith("http://custom-server.com", {
       transports: ["websocket"],
-      reconnection: false,
-      reconnectionAttempts: 0,
-      reconnectionDelay: 0,
-      autoConnect: false,
+      autoConnect: true,
     });
 
     vi.unstubAllEnvs();
@@ -204,10 +201,7 @@ describe("Solo Component", () => {
 
     expect(io).toHaveBeenCalledWith(window.location.origin, {
       transports: ["websocket"],
-      reconnection: false,
-      reconnectionAttempts: 0,
-      reconnectionDelay: 0,
-      autoConnect: false,
+      autoConnect: true,
     });
   });
 });

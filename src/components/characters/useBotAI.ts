@@ -34,7 +34,7 @@ export interface BotAIProps {
   onTagTarget: () => void;
   onPositionUpdate: (position: [number, number, number]) => void;
   gameState: GameState;
-  collisionSystem: React.RefObject<CollisionSystem>;
+  collisionSystem: React.RefObject<CollisionSystem | null>;
   gotTaggedTimestamp?: number;
   config: BotConfig;
   meshRef: React.RefObject<THREE.Group | null>;
