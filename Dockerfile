@@ -35,19 +35,32 @@ COPY . .
 RUN npm run build
 
 # ================================
-# Stage 3: Runner
+# Stage 3: Dev
+# Runs the application in development mode
+# ================================
+FROM node:22-alpine AS dev
+RUN apk add --no-cache git
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies, including devDependencies
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# ================================
+# Stage 4: Runner
 # Runs the application in production
 # ================================
 FROM node:22-alpine AS runner
-RUN apk add --no-cache git
 WORKDIR /app
 
 
 # Set production environment
 ENV NODE_ENV=production
-
-# Install git for lint-staged/husky in Docker
-RUN apk add --no-cache git
 
 # Create non-root user for security
 RUN addgroup --system --gid 1001 nodejs
@@ -57,8 +70,6 @@ RUN adduser --system --uid 1001 appuser
 COPY --from=deps --chown=appuser:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=appuser:nodejs /app/dist ./dist
 COPY --from=builder --chown=appuser:nodejs /app/server.js ./server.js
-COPY --from=builder --chown=appuser:nodejs /app/develop.js ./develop.js
-COPY --from=builder --chown=appuser:nodejs /app/vite.config.js ./vite.config.js
 COPY --from=builder --chown=appuser:nodejs /app/server ./server
 COPY --from=builder --chown=appuser:nodejs /app/package*.json ./
 
