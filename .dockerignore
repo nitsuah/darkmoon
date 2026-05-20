@@ -2,7 +2,7 @@ node_modules
 npm-debug.log
 dist
 .vscode
-.git
+# .git removed so pre-commit can see git repo in container
 .gitignore
 Dockerfile
 Dockerfile.*
@@ -23,3 +23,5 @@ coverage
 *.next
 *.vercel
 *.netlify
+!vite.config.js
+!develop.js

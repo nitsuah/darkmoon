@@ -42,8 +42,7 @@ const tagDebug = createTagLogger("Solo");
 const Solo: React.FC = () => {
   const navigate = useNavigate();
   const [socketClient, setSocketClient] = useState<Socket | null>(null);
-  const clients = React.useMemo<Clients>(() => ({}), []);
-  const clientsRef = useRef<Clients>(clients);
+  const clientsRef = useRef<Clients>({}); // Use ref to avoid re-render loops
   const [currentFPS, setCurrentFPS] = useState(60);
   const { setQuality, qualitySettings } = useQualitySettings(currentFPS);
   const [isPaused, setIsPaused] = useState(false);
@@ -105,8 +104,6 @@ const Solo: React.FC = () => {
 
   // Solo mode: no reconnection refs needed
   const gameManager = useRef<GameManager | null>(null);
-  const [gameManagerInstance, setGameManagerInstance] =
-    useState<GameManager | null>(null);
   const lastWalkSoundTime = useRef(0);
   const isPausedRef = useRef(isPaused);
   const chatVisibleRef = useRef(chatVisible);
@@ -185,10 +182,7 @@ const Solo: React.FC = () => {
         },
         botDebugMode ? BOT2_CONFIG : BOT1_CONFIG,
       );
-      if (mgr) {
-        gameManager.current = mgr;
-        setGameManagerInstance(mgr);
-      }
+      if (mgr) gameManager.current = mgr;
     } catch {
       // ignore initialization errors in tests or non-browser envs
     }
@@ -603,8 +597,8 @@ const Solo: React.FC = () => {
         keysPressedRef={keysPressedRef}
         socketClient={socketClient}
         mouseControls={mouseControls}
-        clients={clients}
-        gameManager={gameManagerInstance}
+        clients={clientsRef.current ? { ...clientsRef.current } : {}} // CAVEMAN CLONE, NO DIRECT REF
+        gameManager={gameManager.current ? gameManager.current : null}
         currentPlayerId={currentPlayerId}
         joystickMove={joystickMove}
         lastWalkSoundTimeRef={lastWalkSoundTime}
@@ -620,7 +614,11 @@ const Solo: React.FC = () => {
         playerPositionRef={playerPositionRef}
         bot1PositionRef={bot1PositionRef}
         bot2PositionRef={bot2PositionRef}
-        collisionSystemRef={collisionSystemRef}
+        collisionSystemRef={
+          collisionSystemRef as React.RefObject<
+            import("../../components/CollisionSystem").CollisionSystem
+          >
+        }
         handleBot1PositionUpdate={handleBot1PositionUpdate}
         handleBot2PositionUpdate={handleBot2PositionUpdate}
         bot1GotTagged={bot1GotTagged}

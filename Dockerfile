@@ -6,6 +6,7 @@
 # Installs production dependencies
 # ================================
 FROM node:22-alpine AS deps
+RUN apk add --no-cache git
 WORKDIR /app
 
 # Copy package files for caching
@@ -18,6 +19,7 @@ RUN npm pkg delete scripts.prepare && npm ci --omit=dev
 # Builds the application
 # ================================
 FROM node:22-alpine AS builder
+RUN apk add --no-cache git
 WORKDIR /app
 
 # Copy package files
@@ -37,6 +39,7 @@ RUN npm run build
 # Runs the application in production
 # ================================
 FROM node:22-alpine AS runner
+RUN apk add --no-cache git
 WORKDIR /app
 
 
@@ -54,6 +57,8 @@ RUN adduser --system --uid 1001 appuser
 COPY --from=deps --chown=appuser:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=appuser:nodejs /app/dist ./dist
 COPY --from=builder --chown=appuser:nodejs /app/server.js ./server.js
+COPY --from=builder --chown=appuser:nodejs /app/develop.js ./develop.js
+COPY --from=builder --chown=appuser:nodejs /app/vite.config.js ./vite.config.js
 COPY --from=builder --chown=appuser:nodejs /app/server ./server
 COPY --from=builder --chown=appuser:nodejs /app/package*.json ./
 
