@@ -42,7 +42,8 @@ const tagDebug = createTagLogger("Solo");
 const Solo: React.FC = () => {
   const navigate = useNavigate();
   const [socketClient, setSocketClient] = useState<Socket | null>(null);
-  const clientsRef = useRef<Clients>({}); // Use ref to avoid re-render loops
+  const clients = React.useMemo<Clients>(() => ({}), []);
+  const clientsRef = useRef<Clients>(clients);
   const [currentFPS, setCurrentFPS] = useState(60);
   const { setQuality, qualitySettings } = useQualitySettings(currentFPS);
   const [isPaused, setIsPaused] = useState(false);
@@ -104,6 +105,8 @@ const Solo: React.FC = () => {
 
   // Solo mode: no reconnection refs needed
   const gameManager = useRef<GameManager | null>(null);
+  const [gameManagerInstance, setGameManagerInstance] =
+    useState<GameManager | null>(null);
   const lastWalkSoundTime = useRef(0);
   const isPausedRef = useRef(isPaused);
   const chatVisibleRef = useRef(chatVisible);
@@ -182,7 +185,10 @@ const Solo: React.FC = () => {
         },
         botDebugMode ? BOT2_CONFIG : BOT1_CONFIG,
       );
-      if (mgr) gameManager.current = mgr;
+      if (mgr) {
+        gameManager.current = mgr;
+        setGameManagerInstance(mgr);
+      }
     } catch {
       // ignore initialization errors in tests or non-browser envs
     }
@@ -597,8 +603,8 @@ const Solo: React.FC = () => {
         keysPressedRef={keysPressedRef}
         socketClient={socketClient}
         mouseControls={mouseControls}
-        clients={clientsRef.current}
-        gameManager={gameManager.current}
+        clients={clients}
+        gameManager={gameManagerInstance}
         currentPlayerId={currentPlayerId}
         joystickMove={joystickMove}
         lastWalkSoundTimeRef={lastWalkSoundTime}
