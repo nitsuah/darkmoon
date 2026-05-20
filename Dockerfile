@@ -51,13 +51,15 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Ensure .vite-temp is writable for Vitest (dev/CI workaround)
+RUN mkdir -p /app/node_modules/.vite-temp && chmod -R 775 /app/node_modules/.vite-temp
+
 # ================================
 # Stage 4: Runner
 # Runs the application in production
 # ================================
 FROM node:22-alpine AS runner
 WORKDIR /app
-
 
 # Set production environment
 ENV NODE_ENV=production
@@ -72,11 +74,6 @@ COPY --from=builder --chown=appuser:nodejs /app/dist ./dist
 COPY --from=builder --chown=appuser:nodejs /app/server.js ./server.js
 COPY --from=builder --chown=appuser:nodejs /app/server ./server
 COPY --from=builder --chown=appuser:nodejs /app/package*.json ./
-
-
-
-# Ensure .vite-temp is writable for Vitest (dev/CI workaround)
-RUN mkdir -p /app/node_modules/.vite-temp && chmod -R 777 /app/node_modules/.vite-temp
 
 # Switch to non-root user
 USER appuser
