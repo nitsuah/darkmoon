@@ -1,0 +1,35 @@
+#!/usr/bin/env sh
+set -e
+
+echo "🔍 Running pre-commit hook..."
+
+# Source nvm if it exists (common on Windows)
+if [ -f "$HOME/.nvm/nvm.sh" ]; then
+    . "$HOME/.nvm/nvm.sh"
+fi
+
+# Add common Windows Node.js paths
+export PATH="$PATH:/c/Program Files/nodejs:/c/Program Files (x86)/nodejs"
+export PATH="$PATH:$APPDATA/npm:$HOME/AppData/Roaming/npm"
+
+# Prefer Docker if available; fallback to host lint-staged.
+if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    if ! docker compose ps app 2>/dev/null | grep -q 'running'; then
+        echo "🦖 'app' container not running. Starting container..."
+        docker compose up -d app
+    fi
+    echo "✓ Using docker compose lint-staged in app container"
+    docker compose exec -T app sh -c 'cd /app && git config --global --add safe.directory /app && npx lint-staged --no-stash --no-hide-partially-staged --config ./config/lint-staged.config.json'
+elif command -v docker-compose >/dev/null 2>&1; then
+    if ! docker-compose ps | grep -q 'app.*Up'; then
+        echo "🦖 'app' container not running. Starting container..."
+        docker-compose up -d app
+    fi
+    echo "✓ Using docker-compose lint-staged in app container"
+    docker-compose exec -T app sh -c 'cd /app && git config --global --add safe.directory /app && npx lint-staged --no-stash --no-hide-partially-staged --config ./config/lint-staged.config.json'
+else
+    echo "⚠️ Docker compose not found. Running lint-staged on host."
+    npx lint-staged --no-stash --no-hide-partially-staged --config ./config/lint-staged.config.json
+fi
+
+echo "✅ Pre-commit checks passed!"

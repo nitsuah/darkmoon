@@ -5,7 +5,6 @@
 
 > Solo-live 3D browser tag game built with React 19, Three Fiber, Socket.io, and Vite. **Solo mode is the live experience; multiplayer is planned.**
 
-
 **Live Demo:** [darkmoon.dev](https://darkmoon.dev)
 
 ## Documentation
@@ -57,8 +56,7 @@ docker build -t darkmoon-prod .
 docker run --rm -p 4444:4444 darkmoon-prod
 ```
 
-The app will be available at [http://localhost:4444](http://localhost:4444). Healthcheck: `GET /health`.
-- Pull request process
+The app will be available at [http://localhost:4444](http://localhost:4444). Healthcheck: `GET /health`
 
 ## 📝 License
 
@@ -66,4 +64,4 @@ MIT © 2025 Nitsuah Labs
 
 ---
 
-**Original boilerplate:** [R3F.Multiplayer](https://github.com/juniorxsound/R3F.Multiplayer) by [@juniorxsound](https://github.com/juniorxsound)
+**Inspiration:** [R3F.Multiplayer](https://github.com/juniorxsound/R3F.Multiplayer) by [@juniorxsound](https://github.com/juniorxsound)

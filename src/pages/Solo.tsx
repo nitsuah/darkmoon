@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { type Socket } from "socket.io-client";
 import type { Clients } from "../types/socket";
 import PerformanceMonitor from "../components/PerformanceMonitor";
@@ -42,8 +42,8 @@ const tagDebug = createTagLogger("Solo");
 const Solo: React.FC = () => {
   const navigate = useNavigate();
   const [socketClient, setSocketClient] = useState<Socket | null>(null);
-  const clients = React.useMemo<Clients>(() => ({}), []);
-  const clientsRef = useRef<Clients>(clients);
+  const clients = useMemo<Clients>(() => ({}), []);
+  const clientsRef = useRef<Clients>(clients); // Use ref to avoid re-render loops
   const [currentFPS, setCurrentFPS] = useState(60);
   const { setQuality, qualitySettings } = useQualitySettings(currentFPS);
   const [isPaused, setIsPaused] = useState(false);
@@ -105,13 +105,14 @@ const Solo: React.FC = () => {
 
   // Solo mode: no reconnection refs needed
   const gameManager = useRef<GameManager | null>(null);
-  const [gameManagerInstance, setGameManagerInstance] =
-    useState<GameManager | null>(null);
+  const [gameManagerState, setGameManagerState] = useState<GameManager | null>(
+    null,
+  );
   const lastWalkSoundTime = useRef(0);
   const isPausedRef = useRef(isPaused);
   const chatVisibleRef = useRef(chatVisible);
   const keysPressedRef = useRef(keysPressed);
-  const collisionSystemRef = useRef(new CollisionSystem());
+  const collisionSystemRef = useRef<CollisionSystem>(new CollisionSystem());
   const playerCharacterRef = useRef<PlayerCharacterHandle>(null);
 
   // Keep refs in sync with state
@@ -187,7 +188,7 @@ const Solo: React.FC = () => {
       );
       if (mgr) {
         gameManager.current = mgr;
-        setGameManagerInstance(mgr);
+        setGameManagerState(mgr);
       }
     } catch {
       // ignore initialization errors in tests or non-browser envs
@@ -604,7 +605,7 @@ const Solo: React.FC = () => {
         socketClient={socketClient}
         mouseControls={mouseControls}
         clients={clients}
-        gameManager={gameManagerInstance}
+        gameManager={gameManagerState}
         currentPlayerId={currentPlayerId}
         joystickMove={joystickMove}
         lastWalkSoundTimeRef={lastWalkSoundTime}

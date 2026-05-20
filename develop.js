@@ -1,12 +1,11 @@
 import fs from "fs";
 import express from "express";
-import Router from "express-promise-router";
 import { createServer } from "vite";
 import viteConfig from "./vite.config.js";
 import { Server } from "socket.io";
 
 // Create router
-const router = Router();
+const router = express.Router();
 
 // Create vite front end dev server
 const vite = await createServer({
@@ -28,7 +27,7 @@ router.get("/", async (req, res) => {
 router.use(vite.middlewares);
 
 // Everything else that's not index 404s
-router.use("*", (req, res) => {
+router.use((req, res) => {
   res.status(404).send({ message: "Not Found" });
 });
 
@@ -46,7 +45,7 @@ let clients = {};
 // Socket app msgs
 ioServer.on("connection", (client) => {
   console.log(
-    `User ${client.id} connected, there are currently ${ioServer.engine.clientsCount} users connected`
+    `User ${client.id} connected, there are currently ${ioServer.engine.clientsCount} users connected`,
   );
 
   //Add a new client indexed by his id
@@ -69,7 +68,7 @@ ioServer.on("connection", (client) => {
 
   client.on("disconnect", () => {
     console.log(
-      `User ${client.id} disconnected, there are currently ${ioServer.engine.clientsCount} users connected`
+      `User ${client.id} disconnected, there are currently ${ioServer.engine.clientsCount} users connected`,
     );
 
     //Delete this client from the object
