@@ -24,27 +24,29 @@ vi.mock("@react-three/fiber", () => ({
   ),
 }));
 
-const MockOrbitControls = React.forwardRef((_props, ref) => {
-  const controls = {
-    object: {
-      position: { toArray: (arr: number[]) => arr.push(1, 2, 3) },
-      rotation: { toArray: (arr: number[]) => arr.push(0.1, 0.2, 0.3) },
-    },
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-  };
-  if (typeof ref === "function") ref(controls);
-  return <div data-testid="orbit-controls" />;
-});
-MockOrbitControls.displayName = "MockOrbitControls";
+vi.mock("@react-three/drei", () => {
+  const OrbitControls = React.forwardRef((_props, ref) => {
+    const controls = {
+      object: {
+        position: { toArray: (arr: number[]) => arr.push(1, 2, 3) },
+        rotation: { toArray: (arr: number[]) => arr.push(0.1, 0.2, 0.3) },
+      },
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    };
+    if (typeof ref === "function") ref(controls);
+    return <div data-testid="orbit-controls" />;
+  });
+  OrbitControls.displayName = "MockOrbitControls";
 
-vi.mock("@react-three/drei", () => ({
-  OrbitControls: MockOrbitControls,
-  Text: ({ children }: { children: React.ReactNode }) => (
-    <span>{children}</span>
-  ),
-  Stats: () => <div data-testid="stats" />,
-}));
+  return {
+    OrbitControls,
+    Text: ({ children }: { children: React.ReactNode }) => (
+      <span>{children}</span>
+    ),
+    Stats: () => <div data-testid="stats" />,
+  };
+});
 
 describe("Lobby Page", () => {
   beforeEach(() => {

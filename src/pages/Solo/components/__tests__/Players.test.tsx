@@ -3,16 +3,16 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import Players from "../Players";
 
-const MockPlayerCharacter = React.forwardRef<unknown, unknown>((props, ref) => {
-  void props;
-  void ref;
-  return <div data-testid="player-character" />;
-});
-MockPlayerCharacter.displayName = "MockPlayerCharacter";
+vi.mock("../../../../components/characters/PlayerCharacter", () => {
+  const PlayerCharacter = React.forwardRef<unknown, unknown>((props, ref) => {
+    void props;
+    void ref;
+    return <div data-testid="player-character" />;
+  });
+  PlayerCharacter.displayName = "MockPlayerCharacter";
 
-vi.mock("../../../../components/characters/PlayerCharacter", () => ({
-  PlayerCharacter: MockPlayerCharacter,
-}));
+  return { PlayerCharacter };
+});
 
 vi.mock("../../../../components/SpacemanModel", () => ({
   default: ({ isIt }: { isIt?: boolean }) => (
