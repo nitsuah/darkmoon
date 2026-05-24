@@ -114,14 +114,14 @@ describe("CharacterControls", () => {
       "Idle",
     );
 
-    const inputs = [
-      { w: true, a: true },
-      { w: true, d: true },
-      { s: true, a: true },
-      { s: true, d: true },
-      { s: true },
-      { a: true },
-      { d: true },
+    const inputs: Record<string, boolean>[] = [
+      { w: true, a: true, s: false, d: false },
+      { w: true, d: true, s: false, a: false },
+      { s: true, a: true, w: false, d: false },
+      { s: true, d: true, w: false, a: false },
+      { s: true, w: false, a: false, d: false },
+      { a: true, w: false, s: false, d: false },
+      { d: true, w: false, s: false, a: false },
     ];
 
     for (const keyMap of inputs) {

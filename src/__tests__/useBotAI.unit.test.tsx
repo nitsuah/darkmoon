@@ -72,14 +72,19 @@ function mountHook(overrides?: Partial<HarnessProps>) {
   const onTagTarget = vi.fn();
   const onPositionUpdate = vi.fn();
 
-  const baseProps = {
+  const baseProps: HarnessProps = {
     targetPositionRef: { current: [1, 0, 0] as [number, number, number] },
     isPaused: false,
     isIt: true,
     targetIsIt: false,
     onTagTarget,
     onPositionUpdate,
-    gameState: { mode: "tag", isActive: true, timeRemaining: 0, scores: {} },
+    gameState: {
+      mode: "tag",
+      isActive: true,
+      timeRemaining: 0,
+      scores: {},
+    },
     collisionSystem: fakeCollision,
     gotTaggedTimestamp: undefined as number | undefined,
     config: {

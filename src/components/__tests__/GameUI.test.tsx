@@ -34,8 +34,7 @@ describe("GameUI", () => {
       isActive: true,
       timeRemaining: 90,
       itPlayerId: "p2",
-      gameStartTime: Date.now(),
-      gameEndTime: Date.now() + 90000,
+      roundStartTime: Date.now(),
       scores: {},
     };
 
@@ -69,9 +68,6 @@ describe("GameUI", () => {
       mode: "tag",
       isActive: false,
       timeRemaining: 0,
-      itPlayerId: null,
-      gameStartTime: null,
-      gameEndTime: null,
       scores: {},
     };
 

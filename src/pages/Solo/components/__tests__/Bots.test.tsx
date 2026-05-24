@@ -39,8 +39,8 @@ describe("Bots", () => {
 
     return {
       botDebugMode: false,
-      bot1PositionRef: { current: null },
-      bot2PositionRef: { current: null },
+      bot1PositionRef: { current: [0, 0, 0] as [number, number, number] },
+      bot2PositionRef: { current: [1, 0, 0] as [number, number, number] },
       isPaused: false,
       handleBot1PositionUpdate: vi.fn(),
       handleBot2PositionUpdate: vi.fn(),
@@ -63,7 +63,7 @@ describe("Bots", () => {
       setBot2GotTagged: vi.fn(),
       currentPlayerId: "player-1",
       playerIsIt: false,
-      playerPositionRef: { current: null },
+      playerPositionRef: { current: [2, 0, 0] as [number, number, number] },
       ...overrides,
     };
   }
