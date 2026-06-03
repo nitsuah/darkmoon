@@ -20,43 +20,51 @@
 - `[in-progress]` **Mobile Support** — Responsive layout and touch controls exist, but device validation is still open.
 - `[shipped]` **Modern Tooling** — Vite, Vitest, ESLint, Prettier, TypeScript, and CI are wired into the repo.
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
-# Clone the repository
-git clone git@github.com:nitsuah/darkmoon.git
-cd darkmoon
-
-# Install dependencies
-npm install
-
-
-# Start development server
-npm run dev
+# Dev server (hot reload via Vite)
+docker compose -f config/docker-compose.yml up app
 ```
 
-Visit `http://localhost:4444` to play locally. **Solo mode is the only live experience; multiplayer is not yet available.**
+Visit `http://localhost:4444`. **Solo mode is the only live experience; multiplayer is not yet available.**
 
-## 🤝 Contributing
+## Development
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
-
-- Development workflow and available scripts
-- Code quality standards and testing guidelines
-- Deployment and troubleshooting tips
-
----
-
-**Docker Production Build**
-
-To build and run the production container:
+All checks run via Docker — no local Node.js required.
 
 ```bash
-docker build -t darkmoon-prod .
+# Run all tests (366 tests, Vitest)
+docker compose -f config/docker-compose.yml --project-name darkmoon --profile test run --rm test
+
+# Lint
+npm run lint:docker
+
+# Production build
+docker build --target runner -t darkmoon-prod .
 docker run --rm -p 4444:4444 darkmoon-prod
 ```
 
-The app will be available at [http://localhost:4444](http://localhost:4444). Healthcheck: `GET /health`
+**Git hooks** are managed by husky and run Docker automatically:
+
+- **pre-commit**: runs lint-staged via Docker (lint changed files)
+- **pre-push**: runs full test suite in Docker
+
+Install hooks after cloning:
+
+```bash
+npm install   # triggers husky install via `prepare` script
+```
+
+**pre-commit** (optional, adds basic file hygiene on top of husky):
+
+```bash
+pip install pre-commit && pre-commit install
+```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for code quality standards and deployment tips.
 
 ## 📝 License
 
@@ -65,3 +73,11 @@ MIT © 2025 Nitsuah Labs
 ---
 
 **Inspiration:** [R3F.Multiplayer](https://github.com/juniorxsound/R3F.Multiplayer) by [@juniorxsound](https://github.com/juniorxsound)
+
+## Community Standards
+
+Shared community policies are centralized in https://github.com/nitsuah/.github:
+
+- Contributing: https://github.com/nitsuah/.github/blob/main/CONTRIBUTING.md
+- Code of Conduct: https://github.com/nitsuah/.github/blob/main/CODE_OF_CONDUCT.md
+- Security: https://github.com/nitsuah/.github/blob/main/SECURITY.md
