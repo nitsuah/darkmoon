@@ -7,7 +7,7 @@ import {
   validateRotation,
   validateChatMessage,
   validateGameMode,
-} from "./server/validation.js";
+} from "./validation.js";
 
 // Environment configuration
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4444;
@@ -52,7 +52,7 @@ setInterval(() => {
 
   if (keysToDelete.length > 0) {
     console.log(
-      `[Rate Limit Cleanup] Removed ${keysToDelete.length} stale entries`
+      `[Rate Limit Cleanup] Removed ${keysToDelete.length} stale entries`,
     );
   }
 }, 300000); // Run every 5 minutes
@@ -115,9 +115,7 @@ router.get("/", async (req, res) => {
   });
 });
 
-
 // ...existing code...
-
 
 // Create express app and listen on specified port
 const app = express();
@@ -131,7 +129,7 @@ app.use(
       const isAllowed = ALLOWED_ORIGINS.some((allowedOrigin) => {
         if (allowedOrigin.includes("*")) {
           const pattern = new RegExp(
-            "^" + allowedOrigin.replace(/\*/g, ".*") + "$"
+            "^" + allowedOrigin.replace(/\*/g, ".*") + "$",
           );
           return pattern.test(origin);
         }
@@ -146,7 +144,7 @@ app.use(
     },
     methods: ["GET", "POST"],
     credentials: true,
-  })
+  }),
 );
 app.use(express.static("dist"));
 
@@ -184,7 +182,7 @@ const ioServer = new Server(server, {
       const isAllowed = ALLOWED_ORIGINS.some((allowedOrigin) => {
         if (allowedOrigin.includes("*")) {
           const pattern = new RegExp(
-            "^" + allowedOrigin.replace(/\*/g, ".*") + "$"
+            "^" + allowedOrigin.replace(/\*/g, ".*") + "$",
           );
           return pattern.test(origin);
         }
@@ -213,7 +211,7 @@ let gameState = {
 // Socket app msgs
 ioServer.on("connection", (client) => {
   console.log(
-    `User ${client.id} connected, Total: ${ioServer.engine.clientsCount} users connected`
+    `User ${client.id} connected, Total: ${ioServer.engine.clientsCount} users connected`,
   );
 
   //Add a new client indexed by their id
@@ -298,9 +296,7 @@ ioServer.on("connection", (client) => {
       "dumbass",
       "jackass",
     ];
-    const { getBadWordsFromEnv, filterText } = await import(
-      "./server/profanity.js"
-    );
+    const { getBadWordsFromEnv, filterText } = await import("./profanity.js");
     const envList = getBadWordsFromEnv(process.env.CHAT_PROFANITY);
     const badWords = envList && envList.length > 0 ? envList : defaultBadWords;
 
@@ -396,7 +392,7 @@ ioServer.on("connection", (client) => {
 
   client.on("disconnect", () => {
     console.log(
-      `User ${client.id} disconnected, there are currently ${ioServer.engine.clientsCount} users connected`
+      `User ${client.id} disconnected, there are currently ${ioServer.engine.clientsCount} users connected`,
     );
 
     // Delete their client from the object

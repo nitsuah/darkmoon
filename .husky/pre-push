@@ -1,30 +1,13 @@
 #!/usr/bin/env sh
 set -e
 
-echo "🔍 Running pre-push validation (same as CI)..."
+echo "Running pre-push validation (same as CI)..."
 
-# Source nvm if it exists
-if [ -f "$HOME/.nvm/nvm.sh" ]; then
-    . "$HOME/.nvm/nvm.sh"
-fi
-
-# Add common Windows Node.js paths
-export PATH="$PATH:/c/Program Files/nodejs:/c/Program Files (x86)/nodejs"
-export PATH="$PATH:$APPDATA/npm:$HOME/AppData/Roaming/npm"
-
-# Run CI checks
-if command -v npm >/dev/null 2>&1; then
-    echo "✓ Running typecheck..."
-    npm run typecheck || exit 1
-    
-    echo "✓ Running lint..."
-    npm run lint || exit 1
-    
-    echo "✓ Running tests (Vitest in-process runner)..."
-    node ./scripts/run-tests-inprocess.js || exit 1
-    
-    echo "✅ All pre-push checks passed!"
+if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    echo "Running tests in Docker..."
+    docker compose -f config/docker-compose.yml --project-name darkmoon --profile test run --rm test
+    echo "All pre-push checks passed!"
 else
-    echo "⚠️  WARNING: npm not found. Skipping pre-push checks."
-    echo "   Run manually: npm run ci"
+    echo "WARNING: Docker not found. Run manually: docker compose -f config/docker-compose.yml --project-name darkmoon --profile test run --rm test"
+    exit 1
 fi

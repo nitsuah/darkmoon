@@ -35,7 +35,20 @@ COPY . .
 RUN npm run build
 
 # ================================
-# Stage 3: Dev
+# Stage 3: Test
+# Runs Vitest unit tests
+# ================================
+FROM node:22-alpine AS test
+RUN apk add --no-cache git
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN mkdir -p /app/node_modules/.vite-temp && chmod -R 775 /app/node_modules/.vite-temp
+CMD ["npm", "run", "test:run"]
+
+# ================================
+# Stage 4: Dev
 # Runs the application in development mode
 # ================================
 FROM node:22-alpine AS dev
@@ -71,7 +84,6 @@ RUN adduser --system --uid 1001 appuser
 # Copy necessary files from previous stages
 COPY --from=deps --chown=appuser:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=appuser:nodejs /app/dist ./dist
-COPY --from=builder --chown=appuser:nodejs /app/server.js ./server.js
 COPY --from=builder --chown=appuser:nodejs /app/server ./server
 COPY --from=builder --chown=appuser:nodejs /app/package*.json ./
 
@@ -86,4 +98,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:4444/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)}).on('error', () => process.exit(1))"
 
 # Start the Express server directly with Node
-CMD ["node", "server.js"]
+CMD ["node", "server/index.js"]
