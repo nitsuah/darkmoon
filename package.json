@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@splinetool/react-spline": "^4.1.0",
-    "@splinetool/runtime": "^1.12.96",
+    "@splinetool/runtime": "^1.12.97",
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "react": "^19.2.3",
