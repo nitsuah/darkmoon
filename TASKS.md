@@ -1,21 +1,12 @@
 # Tasks
 
-Last Updated: 2026-04-03
-
-## Done
-
-- [x] **[Q2-CEO] Fix player tag system** — players cannot tag bots (and bots cannot reliably tag players back); the hit-detection and tagging collision logic needs to be fixed and symmetrical.
-  - Priority: P0
-  - Problem: bot-to-bot tagging works but player-to-bot and bot-to-player tagging is broken or inconsistent, making the game unplayable in mixed mode.
-  - Acceptance Criteria: players can tag bots using the same mechanics bots use on each other; bot-to-player tagging registers correctly; regression tests or a documented test scenario covers both directions.
-  - Completed: 2026-04-03
-  - Evidence: solo-mode bot AI now targets live player position and performs bot->player tag transfer through `GameManager.tagPlayer`; regression test `src/__tests__/bots.tagging.test.tsx` passes in Docker.
+Last Updated: 2026-06-08
 
 ## In Progress
 
 ## Todo
 
-  - [ ] Review debug mode and regular tag logic for edge cases and regressions.
+- [ ] Review debug mode and regular tag logic for edge cases and regressions.
 - [ ] Diagnose and fix any remaining issues where the bot does not chase the player or where tagging is inconsistent in solo mode.
 - [ ] Ensure all tag cooldowns and freeze logic are respected for both player and bot, and that tag-back is impossible during cooldown.
 
@@ -68,7 +59,6 @@ Last Updated: 2026-04-03
   - Priority: P2
   - Problem: older refactor tasks no longer match the codebase hotspots.
   - Acceptance Criteria: only current, high-value refactors remain and each one ties back to reliability, testability, or performance.
-
 
 ## See also: docs/INSTRUCTIONS.md for agent handoff and workflow best practices.
 
