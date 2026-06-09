@@ -1,11 +1,10 @@
 # Roadmap
 
-Last Updated: 2026-04-03
+Last Updated: 2026-06-08
 
-## 2025 Q4 (Completed)
+## 2025 Q4 ✅
 
-- [x] Establish the browser-game foundation.
-- [x] Ship baseline gameplay infrastructure for solo mode, server validation, and supporting docs.
+> Completed. Browser-game foundation and baseline gameplay infrastructure shipped.
 
 ## 2026 Q1 (In Progress)
 
@@ -17,7 +16,6 @@ Last Updated: 2026-04-03
 
 ### CEO Priorities
 - [ ] **21st.dev components integration**: leverage 21st.dev component library to enhance the look, feel, and interactivity of the game site — replace or augment existing UI surfaces with higher-quality, more interactive components.
-- [x] **Player tag system fix**: players currently cannot tag bots (and bots cannot tag players back consistently); fix the hit-detection and tagging logic so player-bot interactions are symmetrical and reliable.
 - [ ] **UI/UX polish pass using 21st.dev**: apply improved card layouts, transitions, and interactive states to the game lobby, scoreboard, and game-over screens.
 - [ ] **Open-source safety scrub**: remove or anonymize any sensitive, proprietary, or employer-identifying content so the repo can be shared publicly without exposing confidential details.
 

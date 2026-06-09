@@ -11,6 +11,7 @@ Status guide: `[shipped]` is live today, `[in-progress]` is partially implemente
 - **Configurable Difficulty**: Adjustable bot speed and reaction time
 - **Practice Mode**: Play offline to learn mechanics without pressure
 - **Bot Coordination**: Multiple bots with independent AI decision-making
+- **Symmetrical Player-Bot Tagging**: Players can tag bots and bots tag players through unified `GameManager.tagPlayer` hit-detection; tag cooldowns and freeze logic enforced for both sides
 
 ### 🎮 Multiplayer Tag `[planned]`
 
