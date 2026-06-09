@@ -78,3 +78,7 @@
 - ROADMAP updates needed: done.
 - Repo notes update needed: optional note in Q2 progress rollup.
 - Final disposition: ready for merge.
+
+## Related
+- [[repos/darkmoon|darkmoon runbook]] — repo context
+- [[prompts/HANDOFF|HANDOFF template]] — pipeline handoff format

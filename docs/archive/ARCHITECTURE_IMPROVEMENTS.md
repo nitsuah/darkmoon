@@ -648,3 +648,8 @@ export const setupMovementHandlers = (io) => {
 - [L7_ENGINEERING_REVIEW.md](./L7_ENGINEERING_REVIEW.md) - Full analysis
 - [TECH_DEBT.md](./TECH_DEBT.md) - Prioritized items
 - [ROADMAP.md](./ROADMAP.md) - Implementation timeline
+
+## Related
+- [[repos/darkmoon/docs/archive/L7_ENGINEERING_REVIEW|L7 Engineering Review]] — full analysis this document is derived from
+- [[repos/darkmoon/docs/ARCHITECTURE|Architecture]] — current active architecture document
+- [[repos/darkmoon|darkmoon runbook]] — repo context
