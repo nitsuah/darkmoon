@@ -648,3 +648,8 @@ Darkmoon has a **solid foundation** but needs **systematic refactoring** to scal
 ---
 
 **Next Steps:** See `ROADMAP.md` for prioritized implementation plan.
+
+## Related
+- [[repos/darkmoon/docs/archive/ARCHITECTURE_IMPROVEMENTS|Architecture Improvements]] — actionable improvements derived from this review
+- [[repos/darkmoon/docs/ARCHITECTURE|Architecture]] — current active architecture document
+- [[repos/darkmoon|darkmoon runbook]] — repo context
