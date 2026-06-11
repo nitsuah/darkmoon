@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { getSoundManager } from "./SoundManager";
+import { createLogger } from "../lib/utils/logger";
+
+const log = createLogger("ControlPanel");
 
 interface ControlPanelProps {
   onToggleChat?: () => void;
@@ -41,7 +44,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         setIsMuted(soundMgr.getIsMuted());
       }
     } catch (error) {
-      console.warn("Sound manager not ready:", error);
+      log.warn("Sound manager not ready:", error);
     }
   };
 

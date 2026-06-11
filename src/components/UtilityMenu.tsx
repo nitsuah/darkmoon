@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { getSoundManager } from "./SoundManager";
 import { QualityLevel } from "./QualitySettings";
 import { useTheme } from "../contexts/ThemeContext";
+import { createLogger } from "../lib/utils/logger";
+
+const log = createLogger("UtilityMenu");
 
 interface UtilityMenuProps {
   onToggleChat?: () => void;
@@ -21,7 +24,7 @@ const UtilityMenu: React.FC<UtilityMenuProps> = ({
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [isLandscape, setIsLandscape] = useState(
-    window.innerWidth > window.innerHeight
+    window.innerWidth > window.innerHeight,
   );
   const { theme, toggleTheme } = useTheme();
 
@@ -54,7 +57,7 @@ const UtilityMenu: React.FC<UtilityMenuProps> = ({
         setIsMuted(soundMgr.getIsMuted());
       }
     } catch (error) {
-      console.warn("Sound manager not ready:", error);
+      log.warn("Sound manager not ready:", error);
     }
   };
 
@@ -123,7 +126,7 @@ const UtilityMenu: React.FC<UtilityMenuProps> = ({
               >
                 {level === "auto" ? "Auto (Recommended)" : level}
               </button>
-            )
+            ),
           )}
         </div>
       )}

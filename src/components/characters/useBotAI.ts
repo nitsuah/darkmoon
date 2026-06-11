@@ -12,6 +12,12 @@ const tagDebug = createTagLogger("BotAI");
 // This makes the game more playable by allowing the chasing bot to successfully tag fleeing bots
 const FLEE_SPEED_MULTIPLIER = 0.7;
 
+// How often the bot retries a tag attempt while in range. The actual tag
+// cooldown/freeze rules are enforced authoritatively by GameManager.tagPlayer,
+// so this only needs to be short enough to avoid stalling once that cooldown
+// elapses (it is intentionally much shorter than GameManager's cooldowns).
+const TAG_RETRY_INTERVAL_MS = 200;
+
 export interface BotConfig {
   botSpeed: number;
   sprintSpeed: number;
@@ -111,7 +117,9 @@ export function useBotAI({
         tagDebug(`[${config.label}] Freeze ended at ${now}, isIt: ${isIt}`);
         // After pause, check if bot is now IT and should chase
         if (isIt) {
-          tagDebug(`[${config.label}] Bot is now IT after pause, will chase player.`);
+          tagDebug(
+            `[${config.label}] Bot is now IT after pause, will chase player.`,
+          );
         }
       } else {
         // Bot is frozen, show visual indicator by slightly pulsing scale
@@ -136,7 +144,12 @@ export function useBotAI({
     lastPosition.current.copy(currentPosVec);
 
     // Behavior depends on who is IT (only during active tag games)
-    if (isIt && gameState.isActive && gameState.mode === "tag" && !isPausedAfterTag.current) {
+    if (
+      isIt &&
+      gameState.isActive &&
+      gameState.mode === "tag" &&
+      !isPausedAfterTag.current
+    ) {
       // Bot is IT - chase target
       if (distance > config.tagDistance) {
         // Sprint burst logic - IT bot sprints more aggressively
@@ -185,18 +198,22 @@ export function useBotAI({
         // Rotate bot to face target
         const angle = Math.atan2(direction.x, direction.z);
         meshRef.current.rotation.y = angle;
-      } else if (now - lastTagTime.current > config.tagCooldown) {
-        // Tag the target!
+      } else if (now - lastTagTime.current > TAG_RETRY_INTERVAL_MS) {
+        // In range - attempt to tag. GameManager.tagPlayer is the
+        // authoritative gate (cooldowns/freeze), so just retry on a short
+        // interval until it succeeds.
         tagDebug(
-          `🤖 ${config.label} TAGGING TARGET! Distance: ${distance.toFixed(
-            2,
-          )}, Cooldown elapsed: ${now - lastTagTime.current}ms`,
+          `🤖 ${config.label} ATTEMPTING TAG! Distance: ${distance.toFixed(2)}`,
         );
         lastTagTime.current = now;
-        tagDebug(`  ${config.label} continues moving (no freeze for tagger)`);
         onTagTarget();
       }
-    } else if (targetIsIt && gameState.isActive && gameState.mode === "tag" && !isPausedAfterTag.current) {
+    } else if (
+      targetIsIt &&
+      gameState.isActive &&
+      gameState.mode === "tag" &&
+      !isPausedAfterTag.current
+    ) {
       // Target is IT - flee when within detection radius
       // Non-IT bot moves SLOWER so it can be caught (for debugging)
       if (distance < config.chaseRadius) {

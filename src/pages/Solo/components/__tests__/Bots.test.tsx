@@ -2,6 +2,14 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import Bots from "../Bots";
+import GameManager, { type Player } from "../../../../components/GameManager";
+
+const makeBotPlayer = (id: string, name: string): Player => ({
+  id,
+  name,
+  position: [0, 0, 0],
+  rotation: [0, 0, 0],
+});
 
 const botPropsByRender: Array<Record<string, unknown>> = [];
 
@@ -138,6 +146,47 @@ describe("Bots", () => {
     expect(setBot2GotTagged).toHaveBeenCalledWith(1234);
 
     nowSpy.mockRestore();
+  });
+
+  it("blocks an immediate IT ping-pong when bot-2 tries to tag bot-1 right back", () => {
+    vi.spyOn(Date, "now").mockReturnValue(5000);
+    vi.spyOn(Math, "random").mockReturnValue(0); // bot-1 becomes IT
+
+    const gm = new GameManager();
+    gm.addPlayer(makeBotPlayer("bot-1", "Bot1"));
+    gm.addPlayer(makeBotPlayer("bot-2", "Bot2"));
+    gm.addPlayer(makeBotPlayer("player-1", "Player1"));
+    gm.startTagGame(60);
+
+    const tagPlayerSpy = vi.spyOn(gm, "tagPlayer");
+
+    const props = buildProps({
+      botDebugMode: true,
+      gameManager: gm as unknown as React.ComponentProps<
+        typeof Bots
+      >["gameManager"],
+      gameState: gm.getGameState(),
+    });
+
+    const { rerender } = render(<Bots {...props} />);
+
+    // Bot-1 (IT) tags bot-2 - bot-2 becomes the new IT.
+    fireEvent.click(screen.getByTestId("bot-1"));
+    expect(gm.getPlayers().get("bot-2")?.isIt).toBe(true);
+    expect(gm.getPlayers().get("bot-1")?.isIt).toBe(false);
+
+    // Re-render so bot1IsIt/bot2IsIt are recomputed from the mutated GameManager.
+    rerender(<Bots {...props} />);
+
+    // Bot-2 (freshly IT) immediately tries to tag bot-1 back.
+    fireEvent.click(screen.getByTestId("bot-4"));
+
+    expect(tagPlayerSpy).toHaveBeenCalledTimes(2);
+    expect(tagPlayerSpy).toHaveLastReturnedWith(false);
+
+    // Only one IT transfer occurred - no ping-pong back to bot-1.
+    expect(gm.getPlayers().get("bot-2")?.isIt).toBe(true);
+    expect(gm.getPlayers().get("bot-1")?.isIt).toBe(false);
   });
 
   it("allows bot-2 to tag bot-1 when bot-2 is IT", () => {

@@ -27,6 +27,8 @@ export interface Player {
   isIt?: boolean;
   timeAsIt?: number;
   lastTagTime?: number;
+  /** ID of the player who most recently tagged this player (used for tag-back cooldown). */
+  lastTaggedById?: string;
 }
 
 export class GameManager {
@@ -40,6 +42,14 @@ export class GameManager {
   // Scoring constants
   private readonly MAX_TAG_SCORE = 300;
   private readonly MILLISECONDS_PER_SECOND = 1000;
+
+  // Tag cooldown constants
+  // Prevents a player who was just tagged (and is now IT) from instantly
+  // tagging back the player who tagged them.
+  private readonly TAG_BACK_COOLDOWN_MS = 2000;
+  // Prevents a player who was just tagged from being tagged again by anyone
+  // (gives them a moment to react/move before becoming a target again).
+  private readonly TAG_FREEZE_MS = 1500;
 
   constructor() {
     this.gameState = {
@@ -115,6 +125,7 @@ export class GameManager {
       player.isIt = id === this.gameState.itPlayerId;
       player.timeAsIt = 0;
       player.lastTagTime = undefined;
+      player.lastTaggedById = undefined;
     });
 
     this.callbacks.onGameStateUpdate?.(this.gameState);
@@ -124,7 +135,7 @@ export class GameManager {
       log.debug(
         `Tag game started! ${
           this.players.get(this.gameState.itPlayerId)?.name
-        } is IT!`
+        } is IT!`,
       );
     } else {
       log.debug(`Tag game started (solo practice)`);
@@ -133,7 +144,9 @@ export class GameManager {
   }
 
   tagPlayer(taggerId: string, taggedId: string): boolean {
-    log.debug(`[TAG-TRACE] tagPlayer called with taggerId=${taggerId}, taggedId=${taggedId}`);
+    log.debug(
+      `[TAG-TRACE] tagPlayer called with taggerId=${taggerId}, taggedId=${taggedId}`,
+    );
     if (this.gameState.mode !== "tag" || !this.gameState.isActive) {
       log.debug(`[TAG-TRACE] Tag failed: Not in tag mode or inactive`);
       return false;
@@ -143,19 +156,34 @@ export class GameManager {
     const tagged = this.players.get(taggedId);
 
     if (!tagger || !tagged || !tagger.isIt || tagged.isIt) {
-      log.debug(`[TAG-TRACE] Tag failed: tagger or tagged missing, or tagger not IT, or tagged already IT`, { tagger, tagged });
+      log.debug(
+        `[TAG-TRACE] Tag failed: tagger or tagged missing, or tagger not IT, or tagged already IT`,
+        { tagger, tagged },
+      );
       return false;
     }
 
     // Check if enough time has passed since last tag (prevent spam)
     const now = Date.now();
-    if (tagger.lastTagTime && now - tagger.lastTagTime < 2000) {
-      log.debug(`[TAG-TRACE] Tag failed: tagger cooldown (${now - tagger.lastTagTime}ms < 2000ms)`);
+    // Prevent a player who was just tagged (and is now IT) from instantly
+    // tagging back the player who tagged them. This is scoped to the
+    // specific tagger/tagged pair so a freshly-tagged IT player can still
+    // chase down a *different* player immediately.
+    if (
+      tagger.lastTaggedById === taggedId &&
+      tagger.lastTagTime &&
+      now - tagger.lastTagTime < this.TAG_BACK_COOLDOWN_MS
+    ) {
+      log.debug(
+        `[TAG-TRACE] Tag failed: tag-back cooldown (${now - tagger.lastTagTime}ms < ${this.TAG_BACK_COOLDOWN_MS}ms)`,
+      );
       return false;
     }
-    // Prevent the new IT from tagging back instantly (freeze/cooldown)
-    if (tagged.lastTagTime && now - tagged.lastTagTime < 1500) {
-      log.debug(`[TAG-TRACE] Tag failed: tagged freeze/cooldown (${now - tagged.lastTagTime}ms < 1500ms)`);
+    // Prevent the new IT from being tagged again immediately (freeze/cooldown)
+    if (tagged.lastTagTime && now - tagged.lastTagTime < this.TAG_FREEZE_MS) {
+      log.debug(
+        `[TAG-TRACE] Tag failed: tagged freeze/cooldown (${now - tagged.lastTagTime}ms < ${this.TAG_FREEZE_MS}ms)`,
+      );
       return false;
     }
 
@@ -164,7 +192,7 @@ export class GameManager {
     if (this.gameState.scores[taggerId] !== undefined) {
       this.gameState.scores[taggerId] += Math.max(
         0,
-        this.MAX_TAG_SCORE - timeAsIt / this.MILLISECONDS_PER_SECOND
+        this.MAX_TAG_SCORE - timeAsIt / this.MILLISECONDS_PER_SECOND,
       ); // Points based on how quickly they tagged
     }
 
@@ -173,6 +201,7 @@ export class GameManager {
     tagger.lastTagTime = now;
     tagged.isIt = true;
     tagged.lastTagTime = now;
+    tagged.lastTaggedById = taggerId;
 
     this.gameState.itPlayerId = taggedId;
     this.gameState.roundStartTime = now;
@@ -180,7 +209,7 @@ export class GameManager {
     this.callbacks.onGameStateUpdate?.(this.gameState);
     this.callbacks.onPlayerUpdate?.(this.players);
     log.debug(
-      `${tagger.name} tagged ${tagged.name}! ${tagged.name} is now IT!`
+      `${tagger.name} tagged ${tagged.name}! ${tagged.name} is now IT!`,
     );
     return true;
   }
@@ -217,6 +246,7 @@ export class GameManager {
       player.isIt = false;
       player.timeAsIt = 0;
       player.lastTagTime = undefined;
+      player.lastTaggedById = undefined;
     });
 
     this.callbacks.onGameStateUpdate?.(this.gameState);
@@ -231,7 +261,15 @@ export class GameManager {
   }
 
   private pickNewItPlayer() {
-    if (this.players.size === 0) return;
+    if (this.players.size === 0) {
+      // No players remain; there is nothing to tag, so end the round
+      // entirely rather than leaving a dangling itPlayerId/isActive state.
+      this.gameState.isActive = false;
+      this.gameState.mode = "none";
+      this.gameState.itPlayerId = undefined;
+      this.callbacks.onGameStateUpdate?.(this.gameState);
+      return;
+    }
 
     const newItId = this.pickRandomPlayer();
     this.gameState.itPlayerId = newItId;
