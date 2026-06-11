@@ -105,7 +105,7 @@ describe("usePlayerTagging.processTagging", () => {
     // Spy on tagPlayer
     const tagSpy = vi.spyOn(
       gameManager as unknown as { tagPlayer?: (...args: unknown[]) => boolean },
-      "tagPlayer"
+      "tagPlayer",
     );
     tagSpy.mockImplementation(() => true);
 
@@ -129,5 +129,91 @@ describe("usePlayerTagging.processTagging", () => {
     expect(tagged).toBe(true);
     expect(tagSpy).toHaveBeenCalled();
     expect(socketClient!.emit).toHaveBeenCalled();
+  });
+
+  it("records cooldown/freeze state on GameManager so the newly-tagged bot can't immediately tag back", () => {
+    gameManager.startTagGame(60);
+
+    // Force p1 to be IT for test determinism
+    const itId = gameManager.getGameState().itPlayerId as string;
+    gameManager.updatePlayer(itId, { isIt: false });
+    gameManager.updatePlayer("p1", { isIt: true });
+    gameManager.getGameState().itPlayerId = "p1";
+
+    clients = {
+      "bot-1": { position: [0.4, 0, 0] },
+    };
+
+    const tagged = processTagging({
+      resolvedPosition: new THREE.Vector3(0, 0, 0),
+      clients,
+      myId: "p1",
+      gameManager,
+      lastTagCheckRef,
+      playerIsIt: true,
+      setPlayerIsIt: vi.fn(),
+      setBotIsIt: vi.fn(),
+      setBot1GotTagged: vi.fn(),
+      setBot2GotTagged: undefined,
+      setGameState: vi.fn(),
+      onTagSuccess: undefined,
+      socketClient:
+        socketClient as unknown as import("socket.io-client").Socket,
+    });
+
+    expect(tagged).toBe(true);
+
+    const p1 = gameManager.getPlayers().get("p1")!;
+    const bot1 = gameManager.getPlayers().get("bot-1")!;
+    expect(p1.isIt).toBe(false);
+    expect(bot1.isIt).toBe(true);
+    expect(bot1.lastTaggedById).toBe("p1");
+    expect(bot1.lastTagTime).toBeDefined();
+
+    // Bot-1 immediately tagging p1 back must be rejected by the freeze
+    // window - otherwise the player gets incorrectly frozen right after
+    // performing a successful tag.
+    expect(gameManager.tagPlayer("bot-1", "p1")).toBe(false);
+  });
+
+  it("does not update React state when GameManager rejects the tag (e.g. tagged player still frozen)", () => {
+    gameManager.startTagGame(60);
+
+    const itId = gameManager.getGameState().itPlayerId as string;
+    gameManager.updatePlayer(itId, { isIt: false });
+    gameManager.updatePlayer("p1", { isIt: true });
+    gameManager.getGameState().itPlayerId = "p1";
+
+    // bot-1 was tagged moments ago and is still within TAG_FREEZE_MS
+    gameManager.updatePlayer("bot-1", { lastTagTime: Date.now() });
+
+    clients = {
+      "bot-1": { position: [0.4, 0, 0] },
+    };
+
+    const setPlayerIsIt = vi.fn();
+    const setBotIsIt = vi.fn();
+
+    const tagged = processTagging({
+      resolvedPosition: new THREE.Vector3(0, 0, 0),
+      clients,
+      myId: "p1",
+      gameManager,
+      lastTagCheckRef,
+      playerIsIt: true,
+      setPlayerIsIt,
+      setBotIsIt,
+      setBot1GotTagged: vi.fn(),
+      setBot2GotTagged: undefined,
+      setGameState: vi.fn(),
+      onTagSuccess: undefined,
+      socketClient:
+        socketClient as unknown as import("socket.io-client").Socket,
+    });
+
+    expect(tagged).toBe(false);
+    expect(setPlayerIsIt).not.toHaveBeenCalled();
+    expect(setBotIsIt).not.toHaveBeenCalled();
+    expect(gameManager.getPlayers().get("p1")!.isIt).toBe(true);
   });
 });

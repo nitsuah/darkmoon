@@ -38,6 +38,7 @@ interface SoloHUDProps {
   setChatVisible: (v: boolean) => void;
   chatMessages: ChatMessage[];
   onSendMessage: (message: string) => void;
+  onPerformanceChange: (fps: number) => void;
 }
 
 const SoloHUD: React.FC<SoloHUDProps> = ({
@@ -66,6 +67,7 @@ const SoloHUD: React.FC<SoloHUDProps> = ({
   setChatVisible,
   chatMessages,
   onSendMessage,
+  onPerformanceChange,
 }) => {
   return (
     <>
@@ -118,10 +120,10 @@ const SoloHUD: React.FC<SoloHUDProps> = ({
                 notification.type === "success"
                   ? "rgba(0, 200, 0, 0.9)"
                   : notification.type === "warning"
-                  ? "rgba(255, 165, 0, 0.9)"
-                  : notification.type === "error"
-                  ? "rgba(200, 0, 0, 0.9)"
-                  : "rgba(74, 144, 226, 0.9)",
+                    ? "rgba(255, 165, 0, 0.9)"
+                    : notification.type === "error"
+                      ? "rgba(200, 0, 0, 0.9)"
+                      : "rgba(74, 144, 226, 0.9)",
               color: "white",
               borderRadius: "6px",
               fontFamily: "monospace",
@@ -139,7 +141,7 @@ const SoloHUD: React.FC<SoloHUDProps> = ({
       </div>
 
       {/* Performance Monitor */}
-      <PerformanceMonitor onPerformanceChange={() => {}} />
+      <PerformanceMonitor onPerformanceChange={onPerformanceChange} />
 
       {/* Utility Menu (Mute, Quality Settings, Chat) */}
       <UtilityMenu
