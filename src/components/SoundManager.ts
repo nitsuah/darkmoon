@@ -9,6 +9,10 @@ import { applyVolumes } from "./soundHelpers";
 import { createOscillatorWithGain } from "./soundNodeFactory";
 import * as soundEffects from "./soundEffects";
 import { createBackgroundMusic } from "./musicLayers";
+import { createLogger } from "../lib/utils/logger";
+
+const log = createLogger("SoundManager");
+
 class SoundManager {
   private audioContext: AudioContext | null = null;
   private backgroundMusic: OscillatorNode | null = null;
@@ -59,8 +63,9 @@ class SoundManager {
       const WindowWithAudio = window as Window & {
         webkitAudioContext?: typeof AudioContext;
       };
-      this.audioContext = new (window.AudioContext ||
-        WindowWithAudio.webkitAudioContext!)();
+      this.audioContext = new (
+        window.AudioContext || WindowWithAudio.webkitAudioContext!
+      )();
 
       // Create gain nodes for volume control
       this.musicGain = this.audioContext.createGain();
@@ -71,7 +76,7 @@ class SoundManager {
       this.sfxGain.gain.value = this.sfxVolume;
       this.sfxGain.connect(this.audioContext.destination);
     } catch (error) {
-      console.error("Failed to initialize audio context:", error);
+      log.error("Failed to initialize audio context:", error);
     }
   }
 
@@ -97,7 +102,7 @@ class SoundManager {
       // Use helper to build music layers and get oscillators
       const { masterGain, oscillators } = createBackgroundMusic(
         ctx,
-        musicGain!
+        musicGain!,
       );
 
       // Start oscillators
@@ -128,7 +133,7 @@ class SoundManager {
         const fadeOutTime = 4.0;
         musicGain.gain.linearRampToValueAtTime(
           0,
-          ctx.currentTime + fadeOutTime
+          ctx.currentTime + fadeOutTime,
         );
 
         // Stop after fade completes
@@ -264,7 +269,7 @@ class SoundManager {
       return soundEffects.playJetpackThrustSoundImpl(
         ctx,
         sfxGain,
-        this.sfxVolume
+        this.sfxVolume,
       );
     } catch {
       return null;
@@ -278,7 +283,7 @@ class SoundManager {
     thrustSound: {
       osc: OscillatorNode;
       gain: GainNode;
-    } | null
+    } | null,
   ) {
     const ctx = this.getAudioContext();
     if (!thrustSound || !ctx) return;
@@ -306,7 +311,7 @@ class SoundManager {
       gain.gain.value = 0;
       gain.gain.linearRampToValueAtTime(
         this.sfxVolume * 0.25,
-        ctx.currentTime + 0.01
+        ctx.currentTime + 0.01,
       );
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
 
@@ -334,13 +339,13 @@ class SoundManager {
       const { osc, gain } = createOscillatorWithGain(
         ctx,
         "sine",
-        120 + Math.random() * 30
+        120 + Math.random() * 30,
       );
 
       gain.gain.value = 0;
       gain.gain.linearRampToValueAtTime(
         this.sfxVolume * 0.35,
-        ctx.currentTime + 0.01
+        ctx.currentTime + 0.01,
       );
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
 
@@ -375,7 +380,7 @@ class SoundManager {
       gain.gain.value = 0;
       gain.gain.linearRampToValueAtTime(
         this.sfxVolume * 0.6 * impact,
-        ctx.currentTime + 0.01
+        ctx.currentTime + 0.01,
       );
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
 
@@ -436,7 +441,7 @@ class SoundManager {
       this.musicVolume,
       this.sfxVolume,
       this.masterVolume,
-      this.isMuted
+      this.isMuted,
     );
   }
 

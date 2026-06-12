@@ -146,7 +146,6 @@ export const PlayerCharacter = React.forwardRef<
   const [showJetpackFlame, setShowJetpackFlame] = useState(false);
   const lookIndicatorRef = React.useRef<THREE.Group>(null);
 
-
   // Expose reset and freeze functions to parent via ref
   React.useImperativeHandle(ref, () => ({
     resetPosition: () => {
@@ -266,7 +265,7 @@ export const PlayerCharacter = React.forwardRef<
       // Clamp vertical rotation
       cameraRotationRef.current.vertical = Math.max(
         -Math.PI / 3,
-        Math.min(Math.PI / 3, cameraRotationRef.current.vertical)
+        Math.min(Math.PI / 3, cameraRotationRef.current.vertical),
       );
 
       previousMouseRef.current.x = mouseControls.mouseX;
@@ -296,7 +295,7 @@ export const PlayerCharacter = React.forwardRef<
     // Always clamp vertical rotation (from joystick too)
     cameraRotationRef.current.vertical = Math.max(
       -Math.PI / 3,
-      Math.min(Math.PI / 3, cameraRotationRef.current.vertical)
+      Math.min(Math.PI / 3, cameraRotationRef.current.vertical),
     );
 
     // Calculate camera offset based on rotation
@@ -346,7 +345,7 @@ export const PlayerCharacter = React.forwardRef<
         const lookForward = new THREE.Vector3(
           -Math.sin(cameraRotationRef.current.horizontal),
           0,
-          -Math.cos(cameraRotationRef.current.horizontal)
+          -Math.cos(cameraRotationRef.current.horizontal),
         );
         const lookDistance = 6;
         const lookPos = meshRef.current.position
@@ -358,7 +357,7 @@ export const PlayerCharacter = React.forwardRef<
         lookIndicatorRef.current.rotation.set(
           -Math.PI / 2,
           0,
-          -cameraRotationRef.current.horizontal
+          -cameraRotationRef.current.horizontal,
         );
       } else {
         lookIndicatorRef.current.visible = false;
@@ -377,7 +376,7 @@ export const PlayerCharacter = React.forwardRef<
           Q: keysPressedRef.current[Q],
           E: keysPressedRef.current[E],
         },
-        bothMouseButtons
+        bothMouseButtons,
       );
 
       if (dir && dir.length() > 0) {
@@ -394,7 +393,7 @@ export const PlayerCharacter = React.forwardRef<
         const resolvedPosition = resolveMovement(
           collisionSystemRef.current,
           currentPosition,
-          newPosition
+          newPosition,
         );
 
         // Player collision + tagging logic handled by helper
@@ -409,7 +408,7 @@ export const PlayerCharacter = React.forwardRef<
                 detectPlayerCollision(
                   collisionSystemRef.current,
                   resolvedPosition,
-                  otherPlayerPos
+                  otherPlayerPos,
                 )
               ) {
                 const pushDirection = resolvedPosition
@@ -464,12 +463,12 @@ export const PlayerCharacter = React.forwardRef<
           directionRef.current,
           cameraRotationRef.current.horizontal,
           isAiming,
-          meshRef.current.rotation.y
+          meshRef.current.rotation.y,
         );
         meshRef.current.rotation.y = THREE.MathUtils.lerp(
           meshRef.current.rotation.y,
           targetYaw,
-          0.2
+          0.2,
         );
 
         // Emit position to server
@@ -541,11 +540,7 @@ export const PlayerCharacter = React.forwardRef<
     }
 
     // Apply jetpack thrust while space is held (only if jetpack active)
-    if (
-      jetpackActiveRef.current &&
-      isJumpingRef.current &&
-      isSprinting
-    ) {
+    if (jetpackActiveRef.current && isJumpingRef.current && isSprinting) {
       if (jumpHoldTimeRef.current < PHYSICS_CONSTANTS.JETPACK_MAX_HOLD_TIME) {
         jumpHoldTimeRef.current += delta;
         // Compute thrust using helper
@@ -606,10 +601,12 @@ export const PlayerCharacter = React.forwardRef<
         if (keysPressedRef.current[A]) rcsDirection.x += 1;
         if (keysPressedRef.current[D]) rcsDirection.x -= 1;
         if (keysPressedRef.current[Q]) {
-          verticalVelocityRef.current += PHYSICS_CONSTANTS.RCS_THRUST * delta * 2;
+          verticalVelocityRef.current +=
+            PHYSICS_CONSTANTS.RCS_THRUST * delta * 2;
         }
         if (keysPressedRef.current[E]) {
-          verticalVelocityRef.current -= PHYSICS_CONSTANTS.RCS_THRUST * delta * 2;
+          verticalVelocityRef.current -=
+            PHYSICS_CONSTANTS.RCS_THRUST * delta * 2;
         }
 
         // Play RCS sound when input is active (throttle to ~10 times per second)
@@ -633,7 +630,9 @@ export const PlayerCharacter = React.forwardRef<
             -cameraRotationRef.current.horizontal,
           );
           horizontalMomentumRef.current.add(
-            rcsDirection.multiplyScalar(PHYSICS_CONSTANTS.RCS_THRUST * delta * 10),
+            rcsDirection.multiplyScalar(
+              PHYSICS_CONSTANTS.RCS_THRUST * delta * 10,
+            ),
           );
         }
       }
@@ -652,7 +651,7 @@ export const PlayerCharacter = React.forwardRef<
 
       // Preserve horizontal momentum with slight decay
       horizontalMomentumRef.current.multiplyScalar(
-        PHYSICS_CONSTANTS.MOMENTUM_PRESERVATION
+        PHYSICS_CONSTANTS.MOMENTUM_PRESERVATION,
       );
 
       // Allow some air control - blend player input with momentum
@@ -703,7 +702,7 @@ export const PlayerCharacter = React.forwardRef<
     if (onPositionUpdate && meshRef.current) {
       const currentPos = meshRef.current.position;
       const distanceMoved = currentPos.distanceTo(
-        lastReportedPositionRef.current
+        lastReportedPositionRef.current,
       );
 
       if (distanceMoved > POSITION_UPDATE_THRESHOLD) {
@@ -716,7 +715,7 @@ export const PlayerCharacter = React.forwardRef<
     idealCameraPositionRef.current.set(
       meshRef.current.position.x + cameraOffsetRef.current.x,
       meshRef.current.position.y + cameraOffsetRef.current.y,
-      meshRef.current.position.z + cameraOffsetRef.current.z
+      meshRef.current.position.z + cameraOffsetRef.current.z,
     );
 
     // Lerp camera position for smooth following
@@ -733,7 +732,7 @@ export const PlayerCharacter = React.forwardRef<
     state.camera.lookAt(
       meshRef.current.position.x,
       meshRef.current.position.y + 0.5,
-      meshRef.current.position.z
+      meshRef.current.position.z,
     );
   });
 
@@ -760,11 +759,7 @@ export const PlayerCharacter = React.forwardRef<
       return (
         <mesh
           key={i}
-          position={[
-            Math.cos(angle) * radius,
-            0.1,
-            Math.sin(angle) * radius,
-          ]}
+          position={[Math.cos(angle) * radius, 0.1, Math.sin(angle) * radius]}
         >
           <sphereGeometry args={[0.05, 8, 8]} />
           <meshBasicMaterial color="#999999" opacity={0.6} transparent />
@@ -786,7 +781,7 @@ export const PlayerCharacter = React.forwardRef<
       />
       {/* Jetpack thrust visual effect */}
       {showJetpackFlame && (
-        <group position={[0, -0.5, 0]}>
+        <group position={[0, -0.05, 0]}>
           <mesh rotation={[Math.PI, 0, 0]}>
             <coneGeometry args={[0.15, 0.4, 8]} />
             <meshStandardMaterial
@@ -810,9 +805,7 @@ export const PlayerCharacter = React.forwardRef<
         </group>
       )}
       {/* Landing dust effect */}
-      {showDustEffect && (
-        <group position={[0, -0.4, 0]}>{dustMeshes}</group>
-      )}
+      {showDustEffect && <group position={[0, 0.05, 0]}>{dustMeshes}</group>}
       {/* Debug hitbox visualization */}
       {props.showHitboxes && (
         <mesh position={[0, 0, 0]}>

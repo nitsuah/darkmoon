@@ -187,4 +187,95 @@ describe("useBotAI", () => {
     frameCallback!(null, 1);
     expect(meshRef.current.position.x).toBe(xBefore);
   });
+
+  it("retries a tag attempt on a short interval while in range", () => {
+    const nowSpy = vi.spyOn(Date, "now");
+    nowSpy.mockReturnValue(5000);
+
+    const { onTagTarget } = mountHook({
+      targetPositionRef: { current: [0.1, 0, 0] },
+    });
+
+    frameCallback!(null, 0.016);
+    expect(onTagTarget).toHaveBeenCalledTimes(1);
+
+    // Same instant - e.g. GameManager rejected the tag due to a cooldown.
+    // The bot shouldn't spam onTagTarget every frame while waiting.
+    frameCallback!(null, 0.016);
+    expect(onTagTarget).toHaveBeenCalledTimes(1);
+
+    // Once the retry interval (200ms) elapses, the bot tries again.
+    nowSpy.mockReturnValue(5201);
+    frameCallback!(null, 0.016);
+    expect(onTagTarget).toHaveBeenCalledTimes(2);
+  });
+
+  it("cycles sprint bursts on and off based on sprintDuration/sprintCooldown", () => {
+    const nowSpy = vi.spyOn(Date, "now");
+    nowSpy.mockReturnValue(0);
+
+    // Keep the target far away so the bot stays in the chase branch
+    // (distance > tagDistance) for the whole test.
+    const { refs } = mountHook({
+      targetPositionRef: { current: [100, 0, 0] },
+    });
+
+    // t=0: first sprint burst begins immediately
+    frameCallback!(null, 0.016);
+    expect(refs.isSprinting.current).toBe(true);
+
+    // t=100: still within sprintDuration (200ms)
+    nowSpy.mockReturnValue(100);
+    frameCallback!(null, 0.016);
+    expect(refs.isSprinting.current).toBe(true);
+
+    // t=250: sprintDuration elapsed, sprintCooldown (500ms) not yet elapsed
+    nowSpy.mockReturnValue(250);
+    frameCallback!(null, 0.016);
+    expect(refs.isSprinting.current).toBe(false);
+
+    // t=699: still cooling down
+    nowSpy.mockReturnValue(699);
+    frameCallback!(null, 0.016);
+    expect(refs.isSprinting.current).toBe(false);
+
+    // t=700: cooldown elapsed, a new sprint burst begins
+    nowSpy.mockReturnValue(700);
+    frameCallback!(null, 0.016);
+    expect(refs.isSprinting.current).toBe(true);
+  });
+
+  it("clamps flee movement to the position returned by collision resolution", () => {
+    const nowSpy = vi.spyOn(Date, "now").mockReturnValue(5000);
+    void nowSpy;
+
+    // Simulate a wall blocking all movement - collision resolution returns
+    // the bot's current position unchanged instead of the requested newPos.
+    const blockingCollision: React.RefObject<CollisionSystem> = {
+      current: {
+        checkCollision: (from: THREE.Vector3) => ({
+          x: from.x,
+          y: from.y,
+          z: from.z,
+        }),
+        checkPlayerCollision: () => false,
+      } as unknown as CollisionSystem,
+    };
+
+    const { meshRef, onPositionUpdate } = mountHook({
+      isIt: false,
+      targetIsIt: true,
+      targetPositionRef: { current: [1, 0, 0] },
+      collisionSystem: blockingCollision,
+    });
+
+    const before = meshRef.current.position.clone();
+    frameCallback!(null, 1);
+
+    // Position is clamped to the collision-resolved value, not the naive
+    // flee target, so the bot doesn't clip through the wall.
+    expect(meshRef.current.position.x).toBeCloseTo(before.x);
+    expect(meshRef.current.position.z).toBeCloseTo(before.z);
+    expect(onPositionUpdate).not.toHaveBeenCalled();
+  });
 });

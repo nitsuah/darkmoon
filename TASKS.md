@@ -1,14 +1,38 @@
 # Tasks
 
-Last Updated: 2026-06-08
+Last Updated: 2026-06-11
 
 ## In Progress
 
-## Todo
+## Done
 
-- [ ] Review debug mode and regular tag logic for edge cases and regressions.
-- [ ] Diagnose and fix any remaining issues where the bot does not chase the player or where tagging is inconsistent in solo mode.
-- [ ] Ensure all tag cooldowns and freeze logic are respected for both player and bot, and that tag-back is impossible during cooldown.
+- [x] Review debug mode and regular tag logic for edge cases and regressions.
+  - Completed: 2026-06-11
+  - Evidence: new `src/__tests__/gameManager.edgeCases.test.ts` (8 tests) and a new
+    "blocks an immediate IT ping-pong..." case in
+    `src/pages/Solo/components/__tests__/Bots.test.tsx` cover tag-back cooldown, freeze
+    windows, self-tag rejection, score floor, restart/reset, and last-player-removed
+    edge cases. `Bots.tsx`'s debug logging was also migrated to the dev-gated
+    `createTagLogger`.
+
+- [x] Diagnose and fix any remaining issues where the bot does not chase the player or where tagging is inconsistent in solo mode.
+  - Completed: 2026-06-11
+  - Evidence: root cause was a blanket `lastTagTime` cooldown in `GameManager.tagPlayer`
+    that blocked a freshly-tagged IT player from tagging _anyone_ for 2s, compounded by
+    `useBotAI`'s 2000ms tag-retry gate. Fixed via a scoped `lastTaggedById`-based tag-back
+    cooldown (`src/components/GameManager.ts`) and a 200ms `TAG_RETRY_INTERVAL_MS` retry
+    loop (`src/components/characters/useBotAI.ts`); covered by 3 new tests in
+    `src/__tests__/useBotAI.unit.test.tsx`.
+
+- [x] Ensure all tag cooldowns and freeze logic are respected for both player and bot, and that tag-back is impossible during cooldown.
+  - Completed: 2026-06-11
+  - Evidence: `GameManager.tagPlayer` now enforces `TAG_BACK_COOLDOWN_MS` (2000ms, scoped
+    to the tagger/tagged pair via `lastTaggedById`) and `TAG_FREEZE_MS` (1500ms, blocks
+    anyone from re-tagging a just-tagged player), both reset cleanly on
+    `startTagGame`/`endGame`. Verified for player and bot — full Docker suite is 378
+    passed / 5 skipped, lint (`--max-warnings=0`) and `tsc --noEmit` both clean.
+
+## Todo
 
 - [ ] Stabilize mobile input and mobile layout on physical devices.
   - Priority: P0
@@ -59,6 +83,33 @@ Last Updated: 2026-06-08
   - Priority: P2
   - Problem: older refactor tasks no longer match the codebase hotspots.
   - Acceptance Criteria: only current, high-value refactors remain and each one ties back to reliability, testability, or performance.
+
+- [ ] **[Phase A] Pluggable game modes** — extract tag logic out of `GameManager` behind a `GameModeHandler` interface (`onStart`/`onTick`/`onAction`/`onEnd`), with a `TagMode` implementation preserving current behavior.
+  - Priority: P1
+  - Problem: tag rules (cooldowns, freeze, IT-transfer scoring) are hardcoded into `GameManager`, blocking deathmatch/CTF without risking regressions to tag.
+  - Acceptance Criteria: see `docs/MULTIPLAYER_SHOOTER_ROADMAP.md` Phase A; existing `gameManager.*.test.ts` and `Bots.test.tsx` pass unchanged.
+
+- [ ] **[Phase B] Combat primitives** — add `WeaponManager`, projectile/hit-detection (extends `CollisionSystem`), and `health`/`respawn` fields on `Player`.
+  - Priority: P2
+  - Problem: no weapon or damage model exists yet; required before any deathmatch/CTF mode.
+  - Acceptance Criteria: see `docs/MULTIPLAYER_SHOOTER_ROADMAP.md` Phase B.
+
+- [ ] **[Phase C] Deathmatch mode** — kill tracking, respawn, and scoreboard via `GameUI`.
+  - Priority: P2
+  - Acceptance Criteria: see `docs/MULTIPLAYER_SHOOTER_ROADMAP.md` Phase C.
+
+- [ ] **[Phase D] Capture the Flag mode** — teams, flag entities, and capture zones.
+  - Priority: P2
+  - Acceptance Criteria: see `docs/MULTIPLAYER_SHOOTER_ROADMAP.md` Phase D.
+
+- [ ] **[Phase E] Multiplayer shooter polish** — aiming camera, combat audio layer, and HUD additions for health/ammo/kills/flag status.
+  - Priority: P2
+  - Acceptance Criteria: see `docs/MULTIPLAYER_SHOOTER_ROADMAP.md` Phase E.
+
+- [ ] Fix server-side multiplayer tag parity before Multiplayer Tag ships.
+  - Priority: P1
+  - Problem: `server/index.js`'s `player-tagged` handler has no cooldown/freeze enforcement and trusts client-supplied tagger/tagged IDs, and its `disconnect` handler doesn't reassign or clear `itPlayerId` if the IT player disconnects.
+  - Acceptance Criteria: see `docs/MULTIPLAYER_SHOOTER_ROADMAP.md` "Server-side tag parity"; must be resolved before Multiplayer Tag moves out of `[planned]` in `FEATURES.md`.
 
 ## See also: docs/INSTRUCTIONS.md for agent handoff and workflow best practices.
 

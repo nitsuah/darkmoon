@@ -68,11 +68,23 @@ export function processTagging(params: TaggingParams): boolean {
       now - lastTagCheckRef.current > 1000;
 
     if (canTag) {
+      // GameManager.tagPlayer is the authoritative gate: it enforces the
+      // tag-back cooldown and tagged-player freeze window, and (on success)
+      // updates isIt/lastTagTime/lastTaggedById/itPlayerId itself. Call it
+      // first and only sync local state if it actually transferred "it" -
+      // otherwise a cooldown-blocked attempt would desync React state from
+      // GameManager (e.g. marking the player not-IT while GameManager still
+      // considers them IT).
+      if (
+        typeof gameManager.tagPlayer !== "function" ||
+        !gameManager.tagPlayer(myId, clientId)
+      ) {
+        continue;
+      }
 
       if (setGameState) {
         setGameState((prev) => ({ ...prev, itPlayerId: clientId }));
       }
-
 
       // Update IT state for React state sync (for test and UI correctness)
       if (clientId === "bot-1") {
@@ -103,15 +115,6 @@ export function processTagging(params: TaggingParams): boolean {
           taggerId: myId,
           taggedId: clientId,
         });
-      }
-
-      // Update game manager state
-      if (gameManager) {
-        gameManager.updatePlayer(myId, { isIt: false });
-        gameManager.updatePlayer(clientId, { isIt: true });
-        if (typeof gameManager.tagPlayer === "function") {
-          gameManager.tagPlayer(myId, clientId);
-        }
       }
 
       lastTagCheckRef.current = now;

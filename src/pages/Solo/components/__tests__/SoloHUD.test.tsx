@@ -99,6 +99,7 @@ const baseProps: React.ComponentProps<typeof SoloHUD> = {
   setChatVisible: vi.fn(),
   chatMessages: [],
   onSendMessage: vi.fn(),
+  onPerformanceChange: vi.fn(),
 };
 
 describe("SoloHUD", () => {

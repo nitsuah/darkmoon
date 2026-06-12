@@ -2,19 +2,11 @@ import * as React from "react";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { type Socket } from "socket.io-client";
 import type { Clients } from "../types/socket";
-import PerformanceMonitor from "../components/PerformanceMonitor";
-import UtilityMenu from "../components/UtilityMenu";
-import Tutorial from "../components/Tutorial";
-import HelpModal from "../components/HelpModal";
-import ChatBox from "../components/ChatBox";
 import CollisionSystem from "../components/CollisionSystem";
 import SoloHUD from "./Solo/components/SoloHUD";
 import GameManager, { GameState, Player } from "../components/GameManager";
-import GameUI from "../components/GameUI";
-import { MobileControls } from "../components/MobileControls";
 import type { PlayerCharacterHandle } from "../components/characters/PlayerCharacter";
 import "../styles/App.css";
-import PauseMenu from "../components/PauseMenu";
 import { useNavigate } from "react-router-dom";
 import { filterProfanity } from "../lib/constants/profanity";
 import { createTagLogger } from "../lib/utils/logger";
@@ -594,9 +586,6 @@ const Solo: React.FC = () => {
         overflow: "hidden",
       }}
     >
-      <Tutorial />
-      <HelpModal />
-
       <SoloScene
         qualitySettings={qualitySettings}
         rockPositions={rockPositions}
@@ -658,103 +647,7 @@ const Solo: React.FC = () => {
         setChatVisible={setChatVisible}
         chatMessages={chatMessages}
         onSendMessage={handleSendMessage}
-      />
-
-      {/* Mobile Controls */}
-      {isMobileDevice && (
-        <MobileControls
-          onJoystickMove={(x, y) => setJoystickMove({ x, y })}
-          onJumpPress={() => setKeyState(SPACE, true)}
-          onJumpRelease={() => setKeyState(SPACE, false)}
-          onJumpDoubleTap={() => {
-            mobileJetpackTrigger.current = true;
-            setKeyState(SPACE, true);
-          }}
-          onSprintPress={() => setKeyState(SHIFT, true)}
-          onSprintRelease={() => setKeyState(SHIFT, false)}
-        />
-      )}
-
-      {/* Game UI Overlay */}
-      <GameUI
-        gameState={gameState}
-        players={gamePlayers}
-        currentPlayerId={currentPlayerId}
-        onStartGame={handleStartTagGame}
-        onEndGame={handleEndGame}
-        botDebugMode={botDebugMode}
-        onToggleDebug={() => setBotDebugMode((prev) => !prev)}
-      />
-
-      {/* Notifications */}
-      <div
-        style={{
-          position: "fixed",
-          top: "180px",
-          right: "10px",
-          zIndex: 2000,
-          display: "flex",
-          flexDirection: "column",
-          gap: "10px",
-          pointerEvents: "none",
-          maxWidth: "300px",
-        }}
-      >
-        {notifications.map((notification) => (
-          <div
-            key={notification.id}
-            style={{
-              padding: "12px 16px",
-              backgroundColor:
-                notification.type === "success"
-                  ? "rgba(0, 200, 0, 0.9)"
-                  : notification.type === "warning"
-                    ? "rgba(255, 165, 0, 0.9)"
-                    : notification.type === "error"
-                      ? "rgba(200, 0, 0, 0.9)"
-                      : "rgba(74, 144, 226, 0.9)",
-              color: "white",
-              borderRadius: "6px",
-              fontFamily: "monospace",
-              fontSize: "14px",
-              border: "1px solid rgba(255, 255, 255, 0.3)",
-              boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
-              animation: "slideIn 0.3s ease-out",
-              minWidth: "200px",
-              textAlign: "center",
-            }}
-          >
-            {notification.message}
-          </div>
-        ))}
-      </div>
-
-      {/* Performance Monitor */}
-      <PerformanceMonitor onPerformanceChange={setCurrentFPS} />
-
-      {/* Utility Menu (Mute, Quality Settings, Chat) */}
-      <UtilityMenu
-        onToggleChat={() => setChatVisible(!chatVisible)}
-        isChatVisible={chatVisible}
-        currentFPS={currentFPS}
-        onQualityChange={setQuality}
-      />
-
-      {/* Pause Menu */}
-      <PauseMenu
-        isVisible={isPaused}
-        onResume={handleResumeGame}
-        onRestart={() => window.location.reload()}
-        onQuit={handleQuitGame}
-      />
-
-      {/* Chat Box */}
-      <ChatBox
-        isVisible={chatVisible}
-        onToggle={() => setChatVisible(!chatVisible)}
-        messages={chatMessages}
-        onSendMessage={handleSendMessage}
-        currentPlayerId={currentPlayerId}
+        onPerformanceChange={setCurrentFPS}
       />
     </div>
   );
