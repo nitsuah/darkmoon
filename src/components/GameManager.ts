@@ -1,10 +1,17 @@
 import { createLogger } from "../lib/utils/logger";
 import type { GameModeHandler } from "./gameModes/GameModeHandler";
 import TagMode from "./gameModes/TagMode";
+import DeathmatchMode from "./gameModes/DeathmatchMode";
 
 const log = createLogger("GameManager");
 
-export type GameMode = "none" | "tag" | "collectible" | "race" | "solo";
+export type GameMode =
+  | "none"
+  | "tag"
+  | "deathmatch"
+  | "collectible"
+  | "race"
+  | "solo";
 
 export interface GameState {
   mode: GameMode;
@@ -13,6 +20,8 @@ export interface GameState {
   scores: { [playerId: string]: number };
   itPlayerId?: string; // For tag mode
   roundStartTime?: number;
+  /** Kills required to win deathmatch. */
+  killLimit?: number;
 }
 
 export interface TagGameState extends GameState {
@@ -47,9 +56,9 @@ export class GameManager {
     onPlayerUpdate?: (players: Map<string, Player>) => void;
   };
 
-  // Active mode rules. Only "tag" is implemented today; future modes
-  // (deathmatch, CTF, ...) will be selected based on gameState.mode.
-  private readonly mode: GameModeHandler;
+  // Active mode rules, swapped out by startTagGame/startDeathmatchGame/...
+  // based on gameState.mode.
+  private mode: GameModeHandler;
 
   constructor() {
     this.gameState = {
@@ -120,6 +129,7 @@ export class GameManager {
       roundStartTime: Date.now(),
     };
 
+    this.mode = new TagMode();
     this.mode.onStart(this.players, this.gameState);
 
     this.callbacks.onGameStateUpdate?.(this.gameState);
@@ -145,6 +155,44 @@ export class GameManager {
 
     const accepted = this.mode.onAction(
       { type: "tag", taggerId, taggedId },
+      this.players,
+      this.gameState,
+    );
+
+    if (accepted) {
+      this.callbacks.onGameStateUpdate?.(this.gameState);
+      this.callbacks.onPlayerUpdate?.(this.players);
+    }
+
+    return accepted;
+  }
+
+  startDeathmatchGame(duration: number = 120, killLimit: number = 10) {
+    this.gameState = {
+      mode: "deathmatch",
+      isActive: true,
+      timeRemaining: duration,
+      scores: {},
+      killLimit,
+      roundStartTime: Date.now(),
+    };
+
+    this.mode = new DeathmatchMode();
+    this.mode.onStart(this.players, this.gameState);
+
+    this.callbacks.onGameStateUpdate?.(this.gameState);
+    this.callbacks.onPlayerUpdate?.(this.players);
+    log.debug(`Deathmatch started! Kill limit: ${killLimit}`);
+    return true;
+  }
+
+  hitPlayer(attackerId: string, targetId: string, damage: number): boolean {
+    if (this.gameState.mode !== "deathmatch" || !this.gameState.isActive) {
+      return false;
+    }
+
+    const accepted = this.mode.onAction(
+      { type: "hit", attackerId, targetId, damage },
       this.players,
       this.gameState,
     );

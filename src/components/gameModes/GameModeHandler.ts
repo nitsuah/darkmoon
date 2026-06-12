@@ -6,11 +6,18 @@ export interface GameResult {
   score: number;
 }
 
-export type GameAction = {
-  type: "tag";
-  taggerId: string;
-  taggedId: string;
-};
+export type GameAction =
+  | {
+      type: "tag";
+      taggerId: string;
+      taggedId: string;
+    }
+  | {
+      type: "hit";
+      attackerId: string;
+      targetId: string;
+      damage: number;
+    };
 
 /**
  * Mode-specific rules for a GameManager-hosted game. GameManager owns the
