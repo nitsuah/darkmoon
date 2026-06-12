@@ -67,22 +67,38 @@ export function processFiring(params: FireParams): FireResult | null {
   }
 
   if (hit) {
-    const target = gameManager.getPlayers().get(hit.hitPlayerId);
-    if (target) {
-      const maxHealth = target.maxHealth ?? DEFAULT_MAX_HEALTH;
-      const currentHealth = target.health ?? maxHealth;
-      gameManager.updatePlayer(hit.hitPlayerId, {
-        maxHealth,
-        health: Math.max(0, currentHealth - weapon.damage),
-      });
+    const gameState = gameManager.getGameState();
+    let damageApplied = false;
+
+    if (gameState.mode === "deathmatch" && gameState.isActive) {
+      // Deathmatch: DeathmatchMode applies damage, awards kills, and starts
+      // respawn timers. Rejected hits (e.g. a downed target) deal no damage.
+      damageApplied = gameManager.hitPlayer(
+        shooterId,
+        hit.hitPlayerId,
+        weapon.damage,
+      );
+    } else {
+      const target = gameManager.getPlayers().get(hit.hitPlayerId);
+      if (target) {
+        const maxHealth = target.maxHealth ?? DEFAULT_MAX_HEALTH;
+        const currentHealth = target.health ?? maxHealth;
+        gameManager.updatePlayer(hit.hitPlayerId, {
+          maxHealth,
+          health: Math.max(0, currentHealth - weapon.damage),
+        });
+        damageApplied = true;
+      }
     }
 
-    try {
-      const soundMgr = getSoundManager();
-      if (soundMgr) soundMgr.playHitSound();
-    } catch (e) {
-      if (import.meta.env.DEV) {
-        console.warn("Failed to play hit sound:", e);
+    if (damageApplied) {
+      try {
+        const soundMgr = getSoundManager();
+        if (soundMgr) soundMgr.playHitSound();
+      } catch (e) {
+        if (import.meta.env.DEV) {
+          console.warn("Failed to play hit sound:", e);
+        }
       }
     }
   }

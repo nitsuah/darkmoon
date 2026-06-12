@@ -411,12 +411,15 @@ const Solo: React.FC = () => {
     };
   }, [setMouseControls]);
 
-  // Player position tracking - use refs to avoid re-render loops
+  // Player position tracking - use refs to avoid re-render loops. Also sync
+  // into GameManager (callback-free) so projectile hit checks see live
+  // positions.
   const handlePlayerPositionUpdate = useCallback(
     (position: [number, number, number]) => {
       playerPositionRef.current = position;
+      gameManager.current?.updatePlayerPosition(currentPlayerId, position);
     },
-    [],
+    [currentPlayerId],
   );
 
   // Bot position tracking - use refs to avoid re-render loops AND update clients object for collision
@@ -425,6 +428,7 @@ const Solo: React.FC = () => {
       bot1PositionRef.current = position;
       // Update clients ref so PlayerCharacter can detect bot for tagging (no re-render)
       clientsRef.current["bot-1"] = { position, rotation: ZERO_ROTATION };
+      gameManager.current?.updatePlayerPosition("bot-1", position);
     },
     [],
   );
@@ -434,6 +438,7 @@ const Solo: React.FC = () => {
       bot2PositionRef.current = position;
       // Update clients ref so PlayerCharacter can detect bot for tagging (no re-render)
       clientsRef.current["bot-2"] = { position, rotation: ZERO_ROTATION };
+      gameManager.current?.updatePlayerPosition("bot-2", position);
     },
     [],
   );
@@ -540,22 +545,33 @@ const Solo: React.FC = () => {
     });
   };
 
-  const handleStartTagGame = () => {
-    if (gameManager.current) {
-      gameManager.current.startTagGame();
+  const handleStartGame = (mode: string) => {
+    if (!gameManager.current) return;
+
+    if (mode === "deathmatch") {
+      gameManager.current.startDeathmatchGame();
       const newGameState = gameManager.current.getGameState();
       setGameState(newGameState);
+      addNotification(
+        `Deathmatch started! First to ${newGameState.killLimit} kills wins!`,
+        "warning",
+      );
+      return;
+    }
 
-      // Show correct notification based on who is IT
-      const itPlayerId = newGameState.itPlayerId;
+    gameManager.current.startTagGame();
+    const newGameState = gameManager.current.getGameState();
+    setGameState(newGameState);
 
-      if (itPlayerId === currentPlayerId) {
-        addNotification("Tag game started! You're IT!", "warning");
-      } else {
-        const itPlayer = gameManager.current.getPlayers().get(itPlayerId || "");
-        const itName = itPlayer?.name || "Someone";
-        addNotification(`Tag game started! ${itName} is IT!`, "info");
-      }
+    // Show correct notification based on who is IT
+    const itPlayerId = newGameState.itPlayerId;
+
+    if (itPlayerId === currentPlayerId) {
+      addNotification("Tag game started! You're IT!", "warning");
+    } else {
+      const itPlayer = gameManager.current.getPlayers().get(itPlayerId || "");
+      const itName = itPlayer?.name || "Someone";
+      addNotification(`Tag game started! ${itName} is IT!`, "info");
     }
   };
 
@@ -632,7 +648,7 @@ const Solo: React.FC = () => {
         gameState={gameState}
         players={gamePlayers}
         currentPlayerId={currentPlayerId}
-        onStartGame={handleStartTagGame}
+        onStartGame={handleStartGame}
         onEndGame={handleEndGame}
         botDebugMode={botDebugMode}
         onToggleDebug={() => setBotDebugMode((prev) => !prev)}

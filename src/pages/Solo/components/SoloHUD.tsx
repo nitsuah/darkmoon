@@ -22,7 +22,7 @@ interface SoloHUDProps {
   gameState: GameState;
   players: Map<string, Player>;
   currentPlayerId: string;
-  onStartGame: () => void;
+  onStartGame: (mode: string) => void;
   onEndGame: () => void;
   botDebugMode: boolean;
   onToggleDebug: () => void;
