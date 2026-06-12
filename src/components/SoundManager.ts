@@ -239,6 +239,36 @@ class SoundManager {
   }
 
   /**
+   * Play weapon fire sound (laser blaster discharge)
+   */
+  public playWeaponFireSound() {
+    const ctx = this.getAudioContext();
+    const sfxGain = this.getSfxGain();
+    if (!ctx || !sfxGain || this.isMuted) return;
+    try {
+      this.resumeAudioContext();
+      soundEffects.playWeaponFireSoundImpl(ctx, sfxGain, this.sfxVolume);
+    } catch {
+      // ignore
+    }
+  }
+
+  /**
+   * Play hit sound (projectile lands on a target)
+   */
+  public playHitSound() {
+    const ctx = this.getAudioContext();
+    const sfxGain = this.getSfxGain();
+    if (!ctx || !sfxGain || this.isMuted) return;
+    try {
+      this.resumeAudioContext();
+      soundEffects.playHitSoundImpl(ctx, sfxGain, this.sfxVolume);
+    } catch {
+      // ignore
+    }
+  }
+
+  /**
    * Play jetpack activation sound (double-jump trigger)
    */
   public playJetpackActivateSound() {

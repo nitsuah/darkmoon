@@ -3,13 +3,13 @@ import { createOscillatorWithGain } from "./soundNodeFactory";
 export function playWalkSoundImpl(
   ctx: AudioContext,
   sfxGain: GainNode,
-  sfxVolume: number
+  sfxVolume: number,
 ) {
   try {
     const { osc, gain } = createOscillatorWithGain(
       ctx,
       "sine",
-      80 + Math.random() * 20
+      80 + Math.random() * 20,
     );
 
     gain.gain.value = 0;
@@ -29,7 +29,7 @@ export function playWalkSoundImpl(
 export function playJumpSoundImpl(
   ctx: AudioContext,
   sfxGain: GainNode,
-  sfxVolume: number
+  sfxVolume: number,
 ) {
   try {
     const { osc, gain } = createOscillatorWithGain(ctx, "square", 200);
@@ -53,7 +53,7 @@ export function playJumpSoundImpl(
 export function playLandSoundImpl(
   ctx: AudioContext,
   sfxGain: GainNode,
-  sfxVolume: number
+  sfxVolume: number,
 ) {
   try {
     const { osc, gain } = createOscillatorWithGain(ctx, "sine", 150);
@@ -77,7 +77,7 @@ export function playLandSoundImpl(
 export function playTagSoundImpl(
   ctx: AudioContext,
   sfxGain: GainNode,
-  sfxVolume: number
+  sfxVolume: number,
 ) {
   try {
     const { osc, gain } = createOscillatorWithGain(ctx, "sawtooth", 440);
@@ -102,7 +102,7 @@ export function playTagSoundImpl(
 export function playTaggedSoundImpl(
   ctx: AudioContext,
   sfxGain: GainNode,
-  sfxVolume: number
+  sfxVolume: number,
 ) {
   try {
     const { osc, gain } = createOscillatorWithGain(ctx, "square", 440);
@@ -123,10 +123,58 @@ export function playTaggedSoundImpl(
   }
 }
 
+export function playWeaponFireSoundImpl(
+  ctx: AudioContext,
+  sfxGain: GainNode,
+  sfxVolume: number,
+) {
+  try {
+    const { osc, gain } = createOscillatorWithGain(ctx, "sawtooth", 880);
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 0.08);
+
+    gain.gain.value = 0;
+    gain.gain.linearRampToValueAtTime(sfxVolume * 0.5, ctx.currentTime + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+
+    osc.connect(gain);
+    gain.connect(sfxGain);
+
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.12);
+  } catch {
+    // ignore
+  }
+}
+
+export function playHitSoundImpl(
+  ctx: AudioContext,
+  sfxGain: GainNode,
+  sfxVolume: number,
+) {
+  try {
+    const { osc, gain } = createOscillatorWithGain(ctx, "square", 180);
+    osc.frequency.setValueAtTime(180, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + 0.1);
+
+    gain.gain.value = 0;
+    gain.gain.linearRampToValueAtTime(sfxVolume * 0.6, ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+
+    osc.connect(gain);
+    gain.connect(sfxGain);
+
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.15);
+  } catch {
+    // ignore
+  }
+}
+
 export function playJetpackActivateSoundImpl(
   ctx: AudioContext,
   sfxGain: GainNode,
-  sfxVolume: number
+  sfxVolume: number,
 ) {
   try {
     const { osc, gain } = createOscillatorWithGain(ctx, "sawtooth", 100);
@@ -158,7 +206,7 @@ export function playJetpackActivateSoundImpl(
 export function playJetpackThrustSoundImpl(
   ctx: AudioContext,
   sfxGain: GainNode,
-  sfxVolume: number
+  sfxVolume: number,
 ) {
   try {
     const { osc, gain } = createOscillatorWithGain(ctx, "sawtooth", 80);
@@ -187,7 +235,7 @@ export function playJetpackThrustSoundImpl(
 
 export function stopJetpackThrustSoundImpl(
   thrustSound: { osc: OscillatorNode; gain: GainNode } | null,
-  ctx: AudioContext | null
+  ctx: AudioContext | null,
 ) {
   if (!thrustSound || !ctx) return;
   try {

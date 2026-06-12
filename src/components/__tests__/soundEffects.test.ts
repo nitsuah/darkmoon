@@ -7,6 +7,8 @@ import {
   playTagSoundImpl,
   playTaggedSoundImpl,
   playWalkSoundImpl,
+  playWeaponFireSoundImpl,
+  playHitSoundImpl,
   stopJetpackThrustSoundImpl,
 } from "../soundEffects";
 
@@ -91,6 +93,16 @@ describe("soundEffects", () => {
       0.7,
     );
     playTaggedSoundImpl(
+      ctx as unknown as AudioContext,
+      sfxGain as unknown as GainNode,
+      0.7,
+    );
+    playWeaponFireSoundImpl(
+      ctx as unknown as AudioContext,
+      sfxGain as unknown as GainNode,
+      0.7,
+    );
+    playHitSoundImpl(
       ctx as unknown as AudioContext,
       sfxGain as unknown as GainNode,
       0.7,

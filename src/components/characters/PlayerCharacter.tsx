@@ -8,6 +8,8 @@ import GameManager, { GameState } from "../GameManager";
 import { W, A, S, D, Q, E, SHIFT, SPACE } from "../utils";
 import SpacemanModel from "../SpacemanModel";
 import { getSoundManager } from "../SoundManager";
+import { WeaponManager } from "../combat/WeaponManager";
+import { processFiring } from "../../lib/hooks/usePlayerWeapon";
 import { createTagLogger } from "../../lib/utils/logger";
 import {
   usePlayerPhysics,
@@ -31,6 +33,9 @@ import {
 } from "../../lib/hooks/useJetpack";
 
 const tagDebug = createTagLogger("PlayerCharacter");
+
+// How long a fired laser beam stays visible before fading out.
+const LASER_BEAM_VISIBLE_MS = 100;
 
 type WindowWithPlayerFreeze = typeof globalThis & {
   __playerFreezeUntil?: number;
@@ -145,6 +150,14 @@ export const PlayerCharacter = React.forwardRef<
   const [showDustEffect, setShowDustEffect] = useState(false);
   const [showJetpackFlame, setShowJetpackFlame] = useState(false);
   const lookIndicatorRef = React.useRef<THREE.Group>(null);
+  const laserBeamRef = React.useRef<THREE.Group>(null);
+  const laserBeamHideAtRef = React.useRef(0);
+  const weaponManagerRef = React.useRef(new WeaponManager());
+
+  // Equip the laser blaster by default for the visible laser-fire mechanic.
+  React.useEffect(() => {
+    weaponManagerRef.current.equip("laser");
+  }, []);
 
   // Expose reset and freeze functions to parent via ref
   React.useImperativeHandle(ref, () => ({
@@ -362,6 +375,45 @@ export const PlayerCharacter = React.forwardRef<
       } else {
         lookIndicatorRef.current.visible = false;
       }
+    }
+
+    // Fire the equipped laser while left-click is held (rate-limited by
+    // WeaponManager's per-shooter cooldown).
+    if (mouseControls.leftClick && gameManager) {
+      const fireDirection = new THREE.Vector3(
+        -Math.sin(cameraRotationRef.current.horizontal),
+        0,
+        -Math.cos(cameraRotationRef.current.horizontal),
+      );
+      const fireOrigin = meshRef.current.position
+        .clone()
+        .add(new THREE.Vector3(0, 1, 0));
+
+      const fireResult = processFiring({
+        origin: fireOrigin,
+        direction: fireDirection,
+        shooterId: socketClient?.id || currentPlayerId,
+        gameManager,
+        weaponManager: weaponManagerRef.current,
+        collisionSystem: collisionSystemRef.current,
+        now,
+      });
+
+      if (fireResult && laserBeamRef.current) {
+        const beamLength = fireResult.hit?.distance ?? fireResult.weapon.range;
+        laserBeamRef.current.visible = true;
+        laserBeamRef.current.position
+          .copy(fireOrigin)
+          .add(fireDirection.clone().multiplyScalar(beamLength / 2));
+        laserBeamRef.current.rotation.y =
+          cameraRotationRef.current.horizontal + Math.PI;
+        laserBeamRef.current.scale.set(1, 1, beamLength);
+        laserBeamHideAtRef.current = now + LASER_BEAM_VISIBLE_MS;
+      }
+    }
+
+    if (laserBeamRef.current && now >= laserBeamHideAtRef.current) {
+      laserBeamRef.current.visible = false;
     }
 
     // WoW-style auto-run: both mouse buttons held = move forward
@@ -770,55 +822,65 @@ export const PlayerCharacter = React.forwardRef<
 
   // Player spawn at [0, 0.5, 0] - center of map, clear of all rocks
   return (
-    <group ref={meshRef} position={[0, 0.5, 0]}>
-      <SpacemanModel
-        color={isIt ? "#ff4444" : "#4a90e2"}
-        isIt={isIt}
-        velocity={currentVelocity}
-        cameraRotation={currentCameraRotation}
-        isSprinting={isSprinting}
-        isJetpackActive={isJetpackActive}
-      />
-      {/* Jetpack thrust visual effect */}
-      {showJetpackFlame && (
-        <group position={[0, -0.05, 0]}>
-          <mesh rotation={[Math.PI, 0, 0]}>
-            <coneGeometry args={[0.15, 0.4, 8]} />
-            <meshStandardMaterial
-              color="#ff6600"
-              opacity={0.7}
+    <>
+      <group ref={meshRef} position={[0, 0.5, 0]}>
+        <SpacemanModel
+          color={isIt ? "#ff4444" : "#4a90e2"}
+          isIt={isIt}
+          velocity={currentVelocity}
+          cameraRotation={currentCameraRotation}
+          isSprinting={isSprinting}
+          isJetpackActive={isJetpackActive}
+        />
+        {/* Jetpack thrust visual effect */}
+        {showJetpackFlame && (
+          <group position={[0, -0.05, 0]}>
+            <mesh rotation={[Math.PI, 0, 0]}>
+              <coneGeometry args={[0.15, 0.4, 8]} />
+              <meshStandardMaterial
+                color="#ff6600"
+                opacity={0.7}
+                transparent
+                emissive="#ff4400"
+                emissiveIntensity={1.5}
+              />
+            </mesh>
+            <mesh position={[0, 0.1, 0]} rotation={[Math.PI, 0, 0]}>
+              <coneGeometry args={[0.08, 0.25, 8]} />
+              <meshStandardMaterial
+                color="#ffff00"
+                opacity={0.9}
+                transparent
+                emissive="#ffff00"
+                emissiveIntensity={2}
+              />
+            </mesh>
+          </group>
+        )}
+        {/* Landing dust effect */}
+        {showDustEffect && <group position={[0, 0.05, 0]}>{dustMeshes}</group>}
+        {/* Debug hitbox visualization */}
+        {props.showHitboxes && (
+          <mesh position={[0, 0, 0]}>
+            <sphereGeometry args={[0.5, 16, 16]} />
+            <meshBasicMaterial
+              color="#00ff00"
+              wireframe={true}
+              opacity={0.3}
               transparent
-              emissive="#ff4400"
-              emissiveIntensity={1.5}
             />
           </mesh>
-          <mesh position={[0, 0.1, 0]} rotation={[Math.PI, 0, 0]}>
-            <coneGeometry args={[0.08, 0.25, 8]} />
-            <meshStandardMaterial
-              color="#ffff00"
-              opacity={0.9}
-              transparent
-              emissive="#ffff00"
-              emissiveIntensity={2}
-            />
-          </mesh>
-        </group>
-      )}
-      {/* Landing dust effect */}
-      {showDustEffect && <group position={[0, 0.05, 0]}>{dustMeshes}</group>}
-      {/* Debug hitbox visualization */}
-      {props.showHitboxes && (
-        <mesh position={[0, 0, 0]}>
-          <sphereGeometry args={[0.5, 16, 16]} />
-          <meshBasicMaterial
-            color="#00ff00"
-            wireframe={true}
-            opacity={0.3}
-            transparent
-          />
+        )}
+      </group>
+      {/* Laser beam visual: a short-lived stretched box from the shooter
+          toward the hit point (or weapon range on a miss). */}
+      <group ref={laserBeamRef} visible={false}>
+        <mesh>
+          <boxGeometry args={[0.04, 0.04, 1]} />
+          <meshBasicMaterial color="#33ffe6" transparent opacity={0.85} />
         </mesh>
-      )}
-    </group>
+      </group>
+    </>
   );
   /* eslint-enable react/no-unknown-property */
 });
