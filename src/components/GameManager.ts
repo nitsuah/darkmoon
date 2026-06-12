@@ -1,4 +1,6 @@
 import { createLogger } from "../lib/utils/logger";
+import type { GameModeHandler } from "./gameModes/GameModeHandler";
+import TagMode from "./gameModes/TagMode";
 
 const log = createLogger("GameManager");
 
@@ -29,6 +31,12 @@ export interface Player {
   lastTagTime?: number;
   /** ID of the player who most recently tagged this player (used for tag-back cooldown). */
   lastTaggedById?: string;
+  /** Current health for combat-enabled modes (deathmatch, CTF). */
+  health?: number;
+  /** Health to restore to on spawn/respawn. */
+  maxHealth?: number;
+  /** Timestamp (ms) when a downed player becomes eligible to respawn. */
+  respawnAt?: number;
 }
 
 export class GameManager {
@@ -39,17 +47,9 @@ export class GameManager {
     onPlayerUpdate?: (players: Map<string, Player>) => void;
   };
 
-  // Scoring constants
-  private readonly MAX_TAG_SCORE = 300;
-  private readonly MILLISECONDS_PER_SECOND = 1000;
-
-  // Tag cooldown constants
-  // Prevents a player who was just tagged (and is now IT) from instantly
-  // tagging back the player who tagged them.
-  private readonly TAG_BACK_COOLDOWN_MS = 2000;
-  // Prevents a player who was just tagged from being tagged again by anyone
-  // (gives them a moment to react/move before becoming a target again).
-  private readonly TAG_FREEZE_MS = 1500;
+  // Active mode rules. Only "tag" is implemented today; future modes
+  // (deathmatch, CTF, ...) will be selected based on gameState.mode.
+  private readonly mode: GameModeHandler;
 
   constructor() {
     this.gameState = {
@@ -60,6 +60,7 @@ export class GameManager {
     };
     this.players = new Map();
     this.callbacks = {};
+    this.mode = new TagMode();
   }
 
   setCallbacks(callbacks: {
@@ -77,12 +78,13 @@ export class GameManager {
   removePlayer(playerId: string) {
     this.players.delete(playerId);
 
-    // If the 'it' player left during tag game, pick a new 'it'
+    // If the 'it' player left during tag game, let the mode reassign it
     if (
       this.gameState.mode === "tag" &&
       this.gameState.itPlayerId === playerId
     ) {
-      this.pickNewItPlayer();
+      this.mode.onPlayerRemoved(playerId, this.players, this.gameState);
+      this.callbacks.onGameStateUpdate?.(this.gameState);
     }
 
     this.callbacks.onPlayerUpdate?.(this.players);
@@ -115,18 +117,10 @@ export class GameManager {
       isActive: true,
       timeRemaining: duration,
       scores: {},
-      itPlayerId: this.pickRandomPlayer(),
       roundStartTime: Date.now(),
     };
 
-    // Initialize scores and reset player states
-    this.players.forEach((player, id) => {
-      this.gameState.scores[id] = 0;
-      player.isIt = id === this.gameState.itPlayerId;
-      player.timeAsIt = 0;
-      player.lastTagTime = undefined;
-      player.lastTaggedById = undefined;
-    });
+    this.mode.onStart(this.players, this.gameState);
 
     this.callbacks.onGameStateUpdate?.(this.gameState);
     this.callbacks.onPlayerUpdate?.(this.players);
@@ -144,80 +138,29 @@ export class GameManager {
   }
 
   tagPlayer(taggerId: string, taggedId: string): boolean {
-    log.debug(
-      `[TAG-TRACE] tagPlayer called with taggerId=${taggerId}, taggedId=${taggedId}`,
-    );
     if (this.gameState.mode !== "tag" || !this.gameState.isActive) {
       log.debug(`[TAG-TRACE] Tag failed: Not in tag mode or inactive`);
       return false;
     }
 
-    const tagger = this.players.get(taggerId);
-    const tagged = this.players.get(taggedId);
-
-    if (!tagger || !tagged || !tagger.isIt || tagged.isIt) {
-      log.debug(
-        `[TAG-TRACE] Tag failed: tagger or tagged missing, or tagger not IT, or tagged already IT`,
-        { tagger, tagged },
-      );
-      return false;
-    }
-
-    // Check if enough time has passed since last tag (prevent spam)
-    const now = Date.now();
-    // Prevent a player who was just tagged (and is now IT) from instantly
-    // tagging back the player who tagged them. This is scoped to the
-    // specific tagger/tagged pair so a freshly-tagged IT player can still
-    // chase down a *different* player immediately.
-    if (
-      tagger.lastTaggedById === taggedId &&
-      tagger.lastTagTime &&
-      now - tagger.lastTagTime < this.TAG_BACK_COOLDOWN_MS
-    ) {
-      log.debug(
-        `[TAG-TRACE] Tag failed: tag-back cooldown (${now - tagger.lastTagTime}ms < ${this.TAG_BACK_COOLDOWN_MS}ms)`,
-      );
-      return false;
-    }
-    // Prevent the new IT from being tagged again immediately (freeze/cooldown)
-    if (tagged.lastTagTime && now - tagged.lastTagTime < this.TAG_FREEZE_MS) {
-      log.debug(
-        `[TAG-TRACE] Tag failed: tagged freeze/cooldown (${now - tagged.lastTagTime}ms < ${this.TAG_FREEZE_MS}ms)`,
-      );
-      return false;
-    }
-
-    // Update time as 'it' for scoring
-    const timeAsIt = now - (this.gameState.roundStartTime || now);
-    if (this.gameState.scores[taggerId] !== undefined) {
-      this.gameState.scores[taggerId] += Math.max(
-        0,
-        this.MAX_TAG_SCORE - timeAsIt / this.MILLISECONDS_PER_SECOND,
-      ); // Points based on how quickly they tagged
-    }
-
-    // Transfer 'it' status
-    tagger.isIt = false;
-    tagger.lastTagTime = now;
-    tagged.isIt = true;
-    tagged.lastTagTime = now;
-    tagged.lastTaggedById = taggerId;
-
-    this.gameState.itPlayerId = taggedId;
-    this.gameState.roundStartTime = now;
-
-    this.callbacks.onGameStateUpdate?.(this.gameState);
-    this.callbacks.onPlayerUpdate?.(this.players);
-    log.debug(
-      `${tagger.name} tagged ${tagged.name}! ${tagged.name} is now IT!`,
+    const accepted = this.mode.onAction(
+      { type: "tag", taggerId, taggedId },
+      this.players,
+      this.gameState,
     );
-    return true;
+
+    if (accepted) {
+      this.callbacks.onGameStateUpdate?.(this.gameState);
+      this.callbacks.onPlayerUpdate?.(this.players);
+    }
+
+    return accepted;
   }
 
   updateGameTimer(deltaTime: number) {
     if (!this.gameState.isActive) return;
 
-    this.gameState.timeRemaining -= deltaTime;
+    this.mode.onTick(deltaTime, this.players, this.gameState);
 
     if (this.gameState.timeRemaining <= 0) {
       this.endGame();
@@ -230,56 +173,14 @@ export class GameManager {
     this.gameState.isActive = false;
     this.gameState.timeRemaining = 0;
 
-    // Calculate final scores
-    const results = Array.from(this.players.entries())
-      .map(([id, player]) => ({
-        id,
-        name: player.name,
-        score: this.gameState.scores[id] || 0,
-      }))
-      .sort((a, b) => b.score - a.score);
+    const results = this.mode.onEnd(this.players, this.gameState);
 
     log.debug("Game ended! Final scores:", results);
-
-    // Reset player states
-    this.players.forEach((player) => {
-      player.isIt = false;
-      player.timeAsIt = 0;
-      player.lastTagTime = undefined;
-      player.lastTaggedById = undefined;
-    });
 
     this.callbacks.onGameStateUpdate?.(this.gameState);
     this.callbacks.onPlayerUpdate?.(this.players);
 
     return results;
-  }
-
-  private pickRandomPlayer(): string {
-    const playerIds = Array.from(this.players.keys());
-    return playerIds[Math.floor(Math.random() * playerIds.length)];
-  }
-
-  private pickNewItPlayer() {
-    if (this.players.size === 0) {
-      // No players remain; there is nothing to tag, so end the round
-      // entirely rather than leaving a dangling itPlayerId/isActive state.
-      this.gameState.isActive = false;
-      this.gameState.mode = "none";
-      this.gameState.itPlayerId = undefined;
-      this.callbacks.onGameStateUpdate?.(this.gameState);
-      return;
-    }
-
-    const newItId = this.pickRandomPlayer();
-    this.gameState.itPlayerId = newItId;
-
-    this.players.forEach((player, id) => {
-      player.isIt = id === newItId;
-    });
-
-    this.callbacks.onGameStateUpdate?.(this.gameState);
-    this.callbacks.onPlayerUpdate?.(this.players);
   }
 
   getGameState(): GameState {

@@ -84,14 +84,13 @@ Last Updated: 2026-06-11
   - Problem: older refactor tasks no longer match the codebase hotspots.
   - Acceptance Criteria: only current, high-value refactors remain and each one ties back to reliability, testability, or performance.
 
-- [ ] **[Phase A] Pluggable game modes** — extract tag logic out of `GameManager` behind a `GameModeHandler` interface (`onStart`/`onTick`/`onAction`/`onEnd`), with a `TagMode` implementation preserving current behavior.
-  - Priority: P1
-  - Problem: tag rules (cooldowns, freeze, IT-transfer scoring) are hardcoded into `GameManager`, blocking deathmatch/CTF without risking regressions to tag.
-  - Acceptance Criteria: see `docs/MULTIPLAYER_SHOOTER_ROADMAP.md` Phase A; existing `gameManager.*.test.ts` and `Bots.test.tsx` pass unchanged.
+- [x] **[Phase A] Pluggable game modes** — extract tag logic out of `GameManager` behind a `GameModeHandler` interface (`onStart`/`onTick`/`onAction`/`onPlayerRemoved`/`onEnd`), with a `TagMode` implementation preserving current behavior.
+  - Done: `src/components/gameModes/{GameModeHandler,TagMode}.ts`; `GameManager` is now a thin host delegating to the active mode. Existing `gameManager.*.test.ts` and `Bots.test.tsx` pass unchanged.
 
 - [ ] **[Phase B] Combat primitives** — add `WeaponManager`, projectile/hit-detection (extends `CollisionSystem`), and `health`/`respawn` fields on `Player`.
   - Priority: P2
   - Problem: no weapon or damage model exists yet; required before any deathmatch/CTF mode.
+  - Progress: `WeaponManager` (`src/components/combat/WeaponManager.ts`), `CollisionSystem.checkProjectileHit`, and `Player.health/maxHealth/respawnAt` are done and tested. Remaining: wire a visible laser-fire action into Solo mode (keybind, beam visual, hit feedback, SFX).
   - Acceptance Criteria: see `docs/MULTIPLAYER_SHOOTER_ROADMAP.md` Phase B.
 
 - [ ] **[Phase C] Deathmatch mode** — kill tracking, respawn, and scoreboard via `GameUI`.
