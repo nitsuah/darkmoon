@@ -38,7 +38,7 @@ describe("usePlayerMovement helpers", () => {
       cam,
       { x: 0, y: 0 },
       { W: false, S: false, Q: false, E: false },
-      true
+      true,
     );
     expect(dir.length()).toBeGreaterThan(0);
   });
@@ -52,7 +52,7 @@ describe("usePlayerMovement helpers", () => {
   test("computeFacingYaw follows movement direction when not aiming", () => {
     const direction = new THREE.Vector3(1, 0, 0);
     const facing = computeFacingYaw(direction, 0, false, 0);
-    expect(facing).toBeCloseTo(Math.PI / 2);
+    expect(facing).toBeCloseTo(-Math.PI / 2);
   });
 
   test("computeFacingYaw keeps current yaw with no movement", () => {

@@ -18,19 +18,19 @@ export function computeDirection(
   cameraHorizontal: number,
   joystick: JoystickInput,
   keysPressed: KeysMap,
-  bothMouseButtons: boolean
+  bothMouseButtons: boolean,
 ): THREE.Vector3 {
   const direction = new THREE.Vector3(0, 0, 0);
 
   const forward = new THREE.Vector3(
     -Math.sin(cameraHorizontal),
     0,
-    -Math.cos(cameraHorizontal)
+    -Math.cos(cameraHorizontal),
   );
   const right = new THREE.Vector3(
     Math.cos(cameraHorizontal),
     0,
-    -Math.sin(cameraHorizontal)
+    -Math.sin(cameraHorizontal),
   );
 
   if (bothMouseButtons) {
@@ -72,14 +72,19 @@ export function computeFacingYaw(
   movementDirection: THREE.Vector3,
   cameraHorizontal: number,
   isAiming: boolean,
-  currentYaw: number
+  currentYaw: number,
 ): number {
   if (isAiming) {
     return cameraHorizontal;
   }
 
   if (movementDirection.lengthSq() > 0.0001) {
-    return Math.atan2(movementDirection.x, movementDirection.z);
+    // Negate both components so the result matches the `isAiming` branch's
+    // convention: the model's front (chest) faces `movementDirection`, and
+    // the jetpack on its back ends up on the opposite side. Without the
+    // negation this yaw is offset by PI from the aiming branch, which makes
+    // the character appear to walk backwards with the jetpack facing front.
+    return Math.atan2(-movementDirection.x, -movementDirection.z);
   }
 
   return currentYaw;
