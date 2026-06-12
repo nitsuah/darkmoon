@@ -130,6 +130,52 @@ describe("usePlayerWeapon.processFiring", () => {
     expect(gameManager.getPlayers().get("target")?.health).toBe(0);
   });
 
+  it("routes hits through GameManager.hitPlayer during an active deathmatch", () => {
+    weaponManager.equip("laser");
+    gameManager.startDeathmatchGame(120, 5);
+    // Leave the target one laser hit from elimination.
+    gameManager.updatePlayer("target", { health: 10 });
+
+    const result = processFiring({
+      origin,
+      direction,
+      shooterId: "shooter",
+      gameManager,
+      weaponManager,
+      collisionSystem,
+      now: 1000,
+    });
+
+    expect(result?.hit?.hitPlayerId).toBe("target");
+    const target = gameManager.getPlayers().get("target");
+    expect(target?.health).toBe(0);
+    expect(target?.respawnAt).toBeDefined();
+    expect(gameManager.getGameState().scores["shooter"]).toBe(1);
+    expect(playHitSound).toHaveBeenCalled();
+  });
+
+  it("deals no damage to a downed target awaiting respawn in deathmatch", () => {
+    weaponManager.equip("laser");
+    gameManager.startDeathmatchGame(120, 5);
+    gameManager.hitPlayer("shooter", "target", 1000); // down the target
+
+    const result = processFiring({
+      origin,
+      direction,
+      shooterId: "shooter",
+      gameManager,
+      weaponManager,
+      collisionSystem,
+      now: 1000,
+    });
+
+    // The shot still fires and reports the hit, but no damage or kill credit.
+    expect(result?.hit?.hitPlayerId).toBe("target");
+    expect(gameManager.getPlayers().get("target")?.health).toBe(0);
+    expect(gameManager.getGameState().scores["shooter"]).toBe(1);
+    expect(playHitSound).not.toHaveBeenCalled();
+  });
+
   it("enforces the weapon cooldown across repeated calls", () => {
     weaponManager.equip("laser");
 

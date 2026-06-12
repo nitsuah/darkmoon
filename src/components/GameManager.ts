@@ -107,6 +107,18 @@ export class GameManager {
     }
   }
 
+  /**
+   * Per-frame position sync that skips update callbacks so 60fps movement
+   * doesn't re-render React consumers. Positions are read on demand
+   * (projectile hit checks, tag distance checks).
+   */
+  updatePlayerPosition(playerId: string, position: [number, number, number]) {
+    const player = this.players.get(playerId);
+    if (player) {
+      player.position = position;
+    }
+  }
+
   startTagGame(duration: number = 60) {
     // 1 minute default for faster playtesting (dynamic: +1min per player above 2)
     // Allow solo practice (0 players) or real games with 2+ players; block single-player

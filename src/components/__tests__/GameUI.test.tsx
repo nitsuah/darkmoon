@@ -86,7 +86,42 @@ describe("GameUI", () => {
     fireEvent.click(screen.getByText("Start Tag"));
     expect(onStartGame).toHaveBeenCalledWith("tag");
 
+    fireEvent.click(screen.getByText("Start Deathmatch"));
+    expect(onStartGame).toHaveBeenCalledWith("deathmatch");
+
     fireEvent.click(screen.getByText("⏹️ Stop Debug"));
     expect(onToggleDebug).toHaveBeenCalled();
+  });
+
+  it("renders health and a kill scoreboard during an active deathmatch", () => {
+    const players = mkPlayers();
+    players.get("p1")!.health = 70;
+    players.get("p1")!.maxHealth = 100;
+    players.get("p2")!.health = 100;
+    players.get("p2")!.maxHealth = 100;
+
+    const gameState: GameState = {
+      mode: "deathmatch",
+      isActive: true,
+      timeRemaining: 90,
+      scores: { p1: 2, p2: 5 },
+      killLimit: 10,
+      roundStartTime: Date.now(),
+    };
+
+    render(
+      <GameUI
+        gameState={gameState}
+        players={players}
+        currentPlayerId="p1"
+        onStartGame={vi.fn()}
+        onEndGame={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/DEATHMATCH GAME/)).toBeInTheDocument();
+    expect(screen.getByText("❤️ 70 / 100")).toBeInTheDocument();
+    expect(screen.getByText("💀 Player Two: 5 / 10")).toBeInTheDocument();
+    expect(screen.getByText("💀 Player One: 2 / 10")).toBeInTheDocument();
   });
 });

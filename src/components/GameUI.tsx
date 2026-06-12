@@ -23,7 +23,7 @@ const GameUI: React.FC<GameUIProps> = ({
   // Detect mobile viewport and landscape orientation
   const [isMobile, setIsMobile] = React.useState(window.innerWidth <= 768);
   const [isLandscape, setIsLandscape] = React.useState(
-    window.innerWidth > window.innerHeight
+    window.innerWidth > window.innerHeight,
   );
 
   React.useEffect(() => {
@@ -117,8 +117,8 @@ const GameUI: React.FC<GameUIProps> = ({
                   ? "🏃 IT!"
                   : `${itPlayer?.name?.substring(0, 6) || "?"}`
                 : currentPlayer?.isIt
-                ? "🏃 YOU ARE IT!"
-                : `${itPlayer?.name || "Someone"} is IT`}
+                  ? "🏃 YOU ARE IT!"
+                  : `${itPlayer?.name || "Someone"} is IT`}
             </div>
 
             {currentPlayer?.isIt && !isMobile && !isMinimal && (
@@ -130,6 +130,47 @@ const GameUI: React.FC<GameUIProps> = ({
                 }}
               >
                 Tag someone!
+              </div>
+            )}
+          </>
+        )}
+
+        {gameState.mode === "deathmatch" && (
+          <>
+            <div
+              style={{
+                marginBottom: isMinimal ? "2px" : "6px",
+                padding: isMinimal ? "2px 3px" : "4px 8px",
+                backgroundColor: "rgba(100, 255, 100, 0.2)",
+                borderRadius: "3px",
+                border: "1px solid #64ff64",
+                fontSize: isMinimal ? "8px" : isMobile ? "10px" : "11px",
+              }}
+            >
+              ❤️ {currentPlayer?.health ?? currentPlayer?.maxHealth ?? 100}
+              {!isMinimal && ` / ${currentPlayer?.maxHealth ?? 100}`}
+            </div>
+
+            {!isMinimal && (
+              <div
+                style={{
+                  marginBottom: "6px",
+                  fontSize: isMobile ? "9px" : "10px",
+                  textAlign: "left",
+                }}
+              >
+                {Array.from(players.values())
+                  .map((player) => ({
+                    name: player.name,
+                    kills: gameState.scores[player.id] || 0,
+                  }))
+                  .sort((a, b) => b.kills - a.kills)
+                  .map((entry) => (
+                    <div key={entry.name}>
+                      💀 {entry.name}: {entry.kills}
+                      {gameState.killLimit ? ` / ${gameState.killLimit}` : ""}
+                    </div>
+                  ))}
               </div>
             )}
           </>
@@ -173,8 +214,8 @@ const GameUI: React.FC<GameUIProps> = ({
             {isMinimal || isMobile
               ? "🔧"
               : botDebugMode
-              ? "⏹️ Stop Debug"
-              : "🔧 Debug Mode"}
+                ? "⏹️ Stop Debug"
+                : "🔧 Debug Mode"}
           </button>
         )}
       </div>
@@ -237,8 +278,8 @@ const GameUI: React.FC<GameUIProps> = ({
               padding: isMinimal
                 ? "3px 5px"
                 : isMobile
-                ? "6px 8px"
-                : "6px 10px",
+                  ? "6px 8px"
+                  : "6px 10px",
               backgroundColor: "rgba(74, 144, 226, 0.8)",
               border: "1px solid #4a90e2",
               borderRadius: "3px",
@@ -253,14 +294,36 @@ const GameUI: React.FC<GameUIProps> = ({
               : `Start Tag ${players.size <= 1 ? "(Practice)" : ""}`}
           </button>
 
+          {players.size >= 2 && (
+            <button
+              onClick={() => onStartGame("deathmatch")}
+              style={{
+                padding: isMinimal
+                  ? "3px 5px"
+                  : isMobile
+                    ? "6px 8px"
+                    : "6px 10px",
+                backgroundColor: "rgba(220, 53, 69, 0.8)",
+                border: "1px solid #dc3545",
+                borderRadius: "3px",
+                color: "white",
+                cursor: "pointer",
+                fontSize: isMinimal ? "14px" : isMobile ? "14px" : "11px",
+                width: "100%",
+              }}
+            >
+              {isMinimal || isMobile ? "🔫" : "Start Deathmatch"}
+            </button>
+          )}
+
           <button
             onClick={() => onToggleDebug && onToggleDebug()}
             style={{
               padding: isMinimal
                 ? "3px 5px"
                 : isMobile
-                ? "6px 8px"
-                : "6px 10px",
+                  ? "6px 8px"
+                  : "6px 10px",
               backgroundColor: botDebugMode
                 ? "rgba(220, 53, 69, 0.8)"
                 : "rgba(255, 140, 0, 0.8)",
@@ -275,8 +338,8 @@ const GameUI: React.FC<GameUIProps> = ({
             {isMinimal || isMobile
               ? "🔧"
               : botDebugMode
-              ? "⏹️ Stop Debug"
-              : "🔧 Start Debug"}
+                ? "⏹️ Stop Debug"
+                : "🔧 Start Debug"}
           </button>
 
           {!isMobile && !isMinimal && (

@@ -19,6 +19,21 @@ describe("GameManager core", () => {
     vi.restoreAllMocks();
   });
 
+  it("updatePlayerPosition syncs position without firing update callbacks", () => {
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "Player 1"));
+
+    const onPlayerUpdate = vi.fn();
+    manager.setCallbacks({ onPlayerUpdate });
+
+    manager.updatePlayerPosition("p1", [1, 2, 3]);
+    expect(manager.getPlayers().get("p1")?.position).toEqual([1, 2, 3]);
+    expect(onPlayerUpdate).not.toHaveBeenCalled();
+
+    // Unknown player is a safe no-op
+    manager.updatePlayerPosition("ghost", [9, 9, 9]);
+  });
+
   it("blocks tag game start with exactly one player", () => {
     const manager = new GameManager();
     manager.addPlayer(makePlayer("p1", "Player 1"));
