@@ -41,9 +41,11 @@ type HarnessProps = {
   isIt: boolean;
   targetIsIt: boolean;
   onTagTarget: () => void;
+  onFireAtTarget?: () => void;
+  isDowned?: boolean;
   onPositionUpdate: (position: [number, number, number]) => void;
   gameState: {
-    mode: "tag" | "none";
+    mode: "tag" | "deathmatch" | "none";
     isActive: boolean;
     timeRemaining: number;
     scores: Record<string, number>;
@@ -70,6 +72,7 @@ function mountHook(overrides?: Partial<HarnessProps>) {
   const meshRef = makeMesh();
   const capturedRef = React.createRef<ReturnType<typeof useBotAI> | null>();
   const onTagTarget = vi.fn();
+  const onFireAtTarget = vi.fn();
   const onPositionUpdate = vi.fn();
 
   const baseProps: HarnessProps = {
@@ -78,6 +81,7 @@ function mountHook(overrides?: Partial<HarnessProps>) {
     isIt: true,
     targetIsIt: false,
     onTagTarget,
+    onFireAtTarget,
     onPositionUpdate,
     gameState: {
       mode: "tag",
@@ -116,9 +120,17 @@ function mountHook(overrides?: Partial<HarnessProps>) {
     refs: capturedRef.current as ReturnType<typeof useBotAI>,
     meshRef,
     onTagTarget,
+    onFireAtTarget,
     onPositionUpdate,
   };
 }
+
+const deathmatchState = {
+  mode: "deathmatch" as const,
+  isActive: true,
+  timeRemaining: 120,
+  scores: {},
+};
 
 describe("useBotAI", () => {
   beforeEach(() => {
@@ -243,6 +255,68 @@ describe("useBotAI", () => {
     nowSpy.mockReturnValue(700);
     frameCallback!(null, 0.016);
     expect(refs.isSprinting.current).toBe(true);
+  });
+
+  it("advances toward the target in deathmatch when beyond fire range", () => {
+    vi.spyOn(Date, "now").mockReturnValue(5000);
+
+    const { meshRef, onFireAtTarget } = mountHook({
+      isIt: false,
+      targetIsIt: false,
+      gameState: deathmatchState,
+      targetPositionRef: { current: [20, 0, 0] },
+    });
+
+    frameCallback!(null, 1);
+
+    expect(meshRef.current.position.x).toBeGreaterThan(0);
+    expect(onFireAtTarget).not.toHaveBeenCalled();
+  });
+
+  it("holds position and fires on a retry interval when within fire range", () => {
+    const nowSpy = vi.spyOn(Date, "now");
+    nowSpy.mockReturnValue(5000);
+
+    const { meshRef, onFireAtTarget } = mountHook({
+      isIt: false,
+      targetIsIt: false,
+      gameState: deathmatchState,
+      targetPositionRef: { current: [5, 0, 0] }, // within FIRE_RANGE (10)
+    });
+
+    frameCallback!(null, 0.016);
+    expect(meshRef.current.position.x).toBe(0);
+    expect(onFireAtTarget).toHaveBeenCalledTimes(1);
+
+    // Same instant - the bot shouldn't spam fire attempts every frame; the
+    // parent's WeaponManager owns the real cooldown.
+    frameCallback!(null, 0.016);
+    expect(onFireAtTarget).toHaveBeenCalledTimes(1);
+
+    // Once the retry interval (200ms) elapses, the bot tries again.
+    nowSpy.mockReturnValue(5201);
+    frameCallback!(null, 0.016);
+    expect(onFireAtTarget).toHaveBeenCalledTimes(2);
+  });
+
+  it("neither moves nor fires while downed in deathmatch", () => {
+    vi.spyOn(Date, "now").mockReturnValue(5000);
+
+    const { meshRef, onFireAtTarget, onPositionUpdate } = mountHook({
+      isIt: false,
+      targetIsIt: false,
+      isDowned: true,
+      gameState: deathmatchState,
+      targetPositionRef: { current: [5, 0, 0] },
+    });
+
+    frameCallback!(null, 1);
+
+    expect(meshRef.current.position.x).toBe(0);
+    expect(onFireAtTarget).not.toHaveBeenCalled();
+    expect(onPositionUpdate).not.toHaveBeenCalled();
+    // Downed bots pulse in place as a visual cue.
+    expect(meshRef.current.scale.set).toHaveBeenCalled();
   });
 
   it("clamps flee movement to the position returned by collision resolution", () => {

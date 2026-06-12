@@ -1,7 +1,9 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useRef } from "react";
 import { BotCharacter } from "../../../components/characters/BotCharacter";
 import type { SoloSceneProps } from "./SoloScene.types";
 import type { BotConfig as FullBotConfig } from "../../../components/characters/useBotAI";
+import { WeaponManager } from "../../../components/combat/WeaponManager";
+import { getSoundManager } from "../../../components/SoundManager";
 import { createTagLogger } from "../../../lib/utils/logger";
 
 const tagDebug = createTagLogger("Bots");
@@ -77,6 +79,11 @@ const Bots: React.FC<
   // Get bot IT status from game manager
   const bot1IsIt = gameManager?.getPlayers().get("bot-1")?.isIt ?? false;
   const bot2IsIt = gameManager?.getPlayers().get("bot-2")?.isIt ?? false;
+  // Downed (awaiting respawn) status for deathmatch
+  const bot1IsDowned =
+    gameManager?.getPlayers().get("bot-1")?.respawnAt !== undefined;
+  const bot2IsDowned =
+    gameManager?.getPlayers().get("bot-2")?.respawnAt !== undefined;
   // Derive player isIt from gameManager to avoid stale React-state race windows
   const playerIsItFromManager =
     gameManager?.getPlayers().get(currentPlayerId)?.isIt ?? playerIsIt;
@@ -156,6 +163,49 @@ const Bots: React.FC<
     }
   }, [gameManager, bot2IsIt, bot1IsIt, setBot1GotTagged]);
 
+  // Shared laser for both bots; WeaponManager tracks per-shooter cooldowns,
+  // so one instance is the authoritative fire-rate gate for bot-1 and bot-2.
+  // Lazily initialized inside the fire handler to satisfy react-hooks/refs.
+  const botWeaponsRef = useRef<WeaponManager | null>(null);
+
+  const fireBotLaser = useCallback(
+    (botId: string, targetId: string) => {
+      if (
+        !gameManager ||
+        gameState.mode !== "deathmatch" ||
+        !gameState.isActive
+      ) {
+        return;
+      }
+
+      if (!botWeaponsRef.current) {
+        botWeaponsRef.current = new WeaponManager();
+        botWeaponsRef.current.equip("laser");
+      }
+
+      const weapon = botWeaponsRef.current.fire(botId);
+      if (!weapon) return; // still on cooldown
+
+      const hitLanded = gameManager.hitPlayer(botId, targetId, weapon.damage);
+      if (hitLanded) {
+        try {
+          getSoundManager()?.playHitSound();
+        } catch {
+          // sound is best-effort only
+        }
+      }
+    },
+    [gameManager, gameState.mode, gameState.isActive],
+  );
+
+  const handleBot1FireAtTarget = useCallback(() => {
+    fireBotLaser("bot-1", botDebugMode ? "bot-2" : currentPlayerId);
+  }, [fireBotLaser, botDebugMode, currentPlayerId]);
+
+  const handleBot2FireAtTarget = useCallback(() => {
+    fireBotLaser("bot-2", "bot-1");
+  }, [fireBotLaser]);
+
   return (
     <>
       <BotCharacter
@@ -183,6 +233,8 @@ const Bots: React.FC<
           }
           handleBot1TagTarget();
         }}
+        onFireAtTarget={handleBot1FireAtTarget}
+        isDowned={bot1IsDowned}
         onPositionUpdate={handleBot1PositionUpdate}
         gameState={gameState}
         collisionSystem={collisionSystemRef}
@@ -198,6 +250,8 @@ const Bots: React.FC<
           targetIsIt={bot1IsIt}
           isPaused={isPaused}
           onTagTarget={handleBot2TagTarget}
+          onFireAtTarget={handleBot2FireAtTarget}
+          isDowned={bot2IsDowned}
           onPositionUpdate={handleBot2PositionUpdate}
           gameState={gameState}
           collisionSystem={collisionSystemRef}

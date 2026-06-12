@@ -189,6 +189,57 @@ describe("Bots", () => {
     expect(gm.getPlayers().get("bot-1")?.isIt).toBe(false);
   });
 
+  it("routes bot laser fire through hitPlayer with the weapon cooldown in deathmatch", () => {
+    const nowSpy = vi.spyOn(Date, "now").mockReturnValue(5000);
+
+    const gm = new GameManager();
+    gm.addPlayer(makeBotPlayer("bot-1", "Bot1"));
+    gm.addPlayer(makeBotPlayer("player-1", "Player1"));
+    gm.startDeathmatchGame(120, 10);
+
+    const props = buildProps({
+      gameManager: gm as unknown as React.ComponentProps<
+        typeof Bots
+      >["gameManager"],
+      gameState: gm.getGameState(),
+    });
+
+    render(<Bots {...props} />);
+    const fire = botPropsByRender[0].onFireAtTarget as () => void;
+
+    fire();
+    expect(gm.getPlayers().get("player-1")?.health).toBe(90);
+
+    // Still within the laser's 500ms cooldown - the shot is gated.
+    fire();
+    expect(gm.getPlayers().get("player-1")?.health).toBe(90);
+
+    // Cooldown elapsed - the next shot lands.
+    nowSpy.mockReturnValue(5600);
+    fire();
+    expect(gm.getPlayers().get("player-1")?.health).toBe(80);
+  });
+
+  it("marks a bot as downed while it awaits respawn in deathmatch", () => {
+    vi.spyOn(Date, "now").mockReturnValue(5000);
+
+    const gm = new GameManager();
+    gm.addPlayer(makeBotPlayer("bot-1", "Bot1"));
+    gm.addPlayer(makeBotPlayer("player-1", "Player1"));
+    gm.startDeathmatchGame(120, 10);
+    gm.hitPlayer("player-1", "bot-1", 1000); // down the bot
+
+    const props = buildProps({
+      gameManager: gm as unknown as React.ComponentProps<
+        typeof Bots
+      >["gameManager"],
+      gameState: gm.getGameState(),
+    });
+
+    render(<Bots {...props} />);
+    expect(botPropsByRender[0].isDowned).toBe(true);
+  });
+
   it("allows bot-2 to tag bot-1 when bot-2 is IT", () => {
     const setBot1GotTagged = vi.fn();
     const players = new Map<string, { isIt: boolean }>([

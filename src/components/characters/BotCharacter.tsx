@@ -19,6 +19,10 @@ export interface BotCharacterProps {
   isIt: boolean;
   targetIsIt: boolean;
   onTagTarget: () => void;
+  /** Fired when the bot wants to shoot its target in deathmatch. */
+  onFireAtTarget?: () => void;
+  /** True while the bot is eliminated and awaiting respawn (deathmatch). */
+  isDowned?: boolean;
   gameState: GameState;
   collisionSystem: React.RefObject<CollisionSystem | null>;
   gotTaggedTimestamp?: number;
@@ -39,6 +43,8 @@ export const BotCharacter: React.FC<BotCharacterProps> = ({
   isIt,
   targetIsIt,
   onTagTarget,
+  onFireAtTarget,
+  isDowned,
   gameState,
   collisionSystem,
   gotTaggedTimestamp,
@@ -65,6 +71,8 @@ export const BotCharacter: React.FC<BotCharacterProps> = ({
     isIt,
     targetIsIt,
     onTagTarget,
+    onFireAtTarget,
+    isDowned,
     onPositionUpdate,
     gameState,
     collisionSystem,
