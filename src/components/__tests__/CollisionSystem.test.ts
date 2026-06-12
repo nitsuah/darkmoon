@@ -1,6 +1,17 @@
 import { describe, it, expect } from "vitest";
 import * as THREE from "three";
 import { CollisionSystem } from "../CollisionSystem";
+import type { Player } from "../GameManager";
+
+const makePlayer = (
+  id: string,
+  position: [number, number, number],
+): Player => ({
+  id,
+  name: id,
+  position,
+  rotation: [0, 0, 0],
+});
 
 describe("CollisionSystem", () => {
   it("allows movement when no boundaries are hit", () => {
@@ -56,5 +67,98 @@ describe("CollisionSystem", () => {
 
     expect(geometries.length).toBeGreaterThan(0);
     expect(geometries[0].type).toBe("BoxGeometry");
+  });
+
+  describe("checkProjectileHit", () => {
+    it("hits a player directly ahead within range", () => {
+      const system = new CollisionSystem();
+      const players = new Map([
+        ["shooter", makePlayer("shooter", [0, 0, 0])],
+        ["target", makePlayer("target", [5, 0, 0])],
+      ]);
+
+      const hit = system.checkProjectileHit(
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(1, 0, 0),
+        30,
+        players,
+        "shooter",
+      );
+
+      expect(hit).toEqual({ hitPlayerId: "target", distance: 5 });
+    });
+
+    it("misses a player outside the weapon's range", () => {
+      const system = new CollisionSystem();
+      const players = new Map([
+        ["shooter", makePlayer("shooter", [0, 0, 0])],
+        ["target", makePlayer("target", [50, 0, 0])],
+      ]);
+
+      const hit = system.checkProjectileHit(
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(1, 0, 0),
+        30,
+        players,
+        "shooter",
+      );
+
+      expect(hit).toBeNull();
+    });
+
+    it("misses a player off to the side of the ray", () => {
+      const system = new CollisionSystem();
+      const players = new Map([
+        ["shooter", makePlayer("shooter", [0, 0, 0])],
+        ["target", makePlayer("target", [5, 0, 5])],
+      ]);
+
+      const hit = system.checkProjectileHit(
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(1, 0, 0),
+        30,
+        players,
+        "shooter",
+      );
+
+      expect(hit).toBeNull();
+    });
+
+    it("ignores players behind the shooter", () => {
+      const system = new CollisionSystem();
+      const players = new Map([
+        ["shooter", makePlayer("shooter", [0, 0, 0])],
+        ["target", makePlayer("target", [-5, 0, 0])],
+      ]);
+
+      const hit = system.checkProjectileHit(
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(1, 0, 0),
+        30,
+        players,
+        "shooter",
+      );
+
+      expect(hit).toBeNull();
+    });
+
+    it("excludes the shooter and returns the closest of multiple hits", () => {
+      const system = new CollisionSystem();
+      const players = new Map([
+        ["shooter", makePlayer("shooter", [0, 0, 0])],
+        ["near", makePlayer("near", [3, 0, 0])],
+        ["far", makePlayer("far", [10, 0, 0])],
+      ]);
+
+      const hit = system.checkProjectileHit(
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(1, 0, 0),
+        30,
+        players,
+        "shooter",
+      );
+
+      expect(hit).toEqual({ hitPlayerId: "near", distance: 3 });
+    });
   });
 });

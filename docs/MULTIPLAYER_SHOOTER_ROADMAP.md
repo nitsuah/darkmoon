@@ -1,6 +1,8 @@
 # Multiplayer Shooter Roadmap — "Robot Conker's Bad Fur Day"
 
-**Status:** Phase 1 (tag stabilization) complete. This document defines Phase 2+.
+**Status:** Phase 1 (tag stabilization) complete. Phase A (pluggable game modes)
+complete. Phase B combat primitives (WeaponManager, projectile hit detection, Player
+health/respawn fields) complete — UI wiring (visible laser mechanic) is next.
 
 ## Context
 
@@ -16,7 +18,16 @@ dependency: A is a prerequisite for B–D; E can happen incrementally alongside 
 
 ---
 
-## Phase A — Pluggable Game Modes (prerequisite for everything else)
+## Phase A — Pluggable Game Modes (prerequisite for everything else) ✅ done
+
+**Implemented:** `src/components/gameModes/GameModeHandler.ts` defines the
+`onStart`/`onTick`/`onAction`/`onPlayerRemoved`/`onEnd` interface;
+`src/components/gameModes/TagMode.ts` holds all tag-specific rules
+(`TAG_BACK_COOLDOWN_MS`, `TAG_FREEZE_MS`, `lastTaggedById`, IT-transfer scoring).
+`GameManager` is now a thin host that owns `players`/`gameState` and delegates to the
+active `GameModeHandler` — its public API (`startTagGame`, `tagPlayer`,
+`updateGameTimer`, `endGame`, `removePlayer`, ...) is unchanged, so no caller updates
+were needed.
 
 **Why first:** `GameManager.tagPlayer`/`startTagGame`/`endGame`/`pickNewItPlayer` currently
 hardcode tag-specific rules (`TAG_BACK_COOLDOWN_MS`, `TAG_FREEZE_MS`, `lastTaggedById`,
@@ -59,28 +70,27 @@ taggerId, taggedId })` call routed through the active mode.
 
 **Goal:** introduce the minimum weapon/damage model needed by Phases C and D.
 
-- **`WeaponManager`** (new: `src/components/combat/WeaponManager.ts`): registry of weapon
-  configs (`damage`, `range`, `cooldownMs`, `projectileSpeed`), `equip(weaponId)`,
-  `fire(originId, direction)`. Mirrors the registry pattern in the build guide's
-  `WeaponManager` (Section 5.2) but as plain TS (no Three.js scene mutation — that stays
-  in the React layer).
-- **Hit detection**: extend `src/components/CollisionSystem.ts` with a
-  `checkProjectileHit(origin, direction, range, players)` method that mirrors the existing
-  `checkPlayerCollision`-style proximity check used by tag's `tagDistance`, generalized to
-  a ray/cone instead of a fixed radius.
-- **`Player` additions** (`GameManager.ts`): `health?: number`, `maxHealth?: number`,
-  `respawnAt?: number`. Damage/respawn flow follows the same "mutate player, fire
-  callback" pattern as `tagPlayer`.
-- **Vertical slice**: one weapon (e.g. a short-range "stun blaster") wired into solo mode
-  as a toggle, reusing `SoundManager` for fire/hit SFX (`playTagSound`/`playTaggedSound`
-  are good templates for `playWeaponFireSound`/`playHitSound`).
+- ✅ **`WeaponManager`** (`src/components/combat/WeaponManager.ts`): registry of weapon
+  configs (`laser`: `damage`, `range`, `cooldownMs`), `equip(weaponId)`/`unequip()`,
+  `canFire(shooterId, now)`/`fire(shooterId, now)` with per-shooter cooldown tracking.
+  Plain TS, no Three.js scene mutation — that stays in the React layer.
+- ✅ **Hit detection**: `CollisionSystem.checkProjectileHit(origin, direction, range,
+players, shooterId)` casts a ray and returns the closest hit `{ hitPlayerId, distance }`
+  (or `null`), excluding the shooter and anyone outside the cone/range.
+- ✅ **`Player` additions** (`GameManager.ts`): `health?: number`, `maxHealth?: number`,
+  `respawnAt?: number`. Damage/respawn flow (mutate player, fire callback, mirroring
+  `tagPlayer`) is implemented by the mode that needs it (Phase C `DeathmatchMode`).
+- **Remaining — vertical slice**: wire `WeaponManager` + `checkProjectileHit` into Solo
+  mode as a visible laser-fire action (keybind, beam visual, hit feedback), reusing
+  `SoundManager` for fire/hit SFX (`playTagSound`/`playTaggedSound` are good templates for
+  `playWeaponFireSound`/`playHitSound`). This is the next increment.
 
 **Acceptance:**
 
-- New `src/__tests__/weaponManager.test.ts` covering cooldown/ammo/equip, following the
-  `makePlayer()` factory pattern from `gameManager.edgeCases.test.ts`.
-- New collision tests for `checkProjectileHit`, following the `mountHook`/collision-mock
-  pattern from `useBotAI.unit.test.tsx`'s "clamps flee movement..." test.
+- ✅ `src/components/combat/__tests__/WeaponManager.test.ts` covers equip/cooldown/
+  per-shooter tracking/unequip.
+- ✅ `src/components/__tests__/CollisionSystem.test.ts` covers `checkProjectileHit`
+  (direct hit, out-of-range, off-axis miss, behind-shooter, closest-of-multiple).
 
 ---
 
