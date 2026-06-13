@@ -18,6 +18,16 @@ const FLEE_SPEED_MULTIPLIER = 0.7;
 // elapses (it is intentionally much shorter than GameManager's cooldowns).
 const TAG_RETRY_INTERVAL_MS = 200;
 
+// Deathmatch engagement range: the bot advances until within this distance,
+// then holds position and fires. Kept well under the laser's 30-unit range
+// so shots connect reliably.
+const FIRE_RANGE = 10;
+
+// How often the bot retries firing while in range. The actual weapon
+// cooldown is enforced authoritatively by the parent's WeaponManager (same
+// pattern as TAG_RETRY_INTERVAL_MS vs GameManager's tag cooldowns).
+const FIRE_RETRY_INTERVAL_MS = 200;
+
 export interface BotConfig {
   botSpeed: number;
   sprintSpeed: number;
@@ -38,6 +48,10 @@ export interface BotAIProps {
   isIt: boolean;
   targetIsIt: boolean;
   onTagTarget: () => void;
+  /** Fired when the bot wants to shoot its target in deathmatch. */
+  onFireAtTarget?: () => void;
+  /** True while the bot is eliminated and awaiting respawn (deathmatch). */
+  isDowned?: boolean;
   onPositionUpdate: (position: [number, number, number]) => void;
   gameState: GameState;
   collisionSystem: React.RefObject<CollisionSystem | null>;
@@ -62,6 +76,8 @@ export function useBotAI({
   isIt,
   targetIsIt,
   onTagTarget,
+  onFireAtTarget,
+  isDowned,
   onPositionUpdate,
   gameState,
   collisionSystem,
@@ -70,6 +86,7 @@ export function useBotAI({
   meshRef,
 }: BotAIProps): BotAIRefs {
   const lastTagTime = useRef(0);
+  const lastFireTime = useRef(0);
   const isPausedAfterTag = useRef(false);
   const pauseEndTime = useRef(0);
   const lastGotTaggedTimestamp = useRef(0);
@@ -248,6 +265,46 @@ export function useBotAI({
         // Rotate bot to face away from target
         const angle = Math.atan2(direction.x, direction.z);
         meshRef.current.rotation.y = angle;
+      }
+    } else if (gameState.isActive && gameState.mode === "deathmatch") {
+      if (isDowned) {
+        // Eliminated and awaiting respawn - pulse in place and sit out.
+        const pulse = 1 + Math.sin(now * 0.01) * 0.1;
+        meshRef.current.scale.set(pulse, pulse, pulse);
+        return;
+      }
+
+      // Always face the target while engaging
+      const direction = new THREE.Vector3()
+        .subVectors(targetPos, botPos)
+        .normalize();
+      meshRef.current.rotation.y = Math.atan2(direction.x, direction.z);
+
+      if (distance > FIRE_RANGE) {
+        // Advance until within firing range
+        const currentPos = new THREE.Vector3(botPos.x, botPos.y, botPos.z);
+        const newPos = new THREE.Vector3(
+          botPos.x + direction.x * config.botSpeed * delta,
+          botPos.y,
+          botPos.z + direction.z * config.botSpeed * delta,
+        );
+
+        if (collisionSystem.current) {
+          const resolved = collisionSystem.current.checkCollision(
+            currentPos,
+            newPos,
+          );
+          botPos.x = resolved.x;
+          botPos.z = resolved.z;
+        } else {
+          botPos.x = newPos.x;
+          botPos.z = newPos.z;
+        }
+      } else if (now - lastFireTime.current > FIRE_RETRY_INTERVAL_MS) {
+        // In range - fire. The parent's WeaponManager is the authoritative
+        // cooldown gate, so just retry on a short interval.
+        lastFireTime.current = now;
+        onFireAtTarget?.();
       }
     }
 
