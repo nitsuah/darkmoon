@@ -1,7 +1,8 @@
 import { createLogger } from "../lib/utils/logger";
-import type { GameModeHandler } from "./gameModes/GameModeHandler";
+import type { CTFFlag, GameModeHandler } from "./gameModes/GameModeHandler";
 import TagMode from "./gameModes/TagMode";
 import DeathmatchMode from "./gameModes/DeathmatchMode";
+import CTFMode from "./gameModes/CTFMode";
 
 const log = createLogger("GameManager");
 
@@ -9,6 +10,7 @@ export type GameMode =
   | "none"
   | "tag"
   | "deathmatch"
+  | "ctf"
   | "collectible"
   | "race"
   | "solo";
@@ -22,6 +24,8 @@ export interface GameState {
   roundStartTime?: number;
   /** Kills required to win deathmatch. */
   killLimit?: number;
+  /** Flag entities for capture-the-flag. */
+  flags?: CTFFlag[];
 }
 
 export interface TagGameState extends GameState {
@@ -46,6 +50,8 @@ export interface Player {
   maxHealth?: number;
   /** Timestamp (ms) when a downed player becomes eligible to respawn. */
   respawnAt?: number;
+  /** Team assignment for capture-the-flag. */
+  team?: "a" | "b";
 }
 
 export class GameManager {
@@ -92,6 +98,10 @@ export class GameManager {
       this.gameState.mode === "tag" &&
       this.gameState.itPlayerId === playerId
     ) {
+      this.mode.onPlayerRemoved(playerId, this.players, this.gameState);
+      this.callbacks.onGameStateUpdate?.(this.gameState);
+    } else if (this.gameState.mode === "ctf" && this.gameState.isActive) {
+      // Let CTFMode return any flag the departing player was carrying.
       this.mode.onPlayerRemoved(playerId, this.players, this.gameState);
       this.callbacks.onGameStateUpdate?.(this.gameState);
     }
@@ -205,6 +215,62 @@ export class GameManager {
 
     const accepted = this.mode.onAction(
       { type: "hit", attackerId, targetId, damage },
+      this.players,
+      this.gameState,
+    );
+
+    if (accepted) {
+      this.callbacks.onGameStateUpdate?.(this.gameState);
+      this.callbacks.onPlayerUpdate?.(this.players);
+    }
+
+    return accepted;
+  }
+
+  startCTFGame(duration: number = 180) {
+    this.gameState = {
+      mode: "ctf",
+      isActive: true,
+      timeRemaining: duration,
+      scores: {},
+      roundStartTime: Date.now(),
+    };
+
+    this.mode = new CTFMode();
+    this.mode.onStart(this.players, this.gameState);
+
+    this.callbacks.onGameStateUpdate?.(this.gameState);
+    this.callbacks.onPlayerUpdate?.(this.players);
+    log.debug(`CTF game started!`);
+    return true;
+  }
+
+  pickupFlag(playerId: string): boolean {
+    if (this.gameState.mode !== "ctf" || !this.gameState.isActive) {
+      return false;
+    }
+
+    const accepted = this.mode.onAction(
+      { type: "pickupFlag", playerId },
+      this.players,
+      this.gameState,
+    );
+
+    if (accepted) {
+      this.callbacks.onGameStateUpdate?.(this.gameState);
+      this.callbacks.onPlayerUpdate?.(this.players);
+    }
+
+    return accepted;
+  }
+
+  captureFlag(playerId: string): boolean {
+    if (this.gameState.mode !== "ctf" || !this.gameState.isActive) {
+      return false;
+    }
+
+    const accepted = this.mode.onAction(
+      { type: "captureFlag", playerId },
       this.players,
       this.gameState,
     );

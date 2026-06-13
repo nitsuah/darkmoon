@@ -1,8 +1,9 @@
 # Multiplayer Shooter Roadmap — "Robot Conker's Bad Fur Day"
 
 **Status:** Phase 1 (tag stabilization) complete. Phase A (pluggable game modes)
-complete. Phase B combat primitives (WeaponManager, projectile hit detection, Player
-health/respawn fields) complete — UI wiring (visible laser mechanic) is next.
+complete. Phase B (combat primitives) complete. Phase C (deathmatch) complete end to
+end — backend, gameplay wiring, and bot combat AI. Phase D (CTF) backend (`CTFMode`,
+flags, teams, pickup/capture) is implemented — UI/bot wiring is next.
 
 ## Context
 
@@ -94,36 +95,47 @@ players, shooterId)` casts a ray and returns the closest hit `{ hitPlayerId, dis
 
 ---
 
-## Phase C — Deathmatch (maps to the build guide's `BeachMode`)
+## Phase C — Deathmatch (maps to the build guide's `BeachMode`) ✅ done
 
-- **`DeathmatchMode`** implements `GameModeHandler`: tracks `kills: Map<playerId,
-number>`, a `killLimit`, and a respawn timer (`respawnAt` from Phase B).
-- `onAction({ type: "hit", attackerId, targetId })`: apply damage via `WeaponManager`'s
-  configured damage; on `health <= 0`, increment `kills`, set `respawnAt`, zero `health`
-  for respawn.
-- **Scoreboard**: extend `GameUI.tsx`'s existing score display (it already renders
-  `gameState.scores`) to show `kills` per player when `mode === "deathmatch"`.
+- ✅ **`DeathmatchMode`** implements `GameModeHandler`: tracks kills via
+  `gameState.scores`, a `killLimit`, and a respawn timer (`respawnAt` from Phase B).
+- ✅ `onAction({ type: "hit", attackerId, targetId, damage })`: apply damage; on
+  `health <= 0`, increment the attacker's kill score, set `respawnAt`, and the target
+  sits out until the respawn delay elapses.
+- ✅ **Gameplay wiring**: Solo mode's "Start Deathmatch" lobby button, live health/kill
+  scoreboard in `GameUI.tsx`, and per-frame position sync (`GameManager.updatePlayerPosition`)
+  so projectile hits land on moving targets.
+- ✅ **Bot combat AI**: `useBotAI` gained a deathmatch branch — bots chase to
+  `FIRE_RANGE`, fire lasers via a shared `WeaponManager` (authoritative cooldown), and
+  sit out (pulsing) while downed awaiting respawn.
 
-**Acceptance:** regression tests for kill tracking, respawn timing, and end-of-game
-results, mirroring `endGame()`'s existing results-sorting test in
-`gameManager.core.test.ts`.
+**Acceptance:** regression tests for kill tracking, respawn timing, end-of-game
+results, gameplay wiring, and bot fire behavior all pass (`gameManager.deathmatch.test.ts`,
+`usePlayerWeapon.test.ts`, `GameUI.test.tsx`, `useBotAI.unit.test.tsx`, `Bots.test.tsx`).
 
 ---
 
 ## Phase D — Capture the Flag (maps to the build guide's `HeistMode`)
 
-- **Teams**: add `team?: "a" | "b"` to `Player`. Team assignment happens in
-  `onStart` (alternate players, or balance by join order).
-- **Flag entities**: simple data objects `{ team: "a" | "b", position: [number, number,
-number], carrierId?: string }`, stored in `CTFMode` state (not on `Player`).
-- **Capture zones**: reuse the bounds-check pattern from the build guide's
-  `TriggerVolume` (Section 3.4) — a simple `containsPoint`-style check against each team's
-  base position, run in `onTick`.
-- `onAction({ type: "pickupFlag" | "captureFlag", playerId })` mutates flag
-  `carrierId`/`position` and increments `gameState.scores[team]` on capture.
+- ✅ **Teams**: `Player.team?: "a" | "b"`. `CTFMode.onStart` assigns teams by
+  alternating join order.
+- ✅ **Flag entities**: `CTFFlag { team, position, basePosition, carrierId? }`, stored
+  on `gameState.flags` (not on `Player`), one per team, spawned at `TEAM_A_BASE`/
+  `TEAM_B_BASE`.
+- ✅ **Pickup/capture**: `onAction({ type: "pickupFlag" | "captureFlag", playerId })` —
+  pickup only succeeds for the _enemy_ team's unguarded flag within `PICKUP_RADIUS`;
+  capture only succeeds while carrying the enemy flag and standing within
+  `CAPTURE_RADIUS` of your own team's base, and increments `gameState.scores[team]`.
+- ✅ **Carried-flag tracking**: `onTick` syncs a carried flag's position to its
+  carrier; `onPlayerRemoved` returns a dropped flag to its base.
+- **Remaining — UI/bot wiring** (follow-up PR, mirrors Phase C's split): Solo mode
+  "Start CTF" lobby entry, flag visuals + pickup/capture keybind or proximity trigger,
+  team-colored HUD/scoreboard, and bot AI for pickup/capture/defend behavior.
 
-**Acceptance:** regression tests for pickup/capture/return sequences and the
-"can't capture your own team's flag" edge case.
+**Acceptance:** ✅ `gameManager.ctf.test.ts` covers team assignment, flag spawning,
+pickup (including the "can't capture your own team's flag" edge case via the
+pickup-rejection check), range gating, flag-follows-carrier, capture/score/return,
+carrier-disconnect, and end-of-game team-score results.
 
 ---
 

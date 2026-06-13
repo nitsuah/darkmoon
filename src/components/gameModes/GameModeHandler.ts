@@ -6,6 +6,18 @@ export interface GameResult {
   score: number;
 }
 
+/** A capture-the-flag flag, owned/defended by one team. */
+export interface CTFFlag {
+  /** Team this flag belongs to and must be defended by. */
+  team: "a" | "b";
+  /** Current position (at its base, or following its carrier). */
+  position: [number, number, number];
+  /** Home position; also the center of this team's capture zone. */
+  basePosition: [number, number, number];
+  /** ID of the player currently carrying this flag, if any. */
+  carrierId?: string;
+}
+
 export type GameAction =
   | {
       type: "tag";
@@ -17,6 +29,14 @@ export type GameAction =
       attackerId: string;
       targetId: string;
       damage: number;
+    }
+  | {
+      type: "pickupFlag";
+      playerId: string;
+    }
+  | {
+      type: "captureFlag";
+      playerId: string;
     };
 
 /**
