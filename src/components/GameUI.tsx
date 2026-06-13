@@ -176,6 +176,56 @@ const GameUI: React.FC<GameUIProps> = ({
           </>
         )}
 
+        {gameState.mode === "ctf" && (
+          <>
+            <div
+              style={{
+                marginBottom: isMinimal ? "2px" : "6px",
+                padding: isMinimal ? "2px 3px" : "4px 8px",
+                backgroundColor:
+                  currentPlayer?.team === "a"
+                    ? "rgba(74, 144, 226, 0.3)"
+                    : "rgba(220, 53, 69, 0.3)",
+                borderRadius: "3px",
+                border:
+                  currentPlayer?.team === "a"
+                    ? "1px solid #4a90e2"
+                    : "1px solid #dc3545",
+                fontSize: isMinimal ? "8px" : isMobile ? "10px" : "11px",
+              }}
+            >
+              {currentPlayer?.team === "a" ? "🔵 Team A" : "🔴 Team B"}
+            </div>
+
+            {!isMinimal && (
+              <div
+                style={{
+                  marginBottom: "6px",
+                  fontSize: isMobile ? "9px" : "10px",
+                }}
+              >
+                🔵 {gameState.scores["a"] ?? 0} - {gameState.scores["b"] ?? 0}{" "}
+                🔴
+              </div>
+            )}
+
+            {gameState.flags?.some(
+              (flag) => flag.carrierId === currentPlayerId,
+            ) && (
+              <div
+                style={{
+                  marginBottom: isMinimal ? "2px" : "6px",
+                  fontSize: isMinimal ? "8px" : isMobile ? "9px" : "10px",
+                  color: "#ffff64",
+                  fontWeight: "bold",
+                }}
+              >
+                🚩 Carrying flag! Return to base!
+              </div>
+            )}
+          </>
+        )}
+
         <button
           onClick={onEndGame}
           style={{
@@ -313,6 +363,28 @@ const GameUI: React.FC<GameUIProps> = ({
               }}
             >
               {isMinimal || isMobile ? "🔫" : "Start Deathmatch"}
+            </button>
+          )}
+
+          {players.size >= 2 && (
+            <button
+              onClick={() => onStartGame("ctf")}
+              style={{
+                padding: isMinimal
+                  ? "3px 5px"
+                  : isMobile
+                    ? "6px 8px"
+                    : "6px 10px",
+                backgroundColor: "rgba(155, 89, 182, 0.8)",
+                border: "1px solid #9b59b6",
+                borderRadius: "3px",
+                color: "white",
+                cursor: "pointer",
+                fontSize: isMinimal ? "14px" : isMobile ? "14px" : "11px",
+                width: "100%",
+              }}
+            >
+              {isMinimal || isMobile ? "🚩" : "Start CTF"}
             </button>
           )}
 

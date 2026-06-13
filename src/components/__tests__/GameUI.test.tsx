@@ -89,6 +89,9 @@ describe("GameUI", () => {
     fireEvent.click(screen.getByText("Start Deathmatch"));
     expect(onStartGame).toHaveBeenCalledWith("deathmatch");
 
+    fireEvent.click(screen.getByText("Start CTF"));
+    expect(onStartGame).toHaveBeenCalledWith("ctf");
+
     fireEvent.click(screen.getByText("⏹️ Stop Debug"));
     expect(onToggleDebug).toHaveBeenCalled();
   });
@@ -123,5 +126,49 @@ describe("GameUI", () => {
     expect(screen.getByText("❤️ 70 / 100")).toBeInTheDocument();
     expect(screen.getByText("💀 Player Two: 5 / 10")).toBeInTheDocument();
     expect(screen.getByText("💀 Player One: 2 / 10")).toBeInTheDocument();
+  });
+
+  it("renders team, scores, and carried-flag status during an active CTF game", () => {
+    const players = mkPlayers();
+    players.get("p1")!.team = "a";
+    players.get("p2")!.team = "b";
+
+    const gameState: GameState = {
+      mode: "ctf",
+      isActive: true,
+      timeRemaining: 90,
+      scores: { a: 1, b: 2 },
+      roundStartTime: Date.now(),
+      flags: [
+        {
+          team: "a",
+          position: [-15, 0.5, 0],
+          basePosition: [-15, 0.5, 0],
+        },
+        {
+          team: "b",
+          position: [0, 0.5, 0],
+          basePosition: [15, 0.5, 0],
+          carrierId: "p1",
+        },
+      ],
+    };
+
+    render(
+      <GameUI
+        gameState={gameState}
+        players={players}
+        currentPlayerId="p1"
+        onStartGame={vi.fn()}
+        onEndGame={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/CTF GAME/)).toBeInTheDocument();
+    expect(screen.getByText("🔵 Team A")).toBeInTheDocument();
+    expect(screen.getByText("🔵 1 - 2 🔴")).toBeInTheDocument();
+    expect(
+      screen.getByText("🚩 Carrying flag! Return to base!"),
+    ).toBeInTheDocument();
   });
 });

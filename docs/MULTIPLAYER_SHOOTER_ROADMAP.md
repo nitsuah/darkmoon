@@ -2,8 +2,9 @@
 
 **Status:** Phase 1 (tag stabilization) complete. Phase A (pluggable game modes)
 complete. Phase B (combat primitives) complete. Phase C (deathmatch) complete end to
-end — backend, gameplay wiring, and bot combat AI. Phase D (CTF) backend (`CTFMode`,
-flags, teams, pickup/capture) is implemented — UI/bot wiring is next.
+end — backend, gameplay wiring, and bot combat AI. Phase D (CTF) backend and gameplay
+wiring (`CTFMode`, flags, teams, pickup/capture, Solo "Start CTF", team/flag HUD) are
+implemented — bot AI for CTF is next.
 
 ## Context
 
@@ -128,14 +129,21 @@ results, gameplay wiring, and bot fire behavior all pass (`gameManager.deathmatc
   `CAPTURE_RADIUS` of your own team's base, and increments `gameState.scores[team]`.
 - ✅ **Carried-flag tracking**: `onTick` syncs a carried flag's position to its
   carrier; `onPlayerRemoved` returns a dropped flag to its base.
-- **Remaining — UI/bot wiring** (follow-up PR, mirrors Phase C's split): Solo mode
-  "Start CTF" lobby entry, flag visuals + pickup/capture keybind or proximity trigger,
-  team-colored HUD/scoreboard, and bot AI for pickup/capture/defend behavior.
+- ✅ **Gameplay wiring**: Solo mode's "Start CTF" lobby button (gated on 2+ players,
+  mirroring "Start Deathmatch"), a team-colored HUD showing team assignment and
+  team scores (`gameState.scores["a"]`/`["b"]`), a "carrying flag" indicator, and
+  proximity-based pickup/capture (`GameManager.pickupFlag`/`captureFlag` called from
+  `Solo.tsx`'s per-frame position sync).
+- **Remaining — bot AI** (follow-up PR, mirrors Phase C's split): bots currently stand
+  idle during CTF; add pickup/capture/defend behavior to `useBotAI` (e.g. chase the
+  enemy flag when unguarded, return to base when carrying, defend the home flag
+  otherwise).
 
 **Acceptance:** ✅ `gameManager.ctf.test.ts` covers team assignment, flag spawning,
 pickup (including the "can't capture your own team's flag" edge case via the
 pickup-rejection check), range gating, flag-follows-carrier, capture/score/return,
-carrier-disconnect, and end-of-game team-score results.
+carrier-disconnect, and end-of-game team-score results. ✅ `GameUI.test.tsx` covers the
+"Start CTF" lobby button and the team/score/carrying-flag HUD.
 
 ---
 

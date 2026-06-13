@@ -418,8 +418,23 @@ const Solo: React.FC = () => {
     (position: [number, number, number]) => {
       playerPositionRef.current = position;
       gameManager.current?.updatePlayerPosition(currentPlayerId, position);
+
+      if (
+        gameState.mode === "ctf" &&
+        gameState.isActive &&
+        gameManager.current
+      ) {
+        if (gameManager.current.pickupFlag(currentPlayerId)) {
+          addNotification(
+            "You grabbed the enemy flag! Get it to your base!",
+            "warning",
+          );
+        } else if (gameManager.current.captureFlag(currentPlayerId)) {
+          addNotification("Flag captured! Your team scores!", "success");
+        }
+      }
     },
-    [currentPlayerId],
+    [currentPlayerId, gameState.mode, gameState.isActive, addNotification],
   );
 
   // Bot position tracking - use refs to avoid re-render loops AND update clients object for collision
@@ -554,6 +569,17 @@ const Solo: React.FC = () => {
       setGameState(newGameState);
       addNotification(
         `Deathmatch started! First to ${newGameState.killLimit} kills wins!`,
+        "warning",
+      );
+      return;
+    }
+
+    if (mode === "ctf") {
+      gameManager.current.startCTFGame();
+      const newGameState = gameManager.current.getGameState();
+      setGameState(newGameState);
+      addNotification(
+        "Capture the Flag started! Grab the enemy flag and bring it home!",
         "warning",
       );
       return;
