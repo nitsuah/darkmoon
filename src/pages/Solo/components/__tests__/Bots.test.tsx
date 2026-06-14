@@ -240,6 +240,38 @@ describe("Bots", () => {
     expect(botPropsByRender[0].isDowned).toBe(true);
   });
 
+  it("passes team assignment and carried-flag status to bots during CTF", () => {
+    vi.spyOn(Date, "now").mockReturnValue(5000);
+
+    const gm = new GameManager();
+    gm.addPlayer(makeBotPlayer("bot-1", "Bot1"));
+    gm.addPlayer(makeBotPlayer("bot-2", "Bot2"));
+    gm.addPlayer(makeBotPlayer("player-1", "Player1"));
+    gm.startCTFGame();
+
+    // Mark bot-1 as carrying the enemy team's flag.
+    const flags = gm.getGameState().flags!;
+    const enemyFlag = flags.find(
+      (f) => f.team !== gm.getPlayers().get("bot-1")?.team,
+    )!;
+    enemyFlag.carrierId = "bot-1";
+
+    const props = buildProps({
+      botDebugMode: true,
+      gameManager: gm as unknown as React.ComponentProps<
+        typeof Bots
+      >["gameManager"],
+      gameState: gm.getGameState(),
+    });
+
+    render(<Bots {...props} />);
+
+    expect(botPropsByRender[0].team).toBe(gm.getPlayers().get("bot-1")?.team);
+    expect(botPropsByRender[0].isCarryingFlag).toBe(true);
+    expect(botPropsByRender[1].team).toBe(gm.getPlayers().get("bot-2")?.team);
+    expect(botPropsByRender[1].isCarryingFlag).toBe(false);
+  });
+
   it("allows bot-2 to tag bot-1 when bot-2 is IT", () => {
     const setBot1GotTagged = vi.fn();
     const players = new Map<string, { isIt: boolean }>([

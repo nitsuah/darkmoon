@@ -43,12 +43,20 @@ type HarnessProps = {
   onTagTarget: () => void;
   onFireAtTarget?: () => void;
   isDowned?: boolean;
+  team?: "a" | "b";
+  isCarryingFlag?: boolean;
   onPositionUpdate: (position: [number, number, number]) => void;
   gameState: {
-    mode: "tag" | "deathmatch" | "none";
+    mode: "tag" | "deathmatch" | "ctf" | "none";
     isActive: boolean;
     timeRemaining: number;
     scores: Record<string, number>;
+    flags?: {
+      team: "a" | "b";
+      position: [number, number, number];
+      basePosition: [number, number, number];
+      carrierId?: string;
+    }[];
   };
   collisionSystem: React.RefObject<CollisionSystem>;
   gotTaggedTimestamp?: number;
@@ -131,6 +139,22 @@ const deathmatchState = {
   timeRemaining: 120,
   scores: {},
 };
+
+const TEAM_A_BASE: [number, number, number] = [-15, 0.5, 0];
+const TEAM_B_BASE: [number, number, number] = [15, 0.5, 0];
+
+const ctfState = (
+  flags: HarnessProps["gameState"]["flags"] = [
+    { team: "a", position: TEAM_A_BASE, basePosition: TEAM_A_BASE },
+    { team: "b", position: TEAM_B_BASE, basePosition: TEAM_B_BASE },
+  ],
+) => ({
+  mode: "ctf" as const,
+  isActive: true,
+  timeRemaining: 180,
+  scores: { a: 0, b: 0 },
+  flags,
+});
 
 describe("useBotAI", () => {
   beforeEach(() => {
@@ -351,5 +375,92 @@ describe("useBotAI", () => {
     expect(meshRef.current.position.x).toBeCloseTo(before.x);
     expect(meshRef.current.position.z).toBeCloseTo(before.z);
     expect(onPositionUpdate).not.toHaveBeenCalled();
+  });
+
+  it("moves toward the unguarded enemy flag in CTF", () => {
+    vi.spyOn(Date, "now").mockReturnValue(5000);
+
+    const { meshRef } = mountHook({
+      isIt: false,
+      targetIsIt: false,
+      team: "a",
+      isCarryingFlag: false,
+      gameState: ctfState(),
+    });
+
+    // Team b's (enemy) flag sits at TEAM_B_BASE, +x of the bot's start.
+    frameCallback!(null, 1);
+
+    expect(meshRef.current.position.x).toBeGreaterThan(0);
+  });
+
+  it("heads to its own base when carrying the enemy flag in CTF", () => {
+    vi.spyOn(Date, "now").mockReturnValue(5000);
+
+    const { meshRef } = mountHook({
+      isIt: false,
+      targetIsIt: false,
+      team: "a",
+      isCarryingFlag: true,
+      gameState: ctfState(),
+    });
+
+    // Team a's own base sits at TEAM_A_BASE, -x of the bot's start.
+    frameCallback!(null, 1);
+
+    expect(meshRef.current.position.x).toBeLessThan(0);
+  });
+
+  it("holds position near its own base when the enemy flag is guarded in CTF", () => {
+    vi.spyOn(Date, "now").mockReturnValue(5000);
+
+    const { meshRef } = mountHook({
+      isIt: false,
+      targetIsIt: false,
+      team: "a",
+      isCarryingFlag: false,
+      gameState: ctfState([
+        { team: "a", position: TEAM_A_BASE, basePosition: TEAM_A_BASE },
+        {
+          team: "b",
+          position: [1, 0.5, 0],
+          basePosition: TEAM_B_BASE,
+          carrierId: "enemy-1",
+        },
+      ]),
+    });
+
+    // Enemy flag is carried, so the bot defends by returning to its own
+    // base (TEAM_A_BASE, -x of the bot's start) instead of chasing it.
+    frameCallback!(null, 1);
+
+    expect(meshRef.current.position.x).toBeLessThan(0);
+  });
+
+  it("doesn't move once it has reached its CTF destination", () => {
+    vi.spyOn(Date, "now").mockReturnValue(5000);
+
+    const { meshRef } = mountHook({
+      isIt: false,
+      targetIsIt: false,
+      team: "a",
+      isCarryingFlag: false,
+      gameState: ctfState([
+        { team: "a", position: [0, 0, 0], basePosition: [0, 0, 0] },
+        {
+          team: "b",
+          position: TEAM_B_BASE,
+          basePosition: TEAM_B_BASE,
+          carrierId: "enemy-1",
+        },
+      ]),
+    });
+
+    // Enemy flag is guarded, and the bot is already sitting on its own
+    // base (also at the origin) - it should stay put.
+    frameCallback!(null, 1);
+
+    expect(meshRef.current.position.x).toBe(0);
+    expect(meshRef.current.position.z).toBe(0);
   });
 });

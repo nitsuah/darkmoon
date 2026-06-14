@@ -23,6 +23,10 @@ export interface BotCharacterProps {
   onFireAtTarget?: () => void;
   /** True while the bot is eliminated and awaiting respawn (deathmatch). */
   isDowned?: boolean;
+  /** This bot's team assignment (CTF). */
+  team?: "a" | "b";
+  /** True while this bot is carrying the enemy flag (CTF). */
+  isCarryingFlag?: boolean;
   gameState: GameState;
   collisionSystem: React.RefObject<CollisionSystem | null>;
   gotTaggedTimestamp?: number;
@@ -45,6 +49,8 @@ export const BotCharacter: React.FC<BotCharacterProps> = ({
   onTagTarget,
   onFireAtTarget,
   isDowned,
+  team,
+  isCarryingFlag,
   gameState,
   collisionSystem,
   gotTaggedTimestamp,
@@ -73,6 +79,8 @@ export const BotCharacter: React.FC<BotCharacterProps> = ({
     onTagTarget,
     onFireAtTarget,
     isDowned,
+    team,
+    isCarryingFlag,
     onPositionUpdate,
     gameState,
     collisionSystem,

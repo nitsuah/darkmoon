@@ -2,9 +2,10 @@
 
 **Status:** Phase 1 (tag stabilization) complete. Phase A (pluggable game modes)
 complete. Phase B (combat primitives) complete. Phase C (deathmatch) complete end to
-end — backend, gameplay wiring, and bot combat AI. Phase D (CTF) backend and gameplay
-wiring (`CTFMode`, flags, teams, pickup/capture, Solo "Start CTF", team/flag HUD) are
-implemented — bot AI for CTF is next.
+end — backend, gameplay wiring, and bot combat AI. Phase D (CTF) is now complete end to
+end — backend (`CTFMode`, flags, teams, pickup/capture), gameplay wiring (Solo "Start
+CTF", team/flag HUD), and bot AI (chase/pickup/capture/defend). Phase E (polish) is
+next.
 
 ## Context
 
@@ -134,16 +135,21 @@ results, gameplay wiring, and bot fire behavior all pass (`gameManager.deathmatc
   team scores (`gameState.scores["a"]`/`["b"]`), a "carrying flag" indicator, and
   proximity-based pickup/capture (`GameManager.pickupFlag`/`captureFlag` called from
   `Solo.tsx`'s per-frame position sync).
-- **Remaining — bot AI** (follow-up PR, mirrors Phase C's split): bots currently stand
-  idle during CTF; add pickup/capture/defend behavior to `useBotAI` (e.g. chase the
-  enemy flag when unguarded, return to base when carrying, defend the home flag
-  otherwise).
+- ✅ **Bot AI**: `useBotAI` gained a CTF branch — bots on a team head to the enemy
+  flag while it's unguarded, carry it home (`captureFlag`) once picked up, and
+  otherwise hold/return to their own base to defend it. `Bots.tsx` threads
+  `team`/`isCarryingFlag` from `gameManager.getPlayers()`/`gameState.flags` down to
+  `BotCharacter`, and `Solo.tsx`'s per-frame bot position handlers call
+  `pickupFlag`/`captureFlag` for bots the same way they do for the player.
 
 **Acceptance:** ✅ `gameManager.ctf.test.ts` covers team assignment, flag spawning,
 pickup (including the "can't capture your own team's flag" edge case via the
 pickup-rejection check), range gating, flag-follows-carrier, capture/score/return,
 carrier-disconnect, and end-of-game team-score results. ✅ `GameUI.test.tsx` covers the
-"Start CTF" lobby button and the team/score/carrying-flag HUD.
+"Start CTF" lobby button and the team/score/carrying-flag HUD. ✅ `useBotAI.unit.test.tsx`
+and `Bots.test.tsx` cover CTF bot movement (chase unguarded flag, return when carrying,
+defend base when enemy flag is guarded, hold at destination) and prop wiring
+(`team`/`isCarryingFlag`).
 
 ---
 

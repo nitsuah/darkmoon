@@ -444,8 +444,16 @@ const Solo: React.FC = () => {
       // Update clients ref so PlayerCharacter can detect bot for tagging (no re-render)
       clientsRef.current["bot-1"] = { position, rotation: ZERO_ROTATION };
       gameManager.current?.updatePlayerPosition("bot-1", position);
+
+      // CTFMode rejects these outside an active CTF game, so it's safe to
+      // call unconditionally every frame.
+      if (gameManager.current?.pickupFlag("bot-1")) {
+        addNotification("Bot1 grabbed a flag!", "warning");
+      } else if (gameManager.current?.captureFlag("bot-1")) {
+        addNotification("Bot1 captured a flag for their team!", "warning");
+      }
     },
-    [],
+    [addNotification],
   );
 
   const handleBot2PositionUpdate = useCallback(
@@ -454,8 +462,14 @@ const Solo: React.FC = () => {
       // Update clients ref so PlayerCharacter can detect bot for tagging (no re-render)
       clientsRef.current["bot-2"] = { position, rotation: ZERO_ROTATION };
       gameManager.current?.updatePlayerPosition("bot-2", position);
+
+      if (gameManager.current?.pickupFlag("bot-2")) {
+        addNotification("Bot2 grabbed a flag!", "warning");
+      } else if (gameManager.current?.captureFlag("bot-2")) {
+        addNotification("Bot2 captured a flag for their team!", "warning");
+      }
     },
-    [],
+    [addNotification],
   );
 
   // Bot debug mode auto-restart when game ends
