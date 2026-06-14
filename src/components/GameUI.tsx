@@ -197,6 +197,20 @@ const GameUI: React.FC<GameUIProps> = ({
               {currentPlayer?.team === "a" ? "🔵 Team A" : "🔴 Team B"}
             </div>
 
+            <div
+              style={{
+                marginBottom: isMinimal ? "2px" : "6px",
+                padding: isMinimal ? "2px 3px" : "4px 8px",
+                backgroundColor: "rgba(100, 255, 100, 0.2)",
+                borderRadius: "3px",
+                border: "1px solid #64ff64",
+                fontSize: isMinimal ? "8px" : isMobile ? "10px" : "11px",
+              }}
+            >
+              ❤️ {currentPlayer?.health ?? currentPlayer?.maxHealth ?? 100}
+              {!isMinimal && ` / ${currentPlayer?.maxHealth ?? 100}`}
+            </div>
+
             {!isMinimal && (
               <div
                 style={{

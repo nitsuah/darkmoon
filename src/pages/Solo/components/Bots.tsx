@@ -91,6 +91,11 @@ const Bots: React.FC<
     gameState.flags?.some((flag) => flag.carrierId === "bot-1") ?? false;
   const bot2CarryingFlag =
     gameState.flags?.some((flag) => flag.carrierId === "bot-2") ?? false;
+  // Team of each bot's current target, so CTF combat doesn't fire on allies.
+  const bot1TargetTeam = botDebugMode
+    ? bot2Team
+    : gameManager?.getPlayers().get(currentPlayerId)?.team;
+  const bot2TargetTeam = bot1Team;
   // Derive player isIt from gameManager to avoid stale React-state race windows
   const playerIsItFromManager =
     gameManager?.getPlayers().get(currentPlayerId)?.isIt ?? playerIsIt;
@@ -179,7 +184,7 @@ const Bots: React.FC<
     (botId: string, targetId: string) => {
       if (
         !gameManager ||
-        gameState.mode !== "deathmatch" ||
+        (gameState.mode !== "deathmatch" && gameState.mode !== "ctf") ||
         !gameState.isActive
       ) {
         return;
@@ -244,6 +249,7 @@ const Bots: React.FC<
         isDowned={bot1IsDowned}
         team={bot1Team}
         isCarryingFlag={bot1CarryingFlag}
+        targetTeam={bot1TargetTeam}
         onPositionUpdate={handleBot1PositionUpdate}
         gameState={gameState}
         collisionSystem={collisionSystemRef}
@@ -263,6 +269,7 @@ const Bots: React.FC<
           isDowned={bot2IsDowned}
           team={bot2Team}
           isCarryingFlag={bot2CarryingFlag}
+          targetTeam={bot2TargetTeam}
           onPositionUpdate={handleBot2PositionUpdate}
           gameState={gameState}
           collisionSystem={collisionSystemRef}

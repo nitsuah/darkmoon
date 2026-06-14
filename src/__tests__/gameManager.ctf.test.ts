@@ -165,6 +165,97 @@ describe("GameManager CTF", () => {
     expect(flagB.position).toEqual(TEAM_B_BASE);
   });
 
+  it("starting CTF initializes health and maxHealth for all players", () => {
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "P1"));
+    manager.addPlayer(makePlayer("p2", "P2"));
+    manager.startCTFGame();
+
+    for (const player of manager.getPlayers().values()) {
+      expect(player.health).toBe(100);
+      expect(player.maxHealth).toBe(100);
+    }
+  });
+
+  it("a hit during CTF reduces the target's health without affecting team scores", () => {
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "P1"));
+    manager.addPlayer(makePlayer("p2", "P2"));
+    manager.startCTFGame();
+
+    expect(manager.hitPlayer("p1", "p2", 30)).toBe(true);
+    expect(manager.getPlayers().get("p2")?.health).toBe(70);
+    expect(manager.getGameState().scores).toEqual({ a: 0, b: 0 });
+  });
+
+  it("a lethal hit downs the target, starts a respawn timer, and drops their carried flag", () => {
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "P1")); // team a
+    manager.addPlayer(makePlayer("p2", "P2", TEAM_A_BASE)); // team b, picks up team a's flag
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startCTFGame();
+    manager.pickupFlag("p2");
+    expect(
+      manager.getGameState().flags!.find((f) => f.team === "a")?.carrierId,
+    ).toBe("p2");
+
+    expect(manager.hitPlayer("p1", "p2", 1000)).toBe(true);
+
+    const target = manager.getPlayers().get("p2")!;
+    expect(target.health).toBe(0);
+    expect(target.respawnAt).toBe(13000);
+
+    const flagA = manager.getGameState().flags!.find((f) => f.team === "a")!;
+    expect(flagA.carrierId).toBeUndefined();
+    expect(flagA.position).toEqual(TEAM_A_BASE);
+  });
+
+  it("restores health and clears respawnAt once the CTF respawn delay elapses", () => {
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "P1"));
+    manager.addPlayer(makePlayer("p2", "P2"));
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startCTFGame();
+    manager.hitPlayer("p1", "p2", 1000);
+
+    const target = manager.getPlayers().get("p2")!;
+    expect(target.health).toBe(0);
+    expect(target.respawnAt).toBe(13000);
+
+    vi.spyOn(Date, "now").mockReturnValue(13001);
+    manager.updateGameTimer(0.1);
+
+    expect(target.health).toBe(target.maxHealth);
+    expect(target.respawnAt).toBeUndefined();
+  });
+
+  it("rejects hits on a player who is awaiting respawn in CTF", () => {
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "P1"));
+    manager.addPlayer(makePlayer("p2", "P2"));
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startCTFGame();
+    manager.hitPlayer("p1", "p2", 1000); // p2 downed, awaiting respawn
+
+    expect(manager.hitPlayer("p1", "p2", 10)).toBe(false);
+  });
+
+  it("rejects hits outside an active CTF game", () => {
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "P1"));
+    manager.addPlayer(makePlayer("p2", "P2"));
+
+    // Not started yet
+    expect(manager.hitPlayer("p1", "p2", 10)).toBe(false);
+
+    // Started in tag mode instead
+    manager.startTagGame();
+    expect(manager.hitPlayer("p1", "p2", 10)).toBe(false);
+  });
+
   it("ends the game with results based on each player's team score", () => {
     const manager = new GameManager();
     manager.addPlayer(makePlayer("p1", "P1", TEAM_B_BASE)); // team a

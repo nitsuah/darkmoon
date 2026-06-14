@@ -27,11 +27,16 @@ function distance(
  * Capture-the-flag rules: players alternate onto team "a"/"b" at the start
  * of the round, each defending a flag at their team's base. Picking up the
  * enemy flag and carrying it back to your own base scores a point for your
- * team and returns the flag to its base.
+ * team and returns the flag to its base. Weapon hits (Phase B) are also
+ * live: a downed player drops any flag they're carrying and sits out for a
+ * brief respawn delay, mirroring DeathmatchMode but without kill scoring -
+ * only flag captures count toward gameState.scores.
  */
 export class CTFMode implements GameModeHandler {
   private readonly PICKUP_RADIUS = 1.5;
   private readonly CAPTURE_RADIUS = 2;
+  private readonly DEFAULT_MAX_HEALTH = 100;
+  private readonly RESPAWN_DELAY_MS = 3000;
 
   onStart(players: Map<string, Player>, gameState: GameState): void {
     gameState.scores = { a: 0, b: 0 };
@@ -43,6 +48,9 @@ export class CTFMode implements GameModeHandler {
     let i = 0;
     players.forEach((player) => {
       player.team = i % 2 === 0 ? "a" : "b";
+      player.maxHealth = player.maxHealth ?? this.DEFAULT_MAX_HEALTH;
+      player.health = player.maxHealth;
+      player.respawnAt = undefined;
       i++;
     });
   }
@@ -60,6 +68,14 @@ export class CTFMode implements GameModeHandler {
       const carrier = players.get(flag.carrierId);
       if (carrier) flag.position = carrier.position;
     });
+
+    const now = Date.now();
+    players.forEach((player) => {
+      if (player.respawnAt !== undefined && now >= player.respawnAt) {
+        player.health = player.maxHealth ?? this.DEFAULT_MAX_HEALTH;
+        player.respawnAt = undefined;
+      }
+    });
   }
 
   onAction(
@@ -73,7 +89,47 @@ export class CTFMode implements GameModeHandler {
     if (action.type === "captureFlag") {
       return this.captureFlag(action.playerId, players, gameState);
     }
+    if (action.type === "hit") {
+      return this.hit(action, players, gameState);
+    }
     return false;
+  }
+
+  private hit(
+    action: { attackerId: string; targetId: string; damage: number },
+    players: Map<string, Player>,
+    gameState: GameState,
+  ): boolean {
+    const { attackerId, targetId, damage } = action;
+    if (attackerId === targetId) return false;
+
+    const attacker = players.get(attackerId);
+    const target = players.get(targetId);
+    if (!attacker || !target) return false;
+
+    // A downed player awaiting respawn can't take further damage.
+    if (target.respawnAt !== undefined) return false;
+
+    const maxHealth = target.maxHealth ?? this.DEFAULT_MAX_HEALTH;
+    const currentHealth = target.health ?? maxHealth;
+    target.health = Math.max(0, currentHealth - damage);
+
+    if (target.health === 0) {
+      target.respawnAt = Date.now() + this.RESPAWN_DELAY_MS;
+
+      // A downed carrier drops the flag back at its base rather than
+      // letting it sit on a player who's now out of the round.
+      gameState.flags?.forEach((flag) => {
+        if (flag.carrierId === targetId) {
+          flag.carrierId = undefined;
+          flag.position = [...flag.basePosition];
+        }
+      });
+
+      log.debug(`${attacker.name} downed ${target.name}!`);
+    }
+
+    return true;
   }
 
   private pickupFlag(
@@ -154,6 +210,8 @@ export class CTFMode implements GameModeHandler {
 
     players.forEach((player) => {
       player.team = undefined;
+      player.health = player.maxHealth;
+      player.respawnAt = undefined;
     });
 
     return results;

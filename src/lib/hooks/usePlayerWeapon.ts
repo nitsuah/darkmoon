@@ -70,9 +70,13 @@ export function processFiring(params: FireParams): FireResult | null {
     const gameState = gameManager.getGameState();
     let damageApplied = false;
 
-    if (gameState.mode === "deathmatch" && gameState.isActive) {
-      // Deathmatch: DeathmatchMode applies damage, awards kills, and starts
-      // respawn timers. Rejected hits (e.g. a downed target) deal no damage.
+    if (
+      (gameState.mode === "deathmatch" || gameState.mode === "ctf") &&
+      gameState.isActive
+    ) {
+      // Deathmatch/CTF: the active mode applies damage and starts respawn
+      // timers (and, in CTF, drops any carried flag). Rejected hits (e.g. a
+      // downed target) deal no damage.
       damageApplied = gameManager.hitPlayer(
         shooterId,
         hit.hitPlayerId,

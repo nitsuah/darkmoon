@@ -44,6 +44,7 @@ type HarnessProps = {
   onFireAtTarget?: () => void;
   isDowned?: boolean;
   team?: "a" | "b";
+  targetTeam?: "a" | "b";
   isCarryingFlag?: boolean;
   onPositionUpdate: (position: [number, number, number]) => void;
   gameState: {
@@ -435,6 +436,79 @@ describe("useBotAI", () => {
     frameCallback!(null, 1);
 
     expect(meshRef.current.position.x).toBeLessThan(0);
+  });
+
+  it("fires at an enemy within range during CTF", () => {
+    vi.spyOn(Date, "now").mockReturnValue(5000);
+
+    const { onFireAtTarget } = mountHook({
+      isIt: false,
+      targetIsIt: false,
+      team: "a",
+      targetTeam: "b",
+      gameState: ctfState(),
+      targetPositionRef: { current: [5, 0, 0] }, // within FIRE_RANGE (10)
+    });
+
+    frameCallback!(null, 0.016);
+
+    expect(onFireAtTarget).toHaveBeenCalledTimes(1);
+  });
+
+  it("doesn't fire on an ally during CTF, even within range", () => {
+    vi.spyOn(Date, "now").mockReturnValue(5000);
+
+    const { onFireAtTarget } = mountHook({
+      isIt: false,
+      targetIsIt: false,
+      team: "a",
+      targetTeam: "a",
+      gameState: ctfState(),
+      targetPositionRef: { current: [5, 0, 0] },
+    });
+
+    frameCallback!(null, 0.016);
+
+    expect(onFireAtTarget).not.toHaveBeenCalled();
+  });
+
+  it("doesn't fire on an enemy beyond fire range during CTF", () => {
+    vi.spyOn(Date, "now").mockReturnValue(5000);
+
+    const { onFireAtTarget } = mountHook({
+      isIt: false,
+      targetIsIt: false,
+      team: "a",
+      targetTeam: "b",
+      gameState: ctfState(),
+      targetPositionRef: { current: [20, 0, 0] }, // beyond FIRE_RANGE (10)
+    });
+
+    frameCallback!(null, 0.016);
+
+    expect(onFireAtTarget).not.toHaveBeenCalled();
+  });
+
+  it("neither moves nor fires while downed in CTF", () => {
+    vi.spyOn(Date, "now").mockReturnValue(5000);
+
+    const { meshRef, onFireAtTarget, onPositionUpdate } = mountHook({
+      isIt: false,
+      targetIsIt: false,
+      team: "a",
+      isDowned: true,
+      targetTeam: "b",
+      gameState: ctfState(),
+      targetPositionRef: { current: [5, 0, 0] },
+    });
+
+    frameCallback!(null, 1);
+
+    expect(meshRef.current.position.x).toBe(0);
+    expect(onFireAtTarget).not.toHaveBeenCalled();
+    expect(onPositionUpdate).not.toHaveBeenCalled();
+    // Downed bots pulse in place as a visual cue.
+    expect(meshRef.current.scale.set).toHaveBeenCalled();
   });
 
   it("doesn't move once it has reached its CTF destination", () => {

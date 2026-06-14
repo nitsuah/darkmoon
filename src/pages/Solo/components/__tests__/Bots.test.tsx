@@ -268,8 +268,38 @@ describe("Bots", () => {
 
     expect(botPropsByRender[0].team).toBe(gm.getPlayers().get("bot-1")?.team);
     expect(botPropsByRender[0].isCarryingFlag).toBe(true);
+    expect(botPropsByRender[0].targetTeam).toBe(
+      gm.getPlayers().get("bot-2")?.team,
+    );
     expect(botPropsByRender[1].team).toBe(gm.getPlayers().get("bot-2")?.team);
     expect(botPropsByRender[1].isCarryingFlag).toBe(false);
+    expect(botPropsByRender[1].targetTeam).toBe(
+      gm.getPlayers().get("bot-1")?.team,
+    );
+  });
+
+  it("routes bot laser fire through hitPlayer during CTF", () => {
+    const nowSpy = vi.spyOn(Date, "now").mockReturnValue(5000);
+
+    const gm = new GameManager();
+    gm.addPlayer(makeBotPlayer("bot-1", "Bot1"));
+    gm.addPlayer(makeBotPlayer("player-1", "Player1"));
+    gm.startCTFGame();
+
+    const props = buildProps({
+      gameManager: gm as unknown as React.ComponentProps<
+        typeof Bots
+      >["gameManager"],
+      gameState: gm.getGameState(),
+    });
+
+    render(<Bots {...props} />);
+    const fire = botPropsByRender[0].onFireAtTarget as () => void;
+
+    fire();
+    expect(gm.getPlayers().get("player-1")?.health).toBe(90);
+
+    nowSpy.mockRestore();
   });
 
   it("allows bot-2 to tag bot-1 when bot-2 is IT", () => {
