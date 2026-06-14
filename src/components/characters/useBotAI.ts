@@ -52,6 +52,10 @@ export interface BotAIProps {
   onFireAtTarget?: () => void;
   /** True while the bot is eliminated and awaiting respawn (deathmatch). */
   isDowned?: boolean;
+  /** This bot's team assignment (CTF). */
+  team?: "a" | "b";
+  /** True while this bot is carrying the enemy flag (CTF). */
+  isCarryingFlag?: boolean;
   onPositionUpdate: (position: [number, number, number]) => void;
   gameState: GameState;
   collisionSystem: React.RefObject<CollisionSystem | null>;
@@ -78,6 +82,8 @@ export function useBotAI({
   onTagTarget,
   onFireAtTarget,
   isDowned,
+  team,
+  isCarryingFlag,
   onPositionUpdate,
   gameState,
   collisionSystem,
@@ -305,6 +311,52 @@ export function useBotAI({
         // cooldown gate, so just retry on a short interval.
         lastFireTime.current = now;
         onFireAtTarget?.();
+      }
+    } else if (gameState.isActive && gameState.mode === "ctf" && team) {
+      // Carrying the enemy flag - head home to capture it. Otherwise grab
+      // the enemy flag while it's unguarded, or hold position at our own
+      // base to defend it.
+      const flags = gameState.flags ?? [];
+      const myFlag = flags.find((f) => f.team === team);
+      const enemyFlag = flags.find((f) => f.team !== team);
+
+      const destination =
+        isCarryingFlag && myFlag
+          ? myFlag.basePosition
+          : enemyFlag && enemyFlag.carrierId === undefined
+            ? enemyFlag.position
+            : myFlag?.basePosition;
+
+      if (destination) {
+        const destPos = new THREE.Vector3(...destination);
+
+        if (botPos.distanceTo(destPos) > 0.5) {
+          const direction = new THREE.Vector3()
+            .subVectors(destPos, botPos)
+            .normalize();
+
+          const currentPos = new THREE.Vector3(botPos.x, botPos.y, botPos.z);
+          const newPos = new THREE.Vector3(
+            botPos.x + direction.x * config.botSpeed * delta,
+            botPos.y,
+            botPos.z + direction.z * config.botSpeed * delta,
+          );
+
+          if (collisionSystem.current) {
+            const resolved = collisionSystem.current.checkCollision(
+              currentPos,
+              newPos,
+            );
+            botPos.x = resolved.x;
+            botPos.z = resolved.z;
+          } else {
+            botPos.x = newPos.x;
+            botPos.z = newPos.z;
+          }
+
+          const angle = Math.atan2(direction.x, direction.z);
+          meshRef.current.rotation.y = angle;
+        }
       }
     }
 

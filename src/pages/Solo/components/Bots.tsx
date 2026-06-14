@@ -84,6 +84,13 @@ const Bots: React.FC<
     gameManager?.getPlayers().get("bot-1")?.respawnAt !== undefined;
   const bot2IsDowned =
     gameManager?.getPlayers().get("bot-2")?.respawnAt !== undefined;
+  // Team assignment and carried-flag status for CTF
+  const bot1Team = gameManager?.getPlayers().get("bot-1")?.team;
+  const bot2Team = gameManager?.getPlayers().get("bot-2")?.team;
+  const bot1CarryingFlag =
+    gameState.flags?.some((flag) => flag.carrierId === "bot-1") ?? false;
+  const bot2CarryingFlag =
+    gameState.flags?.some((flag) => flag.carrierId === "bot-2") ?? false;
   // Derive player isIt from gameManager to avoid stale React-state race windows
   const playerIsItFromManager =
     gameManager?.getPlayers().get(currentPlayerId)?.isIt ?? playerIsIt;
@@ -235,6 +242,8 @@ const Bots: React.FC<
         }}
         onFireAtTarget={handleBot1FireAtTarget}
         isDowned={bot1IsDowned}
+        team={bot1Team}
+        isCarryingFlag={bot1CarryingFlag}
         onPositionUpdate={handleBot1PositionUpdate}
         gameState={gameState}
         collisionSystem={collisionSystemRef}
@@ -252,6 +261,8 @@ const Bots: React.FC<
           onTagTarget={handleBot2TagTarget}
           onFireAtTarget={handleBot2FireAtTarget}
           isDowned={bot2IsDowned}
+          team={bot2Team}
+          isCarryingFlag={bot2CarryingFlag}
           onPositionUpdate={handleBot2PositionUpdate}
           gameState={gameState}
           collisionSystem={collisionSystemRef}
