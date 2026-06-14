@@ -209,7 +209,10 @@ export class GameManager {
   }
 
   hitPlayer(attackerId: string, targetId: string, damage: number): boolean {
-    if (this.gameState.mode !== "deathmatch" || !this.gameState.isActive) {
+    if (
+      (this.gameState.mode !== "deathmatch" && this.gameState.mode !== "ctf") ||
+      !this.gameState.isActive
+    ) {
       return false;
     }
 

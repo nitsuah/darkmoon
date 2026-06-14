@@ -56,6 +56,8 @@ export interface BotAIProps {
   team?: "a" | "b";
   /** True while this bot is carrying the enemy flag (CTF). */
   isCarryingFlag?: boolean;
+  /** The target's team assignment (CTF) - used to avoid friendly fire. */
+  targetTeam?: "a" | "b";
   onPositionUpdate: (position: [number, number, number]) => void;
   gameState: GameState;
   collisionSystem: React.RefObject<CollisionSystem | null>;
@@ -84,6 +86,7 @@ export function useBotAI({
   isDowned,
   team,
   isCarryingFlag,
+  targetTeam,
   onPositionUpdate,
   gameState,
   collisionSystem,
@@ -313,6 +316,25 @@ export function useBotAI({
         onFireAtTarget?.();
       }
     } else if (gameState.isActive && gameState.mode === "ctf" && team) {
+      if (isDowned) {
+        // Eliminated and awaiting respawn - pulse in place and sit out.
+        const pulse = 1 + Math.sin(now * 0.01) * 0.1;
+        meshRef.current.scale.set(pulse, pulse, pulse);
+        return;
+      }
+
+      // Engage an enemy within fire range while pursuing the flag
+      // objective below - CTF combat doesn't pause movement to shoot.
+      if (
+        targetTeam !== undefined &&
+        targetTeam !== team &&
+        distance <= FIRE_RANGE &&
+        now - lastFireTime.current > FIRE_RETRY_INTERVAL_MS
+      ) {
+        lastFireTime.current = now;
+        onFireAtTarget?.();
+      }
+
       // Carrying the enemy flag - head home to capture it. Otherwise grab
       // the enemy flag while it's unguarded, or hold position at our own
       // base to defend it.

@@ -4,8 +4,9 @@
 complete. Phase B (combat primitives) complete. Phase C (deathmatch) complete end to
 end — backend, gameplay wiring, and bot combat AI. Phase D (CTF) is now complete end to
 end — backend (`CTFMode`, flags, teams, pickup/capture), gameplay wiring (Solo "Start
-CTF", team/flag HUD), and bot AI (chase/pickup/capture/defend). Phase E (polish) is
-next.
+CTF", team/flag HUD), bot AI (chase/pickup/capture/defend), and CTF combat
+(health/damage/respawn, flag-drop-on-death, bots fire at enemies in range without
+abandoning their flag objective). Phase E (polish) is next.
 
 ## Context
 
@@ -141,15 +142,29 @@ results, gameplay wiring, and bot fire behavior all pass (`gameManager.deathmatc
   `team`/`isCarryingFlag` from `gameManager.getPlayers()`/`gameState.flags` down to
   `BotCharacter`, and `Solo.tsx`'s per-frame bot position handlers call
   `pickupFlag`/`captureFlag` for bots the same way they do for the player.
+- ✅ **CTF combat ("bots with guns")**: `CTFMode` now initializes
+  `health`/`maxHealth`/`respawnAt` on start (mirroring `DeathmatchMode`) and handles
+  `onAction({ type: "hit", ... })` — damage reduces health, a lethal hit starts a
+  respawn timer and drops any flag the target was carrying back to its base, and
+  `onTick` restores health/clears `respawnAt` once the respawn delay elapses. No
+  kill-score is tracked for CTF (capture remains the only scoring mechanism).
+  `GameManager.hitPlayer` and `usePlayerWeapon.processFiring` now allow `mode ===
+"ctf"`. `useBotAI`'s CTF branch gained a `targetTeam` prop — bots fire at enemies
+  (never allies) within `FIRE_RANGE` opportunistically, without abandoning their
+  flag-objective movement, and sit out (pulsing) while downed like in deathmatch.
+  `GameUI`'s CTF HUD gained a health indicator alongside the team/score display.
 
 **Acceptance:** ✅ `gameManager.ctf.test.ts` covers team assignment, flag spawning,
 pickup (including the "can't capture your own team's flag" edge case via the
 pickup-rejection check), range gating, flag-follows-carrier, capture/score/return,
-carrier-disconnect, and end-of-game team-score results. ✅ `GameUI.test.tsx` covers the
-"Start CTF" lobby button and the team/score/carrying-flag HUD. ✅ `useBotAI.unit.test.tsx`
-and `Bots.test.tsx` cover CTF bot movement (chase unguarded flag, return when carrying,
-defend base when enemy flag is guarded, hold at destination) and prop wiring
-(`team`/`isCarryingFlag`).
+carrier-disconnect, end-of-game team-score results, and combat (health init, damage,
+lethal hit → respawn + flag drop, respawn restoration, rejecting hits on downed/inactive
+players). ✅ `GameUI.test.tsx` covers the "Start CTF" lobby button and the
+team/score/health/carrying-flag HUD. ✅ `useBotAI.unit.test.tsx` and `Bots.test.tsx`
+cover CTF bot movement (chase unguarded flag, return when carrying, defend base when
+enemy flag is guarded, hold at destination), combat (fire at enemy in range, no
+friendly fire, range gating, sit out while downed), and prop wiring
+(`team`/`isCarryingFlag`/`targetTeam`).
 
 ---
 
