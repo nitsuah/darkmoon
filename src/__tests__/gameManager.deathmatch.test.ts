@@ -134,6 +134,72 @@ describe("GameManager deathmatch", () => {
     expect(killFeed![0].weaponId).toBe("rocket");
   });
 
+  it("grants spawn protection after respawn and rejects hits during that window", () => {
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "P1"));
+    manager.addPlayer(makePlayer("p2", "P2"));
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startDeathmatchGame();
+    manager.hitPlayer("p1", "p2", 1000); // p2 downed
+
+    // Advance past the 3-second respawn delay; onTick sets spawnProtectedUntil = now + 2000
+    vi.spyOn(Date, "now").mockReturnValue(13100);
+    manager.updateGameTimer(0.1);
+
+    const p2 = manager.getPlayers().get("p2")!;
+    expect(p2.health).toBe(p2.maxHealth); // respawned
+    expect(p2.spawnProtectedUntil).toBe(15100); // 13100 + 2000
+
+    // Hit during protection window is rejected
+    expect(manager.hitPlayer("p1", "p2", 30)).toBe(false);
+    expect(p2.health).toBe(p2.maxHealth);
+  });
+
+  it("clears spawn protection after the window elapses and allows hits again", () => {
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "P1"));
+    manager.addPlayer(makePlayer("p2", "P2"));
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startDeathmatchGame();
+    manager.hitPlayer("p1", "p2", 1000); // p2 downed
+
+    // Respawn
+    vi.spyOn(Date, "now").mockReturnValue(13100);
+    manager.updateGameTimer(0.1);
+
+    // Advance past protection window; next tick clears spawnProtectedUntil
+    vi.spyOn(Date, "now").mockReturnValue(15200);
+    manager.updateGameTimer(0.1);
+
+    const p2 = manager.getPlayers().get("p2")!;
+    expect(p2.spawnProtectedUntil).toBeUndefined();
+
+    // Hit after protection is accepted
+    expect(manager.hitPlayer("p1", "p2", 30)).toBe(true);
+    expect(p2.health).toBe((p2.maxHealth ?? 100) - 30);
+  });
+
+  it("clears spawnProtectedUntil for all players on game end", () => {
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "P1"));
+    manager.addPlayer(makePlayer("p2", "P2"));
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startDeathmatchGame();
+    manager.hitPlayer("p1", "p2", 1000); // p2 downed
+
+    vi.spyOn(Date, "now").mockReturnValue(13100);
+    manager.updateGameTimer(0.1); // p2 respawns, gets protection
+
+    manager.endGame();
+
+    for (const player of manager.getPlayers().values()) {
+      expect(player.spawnProtectedUntil).toBeUndefined();
+    }
+  });
+
   it("ends the game once a player reaches the kill limit, with results sorted by kills", () => {
     const manager = new GameManager();
     manager.addPlayer(makePlayer("p1", "P1"));

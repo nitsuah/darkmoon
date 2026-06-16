@@ -67,6 +67,8 @@ export interface Player {
   equippedWeaponId?: string;
   /** Current ammo for the equipped weapon. null = infinite, undefined = unknown. */
   currentAmmo?: number | null;
+  /** Timestamp (ms) until which this player is invincible after respawning. */
+  spawnProtectedUntil?: number;
 }
 
 export class GameManager {

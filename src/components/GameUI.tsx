@@ -54,6 +54,9 @@ const GameUI: React.FC<GameUIProps> = ({
   // Kill feed: last 5 events (capped to 10 in GameManager), bottom-left overlay.
   const recentKills: KillEvent[] = (gameState.killFeed ?? []).slice(-5);
 
+  // spawnProtectedUntil is cleared by onTick within ~1s of expiry — presence is enough.
+  const isSpawnProtected = currentPlayer?.spawnProtectedUntil !== undefined;
+
   // Respawn countdown: restart the interval whenever the player's respawnAt stamp changes.
   const respawnAt = currentPlayer?.respawnAt;
   const [respawnSecondsLeft, setRespawnSecondsLeft] = React.useState<
@@ -542,6 +545,28 @@ const GameUI: React.FC<GameUIProps> = ({
                   ? `RESPAWNING IN ${respawnSecondsLeft}s`
                   : "RESPAWNING..."}
               </div>
+            </div>
+          )}
+
+        {isSpawnProtected &&
+          (gameState.mode === "deathmatch" || gameState.mode === "ctf") && (
+            <div
+              style={{
+                position: "fixed",
+                top: "40%",
+                left: "50%",
+                transform: "translateX(-50%)",
+                pointerEvents: "none",
+                zIndex: 996,
+                fontFamily: "monospace",
+                fontSize: isMinimal ? "12px" : "18px",
+                fontWeight: "bold",
+                color: "#00ffcc",
+                textShadow: "0 0 10px #00ccaa",
+                letterSpacing: "2px",
+              }}
+            >
+              PROTECTED
             </div>
           )}
       </>
