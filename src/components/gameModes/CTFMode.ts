@@ -37,6 +37,7 @@ export class CTFMode implements GameModeHandler {
   private readonly CAPTURE_RADIUS = 2;
   private readonly DEFAULT_MAX_HEALTH = 100;
   private readonly RESPAWN_DELAY_MS = 3000;
+  private readonly SPAWN_PROTECT_MS = 2000;
 
   onStart(players: Map<string, Player>, gameState: GameState): void {
     gameState.scores = { a: 0, b: 0 };
@@ -74,6 +75,13 @@ export class CTFMode implements GameModeHandler {
       if (player.respawnAt !== undefined && now >= player.respawnAt) {
         player.health = player.maxHealth ?? this.DEFAULT_MAX_HEALTH;
         player.respawnAt = undefined;
+        player.spawnProtectedUntil = now + this.SPAWN_PROTECT_MS;
+      }
+      if (
+        player.spawnProtectedUntil !== undefined &&
+        now >= player.spawnProtectedUntil
+      ) {
+        player.spawnProtectedUntil = undefined;
       }
     });
   }
@@ -112,8 +120,13 @@ export class CTFMode implements GameModeHandler {
     const target = players.get(targetId);
     if (!attacker || !target) return false;
 
-    // A downed player awaiting respawn can't take further damage.
+    // A downed player awaiting respawn, or one still under spawn protection, can't take damage.
     if (target.respawnAt !== undefined) return false;
+    if (
+      target.spawnProtectedUntil !== undefined &&
+      Date.now() < target.spawnProtectedUntil
+    )
+      return false;
 
     const maxHealth = target.maxHealth ?? this.DEFAULT_MAX_HEALTH;
     const currentHealth = target.health ?? maxHealth;
@@ -229,6 +242,7 @@ export class CTFMode implements GameModeHandler {
       player.team = undefined;
       player.health = player.maxHealth;
       player.respawnAt = undefined;
+      player.spawnProtectedUntil = undefined;
     });
 
     return results;
