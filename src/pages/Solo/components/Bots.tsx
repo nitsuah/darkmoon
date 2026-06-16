@@ -209,12 +209,18 @@ const Bots: React.FC<
 
   const fireBotWeapon = useCallback(
     (botId: string, targetId: string) => {
-      if (
-        !gameManager ||
-        (gameState.mode !== "deathmatch" && gameState.mode !== "ctf") ||
-        !gameState.isActive
-      ) {
-        return;
+      if (!gameManager || !gameState.isActive) return;
+
+      const isTagMode = gameState.mode === "tag";
+      const isCombatMode =
+        gameState.mode === "deathmatch" || gameState.mode === "ctf";
+
+      if (!isTagMode && !isCombatMode) return;
+
+      // In tag mode only the IT bot fires (the laser acts as a ranged tag).
+      if (isTagMode) {
+        const botPlayer = gameManager.getPlayers().get(botId);
+        if (!botPlayer?.isIt) return;
       }
 
       const weaponRef =
@@ -225,8 +231,9 @@ const Bots: React.FC<
             : bot3WeaponsRef;
       if (!weaponRef.current) {
         weaponRef.current = new WeaponManager();
-        const startWeapon =
-          botId === "bot-1"
+        const startWeapon = isTagMode
+          ? "laser"
+          : botId === "bot-1"
             ? "shotgun"
             : botId === "bot-2"
               ? "rocket"
