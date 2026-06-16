@@ -386,6 +386,120 @@ const GameUI: React.FC<GameUIProps> = ({
           </div>
         )}
 
+        {/* Crosshair — combat modes only, hidden while downed */}
+        {(gameState.mode === "deathmatch" || gameState.mode === "ctf") &&
+          respawnSecondsLeft === null &&
+          !isMinimal && (
+            <div
+              style={{
+                position: "fixed",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                pointerEvents: "none",
+                zIndex: 997,
+                width: "20px",
+                height: "20px",
+              }}
+            >
+              {/* Horizontal bar */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: "9px",
+                  left: 0,
+                  right: 0,
+                  height: "2px",
+                  backgroundColor: "rgba(255,255,255,0.85)",
+                }}
+              />
+              {/* Vertical bar */}
+              <div
+                style={{
+                  position: "absolute",
+                  left: "9px",
+                  top: 0,
+                  bottom: 0,
+                  width: "2px",
+                  backgroundColor: "rgba(255,255,255,0.85)",
+                }}
+              />
+            </div>
+          )}
+
+        {/* Bottom-center ammo + health bar — combat modes only */}
+        {(gameState.mode === "deathmatch" || gameState.mode === "ctf") &&
+          !isMinimal &&
+          currentPlayer &&
+          respawnSecondsLeft === null && (
+            <div
+              style={{
+                position: "fixed",
+                bottom: "14px",
+                left: "50%",
+                transform: "translateX(-50%)",
+                display: "flex",
+                alignItems: "center",
+                gap: "14px",
+                fontFamily: "monospace",
+                fontSize: "11px",
+                pointerEvents: "none",
+                zIndex: 997,
+                backgroundColor: "rgba(0,0,0,0.6)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                borderRadius: "5px",
+                padding: "4px 12px",
+              }}
+            >
+              {/* Health */}
+              <span style={{ color: "#ff6666" }}>
+                ❤️ {currentPlayer.health ?? currentPlayer.maxHealth ?? 100}
+                <span style={{ color: "#666", marginLeft: "2px" }}>
+                  /{currentPlayer.maxHealth ?? 100}
+                </span>
+              </span>
+              {/* Divider */}
+              <span style={{ color: "#444" }}>|</span>
+              {/* Weapon name + ammo pips */}
+              {currentPlayer.equippedWeaponId &&
+                (() => {
+                  const wDef = WEAPONS[currentPlayer.equippedWeaponId];
+                  const ammo = currentPlayer.currentAmmo;
+                  const maxAmmo = wDef?.maxAmmo;
+                  const wColor =
+                    currentPlayer.equippedWeaponId === "rocket"
+                      ? "#ff4422"
+                      : currentPlayer.equippedWeaponId === "shotgun"
+                        ? "#ff9933"
+                        : "#33ffe6";
+                  return (
+                    <>
+                      <span style={{ color: wColor }}>
+                        {wDef?.name ?? currentPlayer.equippedWeaponId}
+                      </span>
+                      <span style={{ color: "#aaaaaa", letterSpacing: "1px" }}>
+                        {ammo === null || ammo === undefined
+                          ? "∞"
+                          : maxAmmo
+                            ? Array.from({ length: maxAmmo }, (_, i) => (
+                                <span
+                                  key={i}
+                                  style={{ color: i < ammo ? wColor : "#444" }}
+                                >
+                                  ●
+                                </span>
+                              ))
+                            : ammo}
+                      </span>
+                      <span style={{ color: "#555", fontSize: "10px" }}>
+                        [1/2/3]
+                      </span>
+                    </>
+                  );
+                })()}
+            </div>
+          )}
+
         {respawnSecondsLeft !== null &&
           (gameState.mode === "deathmatch" || gameState.mode === "ctf") && (
             <div
