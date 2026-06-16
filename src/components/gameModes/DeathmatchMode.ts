@@ -222,4 +222,4 @@ export class DeathmatchMode implements GameModeHandler {
 
 export default DeathmatchMode;
 
-export { STREAK_LABELS };
+export { STREAK_LABELS, STREAK_THRESHOLDS, STREAK_ANNOUNCE_MS };
