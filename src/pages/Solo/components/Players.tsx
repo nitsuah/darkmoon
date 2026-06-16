@@ -66,7 +66,7 @@ const Players = React.forwardRef<PlayerCharacterHandle | null, PlayersProps>(
         />
 
         {Object.entries(props.clients)
-          .filter(([id]) => id !== "bot-1" && id !== "bot-2")
+          .filter(([id]) => id !== "bot-1" && id !== "bot-2" && id !== "bot-3")
           .map(([id, client]) => {
             const player = props.gameManager?.getPlayers().get(id as string);
             const isIt = player?.isIt || false;
@@ -91,7 +91,7 @@ const Players = React.forwardRef<PlayerCharacterHandle | null, PlayersProps>(
           })}
       </>
     );
-  }
+  },
 );
 
 Players.displayName = "Players";

@@ -12,7 +12,11 @@ import { filterProfanity } from "../lib/constants/profanity";
 import { createTagLogger } from "../lib/utils/logger";
 import { useSoloGame, attachToConnection } from "../lib/hooks/useSoloGame";
 import { useSocketConnection } from "../lib/hooks/useSocketConnection";
-import { BOT1_CONFIG, BOT2_CONFIG } from "../lib/constants/botConfigs";
+import {
+  BOT1_CONFIG,
+  BOT2_CONFIG,
+  BOT3_CONFIG,
+} from "../lib/constants/botConfigs";
 import SoloScene from "./Solo/components/SoloScene";
 import { W, A, S, D, Q, E, SHIFT, SPACE } from "../components/utils";
 import { useNotifications } from "../lib/hooks/useNotifications";
@@ -75,6 +79,7 @@ const Solo: React.FC = () => {
   const playerPositionRef = useRef<[number, number, number]>([0, 0.5, 0]);
   const bot1PositionRef = useRef<[number, number, number]>([-5, 0.5, -5]);
   const bot2PositionRef = useRef<[number, number, number]>([8, 0.5, -8]);
+  const bot3PositionRef = useRef<[number, number, number]>([-8, 0.5, 8]);
 
   const [playerIsIt, setPlayerIsIt] = useState(true); // Player starts as IT
   // Bot IT states are tracked via GameManager; local flags removed
@@ -82,6 +87,7 @@ const Solo: React.FC = () => {
   // Timestamps for when bots get tagged (to trigger freeze)
   const [bot1GotTagged, setBot1GotTagged] = useState(0);
   const [bot2GotTagged, setBot2GotTagged] = useState(0);
+  const [bot3GotTagged] = useState(0);
 
   // Bot debug mode - enables 2 bots playing each other with faster games
   const [botDebugMode, setBotDebugMode] = useState(false); // Default false - user must enable
@@ -472,6 +478,21 @@ const Solo: React.FC = () => {
     [addNotification],
   );
 
+  const handleBot3PositionUpdate = useCallback(
+    (position: [number, number, number]) => {
+      bot3PositionRef.current = position;
+      clientsRef.current["bot-3"] = { position, rotation: ZERO_ROTATION };
+      gameManager.current?.updatePlayerPosition("bot-3", position);
+
+      if (gameManager.current?.pickupFlag("bot-3")) {
+        addNotification("Bot3 grabbed a flag!", "warning");
+      } else if (gameManager.current?.captureFlag("bot-3")) {
+        addNotification("Bot3 captured a flag for their team!", "warning");
+      }
+    },
+    [addNotification],
+  );
+
   // Bot debug mode auto-restart when game ends
   useEffect(() => {
     if (botDebugMode && !gameState.isActive && gameState.mode !== "none") {
@@ -578,8 +599,8 @@ const Solo: React.FC = () => {
     if (!gameManager.current) return;
 
     if (mode === "deathmatch") {
-      // Ensure bot-2 is registered before the match so all 3 combatants get
-      // health/respawn initialised by DeathmatchMode.onStart.
+      // Ensure bot-2 and bot-3 are registered before the match so all combatants
+      // get health/respawn initialised by DeathmatchMode.onStart.
       if (!gameManager.current.getPlayers().has("bot-2")) {
         const bot2: Player = {
           id: "bot-2",
@@ -589,6 +610,16 @@ const Solo: React.FC = () => {
           isIt: false,
         };
         gameManager.current.addPlayer(bot2);
+      }
+      if (!gameManager.current.getPlayers().has("bot-3")) {
+        const bot3: Player = {
+          id: "bot-3",
+          name: BOT3_CONFIG.label || "Bot3",
+          position: BOT3_CONFIG.initialPosition,
+          rotation: ZERO_ROTATION,
+          isIt: false,
+        };
+        gameManager.current.addPlayer(bot3);
       }
       gameManager.current.startDeathmatchGame();
       const newGameState = gameManager.current.getGameState();
@@ -601,8 +632,8 @@ const Solo: React.FC = () => {
     }
 
     if (mode === "ctf") {
-      // Ensure bot-2 is registered before the match so CTFMode.onStart can
-      // assign it to a team.
+      // Ensure bot-2 and bot-3 are registered before the match so CTFMode.onStart
+      // can assign them to teams.
       if (!gameManager.current.getPlayers().has("bot-2")) {
         const bot2: Player = {
           id: "bot-2",
@@ -612,6 +643,16 @@ const Solo: React.FC = () => {
           isIt: false,
         };
         gameManager.current.addPlayer(bot2);
+      }
+      if (!gameManager.current.getPlayers().has("bot-3")) {
+        const bot3: Player = {
+          id: "bot-3",
+          name: BOT3_CONFIG.label || "Bot3",
+          position: BOT3_CONFIG.initialPosition,
+          rotation: ZERO_ROTATION,
+          isIt: false,
+        };
+        gameManager.current.addPlayer(bot3);
       }
       gameManager.current.startCTFGame();
       const newGameState = gameManager.current.getGameState();
@@ -643,10 +684,11 @@ const Solo: React.FC = () => {
     if (gameManager.current) {
       const wasMode = gameManager.current.getGameState().mode;
       gameManager.current.endGame();
-      // Bot-2 was added for combat modes; remove it so the lobby shows 1v1 again.
+      // Bot-2 and bot-3 were added for combat modes; remove them so the lobby shows 1v1 again.
       // (Debug mode manages its own bot-2 lifecycle separately.)
       if (!botDebugMode && (wasMode === "deathmatch" || wasMode === "ctf")) {
         gameManager.current.removePlayer("bot-2");
+        gameManager.current.removePlayer("bot-3");
       }
       syncGameState();
       addNotification("Game ended", "info");
@@ -699,10 +741,13 @@ const Solo: React.FC = () => {
         collisionSystemRef={collisionSystemRef}
         handleBot1PositionUpdate={handleBot1PositionUpdate}
         handleBot2PositionUpdate={handleBot2PositionUpdate}
+        handleBot3PositionUpdate={handleBot3PositionUpdate}
         bot1GotTagged={bot1GotTagged}
         bot2GotTagged={bot2GotTagged}
+        bot3GotTagged={bot3GotTagged}
         BOT1_CONFIG={BOT1_CONFIG}
         BOT2_CONFIG={BOT2_CONFIG}
+        BOT3_CONFIG={BOT3_CONFIG}
       />
       <SoloHUD
         isMobileDevice={isMobileDevice}

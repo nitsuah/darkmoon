@@ -60,9 +60,12 @@ export type SoloSceneProps = {
   bot2PositionRef: React.RefObject<[number, number, number]>;
   handleBot1PositionUpdate: (p: [number, number, number]) => void;
   handleBot2PositionUpdate: (p: [number, number, number]) => void;
+  handleBot3PositionUpdate: (p: [number, number, number]) => void;
   collisionSystemRef: React.RefObject<CollisionSystem | null>;
   bot1GotTagged: number;
   bot2GotTagged: number;
+  bot3GotTagged: number;
   BOT1_CONFIG: BotConfig;
   BOT2_CONFIG: BotConfig;
+  BOT3_CONFIG: BotConfig;
 };
