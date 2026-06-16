@@ -202,6 +202,20 @@ export const PlayerCharacter = React.forwardRef<
     };
   }, [isPlayerFrozenRef, playerFreezeEndTimeRef]);
 
+  // Equip a weapon picked up from a world pickup item (WeaponPickups fires this event).
+  React.useEffect(() => {
+    function handleWeaponPickup(e: unknown) {
+      const { weaponId } = (e as { detail: { weaponId: string } }).detail;
+      weaponManagerRef.current.equip(weaponId);
+      gameManager?.updatePlayer(currentPlayerId, {
+        equippedWeaponId: weaponId,
+      });
+    }
+    window.addEventListener("weapon-pickup", handleWeaponPickup);
+    return () =>
+      window.removeEventListener("weapon-pickup", handleWeaponPickup);
+  }, [gameManager, currentPlayerId]);
+
   // gated debug logger - only logs in dev
   const debug = (...args: unknown[]) => {
     // Vite exposes import.meta.env.DEV; fall back to false if undefined
