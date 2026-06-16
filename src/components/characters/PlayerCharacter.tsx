@@ -253,6 +253,20 @@ export const PlayerCharacter = React.forwardRef<
       window.removeEventListener("health-pickup", handleHealthPickup);
   }, [gameManager, currentPlayerId]);
 
+  // Teleport player back to spawn when respawn timer clears (deathmatch/CTF).
+  // Mirrors the equivalent logic in useBotAI for bots.
+  const mePlayer = gameManager?.getPlayers().get(currentPlayerId);
+  const respawnAt = mePlayer?.respawnAt;
+  const prevRespawnAtRef = React.useRef<number | undefined>(undefined);
+  React.useEffect(() => {
+    const wasDown = prevRespawnAtRef.current !== undefined;
+    const isUp = respawnAt === undefined;
+    if (wasDown && isUp && meshRef.current) {
+      meshRef.current.position.set(0, 0.5, 0);
+    }
+    prevRespawnAtRef.current = respawnAt;
+  }, [respawnAt, meshRef]);
+
   // gated debug logger - only logs in dev
   const debug = (...args: unknown[]) => {
     // Vite exposes import.meta.env.DEV; fall back to false if undefined

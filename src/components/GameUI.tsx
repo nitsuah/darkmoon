@@ -733,7 +733,8 @@ const GameUI: React.FC<GameUIProps> = ({
               }}
             >
               <span>
-                {i + 1}. {r.name}
+                {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "🏅"}{" "}
+                {r.name}
               </span>
               <span>
                 {r.score} {scoreLabel}
