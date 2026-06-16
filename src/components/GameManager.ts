@@ -37,6 +37,8 @@ export interface GameState {
   flags?: CTFFlag[];
   /** Scrolling kill feed (last 10 kills). */
   killFeed?: KillEvent[];
+  /** Transient streak announcement, cleared by onTick after display window. */
+  streakAnnouncement?: { killerName: string; count: number; timestamp: number };
 }
 
 export interface TagGameState extends GameState {
@@ -69,6 +71,8 @@ export interface Player {
   currentAmmo?: number | null;
   /** Timestamp (ms) until which this player is invincible after respawning. */
   spawnProtectedUntil?: number;
+  /** Consecutive kills without dying (resets on death). */
+  currentKillStreak?: number;
 }
 
 export class GameManager {

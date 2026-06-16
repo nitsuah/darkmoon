@@ -200,6 +200,86 @@ describe("GameManager deathmatch", () => {
     }
   });
 
+  it("tracks kill streak and announces on threshold kills", () => {
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "P1"));
+    manager.addPlayer(makePlayer("p2", "P2"));
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startDeathmatchGame();
+
+    const p1 = manager.getPlayers().get("p1")!;
+
+    // 2 kills — no threshold yet
+    manager.hitPlayer("p1", "p2", 1000);
+    expect(p1.currentKillStreak).toBe(1);
+    expect(manager.getGameState().streakAnnouncement).toBeUndefined();
+
+    // Respawn p2
+    manager.getPlayers().get("p2")!.respawnAt = undefined;
+    manager.getPlayers().get("p2")!.health = 100;
+    manager.hitPlayer("p1", "p2", 1000);
+    expect(p1.currentKillStreak).toBe(2);
+
+    // Third kill hits the threshold → announcement
+    manager.getPlayers().get("p2")!.respawnAt = undefined;
+    manager.getPlayers().get("p2")!.health = 100;
+    manager.hitPlayer("p1", "p2", 1000);
+    expect(p1.currentKillStreak).toBe(3);
+
+    const ann = manager.getGameState().streakAnnouncement;
+    expect(ann).toBeDefined();
+    expect(ann!.killerName).toBe("P1");
+    expect(ann!.count).toBe(3);
+  });
+
+  it("resets kill streak to 0 when a player dies", () => {
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "P1"));
+    manager.addPlayer(makePlayer("p2", "P2"));
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startDeathmatchGame();
+
+    const p1 = manager.getPlayers().get("p1")!;
+    const p2 = manager.getPlayers().get("p2")!;
+
+    // p1 gets 2 kills
+    manager.hitPlayer("p1", "p2", 1000);
+    p2.respawnAt = undefined;
+    p2.health = 100;
+    manager.hitPlayer("p1", "p2", 1000);
+    expect(p1.currentKillStreak).toBe(2);
+
+    // p2 kills p1 — streak resets
+    p2.respawnAt = undefined;
+    p2.health = 100;
+    manager.hitPlayer("p2", "p1", 1000);
+    expect(p1.currentKillStreak).toBe(0);
+  });
+
+  it("streak announcement is cleared by onTick after the display window", () => {
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "P1"));
+    manager.addPlayer(makePlayer("p2", "P2"));
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startDeathmatchGame();
+
+    // Force a 3-kill streak
+    for (let i = 0; i < 3; i++) {
+      manager.getPlayers().get("p2")!.respawnAt = undefined;
+      manager.getPlayers().get("p2")!.health = 100;
+      manager.hitPlayer("p1", "p2", 1000);
+    }
+    expect(manager.getGameState().streakAnnouncement).toBeDefined();
+
+    // Advance past the 3-second display window
+    vi.spyOn(Date, "now").mockReturnValue(13100);
+    manager.updateGameTimer(0.1);
+    expect(manager.getGameState().streakAnnouncement).toBeUndefined();
+  });
+
   it("ends the game once a player reaches the kill limit, with results sorted by kills", () => {
     const manager = new GameManager();
     manager.addPlayer(makePlayer("p1", "P1"));

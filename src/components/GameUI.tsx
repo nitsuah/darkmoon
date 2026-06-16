@@ -1,6 +1,7 @@
 import * as React from "react";
 import { GameState, KillEvent, Player } from "./GameManager";
 import { WEAPONS } from "./combat/WeaponManager";
+import { STREAK_LABELS } from "./gameModes/DeathmatchMode";
 
 interface GameUIProps {
   gameState: GameState;
@@ -56,6 +57,24 @@ const GameUI: React.FC<GameUIProps> = ({
 
   // spawnProtectedUntil is cleared by onTick within ~1s of expiry — presence is enough.
   const isSpawnProtected = currentPlayer?.spawnProtectedUntil !== undefined;
+
+  // Streak announcement: show briefly then fade; onTick clears the field after 3s.
+  const streakAnnouncement = gameState.streakAnnouncement;
+  const [visibleStreak, setVisibleStreak] = React.useState<{
+    killerName: string;
+    count: number;
+  } | null>(null);
+
+  React.useEffect(() => {
+    if (streakAnnouncement === undefined) {
+      setVisibleStreak(null);
+      return;
+    }
+    setVisibleStreak({
+      killerName: streakAnnouncement.killerName,
+      count: streakAnnouncement.count,
+    });
+  }, [streakAnnouncement]);
 
   // Respawn countdown: restart the interval whenever the player's respawnAt stamp changes.
   const respawnAt = currentPlayer?.respawnAt;
@@ -567,6 +586,45 @@ const GameUI: React.FC<GameUIProps> = ({
               }}
             >
               PROTECTED
+            </div>
+          )}
+
+        {visibleStreak !== null &&
+          (gameState.mode === "deathmatch" || gameState.mode === "ctf") && (
+            <div
+              style={{
+                position: "fixed",
+                top: "30%",
+                left: "50%",
+                transform: "translateX(-50%)",
+                pointerEvents: "none",
+                zIndex: 995,
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: isMinimal ? "14px" : "26px",
+                  fontWeight: "bold",
+                  color: "#ffcc00",
+                  textShadow: "0 0 18px #ff8800, 0 0 6px #ffcc00",
+                  letterSpacing: "3px",
+                }}
+              >
+                {STREAK_LABELS[visibleStreak.count] ??
+                  `${visibleStreak.count}x STREAK`}
+              </div>
+              <div
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: isMinimal ? "10px" : "14px",
+                  color: "#ffeeaa",
+                  marginTop: "4px",
+                }}
+              >
+                {visibleStreak.killerName}
+              </div>
             </div>
           )}
       </>
