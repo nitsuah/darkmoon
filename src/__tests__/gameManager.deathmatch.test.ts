@@ -280,6 +280,61 @@ describe("GameManager deathmatch", () => {
     expect(manager.getGameState().streakAnnouncement).toBeUndefined();
   });
 
+  it("rocket splash damages bystanders within splashRadius of the target", () => {
+    const manager = new GameManager();
+    // p3 stands near the target (p2); p1 fires a rocket at p2
+    const p3: Player = { ...makePlayer("p3", "P3"), position: [0.5, 0, 0] };
+    manager.addPlayer(makePlayer("p1", "P1"));
+    manager.addPlayer({ ...makePlayer("p2", "P2"), position: [0, 0, 0] });
+    manager.addPlayer(p3);
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startDeathmatchGame();
+
+    // Rocket does 100 direct + 50 splash; p3 should lose 50 HP
+    expect(manager.hitPlayer("p1", "p2", 100, "rocket")).toBe(true);
+
+    const p3After = manager.getPlayers().get("p3")!;
+    expect(p3After.health).toBe(50); // 100 - 50 splash
+  });
+
+  it("rocket splash does not damage the attacker", () => {
+    const manager = new GameManager();
+    // p1 stands very close to p2 (point-blank rocket)
+    manager.addPlayer({ ...makePlayer("p1", "P1"), position: [0.1, 0, 0] });
+    manager.addPlayer({ ...makePlayer("p2", "P2"), position: [0, 0, 0] });
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startDeathmatchGame();
+
+    manager.hitPlayer("p1", "p2", 100, "rocket");
+
+    // Attacker should not take splash damage
+    expect(manager.getPlayers().get("p1")!.health).toBe(100);
+  });
+
+  it("rocket splash awards kill and updates streak if bystander is lethal-hit by splash", () => {
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "P1"));
+    manager.addPlayer({ ...makePlayer("p2", "P2"), position: [0, 0, 0] });
+    // p3 is at 10HP and within splash radius
+    manager.addPlayer({ ...makePlayer("p3", "P3"), position: [0.5, 0, 0] });
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startDeathmatchGame();
+
+    // Manually set p3 health low so splash kills it
+    manager.getPlayers().get("p3")!.health = 40;
+    manager.getPlayers().get("p3")!.maxHealth = 100;
+
+    manager.hitPlayer("p1", "p2", 100, "rocket"); // p2 direct kill, p3 splash kill
+
+    const state = manager.getGameState();
+    expect(state.scores["p1"]).toBe(2); // 2 kills: direct + splash
+    const p1 = manager.getPlayers().get("p1")!;
+    expect(p1.currentKillStreak).toBe(2);
+  });
+
   it("ends the game once a player reaches the kill limit, with results sorted by kills", () => {
     const manager = new GameManager();
     manager.addPlayer(makePlayer("p1", "P1"));
