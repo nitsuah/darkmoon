@@ -174,7 +174,7 @@ const GameUI: React.FC<GameUIProps> = ({
                     marginBottom: "4px",
                   }}
                 >
-                  Tag someone!
+                  Click to fire laser tag!
                 </div>
               )}
             </>
@@ -408,8 +408,10 @@ const GameUI: React.FC<GameUIProps> = ({
           </div>
         )}
 
-        {/* Crosshair — combat modes only, hidden while downed */}
-        {(gameState.mode === "deathmatch" || gameState.mode === "ctf") &&
+        {/* Crosshair — combat and tag modes, hidden while downed */}
+        {(gameState.mode === "deathmatch" ||
+          gameState.mode === "ctf" ||
+          gameState.mode === "tag") &&
           respawnSecondsLeft === null &&
           !isMinimal && (
             <div
@@ -449,8 +451,10 @@ const GameUI: React.FC<GameUIProps> = ({
             </div>
           )}
 
-        {/* Bottom-center ammo + health bar — combat modes only */}
-        {(gameState.mode === "deathmatch" || gameState.mode === "ctf") &&
+        {/* Bottom-center ammo + health bar — combat and tag modes */}
+        {(gameState.mode === "deathmatch" ||
+          gameState.mode === "ctf" ||
+          gameState.mode === "tag") &&
           !isMinimal &&
           currentPlayer &&
           respawnSecondsLeft === null && (
@@ -473,15 +477,19 @@ const GameUI: React.FC<GameUIProps> = ({
                 padding: "4px 12px",
               }}
             >
-              {/* Health */}
-              <span style={{ color: "#ff6666" }}>
-                ❤️ {currentPlayer.health ?? currentPlayer.maxHealth ?? 100}
-                <span style={{ color: "#666", marginLeft: "2px" }}>
-                  /{currentPlayer.maxHealth ?? 100}
-                </span>
-              </span>
-              {/* Divider */}
-              <span style={{ color: "#444" }}>|</span>
+              {/* Health — combat modes only (no health in tag mode) */}
+              {gameState.mode !== "tag" && (
+                <>
+                  <span style={{ color: "#ff6666" }}>
+                    ❤️ {currentPlayer.health ?? currentPlayer.maxHealth ?? 100}
+                    <span style={{ color: "#666", marginLeft: "2px" }}>
+                      /{currentPlayer.maxHealth ?? 100}
+                    </span>
+                  </span>
+                  {/* Divider */}
+                  <span style={{ color: "#444" }}>|</span>
+                </>
+              )}
               {/* Weapon name + ammo pips */}
               {currentPlayer.equippedWeaponId &&
                 (() => {
