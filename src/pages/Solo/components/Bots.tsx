@@ -243,12 +243,13 @@ const Bots: React.FC<
 
       const weapon = weaponRef.current.fire(botId);
       if (!weapon) {
-        // If ammo is depleted (not just on cooldown), fall back to infinite laser.
+        // If ammo is depleted (not just on cooldown), refill and keep the
+        // specialty weapon so bots remain a persistent threat throughout the round.
         const equipped = weaponRef.current.getEquipped();
         if (equipped) {
           const ammo = weaponRef.current.getAmmo(equipped.id);
           if (ammo !== null && ammo <= 0) {
-            weaponRef.current.equip("laser");
+            weaponRef.current.refillAmmo(equipped.id);
           }
         }
         return;
