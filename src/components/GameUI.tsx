@@ -398,11 +398,21 @@ const GameUI: React.FC<GameUIProps> = ({
                   color: "#ffdd88",
                 }}
               >
-                💀 {k.killerName}{" "}
-                <span style={{ color: "#aaaaaa" }}>
-                  [{WEAPONS[k.weaponId]?.name ?? k.weaponId}]
-                </span>{" "}
-                → {k.targetName}
+                {k.weaponId === "tag" ? (
+                  <>
+                    🏃 {k.killerName}{" "}
+                    <span style={{ color: "#aaaaaa" }}>tagged</span>{" "}
+                    {k.targetName}
+                  </>
+                ) : (
+                  <>
+                    💀 {k.killerName}{" "}
+                    <span style={{ color: "#aaaaaa" }}>
+                      [{WEAPONS[k.weaponId]?.name ?? k.weaponId}]
+                    </span>{" "}
+                    → {k.targetName}
+                  </>
+                )}
               </div>
             ))}
           </div>
