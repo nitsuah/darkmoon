@@ -97,6 +97,13 @@ const Bots: React.FC<
     gameManager?.getPlayers().get("bot-2")?.respawnAt !== undefined;
   const bot3IsDowned =
     gameManager?.getPlayers().get("bot-3")?.respawnAt !== undefined;
+  // Health for health-bar display in combat modes
+  const bot1Health = gameManager?.getPlayers().get("bot-1")?.health;
+  const bot1MaxHealth = gameManager?.getPlayers().get("bot-1")?.maxHealth;
+  const bot2Health = gameManager?.getPlayers().get("bot-2")?.health;
+  const bot2MaxHealth = gameManager?.getPlayers().get("bot-2")?.maxHealth;
+  const bot3Health = gameManager?.getPlayers().get("bot-3")?.health;
+  const bot3MaxHealth = gameManager?.getPlayers().get("bot-3")?.maxHealth;
   // Team assignment and carried-flag status for CTF
   const bot1Team = gameManager?.getPlayers().get("bot-1")?.team;
   const bot2Team = gameManager?.getPlayers().get("bot-2")?.team;
@@ -369,6 +376,8 @@ const Bots: React.FC<
         gotTaggedTimestamp={bot1GotTagged}
         config={effectiveBot1Config}
         color="#ff8888"
+        health={bot1Health}
+        maxHealth={bot1MaxHealth}
       />
 
       {showBot2 && (
@@ -390,6 +399,8 @@ const Bots: React.FC<
           config={effectiveBot2Config}
           color="#88ff88"
           labelColor="#00ff00"
+          health={bot2Health}
+          maxHealth={bot2MaxHealth}
         />
       )}
 
@@ -412,6 +423,8 @@ const Bots: React.FC<
           config={effectiveBot3Config}
           color="#ffaa00"
           labelColor="#ff8800"
+          health={bot3Health}
+          maxHealth={bot3MaxHealth}
         />
       )}
     </>
