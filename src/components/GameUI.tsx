@@ -125,6 +125,25 @@ const GameUI: React.FC<GameUIProps> = ({
     return () => window.removeEventListener("player-hit-landed", handle);
   }, []);
 
+  // Kill announcement: "YOU KILLED [name]" banner for 2s on personal kills
+  const lastKillKeyRef = React.useRef<string | null>(null);
+  const [killAnnouncement, setKillAnnouncement] = React.useState<string | null>(
+    null,
+  );
+  React.useEffect(() => {
+    const feed = gameState.killFeed ?? [];
+    if (feed.length === 0) return;
+    const latest = feed[feed.length - 1];
+    const key = `${latest.killerId}-${latest.timestamp}`;
+    if (key === lastKillKeyRef.current) return undefined;
+    lastKillKeyRef.current = key;
+    if (latest.killerId !== currentPlayerId) return undefined;
+    const weaponLabel = WEAPONS[latest.weaponId]?.name ?? latest.weaponId;
+    setKillAnnouncement(`${latest.targetName} [${weaponLabel}]`);
+    const t = setTimeout(() => setKillAnnouncement(null), 2000);
+    return () => clearTimeout(t);
+  }, [gameState.killFeed, currentPlayerId]);
+
   // Main game status display (always visible during active game)
   if (gameState.isActive) {
     return (
@@ -147,6 +166,41 @@ const GameUI: React.FC<GameUIProps> = ({
               zIndex: 998,
             }}
           />
+        )}
+        {killAnnouncement && (
+          <div
+            style={{
+              position: "fixed",
+              top: "28%",
+              left: "50%",
+              transform: "translateX(-50%)",
+              pointerEvents: "none",
+              zIndex: 1002,
+              textAlign: "center",
+              fontFamily: "monospace",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "11px",
+                color: "#ffdd00",
+                letterSpacing: "2px",
+                marginBottom: "2px",
+              }}
+            >
+              YOU KILLED
+            </div>
+            <div
+              style={{
+                fontSize: "22px",
+                fontWeight: "bold",
+                color: "#fff",
+                textShadow: "0 0 12px #ff8800, 0 0 4px #ffcc00",
+              }}
+            >
+              {killAnnouncement}
+            </div>
+          </div>
         )}
         <div
           style={{

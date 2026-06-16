@@ -553,9 +553,25 @@ export const PlayerCharacter = React.forwardRef<
         const remainingAmmo = weaponManagerRef.current.getAmmo(wid);
         gameManager?.updatePlayer(myId, { currentAmmo: remainingAmmo });
       }
-      // Notify HUD to flash hit marker when shot connects.
       if (fireResult.hit && typeof window !== "undefined") {
+        // Notify HUD to flash hit marker.
         window.dispatchEvent(new window.Event("player-hit-landed"));
+        // Trigger explosion VFX for splash weapons (rocket, grenade).
+        if (fireResult.weapon.splashRadius) {
+          const hitPos = fireOrigin
+            .clone()
+            .add(fireDirection.clone().multiplyScalar(fireResult.hit.distance));
+          window.dispatchEvent(
+            new window.CustomEvent("weapon-explosion", {
+              detail: {
+                x: hitPos.x,
+                y: hitPos.y,
+                z: hitPos.z,
+                radius: fireResult.weapon.splashRadius,
+              },
+            }),
+          );
+        }
       }
     }
 
