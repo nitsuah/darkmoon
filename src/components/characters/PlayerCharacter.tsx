@@ -223,6 +223,22 @@ export const PlayerCharacter = React.forwardRef<
       window.removeEventListener("weapon-pickup", handleWeaponPickup);
   }, [gameManager, currentPlayerId]);
 
+  // Restore health when the player walks over a HealthPickups crate.
+  React.useEffect(() => {
+    function handleHealthPickup(e: unknown) {
+      const { amount } = (e as { detail: { amount: number } }).detail;
+      const players = gameManager?.getPlayers();
+      const me = players?.get(currentPlayerId);
+      if (!me) return;
+      const maxHp = me.maxHealth ?? 100;
+      const newHp = Math.min(maxHp, (me.health ?? maxHp) + amount);
+      gameManager?.updatePlayer(currentPlayerId, { health: newHp });
+    }
+    window.addEventListener("health-pickup", handleHealthPickup);
+    return () =>
+      window.removeEventListener("health-pickup", handleHealthPickup);
+  }, [gameManager, currentPlayerId]);
+
   // gated debug logger - only logs in dev
   const debug = (...args: unknown[]) => {
     // Vite exposes import.meta.env.DEV; fall back to false if undefined
