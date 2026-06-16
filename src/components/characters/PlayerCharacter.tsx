@@ -553,6 +553,10 @@ export const PlayerCharacter = React.forwardRef<
         const remainingAmmo = weaponManagerRef.current.getAmmo(wid);
         gameManager?.updatePlayer(myId, { currentAmmo: remainingAmmo });
       }
+      // Notify HUD to flash hit marker when shot connects.
+      if (fireResult.hit && typeof window !== "undefined") {
+        window.dispatchEvent(new window.Event("player-hit-landed"));
+      }
     }
 
     if (laserBeamRef.current && now >= laserBeamHideAtRef.current) {
