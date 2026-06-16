@@ -17,11 +17,14 @@ const Bots: React.FC<
     | "isPaused"
     | "handleBot1PositionUpdate"
     | "handleBot2PositionUpdate"
+    | "handleBot3PositionUpdate"
     | "collisionSystemRef"
     | "bot1GotTagged"
     | "bot2GotTagged"
+    | "bot3GotTagged"
     | "BOT1_CONFIG"
     | "BOT2_CONFIG"
+    | "BOT3_CONFIG"
     | "gameManager"
     | "gameState"
     | "setBot1GotTagged"
@@ -37,11 +40,14 @@ const Bots: React.FC<
   isPaused,
   handleBot1PositionUpdate,
   handleBot2PositionUpdate,
+  handleBot3PositionUpdate,
   collisionSystemRef,
   bot1GotTagged,
   bot2GotTagged,
+  bot3GotTagged,
   BOT1_CONFIG,
   BOT2_CONFIG,
+  BOT3_CONFIG,
   gameManager,
   gameState,
   setBot1GotTagged,
@@ -76,6 +82,11 @@ const Bots: React.FC<
     ...(BOT2_CONFIG || {}),
   };
 
+  const effectiveBot3Config: FullBotConfig = {
+    ...DEFAULT_BOT_CONFIG,
+    ...(BOT3_CONFIG || {}),
+  };
+
   // Get bot IT status from game manager
   const bot1IsIt = gameManager?.getPlayers().get("bot-1")?.isIt ?? false;
   const bot2IsIt = gameManager?.getPlayers().get("bot-2")?.isIt ?? false;
@@ -84,25 +95,62 @@ const Bots: React.FC<
     gameManager?.getPlayers().get("bot-1")?.respawnAt !== undefined;
   const bot2IsDowned =
     gameManager?.getPlayers().get("bot-2")?.respawnAt !== undefined;
+  const bot3IsDowned =
+    gameManager?.getPlayers().get("bot-3")?.respawnAt !== undefined;
+  // Health for health-bar display in combat modes
+  const bot1Health = gameManager?.getPlayers().get("bot-1")?.health;
+  const bot1MaxHealth = gameManager?.getPlayers().get("bot-1")?.maxHealth;
+  const bot2Health = gameManager?.getPlayers().get("bot-2")?.health;
+  const bot2MaxHealth = gameManager?.getPlayers().get("bot-2")?.maxHealth;
+  const bot3Health = gameManager?.getPlayers().get("bot-3")?.health;
+  const bot3MaxHealth = gameManager?.getPlayers().get("bot-3")?.maxHealth;
   // Team assignment and carried-flag status for CTF
   const bot1Team = gameManager?.getPlayers().get("bot-1")?.team;
   const bot2Team = gameManager?.getPlayers().get("bot-2")?.team;
+  const bot3Team = gameManager?.getPlayers().get("bot-3")?.team;
   const bot1CarryingFlag =
     gameState.flags?.some((flag) => flag.carrierId === "bot-1") ?? false;
   const bot2CarryingFlag =
     gameState.flags?.some((flag) => flag.carrierId === "bot-2") ?? false;
-  // Combat mode: bot-2 is always rendered as a second AI opponent.
+  const bot3CarryingFlag =
+    gameState.flags?.some((flag) => flag.carrierId === "bot-3") ?? false;
+  // Combat mode: bot-2 and bot-3 are AI opponents; bot-3 is combat-only.
   const isCombatMode =
     gameState.mode === "deathmatch" || gameState.mode === "ctf";
-  const showBot2 = botDebugMode || (isCombatMode && gameState.isActive);
+  const isTagMode = gameState.mode === "tag";
+  const showBot2 =
+    botDebugMode ||
+    (isCombatMode && gameState.isActive) ||
+    (isTagMode && gameState.isActive);
+  const showBot3 = isCombatMode && gameState.isActive;
+
+  const isDeathmatch = gameState.mode === "deathmatch";
+
+  // In deathmatch: bots target each other (triangle of fire). Bot-2 targets
+  // bot-1; bot-3 targets bot-2. Fall back to player when primary is downed.
+  const bot2DmTargetRef =
+    isDeathmatch && !bot1IsDowned ? bot1PositionRef : playerPositionRef;
+  const bot3DmTargetRef =
+    isDeathmatch && !bot2IsDowned ? bot2PositionRef : playerPositionRef;
+  // Fire targets mirror position refs.
+  const bot2DmFireTarget =
+    isDeathmatch && !bot1IsDowned ? "bot-1" : currentPlayerId;
+  const bot3DmFireTarget =
+    isDeathmatch && !bot2IsDowned ? "bot-2" : currentPlayerId;
 
   // Team of each bot's current target, so CTF combat doesn't fire on allies.
   const bot1TargetTeam = botDebugMode
     ? bot2Team
     : gameManager?.getPlayers().get(currentPlayerId)?.team;
-  // In debug mode bot-2 targets bot-1's team; in combat mode it targets the player.
+  // In debug mode bot-2 targets bot-1's team; in deathmatch it targets bot-1's team.
   const bot2TargetTeam = botDebugMode
     ? bot1Team
+    : isDeathmatch
+      ? bot1Team
+      : gameManager?.getPlayers().get(currentPlayerId)?.team;
+  // Bot-3 targets bot-2's team in deathmatch; player otherwise.
+  const bot3TargetTeam = isDeathmatch
+    ? bot2Team
     : gameManager?.getPlayers().get(currentPlayerId)?.team;
   // Derive player isIt from gameManager to avoid stale React-state race windows
   const playerIsItFromManager =
@@ -110,7 +158,6 @@ const Bots: React.FC<
 
   // Debug: Log IT state changes
   React.useEffect(() => {
-    // Only log when IT state changes
     tagDebug(
       `bot1IsIt: ${bot1IsIt}, bot2IsIt: ${bot2IsIt}, playerIsIt: ${playerIsItFromManager}`,
     );
@@ -177,42 +224,84 @@ const Bots: React.FC<
   ]);
 
   const handleBot2TagTarget = useCallback(() => {
-    if (gameManager && bot2IsIt && bot1IsIt === false) {
-      gameManager.tagPlayer("bot-2", "bot-1");
-      setBot1GotTagged(Date.now());
+    if (!gameManager || !bot2IsIt || !gameState.isActive) return;
+    if (botDebugMode) {
+      // Debug: bot-2 tags bot-1
+      if (!bot1IsIt) {
+        gameManager.tagPlayer("bot-2", "bot-1");
+        setBot1GotTagged(Date.now());
+      }
+      return;
     }
-  }, [gameManager, bot2IsIt, bot1IsIt, setBot1GotTagged]);
+    // Tag mode: bot-2 tags the player when IT and the player isn't already IT
+    if (gameState.mode === "tag" && !playerIsItFromManager) {
+      const result = gameManager.tagPlayer("bot-2", currentPlayerId);
+      if (result && typeof window !== "undefined") {
+        const event = new window.Event("player-tagged-by-bot");
+        window.dispatchEvent(event);
+      }
+    }
+  }, [
+    gameManager,
+    bot2IsIt,
+    bot1IsIt,
+    gameState.isActive,
+    gameState.mode,
+    botDebugMode,
+    currentPlayerId,
+    playerIsItFromManager,
+    setBot1GotTagged,
+  ]);
 
   // Each bot gets its own WeaponManager so they can use different weapons.
-  // Bot-1 uses the Pulse Shotgun (close-range burst); bot-2 uses the Laser Blaster.
+  // Bot-1: Pulse Shotgun, Bot-2: Rocket Launcher, Bot-3: Frag Grenade.
   const bot1WeaponsRef = useRef<WeaponManager | null>(null);
   const bot2WeaponsRef = useRef<WeaponManager | null>(null);
+  const bot3WeaponsRef = useRef<WeaponManager | null>(null);
 
   const fireBotWeapon = useCallback(
     (botId: string, targetId: string) => {
-      if (
-        !gameManager ||
-        (gameState.mode !== "deathmatch" && gameState.mode !== "ctf") ||
-        !gameState.isActive
-      ) {
-        return;
+      if (!gameManager || !gameState.isActive) return;
+
+      const isTagMode = gameState.mode === "tag";
+      const isCombatMode =
+        gameState.mode === "deathmatch" || gameState.mode === "ctf";
+
+      if (!isTagMode && !isCombatMode) return;
+
+      // In tag mode only the IT bot fires (the laser acts as a ranged tag).
+      if (isTagMode) {
+        const botPlayer = gameManager.getPlayers().get(botId);
+        if (!botPlayer?.isIt) return;
       }
 
-      const isBot1 = botId === "bot-1";
-      const weaponRef = isBot1 ? bot1WeaponsRef : bot2WeaponsRef;
+      const weaponRef =
+        botId === "bot-1"
+          ? bot1WeaponsRef
+          : botId === "bot-2"
+            ? bot2WeaponsRef
+            : bot3WeaponsRef;
       if (!weaponRef.current) {
         weaponRef.current = new WeaponManager();
-        weaponRef.current.equip(isBot1 ? "shotgun" : "laser");
+        const startWeapon = isTagMode
+          ? "laser"
+          : botId === "bot-1"
+            ? "shotgun"
+            : botId === "bot-2"
+              ? "rocket"
+              : "grenade";
+        weaponRef.current.equip(startWeapon);
       }
 
       const weapon = weaponRef.current.fire(botId);
       if (!weapon) {
-        // If ammo is depleted (not just on cooldown), fall back to infinite laser.
+        // If ammo is depleted (not just on cooldown), refill and keep the
+        // specialty weapon so bots remain a persistent threat throughout the round.
         const equipped = weaponRef.current.getEquipped();
         if (equipped) {
           const ammo = weaponRef.current.getAmmo(equipped.id);
           if (ammo !== null && ammo <= 0) {
-            weaponRef.current.equip("laser");
+            weaponRef.current.refillAmmo(equipped.id);
           }
         }
         return;
@@ -240,9 +329,14 @@ const Bots: React.FC<
   }, [fireBotWeapon, botDebugMode, currentPlayerId]);
 
   const handleBot2FireAtTarget = useCallback(() => {
-    // In debug mode bot-2 fights bot-1; in combat mode it targets the player.
-    fireBotWeapon("bot-2", botDebugMode ? "bot-1" : currentPlayerId);
-  }, [fireBotWeapon, botDebugMode, currentPlayerId]);
+    // Debug: bot-2 fights bot-1. Deathmatch: also targets bot-1 (fallback player).
+    fireBotWeapon("bot-2", botDebugMode ? "bot-1" : bot2DmFireTarget);
+  }, [fireBotWeapon, botDebugMode, bot2DmFireTarget]);
+
+  const handleBot3FireAtTarget = useCallback(() => {
+    // Deathmatch: bot-3 targets bot-2 (fallback player). Otherwise: player.
+    fireBotWeapon("bot-3", bot3DmFireTarget);
+  }, [fireBotWeapon, bot3DmFireTarget]);
 
   return (
     <>
@@ -282,11 +376,13 @@ const Bots: React.FC<
         gotTaggedTimestamp={bot1GotTagged}
         config={effectiveBot1Config}
         color="#ff8888"
+        health={bot1Health}
+        maxHealth={bot1MaxHealth}
       />
 
       {showBot2 && (
         <BotCharacter
-          targetPositionRef={botDebugMode ? bot1PositionRef : playerPositionRef}
+          targetPositionRef={botDebugMode ? bot1PositionRef : bot2DmTargetRef}
           isIt={bot2IsIt}
           targetIsIt={botDebugMode ? bot1IsIt : playerIsItFromManager}
           isPaused={isPaused}
@@ -303,6 +399,32 @@ const Bots: React.FC<
           config={effectiveBot2Config}
           color="#88ff88"
           labelColor="#00ff00"
+          health={bot2Health}
+          maxHealth={bot2MaxHealth}
+        />
+      )}
+
+      {showBot3 && (
+        <BotCharacter
+          targetPositionRef={bot3DmTargetRef}
+          isIt={false}
+          targetIsIt={playerIsItFromManager}
+          isPaused={isPaused}
+          onTagTarget={() => {}}
+          onFireAtTarget={handleBot3FireAtTarget}
+          isDowned={bot3IsDowned}
+          team={bot3Team}
+          isCarryingFlag={bot3CarryingFlag}
+          targetTeam={bot3TargetTeam}
+          onPositionUpdate={handleBot3PositionUpdate}
+          gameState={gameState}
+          collisionSystem={collisionSystemRef}
+          gotTaggedTimestamp={bot3GotTagged}
+          config={effectiveBot3Config}
+          color="#ffaa00"
+          labelColor="#ff8800"
+          health={bot3Health}
+          maxHealth={bot3MaxHealth}
         />
       )}
     </>

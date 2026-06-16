@@ -1,5 +1,5 @@
 import { createLogger } from "../../lib/utils/logger";
-import type { GameState, Player } from "../GameManager";
+import type { GameState, KillEvent, Player } from "../GameManager";
 import type {
   GameAction,
   GameModeHandler,
@@ -7,6 +7,15 @@ import type {
 } from "./GameModeHandler";
 
 const log = createLogger("TagMode");
+
+const TAG_STREAK_THRESHOLDS = [3, 5, 7, 10] as const;
+export const TAG_STREAK_LABELS: Record<number, string> = {
+  3: "ON A ROLL",
+  5: "TAGGING SPREE",
+  7: "UNTOUCHABLE",
+  10: "TAG GOD",
+};
+const TAG_STREAK_ANNOUNCE_MS = 3000;
 
 /**
  * Classic tag rules: one player is "IT" and tags others to pass on the
@@ -28,6 +37,8 @@ export class TagMode implements GameModeHandler {
   onStart(players: Map<string, Player>, gameState: GameState): void {
     const itPlayerId = this.pickRandomPlayer(players);
     gameState.itPlayerId = itPlayerId;
+    gameState.killFeed = [];
+    gameState.streakAnnouncement = undefined;
 
     players.forEach((player, id) => {
       gameState.scores[id] = 0;
@@ -35,6 +46,7 @@ export class TagMode implements GameModeHandler {
       player.timeAsIt = 0;
       player.lastTagTime = undefined;
       player.lastTaggedById = undefined;
+      player.currentKillStreak = 0;
     });
   }
 
@@ -44,6 +56,14 @@ export class TagMode implements GameModeHandler {
     gameState: GameState,
   ): void {
     gameState.timeRemaining -= deltaTime;
+
+    const now = Date.now();
+    if (
+      gameState.streakAnnouncement !== undefined &&
+      now >= gameState.streakAnnouncement.timestamp + TAG_STREAK_ANNOUNCE_MS
+    ) {
+      gameState.streakAnnouncement = undefined;
+    }
   }
 
   onAction(
@@ -51,6 +71,11 @@ export class TagMode implements GameModeHandler {
     players: Map<string, Player>,
     gameState: GameState,
   ): boolean {
+    // A laser "hit" in tag mode works as a ranged tag — no health damage, just IT transfer.
+    if (action.type === "hit") {
+      const { attackerId, targetId } = action;
+      return this.applyTag(attackerId, targetId, players, gameState);
+    }
     if (action.type !== "tag") return false;
     const { taggerId, taggedId } = action;
 
@@ -58,6 +83,15 @@ export class TagMode implements GameModeHandler {
       `[TAG-TRACE] tagPlayer called with taggerId=${taggerId}, taggedId=${taggedId}`,
     );
 
+    return this.applyTag(taggerId, taggedId, players, gameState);
+  }
+
+  private applyTag(
+    taggerId: string,
+    taggedId: string,
+    players: Map<string, Player>,
+    gameState: GameState,
+  ): boolean {
     const tagger = players.get(taggerId);
     const tagged = players.get(taggedId);
 
@@ -111,6 +145,32 @@ export class TagMode implements GameModeHandler {
     gameState.itPlayerId = taggedId;
     gameState.roundStartTime = now;
 
+    // Cumulative tag tally: each escape from IT earns a point toward callouts.
+    // Never reset mid-round (being re-tagged doesn't erase your tally) so that
+    // milestones are reachable in small games where IT always cycles back to you.
+    tagger.currentKillStreak = (tagger.currentKillStreak ?? 0) + 1;
+
+    const tally = tagger.currentKillStreak;
+    if ((TAG_STREAK_THRESHOLDS as readonly number[]).includes(tally)) {
+      gameState.streakAnnouncement = {
+        killerName: tagger.name,
+        count: tally,
+        timestamp: now,
+      };
+    }
+
+    const tagEvent: KillEvent = {
+      killerId: taggerId,
+      killerName: tagger.name,
+      targetId: taggedId,
+      targetName: tagged.name,
+      weaponId: "tag",
+      timestamp: now,
+    };
+    if (!gameState.killFeed) gameState.killFeed = [];
+    gameState.killFeed.push(tagEvent);
+    if (gameState.killFeed.length > 20) gameState.killFeed.shift();
+
     log.debug(
       `${tagger.name} tagged ${tagged.name}! ${tagged.name} is now IT!`,
     );
@@ -153,8 +213,11 @@ export class TagMode implements GameModeHandler {
       player.timeAsIt = 0;
       player.lastTagTime = undefined;
       player.lastTaggedById = undefined;
+      player.currentKillStreak = 0;
     });
 
+    gameState.killFeed = undefined;
+    gameState.streakAnnouncement = undefined;
     return results;
   }
 

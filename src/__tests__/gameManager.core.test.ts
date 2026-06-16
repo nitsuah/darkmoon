@@ -111,4 +111,105 @@ describe("GameManager core", () => {
     expect(manager.getGameState().isActive).toBe(false);
     expect(manager.getGameState().timeRemaining).toBe(0);
   });
+
+  it("laser-tag: a hit from the IT player transfers IT status (ranged tag)", () => {
+    vi.spyOn(Date, "now").mockReturnValue(0);
+    vi.spyOn(Math, "random").mockReturnValue(0); // p1 becomes IT
+
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "Player 1"));
+    manager.addPlayer(makePlayer("p2", "Player 2"));
+    manager.startTagGame(60);
+
+    expect(manager.getPlayers().get("p1")?.isIt).toBe(true);
+
+    // p1 (IT) fires laser and hits p2
+    vi.spyOn(Date, "now").mockReturnValue(5000);
+    const result = manager.hitPlayer("p1", "p2", 10, "laser");
+
+    expect(result).toBe(true);
+    expect(manager.getPlayers().get("p1")?.isIt).toBe(false);
+    expect(manager.getPlayers().get("p2")?.isIt).toBe(true);
+    expect(manager.getGameState().itPlayerId).toBe("p2");
+    // No health damage in tag mode
+    expect(manager.getPlayers().get("p2")?.health).toBeUndefined();
+  });
+
+  it("tag event is pushed to killFeed on a successful tag", () => {
+    vi.spyOn(Date, "now").mockReturnValue(0);
+    vi.spyOn(Math, "random").mockReturnValue(0); // p1 becomes IT
+
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "Player 1"));
+    manager.addPlayer(makePlayer("p2", "Player 2"));
+    manager.startTagGame(60);
+
+    vi.spyOn(Date, "now").mockReturnValue(5000);
+    manager.tagPlayer("p1", "p2");
+
+    const feed = manager.getGameState().killFeed ?? [];
+    expect(feed).toHaveLength(1);
+    expect(feed[0].killerId).toBe("p1");
+    expect(feed[0].targetId).toBe("p2");
+    expect(feed[0].weaponId).toBe("tag");
+  });
+
+  it("laser-tag: a hit from a non-IT player does nothing in tag mode", () => {
+    vi.spyOn(Date, "now").mockReturnValue(0);
+    vi.spyOn(Math, "random").mockReturnValue(0); // p1 becomes IT
+
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "Player 1"));
+    manager.addPlayer(makePlayer("p2", "Player 2"));
+    manager.startTagGame(60);
+
+    // p2 (not IT) fires at p1 — should not transfer IT
+    const result = manager.hitPlayer("p2", "p1", 10, "laser");
+
+    expect(result).toBe(false);
+    expect(manager.getPlayers().get("p1")?.isIt).toBe(true);
+    expect(manager.getPlayers().get("p2")?.isIt).toBe(false);
+  });
+
+  it("tag streak: 3 cumulative tags by the same player trigger a streak announcement", () => {
+    // p1 starts IT. Each time p1 escapes IT (tags someone), tally increments.
+    // Getting re-tagged doesn't reset the tally, so milestone=3 is reachable.
+    vi.spyOn(Math, "random").mockReturnValue(0); // p1 starts IT
+    vi.spyOn(Date, "now").mockReturnValue(0);
+
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "Player 1"));
+    manager.addPlayer(makePlayer("p2", "Player 2"));
+    manager.addPlayer(makePlayer("p3", "Player 3"));
+    manager.startTagGame(120);
+
+    expect(manager.getPlayers().get("p1")?.isIt).toBe(true);
+
+    // p1 tags p2 (tally=1), p2 tags p3, p3 tags p1 (p1 is IT again, tally unchanged)
+    vi.spyOn(Date, "now").mockReturnValue(5000);
+    manager.tagPlayer("p1", "p2"); // p1 tally=1
+
+    vi.spyOn(Date, "now").mockReturnValue(8000);
+    manager.tagPlayer("p2", "p3");
+
+    vi.spyOn(Date, "now").mockReturnValue(11000);
+    manager.tagPlayer("p3", "p1"); // p1 is IT again, tally stays 1
+
+    vi.spyOn(Date, "now").mockReturnValue(14000);
+    manager.tagPlayer("p1", "p2"); // p1 tally=2
+
+    vi.spyOn(Date, "now").mockReturnValue(17000);
+    manager.tagPlayer("p2", "p3");
+
+    vi.spyOn(Date, "now").mockReturnValue(20000);
+    manager.tagPlayer("p3", "p1"); // p1 is IT again, tally stays 2
+
+    vi.spyOn(Date, "now").mockReturnValue(23000);
+    manager.tagPlayer("p1", "p2"); // p1 tally=3 → streakAnnouncement fires
+
+    const ann = manager.getGameState().streakAnnouncement;
+    expect(ann).toBeDefined();
+    expect(ann?.killerName).toBe("Player 1");
+    expect(ann?.count).toBe(3);
+  });
 });

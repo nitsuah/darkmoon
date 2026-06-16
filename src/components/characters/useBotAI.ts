@@ -109,6 +109,17 @@ export function useBotAI({
   const sprintEndTime = useRef(0);
   const nextSprintTime = useRef(0);
 
+  // Teleport bot back to spawn when it respawns after being downed.
+  const prevIsDownedRef = useRef(isDowned);
+  useEffect(() => {
+    if (prevIsDownedRef.current && !isDowned && meshRef.current) {
+      meshRef.current.position.set(...config.initialPosition);
+      lastPosition.current.set(...config.initialPosition);
+      lastReportedPosition.current.set(...config.initialPosition);
+    }
+    prevIsDownedRef.current = isDowned;
+  }, [isDowned, config.initialPosition, meshRef]);
+
   // Handle being tagged by target
   useEffect(() => {
     if (

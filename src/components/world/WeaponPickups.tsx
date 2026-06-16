@@ -41,6 +41,12 @@ export const PICKUP_DEFS: PickupDef[] = [
     weaponId: "rocket",
     color: "#ff1100",
   },
+  {
+    id: "pickup-grenade",
+    position: [0, 0.8, 14],
+    weaponId: "grenade",
+    color: "#44ff00",
+  },
 ];
 
 type PickupState = {
@@ -67,7 +73,9 @@ const WeaponPickups: React.FC<WeaponPickupsProps> = ({
   useFrame((_, delta) => {
     const isActive =
       gameState.isActive &&
-      (gameState.mode === "deathmatch" || gameState.mode === "ctf");
+      (gameState.mode === "deathmatch" ||
+        gameState.mode === "ctf" ||
+        gameState.mode === "tag");
 
     if (!isActive) {
       groupRefs.current.forEach((g) => {

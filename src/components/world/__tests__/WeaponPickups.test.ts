@@ -14,6 +14,7 @@ describe("WeaponPickups pickup definitions", () => {
     expect(weaponIds.has("laser")).toBe(true);
     expect(weaponIds.has("shotgun")).toBe(true);
     expect(weaponIds.has("rocket")).toBe(true);
+    expect(weaponIds.has("grenade")).toBe(true);
   });
 
   it("pickup positions have non-negative Y (above ground)", () => {

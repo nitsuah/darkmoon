@@ -52,11 +52,14 @@ describe("Bots", () => {
       isPaused: false,
       handleBot1PositionUpdate: vi.fn(),
       handleBot2PositionUpdate: vi.fn(),
+      handleBot3PositionUpdate: vi.fn(),
       collisionSystemRef: { current: null },
       bot1GotTagged: 0,
       bot2GotTagged: 0,
+      bot3GotTagged: 0,
       BOT1_CONFIG: { label: "Bot1" },
       BOT2_CONFIG: { label: "Bot2" },
+      BOT3_CONFIG: { label: "Bot3" },
       gameManager: {
         getPlayers: () => players,
         tagPlayer,
@@ -76,12 +79,13 @@ describe("Bots", () => {
     };
   }
 
-  it("renders one bot in normal mode and tags current player", () => {
+  it("renders two bots in tag mode and bot-1 tags current player", () => {
     const dispatchSpy = vi.spyOn(window, "dispatchEvent");
     const props = buildProps();
 
     render(<Bots {...props} />);
-    expect(screen.getAllByRole("button")).toHaveLength(1);
+    // tag mode now shows bot-1 + bot-2
+    expect(screen.getAllByRole("button")).toHaveLength(2);
 
     fireEvent.click(screen.getByTestId("bot-1"));
 
@@ -146,6 +150,32 @@ describe("Bots", () => {
     expect(setBot2GotTagged).toHaveBeenCalledWith(1234);
 
     nowSpy.mockRestore();
+  });
+
+  it("bot-2 tags player in non-debug tag mode when IT", () => {
+    const dispatchSpy = vi.spyOn(window, "dispatchEvent");
+    const players = new Map<string, { isIt: boolean }>([
+      ["bot-1", { isIt: false }],
+      ["bot-2", { isIt: true }],
+      ["player-1", { isIt: false }],
+    ]);
+    const tagPlayer = vi.fn(() => true);
+    const props = buildProps({
+      gameManager: {
+        getPlayers: () => players,
+        tagPlayer,
+      } as unknown as React.ComponentProps<typeof Bots>["gameManager"],
+    });
+
+    render(<Bots {...props} />);
+    // tag mode shows bot-1 and bot-2
+    expect(screen.getAllByRole("button")).toHaveLength(2);
+
+    // Click bot-2's onTagTarget
+    fireEvent.click(screen.getByTestId("bot-2"));
+
+    expect(tagPlayer).toHaveBeenCalledWith("bot-2", "player-1");
+    expect(dispatchSpy).toHaveBeenCalled();
   });
 
   it("blocks an immediate IT ping-pong when bot-2 tries to tag bot-1 right back", () => {

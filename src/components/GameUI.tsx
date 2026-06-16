@@ -1,6 +1,8 @@
 import * as React from "react";
 import { GameState, KillEvent, Player } from "./GameManager";
 import { WEAPONS } from "./combat/WeaponManager";
+import { STREAK_LABELS } from "./gameModes/DeathmatchMode";
+import { TAG_STREAK_LABELS } from "./gameModes/TagMode";
 
 interface GameUIProps {
   gameState: GameState;
@@ -57,6 +59,24 @@ const GameUI: React.FC<GameUIProps> = ({
   // spawnProtectedUntil is cleared by onTick within ~1s of expiry — presence is enough.
   const isSpawnProtected = currentPlayer?.spawnProtectedUntil !== undefined;
 
+  // Streak announcement: show briefly then fade; onTick clears the field after 3s.
+  const streakAnnouncement = gameState.streakAnnouncement;
+  const [visibleStreak, setVisibleStreak] = React.useState<{
+    killerName: string;
+    count: number;
+  } | null>(null);
+
+  React.useEffect(() => {
+    if (streakAnnouncement === undefined) {
+      setVisibleStreak(null);
+      return;
+    }
+    setVisibleStreak({
+      killerName: streakAnnouncement.killerName,
+      count: streakAnnouncement.count,
+    });
+  }, [streakAnnouncement]);
+
   // Respawn countdown: restart the interval whenever the player's respawnAt stamp changes.
   const respawnAt = currentPlayer?.respawnAt;
   const [respawnSecondsLeft, setRespawnSecondsLeft] = React.useState<
@@ -75,10 +95,113 @@ const GameUI: React.FC<GameUIProps> = ({
     return () => clearInterval(id);
   }, [respawnAt]);
 
+  // Damage flash: red vignette when player health drops
+  const prevHealthRef = React.useRef<number | null>(null);
+  const [damageFlash, setDamageFlash] = React.useState(false);
+  React.useEffect(() => {
+    const health = currentPlayer?.health ?? null;
+    if (
+      prevHealthRef.current !== null &&
+      health !== null &&
+      health < prevHealthRef.current
+    ) {
+      setDamageFlash(true);
+      const t = setTimeout(() => setDamageFlash(false), 500);
+      prevHealthRef.current = health;
+      return () => clearTimeout(t);
+    }
+    prevHealthRef.current = health;
+    return undefined;
+  }, [currentPlayer?.health]);
+
+  // Hit marker: crosshair flashes red when player's shot connects
+  const [hitMarker, setHitMarker] = React.useState(false);
+  React.useEffect(() => {
+    const handle = () => {
+      setHitMarker(true);
+      setTimeout(() => setHitMarker(false), 300);
+    };
+    window.addEventListener("player-hit-landed", handle);
+    return () => window.removeEventListener("player-hit-landed", handle);
+  }, []);
+
+  // Kill announcement: "YOU KILLED [name]" banner for 2s on personal kills
+  const lastKillKeyRef = React.useRef<string | null>(null);
+  const [killAnnouncement, setKillAnnouncement] = React.useState<string | null>(
+    null,
+  );
+  React.useEffect(() => {
+    const feed = gameState.killFeed ?? [];
+    if (feed.length === 0) return;
+    const latest = feed[feed.length - 1];
+    const key = `${latest.killerId}-${latest.timestamp}`;
+    if (key === lastKillKeyRef.current) return undefined;
+    lastKillKeyRef.current = key;
+    if (latest.killerId !== currentPlayerId) return undefined;
+    const weaponLabel = WEAPONS[latest.weaponId]?.name ?? latest.weaponId;
+    setKillAnnouncement(`${latest.targetName} [${weaponLabel}]`);
+    const t = setTimeout(() => setKillAnnouncement(null), 2000);
+    return () => clearTimeout(t);
+  }, [gameState.killFeed, currentPlayerId]);
+
   // Main game status display (always visible during active game)
   if (gameState.isActive) {
     return (
       <>
+        <style>{`
+          @keyframes darkmoon-damage-flash {
+            from { opacity: 1; }
+            to { opacity: 0; }
+          }
+        `}</style>
+        {damageFlash && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              pointerEvents: "none",
+              background:
+                "radial-gradient(ellipse at center, transparent 25%, rgba(200,0,0,0.7) 100%)",
+              animation: "darkmoon-damage-flash 0.5s ease-out forwards",
+              zIndex: 998,
+            }}
+          />
+        )}
+        {killAnnouncement && (
+          <div
+            style={{
+              position: "fixed",
+              top: "28%",
+              left: "50%",
+              transform: "translateX(-50%)",
+              pointerEvents: "none",
+              zIndex: 1002,
+              textAlign: "center",
+              fontFamily: "monospace",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "11px",
+                color: "#ffdd00",
+                letterSpacing: "2px",
+                marginBottom: "2px",
+              }}
+            >
+              YOU KILLED
+            </div>
+            <div
+              style={{
+                fontSize: "22px",
+                fontWeight: "bold",
+                color: "#fff",
+                textShadow: "0 0 12px #ff8800, 0 0 4px #ffcc00",
+              }}
+            >
+              {killAnnouncement}
+            </div>
+          </div>
+        )}
         <div
           style={{
             position: "fixed",
@@ -155,7 +278,7 @@ const GameUI: React.FC<GameUIProps> = ({
                     marginBottom: "4px",
                   }}
                 >
-                  Tag someone!
+                  Click to fire laser tag!
                 </div>
               )}
             </>
@@ -379,18 +502,30 @@ const GameUI: React.FC<GameUIProps> = ({
                   color: "#ffdd88",
                 }}
               >
-                💀 {k.killerName}{" "}
-                <span style={{ color: "#aaaaaa" }}>
-                  [{WEAPONS[k.weaponId]?.name ?? k.weaponId}]
-                </span>{" "}
-                → {k.targetName}
+                {k.weaponId === "tag" ? (
+                  <>
+                    🏃 {k.killerName}{" "}
+                    <span style={{ color: "#aaaaaa" }}>tagged</span>{" "}
+                    {k.targetName}
+                  </>
+                ) : (
+                  <>
+                    💀 {k.killerName}{" "}
+                    <span style={{ color: "#aaaaaa" }}>
+                      [{WEAPONS[k.weaponId]?.name ?? k.weaponId}]
+                    </span>{" "}
+                    → {k.targetName}
+                  </>
+                )}
               </div>
             ))}
           </div>
         )}
 
-        {/* Crosshair — combat modes only, hidden while downed */}
-        {(gameState.mode === "deathmatch" || gameState.mode === "ctf") &&
+        {/* Crosshair — combat and tag modes, hidden while downed */}
+        {(gameState.mode === "deathmatch" ||
+          gameState.mode === "ctf" ||
+          gameState.mode === "tag") &&
           respawnSecondsLeft === null &&
           !isMinimal && (
             <div
@@ -413,7 +548,10 @@ const GameUI: React.FC<GameUIProps> = ({
                   left: 0,
                   right: 0,
                   height: "2px",
-                  backgroundColor: "rgba(255,255,255,0.85)",
+                  backgroundColor: hitMarker
+                    ? "rgba(255,60,60,1)"
+                    : "rgba(255,255,255,0.85)",
+                  transition: "background-color 0.05s",
                 }}
               />
               {/* Vertical bar */}
@@ -424,14 +562,19 @@ const GameUI: React.FC<GameUIProps> = ({
                   top: 0,
                   bottom: 0,
                   width: "2px",
-                  backgroundColor: "rgba(255,255,255,0.85)",
+                  backgroundColor: hitMarker
+                    ? "rgba(255,60,60,1)"
+                    : "rgba(255,255,255,0.85)",
+                  transition: "background-color 0.05s",
                 }}
               />
             </div>
           )}
 
-        {/* Bottom-center ammo + health bar — combat modes only */}
-        {(gameState.mode === "deathmatch" || gameState.mode === "ctf") &&
+        {/* Bottom-center ammo + health bar — combat and tag modes */}
+        {(gameState.mode === "deathmatch" ||
+          gameState.mode === "ctf" ||
+          gameState.mode === "tag") &&
           !isMinimal &&
           currentPlayer &&
           respawnSecondsLeft === null && (
@@ -454,15 +597,19 @@ const GameUI: React.FC<GameUIProps> = ({
                 padding: "4px 12px",
               }}
             >
-              {/* Health */}
-              <span style={{ color: "#ff6666" }}>
-                ❤️ {currentPlayer.health ?? currentPlayer.maxHealth ?? 100}
-                <span style={{ color: "#666", marginLeft: "2px" }}>
-                  /{currentPlayer.maxHealth ?? 100}
-                </span>
-              </span>
-              {/* Divider */}
-              <span style={{ color: "#444" }}>|</span>
+              {/* Health — combat modes only (no health in tag mode) */}
+              {gameState.mode !== "tag" && (
+                <>
+                  <span style={{ color: "#ff6666" }}>
+                    ❤️ {currentPlayer.health ?? currentPlayer.maxHealth ?? 100}
+                    <span style={{ color: "#666", marginLeft: "2px" }}>
+                      /{currentPlayer.maxHealth ?? 100}
+                    </span>
+                  </span>
+                  {/* Divider */}
+                  <span style={{ color: "#444" }}>|</span>
+                </>
+              )}
               {/* Weapon name + ammo pips */}
               {currentPlayer.equippedWeaponId &&
                 (() => {
@@ -569,7 +716,175 @@ const GameUI: React.FC<GameUIProps> = ({
               PROTECTED
             </div>
           )}
+
+        {visibleStreak !== null &&
+          (gameState.mode === "deathmatch" ||
+            gameState.mode === "ctf" ||
+            gameState.mode === "tag") && (
+            <div
+              style={{
+                position: "fixed",
+                top: "30%",
+                left: "50%",
+                transform: "translateX(-50%)",
+                pointerEvents: "none",
+                zIndex: 995,
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: isMinimal ? "14px" : "26px",
+                  fontWeight: "bold",
+                  color: gameState.mode === "tag" ? "#00ffff" : "#ffcc00",
+                  textShadow:
+                    gameState.mode === "tag"
+                      ? "0 0 18px #0088ff, 0 0 6px #00ffff"
+                      : "0 0 18px #ff8800, 0 0 6px #ffcc00",
+                  letterSpacing: "3px",
+                }}
+              >
+                {gameState.mode === "tag"
+                  ? (TAG_STREAK_LABELS[visibleStreak.count] ??
+                    `${visibleStreak.count}x CHAIN`)
+                  : (STREAK_LABELS[visibleStreak.count] ??
+                    `${visibleStreak.count}x STREAK`)}
+              </div>
+              <div
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: isMinimal ? "10px" : "14px",
+                  color: "#ffeeaa",
+                  marginTop: "4px",
+                }}
+              >
+                {visibleStreak.killerName}
+              </div>
+            </div>
+          )}
       </>
+    );
+  }
+
+  // Results screen — shown after an active game ends until the player starts a new one.
+  if (
+    !gameState.isActive &&
+    gameState.gameResults &&
+    gameState.gameResults.length > 0
+  ) {
+    const winner = gameState.gameResults[0];
+    const isWinner = winner.id === currentPlayerId;
+    const scoreLabel =
+      gameState.mode === "ctf"
+        ? "caps"
+        : gameState.mode === "tag"
+          ? "pts"
+          : "kills";
+    return (
+      <div
+        style={{
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          backgroundColor: "rgba(0,0,0,0.92)",
+          border: "2px solid rgba(255,255,255,0.3)",
+          borderRadius: "10px",
+          color: "white",
+          fontFamily: "monospace",
+          fontSize: isMinimal ? "10px" : "13px",
+          zIndex: 1001,
+          minWidth: isMinimal ? "160px" : "240px",
+          textAlign: "center",
+          padding: isMinimal ? "10px 12px" : "20px 28px",
+        }}
+      >
+        <div
+          style={{
+            fontSize: isMinimal ? "18px" : "28px",
+            fontWeight: "bold",
+            color: isWinner ? "#ffdd44" : "#ff6666",
+            textShadow: isWinner ? "0 0 14px #ffaa00" : "0 0 10px #ff4444",
+            marginBottom: "10px",
+            letterSpacing: "2px",
+          }}
+        >
+          {isWinner ? "VICTORY!" : "DEFEATED"}
+        </div>
+
+        <div
+          style={{
+            marginBottom: "12px",
+            fontSize: isMinimal ? "10px" : "12px",
+            color: "#aaa",
+          }}
+        >
+          {gameState.mode.toUpperCase()} — FINAL SCORES
+        </div>
+
+        <div style={{ marginBottom: "14px" }}>
+          {gameState.gameResults.map((r, i) => (
+            <div
+              key={r.id}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: "16px",
+                padding: "3px 0",
+                color:
+                  r.id === currentPlayerId
+                    ? "#ffdd44"
+                    : i === 0
+                      ? "#ffffff"
+                      : "#aaaaaa",
+                fontWeight: r.id === currentPlayerId ? "bold" : "normal",
+              }}
+            >
+              <span>
+                {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "🏅"}{" "}
+                {r.name}
+              </span>
+              <span>
+                {r.score} {scoreLabel}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={() => onStartGame(gameState.mode)}
+          style={{
+            padding: isMinimal ? "4px 8px" : "6px 14px",
+            backgroundColor: "rgba(74, 144, 226, 0.85)",
+            border: "1px solid #4a90e2",
+            borderRadius: "4px",
+            color: "white",
+            cursor: "pointer",
+            fontSize: isMinimal ? "10px" : "12px",
+            width: "100%",
+            marginBottom: "6px",
+          }}
+        >
+          Play Again
+        </button>
+
+        <button
+          onClick={onEndGame}
+          style={{
+            padding: isMinimal ? "3px 6px" : "4px 10px",
+            backgroundColor: "rgba(100,100,100,0.7)",
+            border: "1px solid #666",
+            borderRadius: "4px",
+            color: "#ccc",
+            cursor: "pointer",
+            fontSize: isMinimal ? "9px" : "10px",
+            width: "100%",
+          }}
+        >
+          Main Menu
+        </button>
+      </div>
     );
   }
 

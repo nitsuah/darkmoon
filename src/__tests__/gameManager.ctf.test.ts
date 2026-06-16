@@ -243,16 +243,12 @@ describe("GameManager CTF", () => {
     expect(manager.hitPlayer("p1", "p2", 10)).toBe(false);
   });
 
-  it("rejects hits outside an active CTF game", () => {
+  it("rejects hits when no game is active", () => {
     const manager = new GameManager();
     manager.addPlayer(makePlayer("p1", "P1"));
     manager.addPlayer(makePlayer("p2", "P2"));
 
-    // Not started yet
-    expect(manager.hitPlayer("p1", "p2", 10)).toBe(false);
-
-    // Started in tag mode instead
-    manager.startTagGame();
+    // Not started yet (mode = "none", isActive = false)
     expect(manager.hitPlayer("p1", "p2", 10)).toBe(false);
   });
 
@@ -271,5 +267,77 @@ describe("GameManager CTF", () => {
       { id: "p1", name: "P1", score: 1 },
       { id: "p2", name: "P2", score: 0 },
     ]);
+  });
+
+  it("a 3-kill streak in CTF triggers a streakAnnouncement", () => {
+    const manager = new GameManager();
+    // 4 players so p1 has multiple targets
+    manager.addPlayer(makePlayer("p1", "P1"));
+    manager.addPlayer(makePlayer("p2", "P2"));
+    manager.addPlayer(makePlayer("p3", "P3"));
+    manager.addPlayer(makePlayer("p4", "P4"));
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startCTFGame();
+
+    expect(manager.getGameState().streakAnnouncement).toBeUndefined();
+
+    manager.hitPlayer("p1", "p2", 1000);
+    expect(manager.getGameState().streakAnnouncement).toBeUndefined(); // 1 kill
+
+    vi.spyOn(Date, "now").mockReturnValue(13001); // p2 respawns
+    manager.updateGameTimer(0.1);
+    vi.spyOn(Date, "now").mockReturnValue(15001); // p2 spawn protection expires
+    manager.updateGameTimer(0.1);
+
+    manager.hitPlayer("p1", "p3", 1000);
+    expect(manager.getGameState().streakAnnouncement).toBeUndefined(); // 2 kills
+
+    vi.spyOn(Date, "now").mockReturnValue(20000);
+    manager.hitPlayer("p1", "p4", 1000);
+    expect(manager.getGameState().streakAnnouncement).toEqual({
+      killerName: "P1",
+      count: 3,
+      timestamp: 20000,
+    });
+  });
+
+  it("kill streak resets on death in CTF", () => {
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "P1"));
+    manager.addPlayer(makePlayer("p2", "P2"));
+    manager.startCTFGame();
+
+    manager.hitPlayer("p1", "p2", 1000); // p1 streak = 1
+    expect(manager.getPlayers().get("p1")?.currentKillStreak).toBe(1);
+
+    vi.spyOn(Date, "now").mockReturnValue(13001);
+    manager.updateGameTimer(0.1); // p2 respawns
+    vi.spyOn(Date, "now").mockReturnValue(15001);
+    manager.updateGameTimer(0.1); // spawn protection expires
+
+    manager.hitPlayer("p2", "p1", 1000); // p2 kills p1 — p1 streak resets
+    expect(manager.getPlayers().get("p1")?.currentKillStreak).toBe(0);
+    expect(manager.getPlayers().get("p2")?.currentKillStreak).toBe(1);
+  });
+
+  it("rocket splash in CTF damages bystanders within radius and awards kill credit to attacker", () => {
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "P1", [0, 0, 0])); // attacker
+    manager.addPlayer(makePlayer("p2", "P2", [3, 0, 0])); // direct target
+    manager.addPlayer(makePlayer("p3", "P3", [5, 0, 0])); // bystander 2u from target → within splashRadius 5
+    manager.addPlayer(makePlayer("p4", "P4", [20, 0, 0])); // far bystander → outside splash
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startCTFGame();
+
+    // rocket: 100 dmg direct, splashRadius 5, splashDamage 50
+    manager.hitPlayer("p1", "p2", 100, "rocket");
+
+    const players = manager.getPlayers();
+    expect(players.get("p2")?.health).toBe(0); // direct kill
+    expect(players.get("p3")?.health).toBe(50); // splash hit (100 - 50)
+    expect(players.get("p4")?.health).toBe(100); // out of range
+    expect(players.get("p1")?.currentKillStreak).toBe(1); // kill credited
   });
 });

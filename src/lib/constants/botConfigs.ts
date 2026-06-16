@@ -43,6 +43,24 @@ export const BOT2_CONFIG: BotConfig = {
 };
 
 /**
+ * Bot 3 Configuration - Grenadier bot (combat modes only)
+ * Slower but uses the Frag Grenade for area denial
+ */
+export const BOT3_CONFIG: BotConfig = {
+  botSpeed: 2.5,
+  sprintSpeed: 3.5,
+  fleeSpeed: 1.0,
+  tagCooldown: 500,
+  tagDistance: 1.0,
+  pauseAfterTag: 3000,
+  sprintDuration: 3000,
+  sprintCooldown: 2000,
+  chaseRadius: 15,
+  initialPosition: [-8, 0.5, 8],
+  label: "Bot3",
+};
+
+/**
  * All bot configurations for easy iteration
  */
-export const BOT_CONFIGS = [BOT1_CONFIG, BOT2_CONFIG] as const;
+export const BOT_CONFIGS = [BOT1_CONFIG, BOT2_CONFIG, BOT3_CONFIG] as const;

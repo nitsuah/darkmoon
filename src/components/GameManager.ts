@@ -1,5 +1,9 @@
 import { createLogger } from "../lib/utils/logger";
-import type { CTFFlag, GameModeHandler } from "./gameModes/GameModeHandler";
+import type {
+  CTFFlag,
+  GameModeHandler,
+  GameResult,
+} from "./gameModes/GameModeHandler";
 
 export interface KillEvent {
   killerId: string;
@@ -37,6 +41,10 @@ export interface GameState {
   flags?: CTFFlag[];
   /** Scrolling kill feed (last 10 kills). */
   killFeed?: KillEvent[];
+  /** Transient streak announcement, cleared by onTick after display window. */
+  streakAnnouncement?: { killerName: string; count: number; timestamp: number };
+  /** Sorted results from the most recently ended game, cleared on next start. */
+  gameResults?: GameResult[];
 }
 
 export interface TagGameState extends GameState {
@@ -69,6 +77,8 @@ export interface Player {
   currentAmmo?: number | null;
   /** Timestamp (ms) until which this player is invincible after respawning. */
   spawnProtectedUntil?: number;
+  /** Consecutive kills without dying (resets on death). */
+  currentKillStreak?: number;
 }
 
 export class GameManager {
@@ -232,7 +242,9 @@ export class GameManager {
     weaponId?: string,
   ): boolean {
     if (
-      (this.gameState.mode !== "deathmatch" && this.gameState.mode !== "ctf") ||
+      (this.gameState.mode !== "deathmatch" &&
+        this.gameState.mode !== "ctf" &&
+        this.gameState.mode !== "tag") ||
       !this.gameState.isActive
     ) {
       return false;
@@ -325,6 +337,7 @@ export class GameManager {
     this.gameState.timeRemaining = 0;
 
     const results = this.mode.onEnd(this.players, this.gameState);
+    this.gameState.gameResults = results;
 
     log.debug("Game ended! Final scores:", results);
 

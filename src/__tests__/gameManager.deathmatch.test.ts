@@ -90,16 +90,12 @@ describe("GameManager deathmatch", () => {
     expect(manager.hitPlayer("p1", "p1", 10)).toBe(false);
   });
 
-  it("rejects hits outside an active deathmatch", () => {
+  it("rejects hits when no game is active", () => {
     const manager = new GameManager();
     manager.addPlayer(makePlayer("p1", "P1"));
     manager.addPlayer(makePlayer("p2", "P2"));
 
-    // Not started yet
-    expect(manager.hitPlayer("p1", "p2", 10)).toBe(false);
-
-    // Started in tag mode instead
-    manager.startTagGame();
+    // Not started yet (mode = "none", isActive = false)
     expect(manager.hitPlayer("p1", "p2", 10)).toBe(false);
   });
 
@@ -198,6 +194,168 @@ describe("GameManager deathmatch", () => {
     for (const player of manager.getPlayers().values()) {
       expect(player.spawnProtectedUntil).toBeUndefined();
     }
+  });
+
+  it("tracks kill streak and announces on threshold kills", () => {
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "P1"));
+    manager.addPlayer(makePlayer("p2", "P2"));
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startDeathmatchGame();
+
+    const p1 = manager.getPlayers().get("p1")!;
+
+    // 2 kills — no threshold yet
+    manager.hitPlayer("p1", "p2", 1000);
+    expect(p1.currentKillStreak).toBe(1);
+    expect(manager.getGameState().streakAnnouncement).toBeUndefined();
+
+    // Respawn p2
+    manager.getPlayers().get("p2")!.respawnAt = undefined;
+    manager.getPlayers().get("p2")!.health = 100;
+    manager.hitPlayer("p1", "p2", 1000);
+    expect(p1.currentKillStreak).toBe(2);
+
+    // Third kill hits the threshold → announcement
+    manager.getPlayers().get("p2")!.respawnAt = undefined;
+    manager.getPlayers().get("p2")!.health = 100;
+    manager.hitPlayer("p1", "p2", 1000);
+    expect(p1.currentKillStreak).toBe(3);
+
+    const ann = manager.getGameState().streakAnnouncement;
+    expect(ann).toBeDefined();
+    expect(ann!.killerName).toBe("P1");
+    expect(ann!.count).toBe(3);
+  });
+
+  it("resets kill streak to 0 when a player dies", () => {
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "P1"));
+    manager.addPlayer(makePlayer("p2", "P2"));
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startDeathmatchGame();
+
+    const p1 = manager.getPlayers().get("p1")!;
+    const p2 = manager.getPlayers().get("p2")!;
+
+    // p1 gets 2 kills
+    manager.hitPlayer("p1", "p2", 1000);
+    p2.respawnAt = undefined;
+    p2.health = 100;
+    manager.hitPlayer("p1", "p2", 1000);
+    expect(p1.currentKillStreak).toBe(2);
+
+    // p2 kills p1 — streak resets
+    p2.respawnAt = undefined;
+    p2.health = 100;
+    manager.hitPlayer("p2", "p1", 1000);
+    expect(p1.currentKillStreak).toBe(0);
+  });
+
+  it("streak announcement is cleared by onTick after the display window", () => {
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "P1"));
+    manager.addPlayer(makePlayer("p2", "P2"));
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startDeathmatchGame();
+
+    // Force a 3-kill streak
+    for (let i = 0; i < 3; i++) {
+      manager.getPlayers().get("p2")!.respawnAt = undefined;
+      manager.getPlayers().get("p2")!.health = 100;
+      manager.hitPlayer("p1", "p2", 1000);
+    }
+    expect(manager.getGameState().streakAnnouncement).toBeDefined();
+
+    // Advance past the 3-second display window
+    vi.spyOn(Date, "now").mockReturnValue(13100);
+    manager.updateGameTimer(0.1);
+    expect(manager.getGameState().streakAnnouncement).toBeUndefined();
+  });
+
+  it("rocket splash damages bystanders within splashRadius of the target", () => {
+    const manager = new GameManager();
+    // p3 stands near the target (p2); p1 fires a rocket at p2
+    const p3: Player = { ...makePlayer("p3", "P3"), position: [0.5, 0, 0] };
+    manager.addPlayer(makePlayer("p1", "P1"));
+    manager.addPlayer({ ...makePlayer("p2", "P2"), position: [0, 0, 0] });
+    manager.addPlayer(p3);
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startDeathmatchGame();
+
+    // Rocket does 100 direct + 50 splash; p3 should lose 50 HP
+    expect(manager.hitPlayer("p1", "p2", 100, "rocket")).toBe(true);
+
+    const p3After = manager.getPlayers().get("p3")!;
+    expect(p3After.health).toBe(50); // 100 - 50 splash
+  });
+
+  it("rocket splash does not damage the attacker", () => {
+    const manager = new GameManager();
+    // p1 stands very close to p2 (point-blank rocket)
+    manager.addPlayer({ ...makePlayer("p1", "P1"), position: [0.1, 0, 0] });
+    manager.addPlayer({ ...makePlayer("p2", "P2"), position: [0, 0, 0] });
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startDeathmatchGame();
+
+    manager.hitPlayer("p1", "p2", 100, "rocket");
+
+    // Attacker should not take splash damage
+    expect(manager.getPlayers().get("p1")!.health).toBe(100);
+  });
+
+  it("rocket splash awards kill and updates streak if bystander is lethal-hit by splash", () => {
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "P1"));
+    manager.addPlayer({ ...makePlayer("p2", "P2"), position: [0, 0, 0] });
+    // p3 is at 10HP and within splash radius
+    manager.addPlayer({ ...makePlayer("p3", "P3"), position: [0.5, 0, 0] });
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startDeathmatchGame();
+
+    // Manually set p3 health low so splash kills it
+    manager.getPlayers().get("p3")!.health = 40;
+    manager.getPlayers().get("p3")!.maxHealth = 100;
+
+    manager.hitPlayer("p1", "p2", 100, "rocket"); // p2 direct kill, p3 splash kill
+
+    const state = manager.getGameState();
+    expect(state.scores["p1"]).toBe(2); // 2 kills: direct + splash
+    const p1 = manager.getPlayers().get("p1")!;
+    expect(p1.currentKillStreak).toBe(2);
+  });
+
+  it("grenade splash (radius 7) damages all bystanders in range and awards kills", () => {
+    const makeP = (id: string, pos: [number, number, number]): Player => ({
+      id,
+      name: id,
+      position: pos,
+      rotation: [0, 0, 0],
+    });
+
+    const manager = new GameManager();
+    manager.addPlayer(makeP("p1", [0, 0, 0])); // attacker
+    manager.addPlayer(makeP("p2", [3, 0, 0])); // direct target
+    manager.addPlayer(makeP("p3", [5, 0, 0])); // 2u from p2 → within splashRadius 7
+    manager.addPlayer(makeP("p4", [20, 0, 0])); // far — out of range
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startDeathmatchGame(120, 10);
+
+    // grenade: 100 dmg direct, splashRadius 7, splashDamage 75
+    manager.hitPlayer("p1", "p2", 100, "grenade");
+
+    const players = manager.getPlayers();
+    expect(players.get("p2")?.health).toBe(0); // direct kill
+    expect(players.get("p3")?.health).toBe(25); // 100 - 75 splash
+    expect(players.get("p4")?.health).toBe(100); // out of range
+    expect(manager.getGameState().scores["p1"]).toBe(1); // direct kill credited
   });
 
   it("ends the game once a player reaches the kill limit, with results sorted by kills", () => {

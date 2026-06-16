@@ -5,7 +5,20 @@ import { Socket } from "socket.io-client";
 import * as THREE from "three";
 import type { Clients } from "../../types/socket";
 import GameManager, { GameState } from "../GameManager";
-import { W, A, S, D, Q, E, SHIFT, SPACE, KEY_1, KEY_2, KEY_3 } from "../utils";
+import {
+  W,
+  A,
+  S,
+  D,
+  Q,
+  E,
+  SHIFT,
+  SPACE,
+  KEY_1,
+  KEY_2,
+  KEY_3,
+  KEY_4,
+} from "../utils";
 import SpacemanModel from "../SpacemanModel";
 import { getSoundManager } from "../SoundManager";
 import { WeaponManager } from "../combat/WeaponManager";
@@ -157,6 +170,7 @@ export const PlayerCharacter = React.forwardRef<
   const prevKey1Ref = React.useRef(false);
   const prevKey2Ref = React.useRef(false);
   const prevKey3Ref = React.useRef(false);
+  const prevKey4Ref = React.useRef(false);
 
   // Equip the laser blaster by default and surface the equipped weapon to the HUD.
   React.useEffect(() => {
@@ -238,6 +252,20 @@ export const PlayerCharacter = React.forwardRef<
     return () =>
       window.removeEventListener("health-pickup", handleHealthPickup);
   }, [gameManager, currentPlayerId]);
+
+  // Teleport player back to spawn when respawn timer clears (deathmatch/CTF).
+  // Mirrors the equivalent logic in useBotAI for bots.
+  const mePlayer = gameManager?.getPlayers().get(currentPlayerId);
+  const respawnAt = mePlayer?.respawnAt;
+  const prevRespawnAtRef = React.useRef<number | undefined>(undefined);
+  React.useEffect(() => {
+    const wasDown = prevRespawnAtRef.current !== undefined;
+    const isUp = respawnAt === undefined;
+    if (wasDown && isUp && meshRef.current) {
+      meshRef.current.position.set(0, 0.5, 0);
+    }
+    prevRespawnAtRef.current = respawnAt;
+  }, [respawnAt, meshRef]);
 
   // gated debug logger - only logs in dev
   const debug = (...args: unknown[]) => {
@@ -426,10 +454,11 @@ export const PlayerCharacter = React.forwardRef<
       }
     }
 
-    // Weapon switching: rising-edge detection for 1 (laser), 2 (shotgun), 3 (rocket).
+    // Weapon switching: rising-edge detection for 1 (laser), 2 (shotgun), 3 (rocket), 4 (grenade).
     const key1 = keysPressedRef.current[KEY_1] ?? false;
     const key2 = keysPressedRef.current[KEY_2] ?? false;
     const key3 = keysPressedRef.current[KEY_3] ?? false;
+    const key4 = keysPressedRef.current[KEY_4] ?? false;
     const myId = socketClient?.id || currentPlayerId;
     if (key1 && !prevKey1Ref.current) {
       weaponManagerRef.current.equip("laser");
@@ -452,9 +481,17 @@ export const PlayerCharacter = React.forwardRef<
         currentAmmo: weaponManagerRef.current.getAmmo("rocket"),
       });
     }
+    if (key4 && !prevKey4Ref.current) {
+      weaponManagerRef.current.equip("grenade");
+      gameManager?.updatePlayer(myId, {
+        equippedWeaponId: "grenade",
+        currentAmmo: weaponManagerRef.current.getAmmo("grenade"),
+      });
+    }
     prevKey1Ref.current = key1;
     prevKey2Ref.current = key2;
     prevKey3Ref.current = key3;
+    prevKey4Ref.current = key4;
 
     // Fire the equipped weapon while left-click is held (rate-limited by
     // WeaponManager's per-shooter cooldown).
@@ -482,13 +519,19 @@ export const PlayerCharacter = React.forwardRef<
         const beamLength = fireResult.hit?.distance ?? fireResult.weapon.range;
         const wid = fireResult.weapon.id;
         const beamHalfWidth =
-          wid === "rocket" ? 0.2 : wid === "shotgun" ? 0.1 : 0.04;
+          wid === "rocket" || wid === "grenade"
+            ? 0.2
+            : wid === "shotgun"
+              ? 0.1
+              : 0.04;
         const beamColor =
           wid === "rocket"
             ? "#ff1100"
-            : wid === "shotgun"
-              ? "#ff7700"
-              : "#33ffe6";
+            : wid === "grenade"
+              ? "#44ff00"
+              : wid === "shotgun"
+                ? "#ff7700"
+                : "#33ffe6";
         laserBeamRef.current.visible = true;
         laserBeamRef.current.position
           .copy(fireOrigin)
@@ -509,6 +552,26 @@ export const PlayerCharacter = React.forwardRef<
         // Sync ammo to HUD after each shot.
         const remainingAmmo = weaponManagerRef.current.getAmmo(wid);
         gameManager?.updatePlayer(myId, { currentAmmo: remainingAmmo });
+      }
+      if (fireResult.hit && typeof window !== "undefined") {
+        // Notify HUD to flash hit marker.
+        window.dispatchEvent(new window.Event("player-hit-landed"));
+        // Trigger explosion VFX for splash weapons (rocket, grenade).
+        if (fireResult.weapon.splashRadius) {
+          const hitPos = fireOrigin
+            .clone()
+            .add(fireDirection.clone().multiplyScalar(fireResult.hit.distance));
+          window.dispatchEvent(
+            new window.CustomEvent("weapon-explosion", {
+              detail: {
+                x: hitPos.x,
+                y: hitPos.y,
+                z: hitPos.z,
+                radius: fireResult.weapon.splashRadius,
+              },
+            }),
+          );
+        }
       }
     }
 

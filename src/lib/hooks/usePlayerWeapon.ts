@@ -10,8 +10,6 @@ import type {
 } from "../../components/combat/WeaponManager";
 import { getSoundManager } from "../../components/SoundManager";
 
-const DEFAULT_MAX_HEALTH = 100;
-
 export interface FireParams {
   origin: THREE.Vector3;
   direction: THREE.Vector3;
@@ -70,50 +68,16 @@ export function processFiring(params: FireParams): FireResult | null {
     const gameState = gameManager.getGameState();
     let damageApplied = false;
 
-    if (
-      (gameState.mode === "deathmatch" || gameState.mode === "ctf") &&
-      gameState.isActive
-    ) {
-      // Deathmatch/CTF: the active mode applies damage and starts respawn
-      // timers (and, in CTF, drops any carried flag). Rejected hits (e.g. a
-      // downed target) deal no damage.
+    if (gameState.isActive) {
+      // Route all hits through the active game mode's onAction handler.
+      // DeathmatchMode/CTFMode apply health/respawn; TagMode treats a hit
+      // from the IT player as a ranged tag (no health damage).
       damageApplied = gameManager.hitPlayer(
         shooterId,
         hit.hitPlayerId,
         weapon.damage,
         weapon.id,
       );
-
-      // Area-of-effect splash for weapons with splashRadius (e.g. rocket).
-      if (weapon.splashRadius && weapon.splashDamage) {
-        const dir = direction.clone().normalize();
-        const impactPoint = origin
-          .clone()
-          .add(dir.multiplyScalar(hit.distance));
-        for (const [pid, player] of gameManager.getPlayers()) {
-          if (pid === hit.hitPlayerId || pid === shooterId) continue;
-          const pPos = new THREE.Vector3(...player.position);
-          if (pPos.distanceTo(impactPoint) <= weapon.splashRadius) {
-            gameManager.hitPlayer(
-              shooterId,
-              pid,
-              weapon.splashDamage,
-              weapon.id,
-            );
-          }
-        }
-      }
-    } else {
-      const target = gameManager.getPlayers().get(hit.hitPlayerId);
-      if (target) {
-        const maxHealth = target.maxHealth ?? DEFAULT_MAX_HEALTH;
-        const currentHealth = target.health ?? maxHealth;
-        gameManager.updatePlayer(hit.hitPlayerId, {
-          maxHealth,
-          health: Math.max(0, currentHealth - weapon.damage),
-        });
-        damageApplied = true;
-      }
     }
 
     if (damageApplied) {
