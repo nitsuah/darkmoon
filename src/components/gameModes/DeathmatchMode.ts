@@ -8,6 +8,15 @@ import type {
 
 const log = createLogger("DeathmatchMode");
 
+const STREAK_THRESHOLDS = [3, 5, 7, 10] as const;
+const STREAK_LABELS: Record<number, string> = {
+  3: "KILLING SPREE",
+  5: "RAMPAGE",
+  7: "UNSTOPPABLE",
+  10: "GODLIKE",
+};
+const STREAK_ANNOUNCE_MS = 3000;
+
 /**
  * Deathmatch rules: every player starts with full health and damages others
  * with weapon hits. A lethal hit awards the attacker a kill and puts the
@@ -24,6 +33,7 @@ export class DeathmatchMode implements GameModeHandler {
       player.maxHealth = player.maxHealth ?? this.DEFAULT_MAX_HEALTH;
       player.health = player.maxHealth;
       player.respawnAt = undefined;
+      player.currentKillStreak = 0;
     });
   }
 
@@ -49,6 +59,14 @@ export class DeathmatchMode implements GameModeHandler {
         player.spawnProtectedUntil = undefined;
       }
     });
+
+    // Expire streak announcement after display window
+    if (
+      gameState.streakAnnouncement !== undefined &&
+      now >= gameState.streakAnnouncement.timestamp + STREAK_ANNOUNCE_MS
+    ) {
+      gameState.streakAnnouncement = undefined;
+    }
   }
 
   onAction(
@@ -81,8 +99,21 @@ export class DeathmatchMode implements GameModeHandler {
       gameState.scores[attackerId] = (gameState.scores[attackerId] ?? 0) + 1;
       target.respawnAt = Date.now() + this.RESPAWN_DELAY_MS;
 
+      // Streak: increment attacker, reset target
+      attacker.currentKillStreak = (attacker.currentKillStreak ?? 0) + 1;
+      target.currentKillStreak = 0;
+
+      const streak = attacker.currentKillStreak;
+      if ((STREAK_THRESHOLDS as readonly number[]).includes(streak)) {
+        gameState.streakAnnouncement = {
+          killerName: attacker.name,
+          count: streak,
+          timestamp: Date.now(),
+        };
+      }
+
       log.debug(
-        `${attacker.name} eliminated ${target.name}! (${gameState.scores[attackerId]} kills)`,
+        `${attacker.name} eliminated ${target.name}! (${gameState.scores[attackerId]} kills, streak: ${attacker.currentKillStreak})`,
       );
 
       const killEvent: KillEvent = {
@@ -125,10 +156,15 @@ export class DeathmatchMode implements GameModeHandler {
       player.health = player.maxHealth;
       player.respawnAt = undefined;
       player.spawnProtectedUntil = undefined;
+      player.currentKillStreak = 0;
     });
+
+    gameState.streakAnnouncement = undefined;
 
     return results;
   }
 }
 
 export default DeathmatchMode;
+
+export { STREAK_LABELS };
