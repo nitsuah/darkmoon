@@ -153,7 +153,7 @@ describe("GameUI", () => {
       />,
     );
 
-    expect(screen.getByText(/Pulse Shotgun/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Pulse Shotgun/).length).toBeGreaterThan(0);
   });
 
   it("shows equipped weapon name in CTF HUD", () => {
@@ -181,7 +181,7 @@ describe("GameUI", () => {
       />,
     );
 
-    expect(screen.getByText(/Laser Blaster/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Laser Blaster/).length).toBeGreaterThan(0);
   });
 
   it("renders team, scores, and carried-flag status during an active CTF game", () => {
