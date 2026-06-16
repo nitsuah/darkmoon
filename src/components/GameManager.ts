@@ -1,5 +1,14 @@
 import { createLogger } from "../lib/utils/logger";
 import type { CTFFlag, GameModeHandler } from "./gameModes/GameModeHandler";
+
+export interface KillEvent {
+  killerId: string;
+  killerName: string;
+  targetId: string;
+  targetName: string;
+  weaponId: string;
+  timestamp: number;
+}
 import TagMode from "./gameModes/TagMode";
 import DeathmatchMode from "./gameModes/DeathmatchMode";
 import CTFMode from "./gameModes/CTFMode";
@@ -26,6 +35,8 @@ export interface GameState {
   killLimit?: number;
   /** Flag entities for capture-the-flag. */
   flags?: CTFFlag[];
+  /** Scrolling kill feed (last 10 kills). */
+  killFeed?: KillEvent[];
 }
 
 export interface TagGameState extends GameState {
@@ -212,7 +223,12 @@ export class GameManager {
     return true;
   }
 
-  hitPlayer(attackerId: string, targetId: string, damage: number): boolean {
+  hitPlayer(
+    attackerId: string,
+    targetId: string,
+    damage: number,
+    weaponId?: string,
+  ): boolean {
     if (
       (this.gameState.mode !== "deathmatch" && this.gameState.mode !== "ctf") ||
       !this.gameState.isActive
@@ -221,7 +237,7 @@ export class GameManager {
     }
 
     const accepted = this.mode.onAction(
-      { type: "hit", attackerId, targetId, damage },
+      { type: "hit", attackerId, targetId, damage, weaponId },
       this.players,
       this.gameState,
     );

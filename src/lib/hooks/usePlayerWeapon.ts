@@ -81,6 +81,7 @@ export function processFiring(params: FireParams): FireResult | null {
         shooterId,
         hit.hitPlayerId,
         weapon.damage,
+        weapon.id,
       );
 
       // Area-of-effect splash for weapons with splashRadius (e.g. rocket).
@@ -93,7 +94,12 @@ export function processFiring(params: FireParams): FireResult | null {
           if (pid === hit.hitPlayerId || pid === shooterId) continue;
           const pPos = new THREE.Vector3(...player.position);
           if (pPos.distanceTo(impactPoint) <= weapon.splashRadius) {
-            gameManager.hitPlayer(shooterId, pid, weapon.splashDamage);
+            gameManager.hitPlayer(
+              shooterId,
+              pid,
+              weapon.splashDamage,
+              weapon.id,
+            );
           }
         }
       }

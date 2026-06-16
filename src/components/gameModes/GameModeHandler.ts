@@ -29,6 +29,7 @@ export type GameAction =
       attackerId: string;
       targetId: string;
       damage: number;
+      weaponId?: string;
     }
   | {
       type: "pickupFlag";

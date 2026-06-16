@@ -1,5 +1,5 @@
 import { createLogger } from "../../lib/utils/logger";
-import type { GameState, Player } from "../GameManager";
+import type { GameState, KillEvent, Player } from "../GameManager";
 import type {
   GameAction,
   GameModeHandler,
@@ -96,11 +96,16 @@ export class CTFMode implements GameModeHandler {
   }
 
   private hit(
-    action: { attackerId: string; targetId: string; damage: number },
+    action: {
+      attackerId: string;
+      targetId: string;
+      damage: number;
+      weaponId?: string;
+    },
     players: Map<string, Player>,
     gameState: GameState,
   ): boolean {
-    const { attackerId, targetId, damage } = action;
+    const { attackerId, targetId, damage, weaponId } = action;
     if (attackerId === targetId) return false;
 
     const attacker = players.get(attackerId);
@@ -127,6 +132,18 @@ export class CTFMode implements GameModeHandler {
       });
 
       log.debug(`${attacker.name} downed ${target.name}!`);
+
+      const killEvent: KillEvent = {
+        killerId: attackerId,
+        killerName: attacker.name,
+        targetId,
+        targetName: target.name,
+        weaponId: weaponId ?? "unknown",
+        timestamp: Date.now(),
+      };
+      if (!gameState.killFeed) gameState.killFeed = [];
+      gameState.killFeed.push(killEvent);
+      if (gameState.killFeed.length > 10) gameState.killFeed.shift();
     }
 
     return true;
