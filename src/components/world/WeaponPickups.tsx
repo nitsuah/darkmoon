@@ -73,7 +73,9 @@ const WeaponPickups: React.FC<WeaponPickupsProps> = ({
   useFrame((_, delta) => {
     const isActive =
       gameState.isActive &&
-      (gameState.mode === "deathmatch" || gameState.mode === "ctf");
+      (gameState.mode === "deathmatch" ||
+        gameState.mode === "ctf" ||
+        gameState.mode === "tag");
 
     if (!isActive) {
       groupRefs.current.forEach((g) => {

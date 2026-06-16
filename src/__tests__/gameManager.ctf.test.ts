@@ -243,16 +243,12 @@ describe("GameManager CTF", () => {
     expect(manager.hitPlayer("p1", "p2", 10)).toBe(false);
   });
 
-  it("rejects hits outside an active CTF game", () => {
+  it("rejects hits when no game is active", () => {
     const manager = new GameManager();
     manager.addPlayer(makePlayer("p1", "P1"));
     manager.addPlayer(makePlayer("p2", "P2"));
 
-    // Not started yet
-    expect(manager.hitPlayer("p1", "p2", 10)).toBe(false);
-
-    // Started in tag mode instead
-    manager.startTagGame();
+    // Not started yet (mode = "none", isActive = false)
     expect(manager.hitPlayer("p1", "p2", 10)).toBe(false);
   });
 
