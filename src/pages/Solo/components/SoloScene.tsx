@@ -36,11 +36,14 @@ export const SoloScene: React.FC<Props> = ({
   bot2PositionRef,
   handleBot1PositionUpdate,
   handleBot2PositionUpdate,
+  handleBot3PositionUpdate,
   collisionSystemRef,
   bot1GotTagged,
   bot2GotTagged,
+  bot3GotTagged,
   BOT1_CONFIG,
   BOT2_CONFIG,
+  BOT3_CONFIG,
 }) => {
   // SoloScene now delegates most 3D children to smaller components.
   // When running in a Node/test environment there is no DOM. Avoid rendering
@@ -95,11 +98,14 @@ export const SoloScene: React.FC<Props> = ({
         isPaused={isPaused}
         handleBot1PositionUpdate={handleBot1PositionUpdate}
         handleBot2PositionUpdate={handleBot2PositionUpdate}
+        handleBot3PositionUpdate={handleBot3PositionUpdate}
         collisionSystemRef={collisionSystemRef}
         bot1GotTagged={bot1GotTagged}
         bot2GotTagged={bot2GotTagged}
+        bot3GotTagged={bot3GotTagged}
         BOT1_CONFIG={BOT1_CONFIG}
         BOT2_CONFIG={BOT2_CONFIG}
+        BOT3_CONFIG={BOT3_CONFIG}
       />
 
       <WeaponPickups
