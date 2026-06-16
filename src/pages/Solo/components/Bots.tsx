@@ -110,7 +110,11 @@ const Bots: React.FC<
   // Combat mode: bot-2 and bot-3 are AI opponents; bot-3 is combat-only.
   const isCombatMode =
     gameState.mode === "deathmatch" || gameState.mode === "ctf";
-  const showBot2 = botDebugMode || (isCombatMode && gameState.isActive);
+  const isTagMode = gameState.mode === "tag";
+  const showBot2 =
+    botDebugMode ||
+    (isCombatMode && gameState.isActive) ||
+    (isTagMode && gameState.isActive);
   const showBot3 = isCombatMode && gameState.isActive;
 
   // Team of each bot's current target, so CTF combat doesn't fire on allies.
@@ -195,11 +199,34 @@ const Bots: React.FC<
   ]);
 
   const handleBot2TagTarget = useCallback(() => {
-    if (gameManager && bot2IsIt && bot1IsIt === false) {
-      gameManager.tagPlayer("bot-2", "bot-1");
-      setBot1GotTagged(Date.now());
+    if (!gameManager || !bot2IsIt || !gameState.isActive) return;
+    if (botDebugMode) {
+      // Debug: bot-2 tags bot-1
+      if (!bot1IsIt) {
+        gameManager.tagPlayer("bot-2", "bot-1");
+        setBot1GotTagged(Date.now());
+      }
+      return;
     }
-  }, [gameManager, bot2IsIt, bot1IsIt, setBot1GotTagged]);
+    // Tag mode: bot-2 tags the player when IT and the player isn't already IT
+    if (gameState.mode === "tag" && !playerIsItFromManager) {
+      const result = gameManager.tagPlayer("bot-2", currentPlayerId);
+      if (result && typeof window !== "undefined") {
+        const event = new window.Event("player-tagged-by-bot");
+        window.dispatchEvent(event);
+      }
+    }
+  }, [
+    gameManager,
+    bot2IsIt,
+    bot1IsIt,
+    gameState.isActive,
+    gameState.mode,
+    botDebugMode,
+    currentPlayerId,
+    playerIsItFromManager,
+    setBot1GotTagged,
+  ]);
 
   // Each bot gets its own WeaponManager so they can use different weapons.
   // Bot-1: Pulse Shotgun, Bot-2: Rocket Launcher, Bot-3: Frag Grenade.

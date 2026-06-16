@@ -664,6 +664,17 @@ const Solo: React.FC = () => {
       return;
     }
 
+    // Add bot-2 so tag games are 3-way (player + bot-1 + bot-2).
+    if (!gameManager.current.getPlayers().has("bot-2")) {
+      const bot2Tag: Player = {
+        id: "bot-2",
+        name: BOT2_CONFIG.label || "Bot2",
+        position: BOT2_CONFIG.initialPosition,
+        rotation: ZERO_ROTATION,
+        isIt: false,
+      };
+      gameManager.current.addPlayer(bot2Tag);
+    }
     gameManager.current.startTagGame();
     const newGameState = gameManager.current.getGameState();
     setGameState(newGameState);
@@ -684,11 +695,19 @@ const Solo: React.FC = () => {
     if (gameManager.current) {
       const wasMode = gameManager.current.getGameState().mode;
       gameManager.current.endGame();
-      // Bot-2 and bot-3 were added for combat modes; remove them so the lobby shows 1v1 again.
-      // (Debug mode manages its own bot-2 lifecycle separately.)
-      if (!botDebugMode && (wasMode === "deathmatch" || wasMode === "ctf")) {
-        gameManager.current.removePlayer("bot-2");
-        gameManager.current.removePlayer("bot-3");
+      // Bot-2 was added for combat and tag modes; bot-3 for combat only.
+      // Remove them so the lobby shows 1v1 again. Debug mode manages its own bot-2.
+      if (!botDebugMode) {
+        if (
+          wasMode === "deathmatch" ||
+          wasMode === "ctf" ||
+          wasMode === "tag"
+        ) {
+          gameManager.current.removePlayer("bot-2");
+        }
+        if (wasMode === "deathmatch" || wasMode === "ctf") {
+          gameManager.current.removePlayer("bot-3");
+        }
       }
       syncGameState();
       addNotification("Game ended", "info");
