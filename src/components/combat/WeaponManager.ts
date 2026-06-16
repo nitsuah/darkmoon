@@ -7,6 +7,10 @@ export interface WeaponConfig {
   cooldownMs: number;
   /** Maximum ammo capacity. undefined/null means infinite. */
   maxAmmo?: number;
+  /** Area-of-effect radius (world units). Nearby entities within this range of the impact point take splashDamage. */
+  splashRadius?: number;
+  /** Damage dealt to entities caught in the splash radius (not the direct-hit target). */
+  splashDamage?: number;
 }
 
 export const WEAPONS: Record<string, WeaponConfig> = {
@@ -32,6 +36,8 @@ export const WEAPONS: Record<string, WeaponConfig> = {
     range: 12,
     cooldownMs: 2000,
     maxAmmo: 3,
+    splashRadius: 5,
+    splashDamage: 50,
   },
 };
 

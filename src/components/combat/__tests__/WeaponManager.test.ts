@@ -154,6 +154,8 @@ describe("WeaponManager", () => {
       expect(WEAPONS.rocket).toBeDefined();
       expect(WEAPONS.rocket.damage).toBe(100);
       expect(WEAPONS.rocket.maxAmmo).toBe(3);
+      expect(WEAPONS.rocket.splashRadius).toBeDefined();
+      expect(WEAPONS.rocket.splashDamage).toBeDefined();
 
       const manager = new WeaponManager();
       manager.equip("rocket");
