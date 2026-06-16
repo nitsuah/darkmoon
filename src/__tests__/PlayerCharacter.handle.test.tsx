@@ -99,6 +99,50 @@ const fakeGameManager: FakeGameManagerWithUpdate = {
 };
 
 describe("PlayerCharacter imperative handle", () => {
+  it("equips a picked-up weapon via the weapon-pickup window event", () => {
+    const updatePlayer = vi.fn();
+    const gm = {
+      getPlayers: () => new Map(),
+      getGameState: () => ({ mode: "tag", isActive: false }),
+      updatePlayer,
+    };
+
+    render(
+      <div data-testid="canvas">
+        <PlayerCharacter
+          keysPressedRef={{ current: {} }}
+          socketClient={null}
+          mouseControls={{
+            leftClick: false,
+            rightClick: false,
+            middleClick: false,
+            mouseX: 0,
+            mouseY: 0,
+          }}
+          clients={emptyClients}
+          gameManager={
+            gm as unknown as import("../components/GameManager").GameManager
+          }
+          currentPlayerId="p1"
+          joystickMove={{ x: 0, y: 0 }}
+          joystickCamera={{ x: 0, y: 0 }}
+          lastWalkSoundTimeRef={{ current: 0 }}
+          isPaused={true}
+        />
+      </div>,
+    );
+
+    window.dispatchEvent(
+      new window.CustomEvent("weapon-pickup", {
+        detail: { weaponId: "shotgun" },
+      }),
+    );
+
+    expect(updatePlayer).toHaveBeenCalledWith("p1", {
+      equippedWeaponId: "shotgun",
+    });
+  });
+
   it("exposes resetPosition and freezePlayer on ref (safe calls)", () => {
     const ref = React.createRef<PlayerCharacterHandle>();
 
