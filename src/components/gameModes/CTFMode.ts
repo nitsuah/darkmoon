@@ -1,10 +1,12 @@
 import { createLogger } from "../../lib/utils/logger";
 import type { GameState, KillEvent, Player } from "../GameManager";
+import { WEAPONS } from "../combat/WeaponManager";
 import type {
   GameAction,
   GameModeHandler,
   GameResult,
 } from "./GameModeHandler";
+import { STREAK_THRESHOLDS, STREAK_ANNOUNCE_MS } from "./DeathmatchMode";
 
 const log = createLogger("CTFMode");
 
@@ -52,6 +54,7 @@ export class CTFMode implements GameModeHandler {
       player.maxHealth = player.maxHealth ?? this.DEFAULT_MAX_HEALTH;
       player.health = player.maxHealth;
       player.respawnAt = undefined;
+      player.currentKillStreak = 0;
       i++;
     });
   }
@@ -84,6 +87,13 @@ export class CTFMode implements GameModeHandler {
         player.spawnProtectedUntil = undefined;
       }
     });
+
+    if (
+      gameState.streakAnnouncement !== undefined &&
+      now >= gameState.streakAnnouncement.timestamp + STREAK_ANNOUNCE_MS
+    ) {
+      gameState.streakAnnouncement = undefined;
+    }
   }
 
   onAction(
@@ -133,33 +143,99 @@ export class CTFMode implements GameModeHandler {
     target.health = Math.max(0, currentHealth - damage);
 
     if (target.health === 0) {
-      target.respawnAt = Date.now() + this.RESPAWN_DELAY_MS;
+      this.applyDown(
+        attackerId,
+        targetId,
+        weaponId,
+        attacker,
+        target,
+        gameState,
+      );
+    }
 
-      // A downed carrier drops the flag back at its base rather than
-      // letting it sit on a player who's now out of the round.
-      gameState.flags?.forEach((flag) => {
-        if (flag.carrierId === targetId) {
-          flag.carrierId = undefined;
-          flag.position = [...flag.basePosition];
+    // Rocket splash: deal splash damage to bystanders within splashRadius of the target
+    const weaponDef = weaponId ? WEAPONS[weaponId] : undefined;
+    if (weaponDef?.splashRadius && weaponDef.splashDamage) {
+      const { splashRadius, splashDamage } = weaponDef;
+      players.forEach((nearby, nearbyId) => {
+        if (nearbyId === attackerId || nearbyId === targetId) return;
+        if (nearby.respawnAt !== undefined) return;
+        if (
+          nearby.spawnProtectedUntil !== undefined &&
+          Date.now() < nearby.spawnProtectedUntil
+        )
+          return;
+        const dx = target.position[0] - nearby.position[0];
+        const dy = target.position[1] - nearby.position[1];
+        const dz = target.position[2] - nearby.position[2];
+        if (Math.sqrt(dx * dx + dy * dy + dz * dz) > splashRadius) return;
+
+        const nearbyMax = nearby.maxHealth ?? this.DEFAULT_MAX_HEALTH;
+        nearby.health = Math.max(
+          0,
+          (nearby.health ?? nearbyMax) - splashDamage,
+        );
+        if (nearby.health === 0) {
+          this.applyDown(
+            attackerId,
+            nearbyId,
+            weaponId,
+            attacker,
+            nearby,
+            gameState,
+          );
         }
       });
-
-      log.debug(`${attacker.name} downed ${target.name}!`);
-
-      const killEvent: KillEvent = {
-        killerId: attackerId,
-        killerName: attacker.name,
-        targetId,
-        targetName: target.name,
-        weaponId: weaponId ?? "unknown",
-        timestamp: Date.now(),
-      };
-      if (!gameState.killFeed) gameState.killFeed = [];
-      gameState.killFeed.push(killEvent);
-      if (gameState.killFeed.length > 10) gameState.killFeed.shift();
     }
 
     return true;
+  }
+
+  private applyDown(
+    attackerId: string,
+    targetId: string,
+    weaponId: string | undefined,
+    attacker: Player,
+    target: Player,
+    gameState: GameState,
+  ): void {
+    target.respawnAt = Date.now() + this.RESPAWN_DELAY_MS;
+
+    // A downed carrier drops the flag back at its base.
+    gameState.flags?.forEach((flag) => {
+      if (flag.carrierId === targetId) {
+        flag.carrierId = undefined;
+        flag.position = [...flag.basePosition];
+      }
+    });
+
+    attacker.currentKillStreak = (attacker.currentKillStreak ?? 0) + 1;
+    target.currentKillStreak = 0;
+
+    const streak = attacker.currentKillStreak;
+    if ((STREAK_THRESHOLDS as readonly number[]).includes(streak)) {
+      gameState.streakAnnouncement = {
+        killerName: attacker.name,
+        count: streak,
+        timestamp: Date.now(),
+      };
+    }
+
+    log.debug(
+      `${attacker.name} downed ${target.name}! (streak: ${attacker.currentKillStreak})`,
+    );
+
+    const killEvent: KillEvent = {
+      killerId: attackerId,
+      killerName: attacker.name,
+      targetId,
+      targetName: target.name,
+      weaponId: weaponId ?? "unknown",
+      timestamp: Date.now(),
+    };
+    if (!gameState.killFeed) gameState.killFeed = [];
+    gameState.killFeed.push(killEvent);
+    if (gameState.killFeed.length > 10) gameState.killFeed.shift();
   }
 
   private pickupFlag(
@@ -243,7 +319,10 @@ export class CTFMode implements GameModeHandler {
       player.health = player.maxHealth;
       player.respawnAt = undefined;
       player.spawnProtectedUntil = undefined;
+      player.currentKillStreak = 0;
     });
+
+    gameState.streakAnnouncement = undefined;
 
     return results;
   }

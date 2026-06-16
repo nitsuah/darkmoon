@@ -184,7 +184,7 @@ const Bots: React.FC<
   }, [gameManager, bot2IsIt, bot1IsIt, setBot1GotTagged]);
 
   // Each bot gets its own WeaponManager so they can use different weapons.
-  // Bot-1 uses the Pulse Shotgun (close-range burst); bot-2 uses the Laser Blaster.
+  // Bot-1 uses the Pulse Shotgun (close-range burst); bot-2 uses the Rocket Launcher.
   const bot1WeaponsRef = useRef<WeaponManager | null>(null);
   const bot2WeaponsRef = useRef<WeaponManager | null>(null);
 
@@ -202,7 +202,7 @@ const Bots: React.FC<
       const weaponRef = isBot1 ? bot1WeaponsRef : bot2WeaponsRef;
       if (!weaponRef.current) {
         weaponRef.current = new WeaponManager();
-        weaponRef.current.equip(isBot1 ? "shotgun" : "laser");
+        weaponRef.current.equip(isBot1 ? "shotgun" : "rocket");
       }
 
       const weapon = weaponRef.current.fire(botId);
