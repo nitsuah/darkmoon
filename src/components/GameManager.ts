@@ -242,7 +242,9 @@ export class GameManager {
     weaponId?: string,
   ): boolean {
     if (
-      (this.gameState.mode !== "deathmatch" && this.gameState.mode !== "ctf") ||
+      (this.gameState.mode !== "deathmatch" &&
+        this.gameState.mode !== "ctf" &&
+        this.gameState.mode !== "tag") ||
       !this.gameState.isActive
     ) {
       return false;

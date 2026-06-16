@@ -90,8 +90,9 @@ describe("usePlayerWeapon.processFiring", () => {
     expect(gameManager.getPlayers().get("target")?.health).toBeUndefined();
   });
 
-  it("fires, hits a target, and applies damage", () => {
+  it("fires, hits a target, and applies damage in deathmatch", () => {
     weaponManager.equip("laser");
+    gameManager.startDeathmatchGame(120, 5);
 
     const result = processFiring({
       origin,
@@ -112,9 +113,10 @@ describe("usePlayerWeapon.processFiring", () => {
     expect(target?.health).toBe(90);
   });
 
-  it("clamps health at 0 instead of going negative", () => {
+  it("clamps health at 0 instead of going negative in deathmatch", () => {
     weaponManager.equip("laser");
-    gameManager.updatePlayer("target", { health: 5, maxHealth: 100 });
+    gameManager.startDeathmatchGame(120, 5);
+    gameManager.updatePlayer("target", { health: 5 });
 
     const result = processFiring({
       origin,

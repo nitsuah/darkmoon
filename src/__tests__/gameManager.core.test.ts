@@ -111,4 +111,44 @@ describe("GameManager core", () => {
     expect(manager.getGameState().isActive).toBe(false);
     expect(manager.getGameState().timeRemaining).toBe(0);
   });
+
+  it("laser-tag: a hit from the IT player transfers IT status (ranged tag)", () => {
+    vi.spyOn(Date, "now").mockReturnValue(0);
+    vi.spyOn(Math, "random").mockReturnValue(0); // p1 becomes IT
+
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "Player 1"));
+    manager.addPlayer(makePlayer("p2", "Player 2"));
+    manager.startTagGame(60);
+
+    expect(manager.getPlayers().get("p1")?.isIt).toBe(true);
+
+    // p1 (IT) fires laser and hits p2
+    vi.spyOn(Date, "now").mockReturnValue(5000);
+    const result = manager.hitPlayer("p1", "p2", 10, "laser");
+
+    expect(result).toBe(true);
+    expect(manager.getPlayers().get("p1")?.isIt).toBe(false);
+    expect(manager.getPlayers().get("p2")?.isIt).toBe(true);
+    expect(manager.getGameState().itPlayerId).toBe("p2");
+    // No health damage in tag mode
+    expect(manager.getPlayers().get("p2")?.health).toBeUndefined();
+  });
+
+  it("laser-tag: a hit from a non-IT player does nothing in tag mode", () => {
+    vi.spyOn(Date, "now").mockReturnValue(0);
+    vi.spyOn(Math, "random").mockReturnValue(0); // p1 becomes IT
+
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "Player 1"));
+    manager.addPlayer(makePlayer("p2", "Player 2"));
+    manager.startTagGame(60);
+
+    // p2 (not IT) fires at p1 — should not transfer IT
+    const result = manager.hitPlayer("p2", "p1", 10, "laser");
+
+    expect(result).toBe(false);
+    expect(manager.getPlayers().get("p1")?.isIt).toBe(true);
+    expect(manager.getPlayers().get("p2")?.isIt).toBe(false);
+  });
 });

@@ -51,6 +51,11 @@ export class TagMode implements GameModeHandler {
     players: Map<string, Player>,
     gameState: GameState,
   ): boolean {
+    // A laser "hit" in tag mode works as a ranged tag — no health damage, just IT transfer.
+    if (action.type === "hit") {
+      const { attackerId, targetId } = action;
+      return this.applyTag(attackerId, targetId, players, gameState);
+    }
     if (action.type !== "tag") return false;
     const { taggerId, taggedId } = action;
 
@@ -58,6 +63,15 @@ export class TagMode implements GameModeHandler {
       `[TAG-TRACE] tagPlayer called with taggerId=${taggerId}, taggedId=${taggedId}`,
     );
 
+    return this.applyTag(taggerId, taggedId, players, gameState);
+  }
+
+  private applyTag(
+    taggerId: string,
+    taggedId: string,
+    players: Map<string, Player>,
+    gameState: GameState,
+  ): boolean {
     const tagger = players.get(taggerId);
     const tagged = players.get(taggedId);
 
