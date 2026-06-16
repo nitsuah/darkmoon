@@ -4,6 +4,7 @@ import Environment from "./Environment";
 import Players from "./Players";
 import Bots from "./Bots";
 import WeaponPickups from "../../../components/world/WeaponPickups";
+import HealthPickups from "../../../components/world/HealthPickups";
 import type { SoloSceneProps } from "./SoloScene.types";
 
 type Props = SoloSceneProps;
@@ -102,6 +103,10 @@ export const SoloScene: React.FC<Props> = ({
       />
 
       <WeaponPickups
+        playerPositionRef={playerPositionRef}
+        gameState={gameState}
+      />
+      <HealthPickups
         playerPositionRef={playerPositionRef}
         gameState={gameState}
       />

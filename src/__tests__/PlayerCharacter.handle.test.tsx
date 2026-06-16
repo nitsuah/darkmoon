@@ -144,6 +144,59 @@ describe("PlayerCharacter imperative handle", () => {
     });
   });
 
+  it("restores health via the health-pickup window event (capped at maxHealth)", () => {
+    const updatePlayer = vi.fn();
+    const players = new Map([
+      [
+        "p1",
+        {
+          id: "p1",
+          name: "P1",
+          position: [0, 0, 0] as [number, number, number],
+          rotation: [0, 0, 0] as [number, number, number],
+          health: 60,
+          maxHealth: 100,
+        },
+      ],
+    ]);
+    const gm = {
+      getPlayers: () => players,
+      getGameState: () => ({ mode: "deathmatch", isActive: true }),
+      updatePlayer,
+    };
+
+    render(
+      <div data-testid="canvas">
+        <PlayerCharacter
+          keysPressedRef={{ current: {} }}
+          socketClient={null}
+          mouseControls={{
+            leftClick: false,
+            rightClick: false,
+            middleClick: false,
+            mouseX: 0,
+            mouseY: 0,
+          }}
+          clients={emptyClients}
+          gameManager={
+            gm as unknown as import("../components/GameManager").GameManager
+          }
+          currentPlayerId="p1"
+          joystickMove={{ x: 0, y: 0 }}
+          joystickCamera={{ x: 0, y: 0 }}
+          lastWalkSoundTimeRef={{ current: 0 }}
+          isPaused={true}
+        />
+      </div>,
+    );
+
+    window.dispatchEvent(
+      new window.CustomEvent("health-pickup", { detail: { amount: 25 } }),
+    );
+
+    expect(updatePlayer).toHaveBeenCalledWith("p1", { health: 85 });
+  });
+
   it("exposes resetPosition and freezePlayer on ref (safe calls)", () => {
     const ref = React.createRef<PlayerCharacterHandle>();
 
