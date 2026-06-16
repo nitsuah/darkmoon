@@ -117,16 +117,34 @@ const Bots: React.FC<
     (isTagMode && gameState.isActive);
   const showBot3 = isCombatMode && gameState.isActive;
 
+  const isDeathmatch = gameState.mode === "deathmatch";
+
+  // In deathmatch: bots target each other (triangle of fire). Bot-2 targets
+  // bot-1; bot-3 targets bot-2. Fall back to player when primary is downed.
+  const bot2DmTargetRef =
+    isDeathmatch && !bot1IsDowned ? bot1PositionRef : playerPositionRef;
+  const bot3DmTargetRef =
+    isDeathmatch && !bot2IsDowned ? bot2PositionRef : playerPositionRef;
+  // Fire targets mirror position refs.
+  const bot2DmFireTarget =
+    isDeathmatch && !bot1IsDowned ? "bot-1" : currentPlayerId;
+  const bot3DmFireTarget =
+    isDeathmatch && !bot2IsDowned ? "bot-2" : currentPlayerId;
+
   // Team of each bot's current target, so CTF combat doesn't fire on allies.
   const bot1TargetTeam = botDebugMode
     ? bot2Team
     : gameManager?.getPlayers().get(currentPlayerId)?.team;
-  // In debug mode bot-2 targets bot-1's team; in combat mode it targets the player.
+  // In debug mode bot-2 targets bot-1's team; in deathmatch it targets bot-1's team.
   const bot2TargetTeam = botDebugMode
     ? bot1Team
+    : isDeathmatch
+      ? bot1Team
+      : gameManager?.getPlayers().get(currentPlayerId)?.team;
+  // Bot-3 targets bot-2's team in deathmatch; player otherwise.
+  const bot3TargetTeam = isDeathmatch
+    ? bot2Team
     : gameManager?.getPlayers().get(currentPlayerId)?.team;
-  // Bot-3 is combat-only and always targets the player.
-  const bot3TargetTeam = gameManager?.getPlayers().get(currentPlayerId)?.team;
   // Derive player isIt from gameManager to avoid stale React-state race windows
   const playerIsItFromManager =
     gameManager?.getPlayers().get(currentPlayerId)?.isIt ?? playerIsIt;
@@ -304,13 +322,14 @@ const Bots: React.FC<
   }, [fireBotWeapon, botDebugMode, currentPlayerId]);
 
   const handleBot2FireAtTarget = useCallback(() => {
-    // In debug mode bot-2 fights bot-1; in combat mode it targets the player.
-    fireBotWeapon("bot-2", botDebugMode ? "bot-1" : currentPlayerId);
-  }, [fireBotWeapon, botDebugMode, currentPlayerId]);
+    // Debug: bot-2 fights bot-1. Deathmatch: also targets bot-1 (fallback player).
+    fireBotWeapon("bot-2", botDebugMode ? "bot-1" : bot2DmFireTarget);
+  }, [fireBotWeapon, botDebugMode, bot2DmFireTarget]);
 
   const handleBot3FireAtTarget = useCallback(() => {
-    fireBotWeapon("bot-3", currentPlayerId);
-  }, [fireBotWeapon, currentPlayerId]);
+    // Deathmatch: bot-3 targets bot-2 (fallback player). Otherwise: player.
+    fireBotWeapon("bot-3", bot3DmFireTarget);
+  }, [fireBotWeapon, bot3DmFireTarget]);
 
   return (
     <>
@@ -354,7 +373,7 @@ const Bots: React.FC<
 
       {showBot2 && (
         <BotCharacter
-          targetPositionRef={botDebugMode ? bot1PositionRef : playerPositionRef}
+          targetPositionRef={botDebugMode ? bot1PositionRef : bot2DmTargetRef}
           isIt={bot2IsIt}
           targetIsIt={botDebugMode ? bot1IsIt : playerIsItFromManager}
           isPaused={isPaused}
@@ -376,7 +395,7 @@ const Bots: React.FC<
 
       {showBot3 && (
         <BotCharacter
-          targetPositionRef={playerPositionRef}
+          targetPositionRef={bot3DmTargetRef}
           isIt={false}
           targetIsIt={playerIsItFromManager}
           isPaused={isPaused}
