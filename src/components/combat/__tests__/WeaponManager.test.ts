@@ -56,4 +56,35 @@ describe("WeaponManager", () => {
     expect(manager.getEquipped()).toBeNull();
     expect(manager.fire("p1", 1000)).toBeNull();
   });
+
+  it("shotgun has higher damage and shorter range than laser", () => {
+    expect(WEAPONS.shotgun).toBeDefined();
+    expect(WEAPONS.shotgun.damage).toBeGreaterThan(WEAPONS.laser.damage);
+    expect(WEAPONS.shotgun.range).toBeLessThan(WEAPONS.laser.range);
+    expect(WEAPONS.shotgun.cooldownMs).toBeGreaterThan(
+      WEAPONS.laser.cooldownMs,
+    );
+  });
+
+  it("can switch between laser and shotgun", () => {
+    const manager = new WeaponManager();
+    manager.equip("laser");
+    expect(manager.getEquipped()?.id).toBe("laser");
+
+    manager.equip("shotgun");
+    expect(manager.getEquipped()?.id).toBe("shotgun");
+    expect(manager.getEquipped()).toEqual(WEAPONS.shotgun);
+  });
+
+  it("shotgun enforces its own cooldown independently", () => {
+    const manager = new WeaponManager();
+    manager.equip("shotgun");
+
+    expect(manager.fire("p1", 1000)).toEqual(WEAPONS.shotgun);
+    // Still in cooldown (shotgun cooldownMs = 1000)
+    expect(manager.canFire("p1", 1500)).toBe(false);
+    // After cooldown
+    expect(manager.canFire("p1", 2001)).toBe(true);
+    expect(manager.fire("p1", 2001)).toEqual(WEAPONS.shotgun);
+  });
 });

@@ -1,5 +1,6 @@
 import * as React from "react";
 import { GameState, Player } from "./GameManager";
+import { WEAPONS } from "./combat/WeaponManager";
 
 interface GameUIProps {
   gameState: GameState;
@@ -151,6 +152,21 @@ const GameUI: React.FC<GameUIProps> = ({
               {!isMinimal && ` / ${currentPlayer?.maxHealth ?? 100}`}
             </div>
 
+            {!isMinimal && currentPlayer?.equippedWeaponId && (
+              <div
+                style={{
+                  marginBottom: "6px",
+                  fontSize: isMobile ? "9px" : "10px",
+                  color: "#aaddff",
+                }}
+              >
+                🔫{" "}
+                {WEAPONS[currentPlayer.equippedWeaponId]?.name ??
+                  currentPlayer.equippedWeaponId}{" "}
+                [1/2]
+              </div>
+            )}
+
             {!isMinimal && (
               <div
                 style={{
@@ -210,6 +226,21 @@ const GameUI: React.FC<GameUIProps> = ({
               ❤️ {currentPlayer?.health ?? currentPlayer?.maxHealth ?? 100}
               {!isMinimal && ` / ${currentPlayer?.maxHealth ?? 100}`}
             </div>
+
+            {!isMinimal && currentPlayer?.equippedWeaponId && (
+              <div
+                style={{
+                  marginBottom: "6px",
+                  fontSize: isMobile ? "9px" : "10px",
+                  color: "#aaddff",
+                }}
+              >
+                🔫{" "}
+                {WEAPONS[currentPlayer.equippedWeaponId]?.name ??
+                  currentPlayer.equippedWeaponId}{" "}
+                [1/2]
+              </div>
+            )}
 
             {!isMinimal && (
               <div

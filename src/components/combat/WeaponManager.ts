@@ -15,6 +15,13 @@ export const WEAPONS: Record<string, WeaponConfig> = {
     range: 30,
     cooldownMs: 500,
   },
+  shotgun: {
+    id: "shotgun",
+    name: "Pulse Shotgun",
+    damage: 25,
+    range: 8,
+    cooldownMs: 1000,
+  },
 };
 
 /**
