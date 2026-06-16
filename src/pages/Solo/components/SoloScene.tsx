@@ -5,6 +5,7 @@ import Players from "./Players";
 import Bots from "./Bots";
 import WeaponPickups from "../../../components/world/WeaponPickups";
 import HealthPickups from "../../../components/world/HealthPickups";
+import ExplosionVFX from "../../../components/world/ExplosionVFX";
 import type { SoloSceneProps } from "./SoloScene.types";
 
 type Props = SoloSceneProps;
@@ -116,6 +117,7 @@ export const SoloScene: React.FC<Props> = ({
         playerPositionRef={playerPositionRef}
         gameState={gameState}
       />
+      <ExplosionVFX />
     </Canvas>
   );
 };
