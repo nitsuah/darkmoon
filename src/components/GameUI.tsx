@@ -2,6 +2,7 @@ import * as React from "react";
 import { GameState, KillEvent, Player } from "./GameManager";
 import { WEAPONS } from "./combat/WeaponManager";
 import { STREAK_LABELS } from "./gameModes/DeathmatchMode";
+import { TAG_STREAK_LABELS } from "./gameModes/TagMode";
 
 interface GameUIProps {
   gameState: GameState;
@@ -608,7 +609,9 @@ const GameUI: React.FC<GameUIProps> = ({
           )}
 
         {visibleStreak !== null &&
-          (gameState.mode === "deathmatch" || gameState.mode === "ctf") && (
+          (gameState.mode === "deathmatch" ||
+            gameState.mode === "ctf" ||
+            gameState.mode === "tag") && (
             <div
               style={{
                 position: "fixed",
@@ -625,13 +628,19 @@ const GameUI: React.FC<GameUIProps> = ({
                   fontFamily: "monospace",
                   fontSize: isMinimal ? "14px" : "26px",
                   fontWeight: "bold",
-                  color: "#ffcc00",
-                  textShadow: "0 0 18px #ff8800, 0 0 6px #ffcc00",
+                  color: gameState.mode === "tag" ? "#00ffff" : "#ffcc00",
+                  textShadow:
+                    gameState.mode === "tag"
+                      ? "0 0 18px #0088ff, 0 0 6px #00ffff"
+                      : "0 0 18px #ff8800, 0 0 6px #ffcc00",
                   letterSpacing: "3px",
                 }}
               >
-                {STREAK_LABELS[visibleStreak.count] ??
-                  `${visibleStreak.count}x STREAK`}
+                {gameState.mode === "tag"
+                  ? (TAG_STREAK_LABELS[visibleStreak.count] ??
+                    `${visibleStreak.count}x CHAIN`)
+                  : (STREAK_LABELS[visibleStreak.count] ??
+                    `${visibleStreak.count}x STREAK`)}
               </div>
               <div
                 style={{

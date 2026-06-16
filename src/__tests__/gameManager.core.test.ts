@@ -170,4 +170,46 @@ describe("GameManager core", () => {
     expect(manager.getPlayers().get("p1")?.isIt).toBe(true);
     expect(manager.getPlayers().get("p2")?.isIt).toBe(false);
   });
+
+  it("tag streak: 3 cumulative tags by the same player trigger a streak announcement", () => {
+    // p1 starts IT. Each time p1 escapes IT (tags someone), tally increments.
+    // Getting re-tagged doesn't reset the tally, so milestone=3 is reachable.
+    vi.spyOn(Math, "random").mockReturnValue(0); // p1 starts IT
+    vi.spyOn(Date, "now").mockReturnValue(0);
+
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "Player 1"));
+    manager.addPlayer(makePlayer("p2", "Player 2"));
+    manager.addPlayer(makePlayer("p3", "Player 3"));
+    manager.startTagGame(120);
+
+    expect(manager.getPlayers().get("p1")?.isIt).toBe(true);
+
+    // p1 tags p2 (tally=1), p2 tags p3, p3 tags p1 (p1 is IT again, tally unchanged)
+    vi.spyOn(Date, "now").mockReturnValue(5000);
+    manager.tagPlayer("p1", "p2"); // p1 tally=1
+
+    vi.spyOn(Date, "now").mockReturnValue(8000);
+    manager.tagPlayer("p2", "p3");
+
+    vi.spyOn(Date, "now").mockReturnValue(11000);
+    manager.tagPlayer("p3", "p1"); // p1 is IT again, tally stays 1
+
+    vi.spyOn(Date, "now").mockReturnValue(14000);
+    manager.tagPlayer("p1", "p2"); // p1 tally=2
+
+    vi.spyOn(Date, "now").mockReturnValue(17000);
+    manager.tagPlayer("p2", "p3");
+
+    vi.spyOn(Date, "now").mockReturnValue(20000);
+    manager.tagPlayer("p3", "p1"); // p1 is IT again, tally stays 2
+
+    vi.spyOn(Date, "now").mockReturnValue(23000);
+    manager.tagPlayer("p1", "p2"); // p1 tally=3 → streakAnnouncement fires
+
+    const ann = manager.getGameState().streakAnnouncement;
+    expect(ann).toBeDefined();
+    expect(ann?.killerName).toBe("Player 1");
+    expect(ann?.count).toBe(3);
+  });
 });
