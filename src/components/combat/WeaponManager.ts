@@ -39,6 +39,16 @@ export const WEAPONS: Record<string, WeaponConfig> = {
     splashRadius: 5,
     splashDamage: 50,
   },
+  grenade: {
+    id: "grenade",
+    name: "Frag Grenade",
+    damage: 100,
+    range: 18,
+    cooldownMs: 4000,
+    maxAmmo: 2,
+    splashRadius: 7,
+    splashDamage: 75,
+  },
 };
 
 /**
