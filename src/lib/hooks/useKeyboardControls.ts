@@ -1,5 +1,17 @@
 import { useState, useEffect, useRef } from "react";
-import { W, A, S, D, Q, E, SHIFT, SPACE } from "../../components/utils";
+import {
+  W,
+  A,
+  S,
+  D,
+  Q,
+  E,
+  SHIFT,
+  SPACE,
+  KEY_1,
+  KEY_2,
+  KEY_3,
+} from "../../components/utils";
 
 export type KeyMap = { [key: string]: boolean };
 
@@ -9,7 +21,7 @@ export type KeyMap = { [key: string]: boolean };
  */
 export const useKeyboardControls = (
   chatVisible: boolean,
-  isPaused: boolean
+  isPaused: boolean,
 ) => {
   const [keysPressed, setKeysPressed] = useState<KeyMap>({
     [W]: false,
@@ -20,6 +32,9 @@ export const useKeyboardControls = (
     [E]: false,
     [SHIFT]: false,
     [SPACE]: false,
+    [KEY_1]: false,
+    [KEY_2]: false,
+    [KEY_3]: false,
   });
 
   const keysPressedRef = useRef(keysPressed);

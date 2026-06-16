@@ -578,6 +578,18 @@ const Solo: React.FC = () => {
     if (!gameManager.current) return;
 
     if (mode === "deathmatch") {
+      // Ensure bot-2 is registered before the match so all 3 combatants get
+      // health/respawn initialised by DeathmatchMode.onStart.
+      if (!gameManager.current.getPlayers().has("bot-2")) {
+        const bot2: Player = {
+          id: "bot-2",
+          name: BOT2_CONFIG.label || "Bot2",
+          position: BOT2_CONFIG.initialPosition,
+          rotation: ZERO_ROTATION,
+          isIt: false,
+        };
+        gameManager.current.addPlayer(bot2);
+      }
       gameManager.current.startDeathmatchGame();
       const newGameState = gameManager.current.getGameState();
       setGameState(newGameState);
@@ -589,6 +601,18 @@ const Solo: React.FC = () => {
     }
 
     if (mode === "ctf") {
+      // Ensure bot-2 is registered before the match so CTFMode.onStart can
+      // assign it to a team.
+      if (!gameManager.current.getPlayers().has("bot-2")) {
+        const bot2: Player = {
+          id: "bot-2",
+          name: BOT2_CONFIG.label || "Bot2",
+          position: BOT2_CONFIG.initialPosition,
+          rotation: ZERO_ROTATION,
+          isIt: false,
+        };
+        gameManager.current.addPlayer(bot2);
+      }
       gameManager.current.startCTFGame();
       const newGameState = gameManager.current.getGameState();
       setGameState(newGameState);
@@ -617,11 +641,17 @@ const Solo: React.FC = () => {
 
   const handleEndGame = useCallback(() => {
     if (gameManager.current) {
+      const wasMode = gameManager.current.getGameState().mode;
       gameManager.current.endGame();
+      // Bot-2 was added for combat modes; remove it so the lobby shows 1v1 again.
+      // (Debug mode manages its own bot-2 lifecycle separately.)
+      if (!botDebugMode && (wasMode === "deathmatch" || wasMode === "ctf")) {
+        gameManager.current.removePlayer("bot-2");
+      }
       syncGameState();
       addNotification("Game ended", "info");
     }
-  }, [syncGameState, addNotification]);
+  }, [botDebugMode, syncGameState, addNotification]);
 
   const handleResumeGame = () => {
     setIsPaused(false);

@@ -91,12 +91,112 @@ type FakeGameManager = {
   getGameState: () => { mode: string; isActive: boolean };
 };
 
-const fakeGameManager: FakeGameManager = {
+type FakeGameManagerWithUpdate = FakeGameManager & { updatePlayer: () => void };
+const fakeGameManager: FakeGameManagerWithUpdate = {
   getPlayers: () => new Map<unknown, unknown>(),
   getGameState: () => ({ mode: "tag", isActive: false }),
+  updatePlayer: vi.fn(),
 };
 
 describe("PlayerCharacter imperative handle", () => {
+  it("equips a picked-up weapon via the weapon-pickup window event", () => {
+    const updatePlayer = vi.fn();
+    const gm = {
+      getPlayers: () => new Map(),
+      getGameState: () => ({ mode: "tag", isActive: false }),
+      updatePlayer,
+    };
+
+    render(
+      <div data-testid="canvas">
+        <PlayerCharacter
+          keysPressedRef={{ current: {} }}
+          socketClient={null}
+          mouseControls={{
+            leftClick: false,
+            rightClick: false,
+            middleClick: false,
+            mouseX: 0,
+            mouseY: 0,
+          }}
+          clients={emptyClients}
+          gameManager={
+            gm as unknown as import("../components/GameManager").GameManager
+          }
+          currentPlayerId="p1"
+          joystickMove={{ x: 0, y: 0 }}
+          joystickCamera={{ x: 0, y: 0 }}
+          lastWalkSoundTimeRef={{ current: 0 }}
+          isPaused={true}
+        />
+      </div>,
+    );
+
+    window.dispatchEvent(
+      new window.CustomEvent("weapon-pickup", {
+        detail: { weaponId: "shotgun" },
+      }),
+    );
+
+    expect(updatePlayer).toHaveBeenCalledWith("p1", {
+      equippedWeaponId: "shotgun",
+      currentAmmo: 6,
+    });
+  });
+
+  it("restores health via the health-pickup window event (capped at maxHealth)", () => {
+    const updatePlayer = vi.fn();
+    const players = new Map([
+      [
+        "p1",
+        {
+          id: "p1",
+          name: "P1",
+          position: [0, 0, 0] as [number, number, number],
+          rotation: [0, 0, 0] as [number, number, number],
+          health: 60,
+          maxHealth: 100,
+        },
+      ],
+    ]);
+    const gm = {
+      getPlayers: () => players,
+      getGameState: () => ({ mode: "deathmatch", isActive: true }),
+      updatePlayer,
+    };
+
+    render(
+      <div data-testid="canvas">
+        <PlayerCharacter
+          keysPressedRef={{ current: {} }}
+          socketClient={null}
+          mouseControls={{
+            leftClick: false,
+            rightClick: false,
+            middleClick: false,
+            mouseX: 0,
+            mouseY: 0,
+          }}
+          clients={emptyClients}
+          gameManager={
+            gm as unknown as import("../components/GameManager").GameManager
+          }
+          currentPlayerId="p1"
+          joystickMove={{ x: 0, y: 0 }}
+          joystickCamera={{ x: 0, y: 0 }}
+          lastWalkSoundTimeRef={{ current: 0 }}
+          isPaused={true}
+        />
+      </div>,
+    );
+
+    window.dispatchEvent(
+      new window.CustomEvent("health-pickup", { detail: { amount: 25 } }),
+    );
+
+    expect(updatePlayer).toHaveBeenCalledWith("p1", { health: 85 });
+  });
+
   it("exposes resetPosition and freezePlayer on ref (safe calls)", () => {
     const ref = React.createRef<PlayerCharacterHandle>();
 
@@ -123,7 +223,7 @@ describe("PlayerCharacter imperative handle", () => {
           lastWalkSoundTimeRef={{ current: 0 }}
           isPaused={true}
         />
-      </div>
+      </div>,
     );
 
     // Should expose methods

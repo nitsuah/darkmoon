@@ -3,6 +3,8 @@ import { Canvas } from "@react-three/fiber";
 import Environment from "./Environment";
 import Players from "./Players";
 import Bots from "./Bots";
+import WeaponPickups from "../../../components/world/WeaponPickups";
+import HealthPickups from "../../../components/world/HealthPickups";
 import type { SoloSceneProps } from "./SoloScene.types";
 
 type Props = SoloSceneProps;
@@ -98,6 +100,15 @@ export const SoloScene: React.FC<Props> = ({
         bot2GotTagged={bot2GotTagged}
         BOT1_CONFIG={BOT1_CONFIG}
         BOT2_CONFIG={BOT2_CONFIG}
+      />
+
+      <WeaponPickups
+        playerPositionRef={playerPositionRef}
+        gameState={gameState}
+      />
+      <HealthPickups
+        playerPositionRef={playerPositionRef}
+        gameState={gameState}
       />
     </Canvas>
   );

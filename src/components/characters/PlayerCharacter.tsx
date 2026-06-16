@@ -5,7 +5,7 @@ import { Socket } from "socket.io-client";
 import * as THREE from "three";
 import type { Clients } from "../../types/socket";
 import GameManager, { GameState } from "../GameManager";
-import { W, A, S, D, Q, E, SHIFT, SPACE } from "../utils";
+import { W, A, S, D, Q, E, SHIFT, SPACE, KEY_1, KEY_2, KEY_3 } from "../utils";
 import SpacemanModel from "../SpacemanModel";
 import { getSoundManager } from "../SoundManager";
 import { WeaponManager } from "../combat/WeaponManager";
@@ -151,13 +151,23 @@ export const PlayerCharacter = React.forwardRef<
   const [showJetpackFlame, setShowJetpackFlame] = useState(false);
   const lookIndicatorRef = React.useRef<THREE.Group>(null);
   const laserBeamRef = React.useRef<THREE.Group>(null);
+  const beamMeshRef = React.useRef<THREE.Mesh>(null);
   const laserBeamHideAtRef = React.useRef(0);
   const weaponManagerRef = React.useRef(new WeaponManager());
+  const prevKey1Ref = React.useRef(false);
+  const prevKey2Ref = React.useRef(false);
+  const prevKey3Ref = React.useRef(false);
 
-  // Equip the laser blaster by default for the visible laser-fire mechanic.
+  // Equip the laser blaster by default and surface the equipped weapon to the HUD.
   React.useEffect(() => {
     weaponManagerRef.current.equip("laser");
-  }, []);
+    if (gameManager) {
+      gameManager.updatePlayer(currentPlayerId, {
+        equippedWeaponId: "laser",
+        currentAmmo: null,
+      });
+    }
+  }, [gameManager, currentPlayerId]);
 
   // Expose reset and freeze functions to parent via ref
   React.useImperativeHandle(ref, () => ({
@@ -196,6 +206,39 @@ export const PlayerCharacter = React.forwardRef<
     };
   }, [isPlayerFrozenRef, playerFreezeEndTimeRef]);
 
+  // Equip a weapon picked up from a world pickup item (WeaponPickups fires this event).
+  React.useEffect(() => {
+    function handleWeaponPickup(e: unknown) {
+      const { weaponId } = (e as { detail: { weaponId: string } }).detail;
+      weaponManagerRef.current.equip(weaponId);
+      weaponManagerRef.current.refill(weaponId);
+      const newAmmo = weaponManagerRef.current.getAmmo(weaponId);
+      gameManager?.updatePlayer(currentPlayerId, {
+        equippedWeaponId: weaponId,
+        currentAmmo: newAmmo,
+      });
+    }
+    window.addEventListener("weapon-pickup", handleWeaponPickup);
+    return () =>
+      window.removeEventListener("weapon-pickup", handleWeaponPickup);
+  }, [gameManager, currentPlayerId]);
+
+  // Restore health when the player walks over a HealthPickups crate.
+  React.useEffect(() => {
+    function handleHealthPickup(e: unknown) {
+      const { amount } = (e as { detail: { amount: number } }).detail;
+      const players = gameManager?.getPlayers();
+      const me = players?.get(currentPlayerId);
+      if (!me) return;
+      const maxHp = me.maxHealth ?? 100;
+      const newHp = Math.min(maxHp, (me.health ?? maxHp) + amount);
+      gameManager?.updatePlayer(currentPlayerId, { health: newHp });
+    }
+    window.addEventListener("health-pickup", handleHealthPickup);
+    return () =>
+      window.removeEventListener("health-pickup", handleHealthPickup);
+  }, [gameManager, currentPlayerId]);
+
   // gated debug logger - only logs in dev
   const debug = (...args: unknown[]) => {
     // Vite exposes import.meta.env.DEV; fall back to false if undefined
@@ -216,6 +259,12 @@ export const PlayerCharacter = React.forwardRef<
     }
 
     const now = Date.now();
+
+    // Freeze all input while the player is awaiting respawn (downed in deathmatch/CTF).
+    const mePlayer = gameManager?.getPlayers().get(currentPlayerId);
+    if (mePlayer?.respawnAt !== undefined) {
+      return;
+    }
 
     // Store mobile jetpack trigger locally to satisfy linter
     const mobileJetpackTriggerRef = mobileJetpackTrigger;
@@ -377,7 +426,37 @@ export const PlayerCharacter = React.forwardRef<
       }
     }
 
-    // Fire the equipped laser while left-click is held (rate-limited by
+    // Weapon switching: rising-edge detection for 1 (laser), 2 (shotgun), 3 (rocket).
+    const key1 = keysPressedRef.current[KEY_1] ?? false;
+    const key2 = keysPressedRef.current[KEY_2] ?? false;
+    const key3 = keysPressedRef.current[KEY_3] ?? false;
+    const myId = socketClient?.id || currentPlayerId;
+    if (key1 && !prevKey1Ref.current) {
+      weaponManagerRef.current.equip("laser");
+      gameManager?.updatePlayer(myId, {
+        equippedWeaponId: "laser",
+        currentAmmo: null,
+      });
+    }
+    if (key2 && !prevKey2Ref.current) {
+      weaponManagerRef.current.equip("shotgun");
+      gameManager?.updatePlayer(myId, {
+        equippedWeaponId: "shotgun",
+        currentAmmo: weaponManagerRef.current.getAmmo("shotgun"),
+      });
+    }
+    if (key3 && !prevKey3Ref.current) {
+      weaponManagerRef.current.equip("rocket");
+      gameManager?.updatePlayer(myId, {
+        equippedWeaponId: "rocket",
+        currentAmmo: weaponManagerRef.current.getAmmo("rocket"),
+      });
+    }
+    prevKey1Ref.current = key1;
+    prevKey2Ref.current = key2;
+    prevKey3Ref.current = key3;
+
+    // Fire the equipped weapon while left-click is held (rate-limited by
     // WeaponManager's per-shooter cooldown).
     if (mouseControls.leftClick && gameManager) {
       const fireDirection = new THREE.Vector3(
@@ -401,14 +480,35 @@ export const PlayerCharacter = React.forwardRef<
 
       if (fireResult && laserBeamRef.current) {
         const beamLength = fireResult.hit?.distance ?? fireResult.weapon.range;
+        const wid = fireResult.weapon.id;
+        const beamHalfWidth =
+          wid === "rocket" ? 0.2 : wid === "shotgun" ? 0.1 : 0.04;
+        const beamColor =
+          wid === "rocket"
+            ? "#ff1100"
+            : wid === "shotgun"
+              ? "#ff7700"
+              : "#33ffe6";
         laserBeamRef.current.visible = true;
         laserBeamRef.current.position
           .copy(fireOrigin)
           .add(fireDirection.clone().multiplyScalar(beamLength / 2));
         laserBeamRef.current.rotation.y =
           cameraRotationRef.current.horizontal + Math.PI;
-        laserBeamRef.current.scale.set(1, 1, beamLength);
+        laserBeamRef.current.scale.set(
+          beamHalfWidth / 0.04,
+          beamHalfWidth / 0.04,
+          beamLength,
+        );
         laserBeamHideAtRef.current = now + LASER_BEAM_VISIBLE_MS;
+        if (beamMeshRef.current) {
+          (beamMeshRef.current.material as THREE.MeshBasicMaterial).color.set(
+            beamColor,
+          );
+        }
+        // Sync ammo to HUD after each shot.
+        const remainingAmmo = weaponManagerRef.current.getAmmo(wid);
+        gameManager?.updatePlayer(myId, { currentAmmo: remainingAmmo });
       }
     }
 
@@ -872,10 +972,11 @@ export const PlayerCharacter = React.forwardRef<
           </mesh>
         )}
       </group>
-      {/* Laser beam visual: a short-lived stretched box from the shooter
-          toward the hit point (or weapon range on a miss). */}
+      {/* Weapon beam visual: a short-lived stretched box from the shooter
+          toward the hit point (or weapon range on a miss). Color and width
+          are updated imperatively in useFrame based on equipped weapon. */}
       <group ref={laserBeamRef} visible={false}>
-        <mesh>
+        <mesh ref={beamMeshRef}>
           <boxGeometry args={[0.04, 0.04, 1]} />
           <meshBasicMaterial color="#33ffe6" transparent opacity={0.85} />
         </mesh>
