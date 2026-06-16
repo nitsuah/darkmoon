@@ -91,11 +91,19 @@ const Bots: React.FC<
     gameState.flags?.some((flag) => flag.carrierId === "bot-1") ?? false;
   const bot2CarryingFlag =
     gameState.flags?.some((flag) => flag.carrierId === "bot-2") ?? false;
+  // Combat mode: bot-2 is always rendered as a second AI opponent.
+  const isCombatMode =
+    gameState.mode === "deathmatch" || gameState.mode === "ctf";
+  const showBot2 = botDebugMode || (isCombatMode && gameState.isActive);
+
   // Team of each bot's current target, so CTF combat doesn't fire on allies.
   const bot1TargetTeam = botDebugMode
     ? bot2Team
     : gameManager?.getPlayers().get(currentPlayerId)?.team;
-  const bot2TargetTeam = bot1Team;
+  // In debug mode bot-2 targets bot-1's team; in combat mode it targets the player.
+  const bot2TargetTeam = botDebugMode
+    ? bot1Team
+    : gameManager?.getPlayers().get(currentPlayerId)?.team;
   // Derive player isIt from gameManager to avoid stale React-state race windows
   const playerIsItFromManager =
     gameManager?.getPlayers().get(currentPlayerId)?.isIt ?? playerIsIt;
@@ -232,8 +240,9 @@ const Bots: React.FC<
   }, [fireBotWeapon, botDebugMode, currentPlayerId]);
 
   const handleBot2FireAtTarget = useCallback(() => {
-    fireBotWeapon("bot-2", "bot-1");
-  }, [fireBotWeapon]);
+    // In debug mode bot-2 fights bot-1; in combat mode it targets the player.
+    fireBotWeapon("bot-2", botDebugMode ? "bot-1" : currentPlayerId);
+  }, [fireBotWeapon, botDebugMode, currentPlayerId]);
 
   return (
     <>
@@ -275,11 +284,11 @@ const Bots: React.FC<
         color="#ff8888"
       />
 
-      {botDebugMode && (
+      {showBot2 && (
         <BotCharacter
-          targetPositionRef={bot1PositionRef}
+          targetPositionRef={botDebugMode ? bot1PositionRef : playerPositionRef}
           isIt={bot2IsIt}
-          targetIsIt={bot1IsIt}
+          targetIsIt={botDebugMode ? bot1IsIt : playerIsItFromManager}
           isPaused={isPaused}
           onTagTarget={handleBot2TagTarget}
           onFireAtTarget={handleBot2FireAtTarget}
