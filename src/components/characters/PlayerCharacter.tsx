@@ -260,6 +260,12 @@ export const PlayerCharacter = React.forwardRef<
 
     const now = Date.now();
 
+    // Freeze all input while the player is awaiting respawn (downed in deathmatch/CTF).
+    const mePlayer = gameManager?.getPlayers().get(currentPlayerId);
+    if (mePlayer?.respawnAt !== undefined) {
+      return;
+    }
+
     // Store mobile jetpack trigger locally to satisfy linter
     const mobileJetpackTriggerRef = mobileJetpackTrigger;
 
