@@ -91,11 +91,19 @@ const Bots: React.FC<
     gameState.flags?.some((flag) => flag.carrierId === "bot-1") ?? false;
   const bot2CarryingFlag =
     gameState.flags?.some((flag) => flag.carrierId === "bot-2") ?? false;
+  // Combat mode: bot-2 is always rendered as a second AI opponent.
+  const isCombatMode =
+    gameState.mode === "deathmatch" || gameState.mode === "ctf";
+  const showBot2 = botDebugMode || (isCombatMode && gameState.isActive);
+
   // Team of each bot's current target, so CTF combat doesn't fire on allies.
   const bot1TargetTeam = botDebugMode
     ? bot2Team
     : gameManager?.getPlayers().get(currentPlayerId)?.team;
-  const bot2TargetTeam = bot1Team;
+  // In debug mode bot-2 targets bot-1's team; in combat mode it targets the player.
+  const bot2TargetTeam = botDebugMode
+    ? bot1Team
+    : gameManager?.getPlayers().get(currentPlayerId)?.team;
   // Derive player isIt from gameManager to avoid stale React-state race windows
   const playerIsItFromManager =
     gameManager?.getPlayers().get(currentPlayerId)?.isIt ?? playerIsIt;
@@ -175,12 +183,12 @@ const Bots: React.FC<
     }
   }, [gameManager, bot2IsIt, bot1IsIt, setBot1GotTagged]);
 
-  // Shared laser for both bots; WeaponManager tracks per-shooter cooldowns,
-  // so one instance is the authoritative fire-rate gate for bot-1 and bot-2.
-  // Lazily initialized inside the fire handler to satisfy react-hooks/refs.
-  const botWeaponsRef = useRef<WeaponManager | null>(null);
+  // Each bot gets its own WeaponManager so they can use different weapons.
+  // Bot-1 uses the Pulse Shotgun (close-range burst); bot-2 uses the Laser Blaster.
+  const bot1WeaponsRef = useRef<WeaponManager | null>(null);
+  const bot2WeaponsRef = useRef<WeaponManager | null>(null);
 
-  const fireBotLaser = useCallback(
+  const fireBotWeapon = useCallback(
     (botId: string, targetId: string) => {
       if (
         !gameManager ||
@@ -190,15 +198,32 @@ const Bots: React.FC<
         return;
       }
 
-      if (!botWeaponsRef.current) {
-        botWeaponsRef.current = new WeaponManager();
-        botWeaponsRef.current.equip("laser");
+      const isBot1 = botId === "bot-1";
+      const weaponRef = isBot1 ? bot1WeaponsRef : bot2WeaponsRef;
+      if (!weaponRef.current) {
+        weaponRef.current = new WeaponManager();
+        weaponRef.current.equip(isBot1 ? "shotgun" : "laser");
       }
 
-      const weapon = botWeaponsRef.current.fire(botId);
-      if (!weapon) return; // still on cooldown
+      const weapon = weaponRef.current.fire(botId);
+      if (!weapon) {
+        // If ammo is depleted (not just on cooldown), fall back to infinite laser.
+        const equipped = weaponRef.current.getEquipped();
+        if (equipped) {
+          const ammo = weaponRef.current.getAmmo(equipped.id);
+          if (ammo !== null && ammo <= 0) {
+            weaponRef.current.equip("laser");
+          }
+        }
+        return;
+      }
 
-      const hitLanded = gameManager.hitPlayer(botId, targetId, weapon.damage);
+      const hitLanded = gameManager.hitPlayer(
+        botId,
+        targetId,
+        weapon.damage,
+        weapon.id,
+      );
       if (hitLanded) {
         try {
           getSoundManager()?.playHitSound();
@@ -211,12 +236,13 @@ const Bots: React.FC<
   );
 
   const handleBot1FireAtTarget = useCallback(() => {
-    fireBotLaser("bot-1", botDebugMode ? "bot-2" : currentPlayerId);
-  }, [fireBotLaser, botDebugMode, currentPlayerId]);
+    fireBotWeapon("bot-1", botDebugMode ? "bot-2" : currentPlayerId);
+  }, [fireBotWeapon, botDebugMode, currentPlayerId]);
 
   const handleBot2FireAtTarget = useCallback(() => {
-    fireBotLaser("bot-2", "bot-1");
-  }, [fireBotLaser]);
+    // In debug mode bot-2 fights bot-1; in combat mode it targets the player.
+    fireBotWeapon("bot-2", botDebugMode ? "bot-1" : currentPlayerId);
+  }, [fireBotWeapon, botDebugMode, currentPlayerId]);
 
   return (
     <>
@@ -258,11 +284,11 @@ const Bots: React.FC<
         color="#ff8888"
       />
 
-      {botDebugMode && (
+      {showBot2 && (
         <BotCharacter
-          targetPositionRef={bot1PositionRef}
+          targetPositionRef={botDebugMode ? bot1PositionRef : playerPositionRef}
           isIt={bot2IsIt}
-          targetIsIt={bot1IsIt}
+          targetIsIt={botDebugMode ? bot1IsIt : playerIsItFromManager}
           isPaused={isPaused}
           onTagTarget={handleBot2TagTarget}
           onFireAtTarget={handleBot2FireAtTarget}

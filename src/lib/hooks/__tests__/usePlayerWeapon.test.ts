@@ -176,6 +176,60 @@ describe("usePlayerWeapon.processFiring", () => {
     expect(playHitSound).not.toHaveBeenCalled();
   });
 
+  it("applies rocket splash damage to nearby bystanders in deathmatch", () => {
+    weaponManager.equip("rocket");
+    gameManager.startDeathmatchGame(120, 5);
+    // Bystander standing 2 units behind the target (within splash radius of 5)
+    gameManager.addPlayer({
+      id: "bystander",
+      name: "Bystander",
+      position: [0, 0, -7],
+      rotation: [0, 0, 0],
+    });
+
+    processFiring({
+      origin,
+      direction,
+      shooterId: "shooter",
+      gameManager,
+      weaponManager,
+      collisionSystem,
+      now: 1000,
+    });
+
+    const target = gameManager.getPlayers().get("target");
+    const bystander = gameManager.getPlayers().get("bystander");
+    // Direct hit: 100 dmg → downed (health 0)
+    expect(target?.health).toBe(0);
+    // Splash hit: 50 dmg
+    expect(bystander?.health).toBe(50);
+  });
+
+  it("does not apply splash to bystanders outside the splash radius", () => {
+    weaponManager.equip("rocket");
+    gameManager.startDeathmatchGame(120, 5);
+    // Bystander 9 units behind the target — outside splashRadius (5)
+    gameManager.addPlayer({
+      id: "far-bystander",
+      name: "FarBystander",
+      position: [0, 0, -14],
+      rotation: [0, 0, 0],
+    });
+
+    processFiring({
+      origin,
+      direction,
+      shooterId: "shooter",
+      gameManager,
+      weaponManager,
+      collisionSystem,
+      now: 1000,
+    });
+
+    const farBystander = gameManager.getPlayers().get("far-bystander");
+    expect(farBystander?.health).toBeUndefined(); // no damage applied
+  });
+
   it("enforces the weapon cooldown across repeated calls", () => {
     weaponManager.equip("laser");
 

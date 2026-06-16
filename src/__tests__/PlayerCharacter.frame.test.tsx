@@ -184,6 +184,7 @@ describe("PlayerCharacter frame behavior", () => {
               scores: {},
               timeRemaining: 10,
             }),
+            updatePlayer: vi.fn(),
           } as unknown as import("../components/GameManager").GameManager
         }
         currentPlayerId="socket-1"
@@ -248,6 +249,7 @@ describe("PlayerCharacter frame behavior", () => {
               scores: {},
               timeRemaining: 10,
             }),
+            updatePlayer: vi.fn(),
           } as unknown as import("../components/GameManager").GameManager
         }
         currentPlayerId="socket-1"
@@ -308,6 +310,7 @@ describe("PlayerCharacter frame behavior", () => {
               scores: {},
               timeRemaining: 10,
             }),
+            updatePlayer: vi.fn(),
           } as unknown as import("../components/GameManager").GameManager
         }
         currentPlayerId="socket-1"

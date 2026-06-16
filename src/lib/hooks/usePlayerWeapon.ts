@@ -81,7 +81,28 @@ export function processFiring(params: FireParams): FireResult | null {
         shooterId,
         hit.hitPlayerId,
         weapon.damage,
+        weapon.id,
       );
+
+      // Area-of-effect splash for weapons with splashRadius (e.g. rocket).
+      if (weapon.splashRadius && weapon.splashDamage) {
+        const dir = direction.clone().normalize();
+        const impactPoint = origin
+          .clone()
+          .add(dir.multiplyScalar(hit.distance));
+        for (const [pid, player] of gameManager.getPlayers()) {
+          if (pid === hit.hitPlayerId || pid === shooterId) continue;
+          const pPos = new THREE.Vector3(...player.position);
+          if (pPos.distanceTo(impactPoint) <= weapon.splashRadius) {
+            gameManager.hitPlayer(
+              shooterId,
+              pid,
+              weapon.splashDamage,
+              weapon.id,
+            );
+          }
+        }
+      }
     } else {
       const target = gameManager.getPlayers().get(hit.hitPlayerId);
       if (target) {
