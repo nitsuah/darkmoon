@@ -77,32 +77,14 @@ export function processFiring(params: FireParams): FireResult | null {
       // Deathmatch/CTF: the active mode applies damage and starts respawn
       // timers (and, in CTF, drops any carried flag). Rejected hits (e.g. a
       // downed target) deal no damage.
+      // Splash damage for rocket-type weapons is handled inside DeathmatchMode/CTFMode
+      // onAction, which has access to all player positions via the players Map.
       damageApplied = gameManager.hitPlayer(
         shooterId,
         hit.hitPlayerId,
         weapon.damage,
         weapon.id,
       );
-
-      // Area-of-effect splash for weapons with splashRadius (e.g. rocket).
-      if (weapon.splashRadius && weapon.splashDamage) {
-        const dir = direction.clone().normalize();
-        const impactPoint = origin
-          .clone()
-          .add(dir.multiplyScalar(hit.distance));
-        for (const [pid, player] of gameManager.getPlayers()) {
-          if (pid === hit.hitPlayerId || pid === shooterId) continue;
-          const pPos = new THREE.Vector3(...player.position);
-          if (pPos.distanceTo(impactPoint) <= weapon.splashRadius) {
-            gameManager.hitPlayer(
-              shooterId,
-              pid,
-              weapon.splashDamage,
-              weapon.id,
-            );
-          }
-        }
-      }
     } else {
       const target = gameManager.getPlayers().get(hit.hitPlayerId);
       if (target) {
