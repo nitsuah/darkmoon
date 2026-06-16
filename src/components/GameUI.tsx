@@ -163,7 +163,12 @@ const GameUI: React.FC<GameUIProps> = ({
                 🔫{" "}
                 {WEAPONS[currentPlayer.equippedWeaponId]?.name ??
                   currentPlayer.equippedWeaponId}{" "}
-                [1/2]
+                [
+                {currentPlayer.currentAmmo === null ||
+                currentPlayer.currentAmmo === undefined
+                  ? "∞"
+                  : currentPlayer.currentAmmo}
+                ] [1/2/3]
               </div>
             )}
 
@@ -238,7 +243,12 @@ const GameUI: React.FC<GameUIProps> = ({
                 🔫{" "}
                 {WEAPONS[currentPlayer.equippedWeaponId]?.name ??
                   currentPlayer.equippedWeaponId}{" "}
-                [1/2]
+                [
+                {currentPlayer.currentAmmo === null ||
+                currentPlayer.currentAmmo === undefined
+                  ? "∞"
+                  : currentPlayer.currentAmmo}
+                ] [1/2/3]
               </div>
             )}
 

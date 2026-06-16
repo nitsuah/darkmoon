@@ -35,6 +35,12 @@ export const PICKUP_DEFS: PickupDef[] = [
     weaponId: "laser",
     color: "#33ffe6",
   },
+  {
+    id: "pickup-rocket",
+    position: [0, 0.8, -14],
+    weaponId: "rocket",
+    color: "#ff1100",
+  },
 ];
 
 type PickupState = {

@@ -8,6 +8,7 @@ export const SHIFT = "shift";
 export const SPACE = " ";
 export const KEY_1 = "1";
 export const KEY_2 = "2";
+export const KEY_3 = "3";
 export const DIRECTIONS = [W, A, S, D, Q, E];
 
 export class KeyDisplay {
