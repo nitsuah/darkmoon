@@ -54,6 +54,24 @@ const GameUI: React.FC<GameUIProps> = ({
   // Kill feed: last 5 events (capped to 10 in GameManager), bottom-left overlay.
   const recentKills: KillEvent[] = (gameState.killFeed ?? []).slice(-5);
 
+  // Respawn countdown: restart the interval whenever the player's respawnAt stamp changes.
+  const respawnAt = currentPlayer?.respawnAt;
+  const [respawnSecondsLeft, setRespawnSecondsLeft] = React.useState<
+    number | null
+  >(null);
+
+  React.useEffect(() => {
+    if (respawnAt === undefined) {
+      setRespawnSecondsLeft(null);
+      return;
+    }
+    const id = setInterval(() => {
+      const secs = Math.ceil((respawnAt - Date.now()) / 1000);
+      setRespawnSecondsLeft(Math.max(0, secs));
+    }, 100);
+    return () => clearInterval(id);
+  }, [respawnAt]);
+
   // Main game status display (always visible during active game)
   if (gameState.isActive) {
     return (
@@ -367,6 +385,51 @@ const GameUI: React.FC<GameUIProps> = ({
             ))}
           </div>
         )}
+
+        {respawnSecondsLeft !== null &&
+          (gameState.mode === "deathmatch" || gameState.mode === "ctf") && (
+            <div
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                pointerEvents: "none",
+                zIndex: 998,
+                background: "rgba(0,0,0,0.45)",
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: isMinimal ? "22px" : "38px",
+                  fontWeight: "bold",
+                  color: "#ff4444",
+                  textShadow: "0 0 16px #ff0000",
+                  letterSpacing: "2px",
+                }}
+              >
+                DOWNED
+              </div>
+              <div
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: isMinimal ? "14px" : "22px",
+                  color: "#ffaaaa",
+                  marginTop: "6px",
+                }}
+              >
+                {respawnSecondsLeft > 0
+                  ? `RESPAWNING IN ${respawnSecondsLeft}s`
+                  : "RESPAWNING..."}
+              </div>
+            </div>
+          )}
       </>
     );
   }
