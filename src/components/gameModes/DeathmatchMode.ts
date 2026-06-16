@@ -1,5 +1,5 @@
 import { createLogger } from "../../lib/utils/logger";
-import type { GameState, Player } from "../GameManager";
+import type { GameState, KillEvent, Player } from "../GameManager";
 import type {
   GameAction,
   GameModeHandler,
@@ -48,7 +48,7 @@ export class DeathmatchMode implements GameModeHandler {
     gameState: GameState,
   ): boolean {
     if (action.type !== "hit") return false;
-    const { attackerId, targetId, damage } = action;
+    const { attackerId, targetId, damage, weaponId } = action;
 
     if (attackerId === targetId) return false;
 
@@ -70,6 +70,18 @@ export class DeathmatchMode implements GameModeHandler {
       log.debug(
         `${attacker.name} eliminated ${target.name}! (${gameState.scores[attackerId]} kills)`,
       );
+
+      const killEvent: KillEvent = {
+        killerId: attackerId,
+        killerName: attacker.name,
+        targetId,
+        targetName: target.name,
+        weaponId: weaponId ?? "unknown",
+        timestamp: Date.now(),
+      };
+      if (!gameState.killFeed) gameState.killFeed = [];
+      gameState.killFeed.push(killEvent);
+      if (gameState.killFeed.length > 10) gameState.killFeed.shift();
 
       if (
         gameState.killLimit !== undefined &&

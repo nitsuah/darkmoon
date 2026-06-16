@@ -1,5 +1,5 @@
 import * as React from "react";
-import { GameState, Player } from "./GameManager";
+import { GameState, KillEvent, Player } from "./GameManager";
 import { WEAPONS } from "./combat/WeaponManager";
 
 interface GameUIProps {
@@ -51,264 +51,247 @@ const GameUI: React.FC<GameUIProps> = ({
   const itPlayer =
     gameState.mode === "tag" ? players.get(gameState.itPlayerId || "") : null;
 
+  // Kill feed: last 5 events (capped to 10 in GameManager), bottom-left overlay.
+  const recentKills: KillEvent[] = (gameState.killFeed ?? []).slice(-5);
+
   // Main game status display (always visible during active game)
   if (gameState.isActive) {
     return (
-      <div
-        style={{
-          position: "fixed",
-          top: isMinimal ? "8px" : "10px",
-          right: isMinimal ? "8px" : isMobile ? "10px" : "120px",
-          padding: isMinimal ? "3px 5px" : isMobile ? "6px 8px" : "8px 12px",
-          backgroundColor: "rgba(0, 0, 0, 0.9)",
-          border: "1px solid rgba(255, 255, 255, 0.3)",
-          borderRadius: isMinimal ? "3px" : "6px",
-          color: "white",
-          fontFamily: "monospace",
-          fontSize: isMinimal ? "8px" : isMobile ? "10px" : "12px",
-          zIndex: 1000,
-          minWidth: isMinimal ? "auto" : isMobile ? "auto" : "180px",
-          maxWidth: isMinimal ? "80px" : "auto",
-          textAlign: "center",
-        }}
-      >
-        {/* Hide game mode text on minimal - just show timer */}
-        {!isMinimal && (
-          <div
-            style={{
-              marginBottom: "6px",
-              fontSize: isMobile ? "11px" : "13px",
-              fontWeight: "bold",
-            }}
-          >
-            {isMobile
-              ? gameState.mode.toUpperCase().substring(0, 3)
-              : `${gameState.mode.toUpperCase()} GAME`}
-          </div>
-        )}
-
+      <>
         <div
           style={{
-            marginBottom: isMinimal ? "2px" : "6px",
-            fontSize: isMinimal ? "13px" : isMobile ? "10px" : "11px",
-            fontWeight: isMinimal ? "bold" : "normal",
+            position: "fixed",
+            top: isMinimal ? "8px" : "10px",
+            right: isMinimal ? "8px" : isMobile ? "10px" : "120px",
+            padding: isMinimal ? "3px 5px" : isMobile ? "6px 8px" : "8px 12px",
+            backgroundColor: "rgba(0, 0, 0, 0.9)",
+            border: "1px solid rgba(255, 255, 255, 0.3)",
+            borderRadius: isMinimal ? "3px" : "6px",
+            color: "white",
+            fontFamily: "monospace",
+            fontSize: isMinimal ? "8px" : isMobile ? "10px" : "12px",
+            zIndex: 1000,
+            minWidth: isMinimal ? "auto" : isMobile ? "auto" : "180px",
+            maxWidth: isMinimal ? "80px" : "auto",
+            textAlign: "center",
           }}
         >
-          ⏱️ {formatTime(gameState.timeRemaining)}
-        </div>
-
-        {gameState.mode === "tag" && (
-          <>
+          {/* Hide game mode text on minimal - just show timer */}
+          {!isMinimal && (
             <div
               style={{
-                marginBottom: isMinimal ? "2px" : "6px",
-                padding: isMinimal ? "2px 3px" : "4px 8px",
-                backgroundColor: currentPlayer?.isIt
-                  ? "rgba(255, 100, 100, 0.3)"
-                  : "rgba(100, 255, 100, 0.3)",
-                borderRadius: "3px",
-                border: currentPlayer?.isIt
-                  ? "1px solid #ff6464"
-                  : "1px solid #64ff64",
-                fontSize: isMinimal ? "8px" : isMobile ? "10px" : "11px",
+                marginBottom: "6px",
+                fontSize: isMobile ? "11px" : "13px",
+                fontWeight: "bold",
               }}
             >
-              {isMinimal || isMobile
-                ? currentPlayer?.isIt
-                  ? "🏃 IT!"
-                  : `${itPlayer?.name?.substring(0, 6) || "?"}`
-                : currentPlayer?.isIt
-                  ? "🏃 YOU ARE IT!"
-                  : `${itPlayer?.name || "Someone"} is IT`}
+              {isMobile
+                ? gameState.mode.toUpperCase().substring(0, 3)
+                : `${gameState.mode.toUpperCase()} GAME`}
             </div>
+          )}
 
-            {currentPlayer?.isIt && !isMobile && !isMinimal && (
-              <div
-                style={{
-                  fontSize: "10px",
-                  color: "#ffff64",
-                  marginBottom: "4px",
-                }}
-              >
-                Tag someone!
-              </div>
-            )}
-          </>
-        )}
+          <div
+            style={{
+              marginBottom: isMinimal ? "2px" : "6px",
+              fontSize: isMinimal ? "13px" : isMobile ? "10px" : "11px",
+              fontWeight: isMinimal ? "bold" : "normal",
+            }}
+          >
+            ⏱️ {formatTime(gameState.timeRemaining)}
+          </div>
 
-        {gameState.mode === "deathmatch" && (
-          <>
-            <div
-              style={{
-                marginBottom: isMinimal ? "2px" : "6px",
-                padding: isMinimal ? "2px 3px" : "4px 8px",
-                backgroundColor: "rgba(100, 255, 100, 0.2)",
-                borderRadius: "3px",
-                border: "1px solid #64ff64",
-                fontSize: isMinimal ? "8px" : isMobile ? "10px" : "11px",
-              }}
-            >
-              ❤️ {currentPlayer?.health ?? currentPlayer?.maxHealth ?? 100}
-              {!isMinimal && ` / ${currentPlayer?.maxHealth ?? 100}`}
-            </div>
-
-            {!isMinimal && currentPlayer?.equippedWeaponId && (
-              <div
-                style={{
-                  marginBottom: "6px",
-                  fontSize: isMobile ? "9px" : "10px",
-                  color: "#aaddff",
-                }}
-              >
-                🔫{" "}
-                {WEAPONS[currentPlayer.equippedWeaponId]?.name ??
-                  currentPlayer.equippedWeaponId}{" "}
-                [
-                {currentPlayer.currentAmmo === null ||
-                currentPlayer.currentAmmo === undefined
-                  ? "∞"
-                  : currentPlayer.currentAmmo}
-                ] [1/2/3]
-              </div>
-            )}
-
-            {!isMinimal && (
-              <div
-                style={{
-                  marginBottom: "6px",
-                  fontSize: isMobile ? "9px" : "10px",
-                  textAlign: "left",
-                }}
-              >
-                {Array.from(players.values())
-                  .map((player) => ({
-                    name: player.name,
-                    kills: gameState.scores[player.id] || 0,
-                  }))
-                  .sort((a, b) => b.kills - a.kills)
-                  .map((entry) => (
-                    <div key={entry.name}>
-                      💀 {entry.name}: {entry.kills}
-                      {gameState.killLimit ? ` / ${gameState.killLimit}` : ""}
-                    </div>
-                  ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {gameState.mode === "ctf" && (
-          <>
-            <div
-              style={{
-                marginBottom: isMinimal ? "2px" : "6px",
-                padding: isMinimal ? "2px 3px" : "4px 8px",
-                backgroundColor:
-                  currentPlayer?.team === "a"
-                    ? "rgba(74, 144, 226, 0.3)"
-                    : "rgba(220, 53, 69, 0.3)",
-                borderRadius: "3px",
-                border:
-                  currentPlayer?.team === "a"
-                    ? "1px solid #4a90e2"
-                    : "1px solid #dc3545",
-                fontSize: isMinimal ? "8px" : isMobile ? "10px" : "11px",
-              }}
-            >
-              {currentPlayer?.team === "a" ? "🔵 Team A" : "🔴 Team B"}
-            </div>
-
-            <div
-              style={{
-                marginBottom: isMinimal ? "2px" : "6px",
-                padding: isMinimal ? "2px 3px" : "4px 8px",
-                backgroundColor: "rgba(100, 255, 100, 0.2)",
-                borderRadius: "3px",
-                border: "1px solid #64ff64",
-                fontSize: isMinimal ? "8px" : isMobile ? "10px" : "11px",
-              }}
-            >
-              ❤️ {currentPlayer?.health ?? currentPlayer?.maxHealth ?? 100}
-              {!isMinimal && ` / ${currentPlayer?.maxHealth ?? 100}`}
-            </div>
-
-            {!isMinimal && currentPlayer?.equippedWeaponId && (
-              <div
-                style={{
-                  marginBottom: "6px",
-                  fontSize: isMobile ? "9px" : "10px",
-                  color: "#aaddff",
-                }}
-              >
-                🔫{" "}
-                {WEAPONS[currentPlayer.equippedWeaponId]?.name ??
-                  currentPlayer.equippedWeaponId}{" "}
-                [
-                {currentPlayer.currentAmmo === null ||
-                currentPlayer.currentAmmo === undefined
-                  ? "∞"
-                  : currentPlayer.currentAmmo}
-                ] [1/2/3]
-              </div>
-            )}
-
-            {!isMinimal && (
-              <div
-                style={{
-                  marginBottom: "6px",
-                  fontSize: isMobile ? "9px" : "10px",
-                }}
-              >
-                🔵 {gameState.scores["a"] ?? 0} - {gameState.scores["b"] ?? 0}{" "}
-                🔴
-              </div>
-            )}
-
-            {gameState.flags?.some(
-              (flag) => flag.carrierId === currentPlayerId,
-            ) && (
+          {gameState.mode === "tag" && (
+            <>
               <div
                 style={{
                   marginBottom: isMinimal ? "2px" : "6px",
-                  fontSize: isMinimal ? "8px" : isMobile ? "9px" : "10px",
-                  color: "#ffff64",
-                  fontWeight: "bold",
+                  padding: isMinimal ? "2px 3px" : "4px 8px",
+                  backgroundColor: currentPlayer?.isIt
+                    ? "rgba(255, 100, 100, 0.3)"
+                    : "rgba(100, 255, 100, 0.3)",
+                  borderRadius: "3px",
+                  border: currentPlayer?.isIt
+                    ? "1px solid #ff6464"
+                    : "1px solid #64ff64",
+                  fontSize: isMinimal ? "8px" : isMobile ? "10px" : "11px",
                 }}
               >
-                🚩 Carrying flag! Return to base!
+                {isMinimal || isMobile
+                  ? currentPlayer?.isIt
+                    ? "🏃 IT!"
+                    : `${itPlayer?.name?.substring(0, 6) || "?"}`
+                  : currentPlayer?.isIt
+                    ? "🏃 YOU ARE IT!"
+                    : `${itPlayer?.name || "Someone"} is IT`}
               </div>
-            )}
-          </>
-        )}
 
-        <button
-          onClick={onEndGame}
-          style={{
-            marginTop: isMinimal ? "2px" : "4px",
-            padding: isMinimal ? "2px 4px" : isMobile ? "3px 6px" : "3px 6px",
-            backgroundColor: "rgba(255, 100, 100, 0.8)",
-            border: "1px solid #ff6464",
-            borderRadius: "3px",
-            color: "white",
-            cursor: "pointer",
-            fontSize: isMinimal ? "10px" : isMobile ? "9px" : "10px",
-            width: "100%",
-          }}
-        >
-          {isMinimal || isMobile ? "⏹️" : "End Game"}
-        </button>
+              {currentPlayer?.isIt && !isMobile && !isMinimal && (
+                <div
+                  style={{
+                    fontSize: "10px",
+                    color: "#ffff64",
+                    marginBottom: "4px",
+                  }}
+                >
+                  Tag someone!
+                </div>
+              )}
+            </>
+          )}
 
-        {/* Debug mode toggle - always available */}
-        {onToggleDebug && (
+          {gameState.mode === "deathmatch" && (
+            <>
+              <div
+                style={{
+                  marginBottom: isMinimal ? "2px" : "6px",
+                  padding: isMinimal ? "2px 3px" : "4px 8px",
+                  backgroundColor: "rgba(100, 255, 100, 0.2)",
+                  borderRadius: "3px",
+                  border: "1px solid #64ff64",
+                  fontSize: isMinimal ? "8px" : isMobile ? "10px" : "11px",
+                }}
+              >
+                ❤️ {currentPlayer?.health ?? currentPlayer?.maxHealth ?? 100}
+                {!isMinimal && ` / ${currentPlayer?.maxHealth ?? 100}`}
+              </div>
+
+              {!isMinimal && currentPlayer?.equippedWeaponId && (
+                <div
+                  style={{
+                    marginBottom: "6px",
+                    fontSize: isMobile ? "9px" : "10px",
+                    color: "#aaddff",
+                  }}
+                >
+                  🔫{" "}
+                  {WEAPONS[currentPlayer.equippedWeaponId]?.name ??
+                    currentPlayer.equippedWeaponId}{" "}
+                  [
+                  {currentPlayer.currentAmmo === null ||
+                  currentPlayer.currentAmmo === undefined
+                    ? "∞"
+                    : currentPlayer.currentAmmo}
+                  ] [1/2/3]
+                </div>
+              )}
+
+              {!isMinimal && (
+                <div
+                  style={{
+                    marginBottom: "6px",
+                    fontSize: isMobile ? "9px" : "10px",
+                    textAlign: "left",
+                  }}
+                >
+                  {Array.from(players.values())
+                    .map((player) => ({
+                      name: player.name,
+                      kills: gameState.scores[player.id] || 0,
+                    }))
+                    .sort((a, b) => b.kills - a.kills)
+                    .map((entry) => (
+                      <div key={entry.name}>
+                        💀 {entry.name}: {entry.kills}
+                        {gameState.killLimit ? ` / ${gameState.killLimit}` : ""}
+                      </div>
+                    ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {gameState.mode === "ctf" && (
+            <>
+              <div
+                style={{
+                  marginBottom: isMinimal ? "2px" : "6px",
+                  padding: isMinimal ? "2px 3px" : "4px 8px",
+                  backgroundColor:
+                    currentPlayer?.team === "a"
+                      ? "rgba(74, 144, 226, 0.3)"
+                      : "rgba(220, 53, 69, 0.3)",
+                  borderRadius: "3px",
+                  border:
+                    currentPlayer?.team === "a"
+                      ? "1px solid #4a90e2"
+                      : "1px solid #dc3545",
+                  fontSize: isMinimal ? "8px" : isMobile ? "10px" : "11px",
+                }}
+              >
+                {currentPlayer?.team === "a" ? "🔵 Team A" : "🔴 Team B"}
+              </div>
+
+              <div
+                style={{
+                  marginBottom: isMinimal ? "2px" : "6px",
+                  padding: isMinimal ? "2px 3px" : "4px 8px",
+                  backgroundColor: "rgba(100, 255, 100, 0.2)",
+                  borderRadius: "3px",
+                  border: "1px solid #64ff64",
+                  fontSize: isMinimal ? "8px" : isMobile ? "10px" : "11px",
+                }}
+              >
+                ❤️ {currentPlayer?.health ?? currentPlayer?.maxHealth ?? 100}
+                {!isMinimal && ` / ${currentPlayer?.maxHealth ?? 100}`}
+              </div>
+
+              {!isMinimal && currentPlayer?.equippedWeaponId && (
+                <div
+                  style={{
+                    marginBottom: "6px",
+                    fontSize: isMobile ? "9px" : "10px",
+                    color: "#aaddff",
+                  }}
+                >
+                  🔫{" "}
+                  {WEAPONS[currentPlayer.equippedWeaponId]?.name ??
+                    currentPlayer.equippedWeaponId}{" "}
+                  [
+                  {currentPlayer.currentAmmo === null ||
+                  currentPlayer.currentAmmo === undefined
+                    ? "∞"
+                    : currentPlayer.currentAmmo}
+                  ] [1/2/3]
+                </div>
+              )}
+
+              {!isMinimal && (
+                <div
+                  style={{
+                    marginBottom: "6px",
+                    fontSize: isMobile ? "9px" : "10px",
+                  }}
+                >
+                  🔵 {gameState.scores["a"] ?? 0} - {gameState.scores["b"] ?? 0}{" "}
+                  🔴
+                </div>
+              )}
+
+              {gameState.flags?.some(
+                (flag) => flag.carrierId === currentPlayerId,
+              ) && (
+                <div
+                  style={{
+                    marginBottom: isMinimal ? "2px" : "6px",
+                    fontSize: isMinimal ? "8px" : isMobile ? "9px" : "10px",
+                    color: "#ffff64",
+                    fontWeight: "bold",
+                  }}
+                >
+                  🚩 Carrying flag! Return to base!
+                </div>
+              )}
+            </>
+          )}
+
           <button
-            onClick={onToggleDebug}
+            onClick={onEndGame}
             style={{
               marginTop: isMinimal ? "2px" : "4px",
               padding: isMinimal ? "2px 4px" : isMobile ? "3px 6px" : "3px 6px",
-              backgroundColor: botDebugMode
-                ? "rgba(220, 53, 69, 0.8)"
-                : "rgba(255, 140, 0, 0.8)",
-              border: botDebugMode ? "1px solid #dc3545" : "1px solid #ff8c00",
+              backgroundColor: "rgba(255, 100, 100, 0.8)",
+              border: "1px solid #ff6464",
               borderRadius: "3px",
               color: "white",
               cursor: "pointer",
@@ -316,14 +299,75 @@ const GameUI: React.FC<GameUIProps> = ({
               width: "100%",
             }}
           >
-            {isMinimal || isMobile
-              ? "🔧"
-              : botDebugMode
-                ? "⏹️ Stop Debug"
-                : "🔧 Debug Mode"}
+            {isMinimal || isMobile ? "⏹️" : "End Game"}
           </button>
+
+          {/* Debug mode toggle - always available */}
+          {onToggleDebug && (
+            <button
+              onClick={onToggleDebug}
+              style={{
+                marginTop: isMinimal ? "2px" : "4px",
+                padding: isMinimal
+                  ? "2px 4px"
+                  : isMobile
+                    ? "3px 6px"
+                    : "3px 6px",
+                backgroundColor: botDebugMode
+                  ? "rgba(220, 53, 69, 0.8)"
+                  : "rgba(255, 140, 0, 0.8)",
+                border: botDebugMode
+                  ? "1px solid #dc3545"
+                  : "1px solid #ff8c00",
+                borderRadius: "3px",
+                color: "white",
+                cursor: "pointer",
+                fontSize: isMinimal ? "10px" : isMobile ? "9px" : "10px",
+                width: "100%",
+              }}
+            >
+              {isMinimal || isMobile
+                ? "🔧"
+                : botDebugMode
+                  ? "⏹️ Stop Debug"
+                  : "🔧 Debug Mode"}
+            </button>
+          )}
+        </div>
+        {!isMinimal && recentKills.length > 0 && (
+          <div
+            style={{
+              position: "fixed",
+              bottom: "60px",
+              left: "10px",
+              fontFamily: "monospace",
+              fontSize: "11px",
+              pointerEvents: "none",
+              zIndex: 999,
+            }}
+          >
+            {recentKills.map((k) => (
+              <div
+                key={`${k.killerId}-${k.timestamp}`}
+                style={{
+                  backgroundColor: "rgba(0,0,0,0.7)",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  borderRadius: "3px",
+                  padding: "2px 6px",
+                  marginBottom: "2px",
+                  color: "#ffdd88",
+                }}
+              >
+                💀 {k.killerName}{" "}
+                <span style={{ color: "#aaaaaa" }}>
+                  [{WEAPONS[k.weaponId]?.name ?? k.weaponId}]
+                </span>{" "}
+                → {k.targetName}
+              </div>
+            ))}
+          </div>
         )}
-      </div>
+      </>
     );
   }
 

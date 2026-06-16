@@ -210,7 +210,12 @@ const Bots: React.FC<
         return;
       }
 
-      const hitLanded = gameManager.hitPlayer(botId, targetId, weapon.damage);
+      const hitLanded = gameManager.hitPlayer(
+        botId,
+        targetId,
+        weapon.damage,
+        weapon.id,
+      );
       if (hitLanded) {
         try {
           getSoundManager()?.playHitSound();
