@@ -198,7 +198,17 @@ const Bots: React.FC<
       }
 
       const weapon = weaponRef.current.fire(botId);
-      if (!weapon) return; // still on cooldown
+      if (!weapon) {
+        // If ammo is depleted (not just on cooldown), fall back to infinite laser.
+        const equipped = weaponRef.current.getEquipped();
+        if (equipped) {
+          const ammo = weaponRef.current.getAmmo(equipped.id);
+          if (ammo !== null && ammo <= 0) {
+            weaponRef.current.equip("laser");
+          }
+        }
+        return;
+      }
 
       const hitLanded = gameManager.hitPlayer(botId, targetId, weapon.damage);
       if (hitLanded) {

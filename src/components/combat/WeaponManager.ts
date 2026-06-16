@@ -5,6 +5,8 @@ export interface WeaponConfig {
   /** Maximum effective range in world units. */
   range: number;
   cooldownMs: number;
+  /** Maximum ammo capacity. undefined/null means infinite. */
+  maxAmmo?: number;
 }
 
 export const WEAPONS: Record<string, WeaponConfig> = {
@@ -21,21 +23,44 @@ export const WEAPONS: Record<string, WeaponConfig> = {
     damage: 25,
     range: 8,
     cooldownMs: 1000,
+    maxAmmo: 6,
+  },
+  rocket: {
+    id: "rocket",
+    name: "Rocket Launcher",
+    damage: 100,
+    range: 12,
+    cooldownMs: 2000,
+    maxAmmo: 3,
   },
 };
 
 /**
- * Tracks the equipped weapon and per-shooter fire cooldowns. Pure data/logic
- * - scene mutation (projectile visuals, hit VFX) stays in the React layer.
+ * Tracks the equipped weapon, per-shooter fire cooldowns, and per-weapon ammo.
+ * Pure data/logic — scene mutation stays in the React layer.
  */
 export class WeaponManager {
   private equippedWeaponId: string | null = null;
   private lastFiredAt: Map<string, number> = new Map();
+  private ammoMap: Map<string, number> = new Map();
 
   equip(weaponId: string): boolean {
-    if (!WEAPONS[weaponId]) return false;
+    const weapon = WEAPONS[weaponId];
+    if (!weapon) return false;
     this.equippedWeaponId = weaponId;
+    // Initialize ammo only if not yet tracked (preserve ammo across weapon switches).
+    if (weapon.maxAmmo !== undefined && !this.ammoMap.has(weaponId)) {
+      this.ammoMap.set(weaponId, weapon.maxAmmo);
+    }
     return true;
+  }
+
+  /** Refill a weapon's ammo to its maximum (call this when picking up a crate). */
+  refill(weaponId: string): void {
+    const weapon = WEAPONS[weaponId];
+    if (weapon?.maxAmmo !== undefined) {
+      this.ammoMap.set(weaponId, weapon.maxAmmo);
+    }
   }
 
   unequip(): void {
@@ -46,19 +71,32 @@ export class WeaponManager {
     return this.equippedWeaponId ? WEAPONS[this.equippedWeaponId] : null;
   }
 
+  /** Returns current ammo for the given weapon, or null if the weapon has infinite ammo. */
+  getAmmo(weaponId: string): number | null {
+    const weapon = WEAPONS[weaponId];
+    if (!weapon || weapon.maxAmmo === undefined) return null;
+    return this.ammoMap.get(weaponId) ?? weapon.maxAmmo;
+  }
+
   canFire(shooterId: string, now: number = Date.now()): boolean {
     const weapon = this.getEquipped();
     if (!weapon) return false;
 
     const last = this.lastFiredAt.get(shooterId);
-    return last === undefined || now - last >= weapon.cooldownMs;
+    if (last !== undefined && now - last < weapon.cooldownMs) return false;
+
+    // Ammo check
+    if (weapon.maxAmmo !== undefined) {
+      const ammo = this.ammoMap.get(weapon.id) ?? weapon.maxAmmo;
+      if (ammo <= 0) return false;
+    }
+    return true;
   }
 
   /**
    * Attempt to fire the equipped weapon for the given shooter. Returns the
-   * weapon config if the shot is allowed (a weapon is equipped and the
-   * shooter is off cooldown), or null otherwise. On success, records the
-   * fire time so subsequent calls respect the weapon's cooldown.
+   * weapon config if the shot is allowed, or null otherwise (on cooldown or
+   * out of ammo). On success, records the fire time and decrements ammo.
    */
   fire(shooterId: string, now: number = Date.now()): WeaponConfig | null {
     if (!this.canFire(shooterId, now)) return null;
@@ -67,6 +105,12 @@ export class WeaponManager {
     if (!weapon) return null;
 
     this.lastFiredAt.set(shooterId, now);
+
+    if (weapon.maxAmmo !== undefined) {
+      const current = this.ammoMap.get(weapon.id) ?? weapon.maxAmmo;
+      this.ammoMap.set(weapon.id, Math.max(0, current - 1));
+    }
+
     return weapon;
   }
 }

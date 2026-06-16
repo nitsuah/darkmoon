@@ -5,7 +5,7 @@ import { Socket } from "socket.io-client";
 import * as THREE from "three";
 import type { Clients } from "../../types/socket";
 import GameManager, { GameState } from "../GameManager";
-import { W, A, S, D, Q, E, SHIFT, SPACE, KEY_1, KEY_2 } from "../utils";
+import { W, A, S, D, Q, E, SHIFT, SPACE, KEY_1, KEY_2, KEY_3 } from "../utils";
 import SpacemanModel from "../SpacemanModel";
 import { getSoundManager } from "../SoundManager";
 import { WeaponManager } from "../combat/WeaponManager";
@@ -156,12 +156,16 @@ export const PlayerCharacter = React.forwardRef<
   const weaponManagerRef = React.useRef(new WeaponManager());
   const prevKey1Ref = React.useRef(false);
   const prevKey2Ref = React.useRef(false);
+  const prevKey3Ref = React.useRef(false);
 
   // Equip the laser blaster by default and surface the equipped weapon to the HUD.
   React.useEffect(() => {
     weaponManagerRef.current.equip("laser");
     if (gameManager) {
-      gameManager.updatePlayer(currentPlayerId, { equippedWeaponId: "laser" });
+      gameManager.updatePlayer(currentPlayerId, {
+        equippedWeaponId: "laser",
+        currentAmmo: null,
+      });
     }
   }, [gameManager, currentPlayerId]);
 
@@ -207,8 +211,11 @@ export const PlayerCharacter = React.forwardRef<
     function handleWeaponPickup(e: unknown) {
       const { weaponId } = (e as { detail: { weaponId: string } }).detail;
       weaponManagerRef.current.equip(weaponId);
+      weaponManagerRef.current.refill(weaponId);
+      const newAmmo = weaponManagerRef.current.getAmmo(weaponId);
       gameManager?.updatePlayer(currentPlayerId, {
         equippedWeaponId: weaponId,
+        currentAmmo: newAmmo,
       });
     }
     window.addEventListener("weapon-pickup", handleWeaponPickup);
@@ -397,21 +404,35 @@ export const PlayerCharacter = React.forwardRef<
       }
     }
 
-    // Weapon switching: rising-edge detection for 1 (laser) and 2 (shotgun).
+    // Weapon switching: rising-edge detection for 1 (laser), 2 (shotgun), 3 (rocket).
     const key1 = keysPressedRef.current[KEY_1] ?? false;
     const key2 = keysPressedRef.current[KEY_2] ?? false;
+    const key3 = keysPressedRef.current[KEY_3] ?? false;
+    const myId = socketClient?.id || currentPlayerId;
     if (key1 && !prevKey1Ref.current) {
-      const myId = socketClient?.id || currentPlayerId;
       weaponManagerRef.current.equip("laser");
-      gameManager?.updatePlayer(myId, { equippedWeaponId: "laser" });
+      gameManager?.updatePlayer(myId, {
+        equippedWeaponId: "laser",
+        currentAmmo: null,
+      });
     }
     if (key2 && !prevKey2Ref.current) {
-      const myId = socketClient?.id || currentPlayerId;
       weaponManagerRef.current.equip("shotgun");
-      gameManager?.updatePlayer(myId, { equippedWeaponId: "shotgun" });
+      gameManager?.updatePlayer(myId, {
+        equippedWeaponId: "shotgun",
+        currentAmmo: weaponManagerRef.current.getAmmo("shotgun"),
+      });
+    }
+    if (key3 && !prevKey3Ref.current) {
+      weaponManagerRef.current.equip("rocket");
+      gameManager?.updatePlayer(myId, {
+        equippedWeaponId: "rocket",
+        currentAmmo: weaponManagerRef.current.getAmmo("rocket"),
+      });
     }
     prevKey1Ref.current = key1;
     prevKey2Ref.current = key2;
+    prevKey3Ref.current = key3;
 
     // Fire the equipped weapon while left-click is held (rate-limited by
     // WeaponManager's per-shooter cooldown).
@@ -437,8 +458,15 @@ export const PlayerCharacter = React.forwardRef<
 
       if (fireResult && laserBeamRef.current) {
         const beamLength = fireResult.hit?.distance ?? fireResult.weapon.range;
-        const isShotgun = fireResult.weapon.id === "shotgun";
-        const beamHalfWidth = isShotgun ? 0.1 : 0.04;
+        const wid = fireResult.weapon.id;
+        const beamHalfWidth =
+          wid === "rocket" ? 0.2 : wid === "shotgun" ? 0.1 : 0.04;
+        const beamColor =
+          wid === "rocket"
+            ? "#ff1100"
+            : wid === "shotgun"
+              ? "#ff7700"
+              : "#33ffe6";
         laserBeamRef.current.visible = true;
         laserBeamRef.current.position
           .copy(fireOrigin)
@@ -453,9 +481,12 @@ export const PlayerCharacter = React.forwardRef<
         laserBeamHideAtRef.current = now + LASER_BEAM_VISIBLE_MS;
         if (beamMeshRef.current) {
           (beamMeshRef.current.material as THREE.MeshBasicMaterial).color.set(
-            isShotgun ? "#ff7700" : "#33ffe6",
+            beamColor,
           );
         }
+        // Sync ammo to HUD after each shot.
+        const remainingAmmo = weaponManagerRef.current.getAmmo(wid);
+        gameManager?.updatePlayer(myId, { currentAmmo: remainingAmmo });
       }
     }
 

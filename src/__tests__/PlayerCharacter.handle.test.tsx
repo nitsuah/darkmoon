@@ -140,6 +140,7 @@ describe("PlayerCharacter imperative handle", () => {
 
     expect(updatePlayer).toHaveBeenCalledWith("p1", {
       equippedWeaponId: "shotgun",
+      currentAmmo: 6,
     });
   });
 

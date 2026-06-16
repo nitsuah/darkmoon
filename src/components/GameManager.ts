@@ -52,8 +52,10 @@ export interface Player {
   respawnAt?: number;
   /** Team assignment for capture-the-flag. */
   team?: "a" | "b";
-  /** Currently equipped weapon id (e.g. "laser", "shotgun"). */
+  /** Currently equipped weapon id (e.g. "laser", "shotgun", "rocket"). */
   equippedWeaponId?: string;
+  /** Current ammo for the equipped weapon. null = infinite, undefined = unknown. */
+  currentAmmo?: number | null;
 }
 
 export class GameManager {

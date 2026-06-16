@@ -10,6 +10,7 @@ import {
   SPACE,
   KEY_1,
   KEY_2,
+  KEY_3,
 } from "../../components/utils";
 
 export type KeyMap = { [key: string]: boolean };
@@ -33,6 +34,7 @@ export const useKeyboardControls = (
     [SPACE]: false,
     [KEY_1]: false,
     [KEY_2]: false,
+    [KEY_3]: false,
   });
 
   const keysPressedRef = useRef(keysPressed);
