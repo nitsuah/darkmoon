@@ -335,6 +335,33 @@ describe("GameManager deathmatch", () => {
     expect(p1.currentKillStreak).toBe(2);
   });
 
+  it("grenade splash (radius 7) damages all bystanders in range and awards kills", () => {
+    const makeP = (id: string, pos: [number, number, number]): Player => ({
+      id,
+      name: id,
+      position: pos,
+      rotation: [0, 0, 0],
+    });
+
+    const manager = new GameManager();
+    manager.addPlayer(makeP("p1", [0, 0, 0])); // attacker
+    manager.addPlayer(makeP("p2", [3, 0, 0])); // direct target
+    manager.addPlayer(makeP("p3", [5, 0, 0])); // 2u from p2 → within splashRadius 7
+    manager.addPlayer(makeP("p4", [20, 0, 0])); // far — out of range
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startDeathmatchGame(120, 10);
+
+    // grenade: 100 dmg direct, splashRadius 7, splashDamage 75
+    manager.hitPlayer("p1", "p2", 100, "grenade");
+
+    const players = manager.getPlayers();
+    expect(players.get("p2")?.health).toBe(0); // direct kill
+    expect(players.get("p3")?.health).toBe(25); // 100 - 75 splash
+    expect(players.get("p4")?.health).toBe(100); // out of range
+    expect(manager.getGameState().scores["p1"]).toBe(1); // direct kill credited
+  });
+
   it("ends the game once a player reaches the kill limit, with results sorted by kills", () => {
     const manager = new GameManager();
     manager.addPlayer(makePlayer("p1", "P1"));
