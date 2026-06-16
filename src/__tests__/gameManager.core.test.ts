@@ -135,6 +135,25 @@ describe("GameManager core", () => {
     expect(manager.getPlayers().get("p2")?.health).toBeUndefined();
   });
 
+  it("tag event is pushed to killFeed on a successful tag", () => {
+    vi.spyOn(Date, "now").mockReturnValue(0);
+    vi.spyOn(Math, "random").mockReturnValue(0); // p1 becomes IT
+
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1", "Player 1"));
+    manager.addPlayer(makePlayer("p2", "Player 2"));
+    manager.startTagGame(60);
+
+    vi.spyOn(Date, "now").mockReturnValue(5000);
+    manager.tagPlayer("p1", "p2");
+
+    const feed = manager.getGameState().killFeed ?? [];
+    expect(feed).toHaveLength(1);
+    expect(feed[0].killerId).toBe("p1");
+    expect(feed[0].targetId).toBe("p2");
+    expect(feed[0].weaponId).toBe("tag");
+  });
+
   it("laser-tag: a hit from a non-IT player does nothing in tag mode", () => {
     vi.spyOn(Date, "now").mockReturnValue(0);
     vi.spyOn(Math, "random").mockReturnValue(0); // p1 becomes IT

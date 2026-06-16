@@ -1,5 +1,5 @@
 import { createLogger } from "../../lib/utils/logger";
-import type { GameState, Player } from "../GameManager";
+import type { GameState, KillEvent, Player } from "../GameManager";
 import type {
   GameAction,
   GameModeHandler,
@@ -28,6 +28,7 @@ export class TagMode implements GameModeHandler {
   onStart(players: Map<string, Player>, gameState: GameState): void {
     const itPlayerId = this.pickRandomPlayer(players);
     gameState.itPlayerId = itPlayerId;
+    gameState.killFeed = [];
 
     players.forEach((player, id) => {
       gameState.scores[id] = 0;
@@ -125,6 +126,18 @@ export class TagMode implements GameModeHandler {
     gameState.itPlayerId = taggedId;
     gameState.roundStartTime = now;
 
+    const tagEvent: KillEvent = {
+      killerId: taggerId,
+      killerName: tagger.name,
+      targetId: taggedId,
+      targetName: tagged.name,
+      weaponId: "tag",
+      timestamp: now,
+    };
+    if (!gameState.killFeed) gameState.killFeed = [];
+    gameState.killFeed.push(tagEvent);
+    if (gameState.killFeed.length > 20) gameState.killFeed.shift();
+
     log.debug(
       `${tagger.name} tagged ${tagged.name}! ${tagged.name} is now IT!`,
     );
@@ -169,6 +182,7 @@ export class TagMode implements GameModeHandler {
       player.lastTaggedById = undefined;
     });
 
+    gameState.killFeed = undefined;
     return results;
   }
 
