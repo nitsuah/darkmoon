@@ -128,6 +128,62 @@ describe("GameUI", () => {
     expect(screen.getByText("💀 Player One: 2 / 10")).toBeInTheDocument();
   });
 
+  it("shows equipped weapon name in deathmatch HUD", () => {
+    const players = mkPlayers();
+    players.get("p1")!.health = 100;
+    players.get("p1")!.maxHealth = 100;
+    players.get("p1")!.equippedWeaponId = "shotgun";
+
+    const gameState: GameState = {
+      mode: "deathmatch",
+      isActive: true,
+      timeRemaining: 60,
+      scores: {},
+      killLimit: 10,
+      roundStartTime: Date.now(),
+    };
+
+    render(
+      <GameUI
+        gameState={gameState}
+        players={players}
+        currentPlayerId="p1"
+        onStartGame={vi.fn()}
+        onEndGame={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/Pulse Shotgun/)).toBeInTheDocument();
+  });
+
+  it("shows equipped weapon name in CTF HUD", () => {
+    const players = mkPlayers();
+    players.get("p1")!.team = "a";
+    players.get("p1")!.equippedWeaponId = "laser";
+    players.get("p2")!.team = "b";
+
+    const gameState: GameState = {
+      mode: "ctf",
+      isActive: true,
+      timeRemaining: 60,
+      scores: { a: 0, b: 0 },
+      roundStartTime: Date.now(),
+      flags: [],
+    };
+
+    render(
+      <GameUI
+        gameState={gameState}
+        players={players}
+        currentPlayerId="p1"
+        onStartGame={vi.fn()}
+        onEndGame={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/Laser Blaster/)).toBeInTheDocument();
+  });
+
   it("renders team, scores, and carried-flag status during an active CTF game", () => {
     const players = mkPlayers();
     players.get("p1")!.team = "a";

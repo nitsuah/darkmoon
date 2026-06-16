@@ -5,7 +5,7 @@ import { Socket } from "socket.io-client";
 import * as THREE from "three";
 import type { Clients } from "../../types/socket";
 import GameManager, { GameState } from "../GameManager";
-import { W, A, S, D, Q, E, SHIFT, SPACE } from "../utils";
+import { W, A, S, D, Q, E, SHIFT, SPACE, KEY_1, KEY_2 } from "../utils";
 import SpacemanModel from "../SpacemanModel";
 import { getSoundManager } from "../SoundManager";
 import { WeaponManager } from "../combat/WeaponManager";
@@ -153,11 +153,16 @@ export const PlayerCharacter = React.forwardRef<
   const laserBeamRef = React.useRef<THREE.Group>(null);
   const laserBeamHideAtRef = React.useRef(0);
   const weaponManagerRef = React.useRef(new WeaponManager());
+  const prevKey1Ref = React.useRef(false);
+  const prevKey2Ref = React.useRef(false);
 
-  // Equip the laser blaster by default for the visible laser-fire mechanic.
+  // Equip the laser blaster by default and surface the equipped weapon to the HUD.
   React.useEffect(() => {
     weaponManagerRef.current.equip("laser");
-  }, []);
+    if (gameManager) {
+      gameManager.updatePlayer(currentPlayerId, { equippedWeaponId: "laser" });
+    }
+  }, [gameManager, currentPlayerId]);
 
   // Expose reset and freeze functions to parent via ref
   React.useImperativeHandle(ref, () => ({
@@ -377,7 +382,23 @@ export const PlayerCharacter = React.forwardRef<
       }
     }
 
-    // Fire the equipped laser while left-click is held (rate-limited by
+    // Weapon switching: rising-edge detection for 1 (laser) and 2 (shotgun).
+    const key1 = keysPressedRef.current[KEY_1] ?? false;
+    const key2 = keysPressedRef.current[KEY_2] ?? false;
+    if (key1 && !prevKey1Ref.current) {
+      const myId = socketClient?.id || currentPlayerId;
+      weaponManagerRef.current.equip("laser");
+      gameManager?.updatePlayer(myId, { equippedWeaponId: "laser" });
+    }
+    if (key2 && !prevKey2Ref.current) {
+      const myId = socketClient?.id || currentPlayerId;
+      weaponManagerRef.current.equip("shotgun");
+      gameManager?.updatePlayer(myId, { equippedWeaponId: "shotgun" });
+    }
+    prevKey1Ref.current = key1;
+    prevKey2Ref.current = key2;
+
+    // Fire the equipped weapon while left-click is held (rate-limited by
     // WeaponManager's per-shooter cooldown).
     if (mouseControls.leftClick && gameManager) {
       const fireDirection = new THREE.Vector3(
@@ -872,7 +893,7 @@ export const PlayerCharacter = React.forwardRef<
           </mesh>
         )}
       </group>
-      {/* Laser beam visual: a short-lived stretched box from the shooter
+      {/* Weapon beam visual: a short-lived stretched box from the shooter
           toward the hit point (or weapon range on a miss). */}
       <group ref={laserBeamRef} visible={false}>
         <mesh>

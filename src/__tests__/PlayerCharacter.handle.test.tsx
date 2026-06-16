@@ -91,9 +91,11 @@ type FakeGameManager = {
   getGameState: () => { mode: string; isActive: boolean };
 };
 
-const fakeGameManager: FakeGameManager = {
+type FakeGameManagerWithUpdate = FakeGameManager & { updatePlayer: () => void };
+const fakeGameManager: FakeGameManagerWithUpdate = {
   getPlayers: () => new Map<unknown, unknown>(),
   getGameState: () => ({ mode: "tag", isActive: false }),
+  updatePlayer: vi.fn(),
 };
 
 describe("PlayerCharacter imperative handle", () => {
@@ -123,7 +125,7 @@ describe("PlayerCharacter imperative handle", () => {
           lastWalkSoundTimeRef={{ current: 0 }}
           isPaused={true}
         />
-      </div>
+      </div>,
     );
 
     // Should expose methods
