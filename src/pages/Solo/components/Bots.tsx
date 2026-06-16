@@ -175,12 +175,12 @@ const Bots: React.FC<
     }
   }, [gameManager, bot2IsIt, bot1IsIt, setBot1GotTagged]);
 
-  // Shared laser for both bots; WeaponManager tracks per-shooter cooldowns,
-  // so one instance is the authoritative fire-rate gate for bot-1 and bot-2.
-  // Lazily initialized inside the fire handler to satisfy react-hooks/refs.
-  const botWeaponsRef = useRef<WeaponManager | null>(null);
+  // Each bot gets its own WeaponManager so they can use different weapons.
+  // Bot-1 uses the Pulse Shotgun (close-range burst); bot-2 uses the Laser Blaster.
+  const bot1WeaponsRef = useRef<WeaponManager | null>(null);
+  const bot2WeaponsRef = useRef<WeaponManager | null>(null);
 
-  const fireBotLaser = useCallback(
+  const fireBotWeapon = useCallback(
     (botId: string, targetId: string) => {
       if (
         !gameManager ||
@@ -190,12 +190,14 @@ const Bots: React.FC<
         return;
       }
 
-      if (!botWeaponsRef.current) {
-        botWeaponsRef.current = new WeaponManager();
-        botWeaponsRef.current.equip("laser");
+      const isBot1 = botId === "bot-1";
+      const weaponRef = isBot1 ? bot1WeaponsRef : bot2WeaponsRef;
+      if (!weaponRef.current) {
+        weaponRef.current = new WeaponManager();
+        weaponRef.current.equip(isBot1 ? "shotgun" : "laser");
       }
 
-      const weapon = botWeaponsRef.current.fire(botId);
+      const weapon = weaponRef.current.fire(botId);
       if (!weapon) return; // still on cooldown
 
       const hitLanded = gameManager.hitPlayer(botId, targetId, weapon.damage);
@@ -211,12 +213,12 @@ const Bots: React.FC<
   );
 
   const handleBot1FireAtTarget = useCallback(() => {
-    fireBotLaser("bot-1", botDebugMode ? "bot-2" : currentPlayerId);
-  }, [fireBotLaser, botDebugMode, currentPlayerId]);
+    fireBotWeapon("bot-1", botDebugMode ? "bot-2" : currentPlayerId);
+  }, [fireBotWeapon, botDebugMode, currentPlayerId]);
 
   const handleBot2FireAtTarget = useCallback(() => {
-    fireBotLaser("bot-2", "bot-1");
-  }, [fireBotLaser]);
+    fireBotWeapon("bot-2", "bot-1");
+  }, [fireBotWeapon]);
 
   return (
     <>

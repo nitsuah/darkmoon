@@ -151,6 +151,7 @@ export const PlayerCharacter = React.forwardRef<
   const [showJetpackFlame, setShowJetpackFlame] = useState(false);
   const lookIndicatorRef = React.useRef<THREE.Group>(null);
   const laserBeamRef = React.useRef<THREE.Group>(null);
+  const beamMeshRef = React.useRef<THREE.Mesh>(null);
   const laserBeamHideAtRef = React.useRef(0);
   const weaponManagerRef = React.useRef(new WeaponManager());
   const prevKey1Ref = React.useRef(false);
@@ -422,14 +423,25 @@ export const PlayerCharacter = React.forwardRef<
 
       if (fireResult && laserBeamRef.current) {
         const beamLength = fireResult.hit?.distance ?? fireResult.weapon.range;
+        const isShotgun = fireResult.weapon.id === "shotgun";
+        const beamHalfWidth = isShotgun ? 0.1 : 0.04;
         laserBeamRef.current.visible = true;
         laserBeamRef.current.position
           .copy(fireOrigin)
           .add(fireDirection.clone().multiplyScalar(beamLength / 2));
         laserBeamRef.current.rotation.y =
           cameraRotationRef.current.horizontal + Math.PI;
-        laserBeamRef.current.scale.set(1, 1, beamLength);
+        laserBeamRef.current.scale.set(
+          beamHalfWidth / 0.04,
+          beamHalfWidth / 0.04,
+          beamLength,
+        );
         laserBeamHideAtRef.current = now + LASER_BEAM_VISIBLE_MS;
+        if (beamMeshRef.current) {
+          (beamMeshRef.current.material as THREE.MeshBasicMaterial).color.set(
+            isShotgun ? "#ff7700" : "#33ffe6",
+          );
+        }
       }
     }
 
@@ -894,9 +906,10 @@ export const PlayerCharacter = React.forwardRef<
         )}
       </group>
       {/* Weapon beam visual: a short-lived stretched box from the shooter
-          toward the hit point (or weapon range on a miss). */}
+          toward the hit point (or weapon range on a miss). Color and width
+          are updated imperatively in useFrame based on equipped weapon. */}
       <group ref={laserBeamRef} visible={false}>
-        <mesh>
+        <mesh ref={beamMeshRef}>
           <boxGeometry args={[0.04, 0.04, 1]} />
           <meshBasicMaterial color="#33ffe6" transparent opacity={0.85} />
         </mesh>
