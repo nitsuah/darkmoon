@@ -227,4 +227,67 @@ describe("GameUI", () => {
       screen.getByText("🚩 Carrying flag! Return to base!"),
     ).toBeInTheDocument();
   });
+
+  it("shows results screen after deathmatch ends, with Play Again and Main Menu buttons", () => {
+    const onStartGame = vi.fn();
+    const onEndGame = vi.fn();
+
+    const gameState: GameState = {
+      mode: "deathmatch",
+      isActive: false,
+      timeRemaining: 0,
+      scores: { p1: 7, p2: 3 },
+      gameResults: [
+        { id: "p1", name: "Player One", score: 7 },
+        { id: "p2", name: "Player Two", score: 3 },
+      ],
+    };
+
+    render(
+      <GameUI
+        gameState={gameState}
+        players={mkPlayers()}
+        currentPlayerId="p1"
+        onStartGame={onStartGame}
+        onEndGame={onEndGame}
+      />,
+    );
+
+    expect(screen.getByText("VICTORY!")).toBeInTheDocument();
+    expect(screen.getByText(/Player One/)).toBeInTheDocument();
+    expect(screen.getByText(/7 kills/)).toBeInTheDocument();
+    expect(screen.getByText(/Player Two/)).toBeInTheDocument();
+    expect(screen.getByText(/3 kills/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("Play Again"));
+    expect(onStartGame).toHaveBeenCalledWith("deathmatch");
+
+    fireEvent.click(screen.getByText("Main Menu"));
+    expect(onEndGame).toHaveBeenCalled();
+  });
+
+  it("shows DEFEATED when the current player loses", () => {
+    const gameState: GameState = {
+      mode: "deathmatch",
+      isActive: false,
+      timeRemaining: 0,
+      scores: { p1: 2, p2: 8 },
+      gameResults: [
+        { id: "p2", name: "Player Two", score: 8 },
+        { id: "p1", name: "Player One", score: 2 },
+      ],
+    };
+
+    render(
+      <GameUI
+        gameState={gameState}
+        players={mkPlayers()}
+        currentPlayerId="p1"
+        onStartGame={vi.fn()}
+        onEndGame={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("DEFEATED")).toBeInTheDocument();
+  });
 });

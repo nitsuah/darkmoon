@@ -1,5 +1,9 @@
 import { createLogger } from "../lib/utils/logger";
-import type { CTFFlag, GameModeHandler } from "./gameModes/GameModeHandler";
+import type {
+  CTFFlag,
+  GameModeHandler,
+  GameResult,
+} from "./gameModes/GameModeHandler";
 
 export interface KillEvent {
   killerId: string;
@@ -39,6 +43,8 @@ export interface GameState {
   killFeed?: KillEvent[];
   /** Transient streak announcement, cleared by onTick after display window. */
   streakAnnouncement?: { killerName: string; count: number; timestamp: number };
+  /** Sorted results from the most recently ended game, cleared on next start. */
+  gameResults?: GameResult[];
 }
 
 export interface TagGameState extends GameState {
@@ -329,6 +335,7 @@ export class GameManager {
     this.gameState.timeRemaining = 0;
 
     const results = this.mode.onEnd(this.players, this.gameState);
+    this.gameState.gameResults = results;
 
     log.debug("Game ended! Final scores:", results);
 

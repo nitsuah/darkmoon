@@ -631,6 +631,126 @@ const GameUI: React.FC<GameUIProps> = ({
     );
   }
 
+  // Results screen — shown after an active game ends until the player starts a new one.
+  if (
+    !gameState.isActive &&
+    gameState.gameResults &&
+    gameState.gameResults.length > 0
+  ) {
+    const winner = gameState.gameResults[0];
+    const isWinner = winner.id === currentPlayerId;
+    const scoreLabel =
+      gameState.mode === "ctf"
+        ? "caps"
+        : gameState.mode === "tag"
+          ? "pts"
+          : "kills";
+    return (
+      <div
+        style={{
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          backgroundColor: "rgba(0,0,0,0.92)",
+          border: "2px solid rgba(255,255,255,0.3)",
+          borderRadius: "10px",
+          color: "white",
+          fontFamily: "monospace",
+          fontSize: isMinimal ? "10px" : "13px",
+          zIndex: 1001,
+          minWidth: isMinimal ? "160px" : "240px",
+          textAlign: "center",
+          padding: isMinimal ? "10px 12px" : "20px 28px",
+        }}
+      >
+        <div
+          style={{
+            fontSize: isMinimal ? "18px" : "28px",
+            fontWeight: "bold",
+            color: isWinner ? "#ffdd44" : "#ff6666",
+            textShadow: isWinner ? "0 0 14px #ffaa00" : "0 0 10px #ff4444",
+            marginBottom: "10px",
+            letterSpacing: "2px",
+          }}
+        >
+          {isWinner ? "VICTORY!" : "DEFEATED"}
+        </div>
+
+        <div
+          style={{
+            marginBottom: "12px",
+            fontSize: isMinimal ? "10px" : "12px",
+            color: "#aaa",
+          }}
+        >
+          {gameState.mode.toUpperCase()} — FINAL SCORES
+        </div>
+
+        <div style={{ marginBottom: "14px" }}>
+          {gameState.gameResults.map((r, i) => (
+            <div
+              key={r.id}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: "16px",
+                padding: "3px 0",
+                color:
+                  r.id === currentPlayerId
+                    ? "#ffdd44"
+                    : i === 0
+                      ? "#ffffff"
+                      : "#aaaaaa",
+                fontWeight: r.id === currentPlayerId ? "bold" : "normal",
+              }}
+            >
+              <span>
+                {i + 1}. {r.name}
+              </span>
+              <span>
+                {r.score} {scoreLabel}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={() => onStartGame(gameState.mode)}
+          style={{
+            padding: isMinimal ? "4px 8px" : "6px 14px",
+            backgroundColor: "rgba(74, 144, 226, 0.85)",
+            border: "1px solid #4a90e2",
+            borderRadius: "4px",
+            color: "white",
+            cursor: "pointer",
+            fontSize: isMinimal ? "10px" : "12px",
+            width: "100%",
+            marginBottom: "6px",
+          }}
+        >
+          Play Again
+        </button>
+
+        <button
+          onClick={onEndGame}
+          style={{
+            padding: isMinimal ? "3px 6px" : "4px 10px",
+            backgroundColor: "rgba(100,100,100,0.7)",
+            border: "1px solid #666",
+            borderRadius: "4px",
+            color: "#ccc",
+            cursor: "pointer",
+            fontSize: isMinimal ? "9px" : "10px",
+            width: "100%",
+          }}
+        >
+          Main Menu
+        </button>
+      </div>
+    );
+  }
+
   // Game lobby/start screen
   return (
     <div
