@@ -95,10 +95,59 @@ const GameUI: React.FC<GameUIProps> = ({
     return () => clearInterval(id);
   }, [respawnAt]);
 
+  // Damage flash: red vignette when player health drops
+  const prevHealthRef = React.useRef<number | null>(null);
+  const [damageFlash, setDamageFlash] = React.useState(false);
+  React.useEffect(() => {
+    const health = currentPlayer?.health ?? null;
+    if (
+      prevHealthRef.current !== null &&
+      health !== null &&
+      health < prevHealthRef.current
+    ) {
+      setDamageFlash(true);
+      const t = setTimeout(() => setDamageFlash(false), 500);
+      prevHealthRef.current = health;
+      return () => clearTimeout(t);
+    }
+    prevHealthRef.current = health;
+    return undefined;
+  }, [currentPlayer?.health]);
+
+  // Hit marker: crosshair flashes red when player's shot connects
+  const [hitMarker, setHitMarker] = React.useState(false);
+  React.useEffect(() => {
+    const handle = () => {
+      setHitMarker(true);
+      setTimeout(() => setHitMarker(false), 300);
+    };
+    window.addEventListener("player-hit-landed", handle);
+    return () => window.removeEventListener("player-hit-landed", handle);
+  }, []);
+
   // Main game status display (always visible during active game)
   if (gameState.isActive) {
     return (
       <>
+        <style>{`
+          @keyframes darkmoon-damage-flash {
+            from { opacity: 1; }
+            to { opacity: 0; }
+          }
+        `}</style>
+        {damageFlash && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              pointerEvents: "none",
+              background:
+                "radial-gradient(ellipse at center, transparent 25%, rgba(200,0,0,0.7) 100%)",
+              animation: "darkmoon-damage-flash 0.5s ease-out forwards",
+              zIndex: 998,
+            }}
+          />
+        )}
         <div
           style={{
             position: "fixed",
@@ -445,7 +494,10 @@ const GameUI: React.FC<GameUIProps> = ({
                   left: 0,
                   right: 0,
                   height: "2px",
-                  backgroundColor: "rgba(255,255,255,0.85)",
+                  backgroundColor: hitMarker
+                    ? "rgba(255,60,60,1)"
+                    : "rgba(255,255,255,0.85)",
+                  transition: "background-color 0.05s",
                 }}
               />
               {/* Vertical bar */}
@@ -456,7 +508,10 @@ const GameUI: React.FC<GameUIProps> = ({
                   top: 0,
                   bottom: 0,
                   width: "2px",
-                  backgroundColor: "rgba(255,255,255,0.85)",
+                  backgroundColor: hitMarker
+                    ? "rgba(255,60,60,1)"
+                    : "rgba(255,255,255,0.85)",
+                  transition: "background-color 0.05s",
                 }}
               />
             </div>
