@@ -59,6 +59,23 @@ const GameUI: React.FC<GameUIProps> = ({
   // Kill feed: last 5 events (capped to 10 in GameManager), bottom-left overlay.
   const recentKills: KillEvent[] = (gameState.killFeed ?? []).slice(-5);
 
+  // Score tension: warn when any player is 1 kill from winning in deathmatch.
+  const tensionWarning: string | null = (() => {
+    if (gameState.mode !== "deathmatch" || !gameState.isActive || !gameState.killLimit) return null;
+    const limit = gameState.killLimit;
+    let highest = -1;
+    let leaderId = "";
+    Object.entries(gameState.scores).forEach(([id, score]) => {
+      if (score > highest) { highest = score; leaderId = id; }
+    });
+    if (highest < limit - 2) return null;
+    const leaderName = players.get(leaderId)?.name ?? leaderId;
+    const needed = limit - highest;
+    if (needed === 1) return `${leaderName.toUpperCase()} NEEDS 1 MORE KILL TO WIN!`;
+    if (needed === 2) return `${leaderName.toUpperCase()} NEEDS 2 MORE KILLS TO WIN`;
+    return null;
+  })();
+
   // spawnProtectedUntil is cleared by onTick within ~1s of expiry — presence is enough.
   const isSpawnProtected = currentPlayer?.spawnProtectedUntil !== undefined;
 
@@ -1204,6 +1221,29 @@ const GameUI: React.FC<GameUIProps> = ({
               PROTECTED
             </div>
           )}
+
+        {tensionWarning !== null && (
+          <div
+            style={{
+              position: "fixed",
+              top: "22%",
+              left: "50%",
+              transform: "translateX(-50%)",
+              pointerEvents: "none",
+              zIndex: 994,
+              fontFamily: "monospace",
+              fontSize: isMinimal ? "11px" : "17px",
+              fontWeight: "bold",
+              color: "#ff8822",
+              textShadow: "0 0 10px #ff4400",
+              letterSpacing: "2px",
+              whiteSpace: "nowrap",
+              animation: "criticalPulse 0.6s ease-in-out infinite alternate",
+            }}
+          >
+            {tensionWarning}
+          </div>
+        )}
 
         {visibleStreak !== null &&
           (gameState.mode === "deathmatch" ||
