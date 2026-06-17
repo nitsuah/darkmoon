@@ -13,6 +13,11 @@ Status guide: `[shipped]` is live today, `[in-progress]` is partially implemente
 - **Bot Coordination**: Multiple bots with independent AI decision-making
 - **Symmetrical Player-Bot Tagging**: Players can tag bots and bots tag players through unified `GameManager.tagPlayer` hit-detection; tag cooldowns and freeze logic enforced for both sides
 
+### 🧩 Pluggable Game Mode Architecture `[shipped]`
+
+- **GameModeHandler Interface**: `onStart`/`onTick`/`onAction`/`onPlayerRemoved`/`onEnd` contract decouples mode logic from the `GameManager` host; adding a new mode requires only a new handler implementation
+- **TagMode Implementation**: concrete `GameModeHandler` preserving all current tag-game behavior; serves as the reference implementation for future modes (deathmatch, CTF)
+
 ### 🎮 Multiplayer Tag `[planned]`
 
 - **Real-time Multiplayer**: WebSocket-based synchronization with Socket.io (not live)
