@@ -1099,6 +1099,8 @@ const GameUI: React.FC<GameUIProps> = ({
                   const wDef = WEAPONS[currentPlayer.equippedWeaponId];
                   const ammo = currentPlayer.currentAmmo;
                   const maxAmmo = wDef?.maxAmmo;
+                  const reloadPct = currentPlayer.reloadProgress;
+                  const isReloading = reloadPct !== null && reloadPct !== undefined && reloadPct < 1;
                   const wColor =
                     currentPlayer.equippedWeaponId === "rocket"
                       ? "#ff4422"
@@ -1114,22 +1116,34 @@ const GameUI: React.FC<GameUIProps> = ({
                       <span style={{ color: wColor }}>
                         {wDef?.name ?? currentPlayer.equippedWeaponId}
                       </span>
-                      <span style={{ color: "#aaaaaa", letterSpacing: "1px" }}>
-                        {ammo === null || ammo === undefined
-                          ? "∞"
-                          : maxAmmo && maxAmmo <= 10
-                            ? Array.from({ length: maxAmmo }, (_, i) => (
-                                <span
-                                  key={i}
-                                  style={{ color: i < ammo ? wColor : "#444" }}
-                                >
-                                  ●
-                                </span>
-                              ))
-                            : `${ammo}`}
+                      {isReloading ? (
+                        <span style={{ color: "#ffcc00", letterSpacing: "1px" }}>
+                          {" RELOADING "}
+                          <span style={{ color: "#555", display: "inline-block", width: "40px", background: "#222", borderRadius: "2px", verticalAlign: "middle", height: "6px", position: "relative", overflow: "hidden" }}>
+                            <span style={{ display: "block", width: `${((reloadPct ?? 0) * 100).toFixed(0)}%`, background: "#ffcc00", height: "100%" }} />
+                          </span>
+                        </span>
+                      ) : (
+                        <span style={{ color: "#aaaaaa", letterSpacing: "1px" }}>
+                          {ammo === null || ammo === undefined
+                            ? "∞"
+                            : maxAmmo && maxAmmo <= 10
+                              ? Array.from({ length: maxAmmo }, (_, i) => (
+                                  <span
+                                    key={i}
+                                    style={{ color: i < ammo ? wColor : "#444" }}
+                                  >
+                                    ●
+                                  </span>
+                                ))
+                              : `${ammo}`}
+                        </span>
+                      )}
+                      <span style={{ color: "#555", fontSize: "10px" }}>
+                        {isReloading ? "" : " [R]=reload"}
                       </span>
                       <span style={{ color: "#555", fontSize: "10px" }}>
-                        [1/2/3]
+                        [1-5]
                       </span>
                     </>
                   );

@@ -19,6 +19,7 @@ import {
   KEY_3,
   KEY_4,
   KEY_5,
+  KEY_R,
 } from "../utils";
 import SpacemanModel from "../SpacemanModel";
 import { getSoundManager } from "../SoundManager";
@@ -174,6 +175,7 @@ export const PlayerCharacter = React.forwardRef<
   const prevKey3Ref = React.useRef(false);
   const prevKey4Ref = React.useRef(false);
   const prevKey5Ref = React.useRef(false);
+  const prevKeyRRef = React.useRef(false);
 
   // Equip the laser blaster by default and surface the equipped weapon to the HUD.
   React.useEffect(() => {
@@ -478,12 +480,13 @@ export const PlayerCharacter = React.forwardRef<
     const key3 = keysPressedRef.current[KEY_3] ?? false;
     const key4 = keysPressedRef.current[KEY_4] ?? false;
     const key5 = keysPressedRef.current[KEY_5] ?? false;
+    const keyR = keysPressedRef.current[KEY_R] ?? false;
     const myId = socketClient?.id || currentPlayerId;
     if (key1 && !prevKey1Ref.current) {
       weaponManagerRef.current.equip("laser");
       gameManager?.updatePlayer(myId, {
         equippedWeaponId: "laser",
-        currentAmmo: null,
+        currentAmmo: weaponManagerRef.current.getAmmo("laser"),
       });
     }
     if (key2 && !prevKey2Ref.current) {
@@ -514,11 +517,19 @@ export const PlayerCharacter = React.forwardRef<
         currentAmmo: weaponManagerRef.current.getAmmo("smg"),
       });
     }
+    // R key: reload the current weapon (rising-edge).
+    if (keyR && !prevKeyRRef.current) {
+      const equipped = weaponManagerRef.current.getEquipped();
+      if (equipped) {
+        weaponManagerRef.current.startReload(equipped.id);
+      }
+    }
     prevKey1Ref.current = key1;
     prevKey2Ref.current = key2;
     prevKey3Ref.current = key3;
     prevKey4Ref.current = key4;
     prevKey5Ref.current = key5;
+    prevKeyRRef.current = keyR;
 
     // Fire the equipped weapon while left-click is held (rate-limited by
     // WeaponManager's per-shooter cooldown).
@@ -585,9 +596,10 @@ export const PlayerCharacter = React.forwardRef<
             beamColor,
           );
         }
-        // Sync ammo to HUD after each shot.
+        // Sync ammo + reload progress to HUD after each shot.
         const remainingAmmo = weaponManagerRef.current.getAmmo(wid);
-        gameManager?.updatePlayer(myId, { currentAmmo: remainingAmmo });
+        const reloadProgress = weaponManagerRef.current.getReloadProgress(wid);
+        gameManager?.updatePlayer(myId, { currentAmmo: remainingAmmo, reloadProgress });
       }
       if (fireResult && fireResult.hit && typeof window !== "undefined") {
         // Notify HUD to flash hit marker.
@@ -962,6 +974,17 @@ export const PlayerCharacter = React.forwardRef<
     }
 
     // Notify parent of position changes (only when position actually changes)
+    // Continuously sync reload progress so HUD bar updates smoothly.
+    {
+      const equipped = weaponManagerRef.current.getEquipped();
+      if (equipped) {
+        const rp = weaponManagerRef.current.getReloadProgress(equipped.id);
+        const ammo = weaponManagerRef.current.getAmmo(equipped.id);
+        const myId2 = socketClient?.id || currentPlayerId;
+        gameManager?.updatePlayer(myId2, { currentAmmo: ammo, reloadProgress: rp });
+      }
+    }
+
     if (onPositionUpdate && meshRef.current) {
       const currentPos = meshRef.current.position;
       const distanceMoved = currentPos.distanceTo(

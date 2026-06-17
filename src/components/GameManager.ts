@@ -81,6 +81,8 @@ export interface Player {
   currentKillStreak?: number;
   /** Timestamp (ms) of the most recent damage taken — used for passive health regen delay. */
   lastDamageAt?: number;
+  /** 0–1 reload progress for the currently equipped weapon; null/undefined = not reloading. */
+  reloadProgress?: number | null;
 }
 
 export class GameManager {
