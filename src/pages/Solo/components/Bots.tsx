@@ -266,7 +266,7 @@ const Bots: React.FC<
   ]);
 
   // Each bot gets its own WeaponManager so they can use different weapons.
-  // Bot-1: Pulse Shotgun, Bot-2: Rocket Launcher, Bot-3: Frag Grenade.
+  // Bot-1: SMG (rapid-fire spray), Bot-2: Rocket Launcher, Bot-3: Frag Grenade.
   const bot1WeaponsRef = useRef<WeaponManager | null>(null);
   const bot2WeaponsRef = useRef<WeaponManager | null>(null);
   const bot3WeaponsRef = useRef<WeaponManager | null>(null);
@@ -298,7 +298,7 @@ const Bots: React.FC<
         const startWeapon = isTagMode
           ? "laser"
           : botId === "bot-1"
-            ? "shotgun"
+            ? "smg"
             : botId === "bot-2"
               ? "rocket"
               : "grenade";
