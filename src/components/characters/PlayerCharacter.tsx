@@ -24,6 +24,7 @@ import { getSoundManager } from "../SoundManager";
 import { WeaponManager } from "../combat/WeaponManager";
 import { processFiring } from "../../lib/hooks/usePlayerWeapon";
 import { createTagLogger } from "../../lib/utils/logger";
+import { pickSafeSpawn } from "../../lib/constants/spawnPoints";
 import {
   usePlayerPhysics,
   PHYSICS_CONSTANTS,
@@ -254,7 +255,7 @@ export const PlayerCharacter = React.forwardRef<
   }, [gameManager, currentPlayerId]);
 
   // Teleport player back to spawn when respawn timer clears (deathmatch/CTF).
-  // Mirrors the equivalent logic in useBotAI for bots.
+  // Picks the spawn point farthest from all alive enemies (anti-camping).
   const mePlayer = gameManager?.getPlayers().get(currentPlayerId);
   const respawnAt = mePlayer?.respawnAt;
   const prevRespawnAtRef = React.useRef<number | undefined>(undefined);
@@ -262,10 +263,17 @@ export const PlayerCharacter = React.forwardRef<
     const wasDown = prevRespawnAtRef.current !== undefined;
     const isUp = respawnAt === undefined;
     if (wasDown && isUp && meshRef.current) {
-      meshRef.current.position.set(0, 0.5, 0);
+      const enemyPositions: [number, number, number][] = [];
+      gameManager?.getPlayers().forEach((p, id) => {
+        if (id !== currentPlayerId && p.respawnAt === undefined) {
+          enemyPositions.push(p.position as [number, number, number]);
+        }
+      });
+      const [sx, sy, sz] = pickSafeSpawn(enemyPositions);
+      meshRef.current.position.set(sx, sy, sz);
     }
     prevRespawnAtRef.current = respawnAt;
-  }, [respawnAt, meshRef]);
+  }, [respawnAt, meshRef, gameManager, currentPlayerId]);
 
   // gated debug logger - only logs in dev
   const debug = (...args: unknown[]) => {
