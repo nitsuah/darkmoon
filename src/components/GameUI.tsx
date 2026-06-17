@@ -145,6 +145,32 @@ const GameUI: React.FC<GameUIProps> = ({
     };
   }, []);
 
+  // Weapon/health pickup toast — brief bottom-center flash
+  const [pickupToast, setPickupToast] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    const onWeapon = (e: unknown) => {
+      const { weaponId } = (e as { detail: { weaponId: string } }).detail;
+      const name = WEAPONS[weaponId]?.name ?? weaponId;
+      setPickupToast(`PICKED UP ${name.toUpperCase()}`);
+      clearTimeout(timer);
+      timer = setTimeout(() => setPickupToast(null), 2200);
+    };
+    const onHealth = (e: unknown) => {
+      const { amount } = (e as { detail: { amount: number } }).detail;
+      setPickupToast(`+${amount} HEALTH`);
+      clearTimeout(timer);
+      timer = setTimeout(() => setPickupToast(null), 2200);
+    };
+    window.addEventListener("weapon-pickup", onWeapon);
+    window.addEventListener("health-pickup", onHealth);
+    return () => {
+      window.removeEventListener("weapon-pickup", onWeapon);
+      window.removeEventListener("health-pickup", onHealth);
+      clearTimeout(timer);
+    };
+  }, []);
+
   // Kill announcement: "YOU KILLED [name]" banner for 2s on personal kills
   const lastKillKeyRef = React.useRef<string | null>(null);
   const [killAnnouncement, setKillAnnouncement] = React.useState<string | null>(
@@ -220,6 +246,30 @@ const GameUI: React.FC<GameUIProps> = ({
             >
               {killAnnouncement}
             </div>
+          </div>
+        )}
+        {pickupToast && (
+          <div
+            style={{
+              position: "fixed",
+              bottom: "90px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              pointerEvents: "none",
+              zIndex: 1002,
+              textAlign: "center",
+              fontFamily: "monospace",
+              fontSize: "13px",
+              fontWeight: "bold",
+              color: "#00ffcc",
+              textShadow: "0 0 8px #00ffcc88",
+              backgroundColor: "rgba(0,0,0,0.6)",
+              border: "1px solid rgba(0,255,200,0.4)",
+              borderRadius: "4px",
+              padding: "3px 10px",
+            }}
+          >
+            {pickupToast}
           </div>
         )}
         {showScoreboard &&
