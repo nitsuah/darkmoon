@@ -47,6 +47,9 @@ export function usePlayerPhysics() {
   } | null>(null);
   const lastRCSSoundTimeRef = useRef(0); // Throttle RCS sound
 
+  // Smoothed speed scalar (world units/s, lerped toward target each frame)
+  const currentSpeedRef = useRef(0);
+
   // Reusable vectors to avoid allocations in animation loop
   const inputDirectionRef = useRef(new THREE.Vector3());
   const finalMovementRef = useRef(new THREE.Vector3());
@@ -55,6 +58,7 @@ export function usePlayerPhysics() {
     // Core movement refs
     velocityRef,
     directionRef,
+    currentSpeedRef,
     inputDirectionRef,
     finalMovementRef,
 

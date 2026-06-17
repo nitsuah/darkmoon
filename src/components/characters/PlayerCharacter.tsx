@@ -137,6 +137,7 @@ export const PlayerCharacter = React.forwardRef<
   const {
     velocityRef,
     directionRef,
+    currentSpeedRef,
     inputDirectionRef,
     finalMovementRef,
     isJumpingRef,
@@ -197,6 +198,7 @@ export const PlayerCharacter = React.forwardRef<
       cameraRotationRef.current = { horizontal: 0, vertical: 0.2 };
       velocityRef.current.set(0, 0, 0);
       directionRef.current.set(0, 0, 0);
+      currentSpeedRef.current = 0;
       isJumpingRef.current = false;
       verticalVelocityRef.current = 0;
     },
@@ -656,9 +658,15 @@ export const PlayerCharacter = React.forwardRef<
 
       if (dir && dir.length() > 0) {
         directionRef.current.copy(dir);
+        // Smoothly accelerate toward target speed (10× per second ramp-up).
+        currentSpeedRef.current = THREE.MathUtils.lerp(
+          currentSpeedRef.current,
+          speed,
+          Math.min(1, 10 * delta),
+        );
         velocityRef.current
           .copy(directionRef.current)
-          .multiplyScalar(speed * delta);
+          .multiplyScalar(currentSpeedRef.current * delta);
 
         // Calculate new position with collision detection
         const currentPosition = meshRef.current.position.clone();
@@ -754,6 +762,13 @@ export const PlayerCharacter = React.forwardRef<
           });
         }
       }
+    } else {
+      // No movement input — smoothly decelerate to zero (15× per second ramp-down).
+      currentSpeedRef.current = THREE.MathUtils.lerp(
+        currentSpeedRef.current,
+        0,
+        Math.min(1, 15 * delta),
+      );
     }
 
     // Jump mechanics - Single jump only, no jetpack from jump
