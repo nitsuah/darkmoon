@@ -7,6 +7,10 @@ export interface WeaponConfig {
   cooldownMs: number;
   /** Maximum ammo capacity. undefined/null means infinite. */
   maxAmmo?: number;
+  /** Reload duration in ms. undefined = instant refill. */
+  reloadTimeMs?: number;
+  /** If true, weapon reloads automatically when ammo hits 0. */
+  autoReload?: boolean;
   /** Area-of-effect radius (world units). Nearby entities within this range of the impact point take splashDamage. */
   splashRadius?: number;
   /** Damage dealt to entities caught in the splash radius (not the direct-hit target). */
@@ -20,6 +24,9 @@ export const WEAPONS: Record<string, WeaponConfig> = {
     damage: 10,
     range: 30,
     cooldownMs: 500,
+    maxAmmo: 10,
+    reloadTimeMs: 1800,
+    autoReload: true,
   },
   shotgun: {
     id: "shotgun",
@@ -28,6 +35,7 @@ export const WEAPONS: Record<string, WeaponConfig> = {
     range: 8,
     cooldownMs: 1000,
     maxAmmo: 6,
+    reloadTimeMs: 2200,
   },
   rocket: {
     id: "rocket",
@@ -36,6 +44,7 @@ export const WEAPONS: Record<string, WeaponConfig> = {
     range: 12,
     cooldownMs: 2000,
     maxAmmo: 3,
+    reloadTimeMs: 3000,
     splashRadius: 5,
     splashDamage: 50,
   },
@@ -45,7 +54,7 @@ export const WEAPONS: Record<string, WeaponConfig> = {
     damage: 100,
     range: 18,
     cooldownMs: 4000,
-    maxAmmo: 2,
+    maxAmmo: 3,
     splashRadius: 7,
     splashDamage: 75,
   },
@@ -56,6 +65,7 @@ export const WEAPONS: Record<string, WeaponConfig> = {
     range: 18,
     cooldownMs: 120,
     maxAmmo: 40,
+    reloadTimeMs: 2000,
   },
 };
 
@@ -67,6 +77,7 @@ export class WeaponManager {
   private equippedWeaponId: string | null = null;
   private lastFiredAt: Map<string, number> = new Map();
   private ammoMap: Map<string, number> = new Map();
+  private reloadStartAt: Map<string, number> = new Map();
 
   equip(weaponId: string): boolean {
     const weapon = WEAPONS[weaponId];
@@ -84,6 +95,40 @@ export class WeaponManager {
     const weapon = WEAPONS[weaponId];
     if (weapon?.maxAmmo !== undefined) {
       this.ammoMap.set(weaponId, weapon.maxAmmo);
+      this.reloadStartAt.delete(weaponId);
+    }
+  }
+
+  /** Begin reloading the weapon. No-op if already reloading or at full ammo. */
+  startReload(weaponId: string, now: number = Date.now()): boolean {
+    const weapon = WEAPONS[weaponId];
+    if (!weapon?.reloadTimeMs) return false;
+    if (this.reloadStartAt.has(weaponId)) return false; // already reloading
+    const current = this.ammoMap.get(weaponId) ?? (weapon.maxAmmo ?? 0);
+    if (current >= (weapon.maxAmmo ?? 0)) return false; // already full
+    this.reloadStartAt.set(weaponId, now);
+    return true;
+  }
+
+  /** Returns 0–1 reload progress, or null if not reloading. 1 = complete. */
+  getReloadProgress(weaponId: string, now: number = Date.now()): number | null {
+    const weapon = WEAPONS[weaponId];
+    if (!weapon?.reloadTimeMs) return null;
+    const start = this.reloadStartAt.get(weaponId);
+    if (start === undefined) return null;
+    return Math.min(1, (now - start) / weapon.reloadTimeMs);
+  }
+
+  isReloading(weaponId: string, now: number = Date.now()): boolean {
+    const progress = this.getReloadProgress(weaponId, now);
+    return progress !== null && progress < 1;
+  }
+
+  /** Completes a finished reload, refilling ammo. Called from canFire/fire checks. */
+  private completeReloadIfDone(weaponId: string, now: number): void {
+    const progress = this.getReloadProgress(weaponId, now);
+    if (progress !== null && progress >= 1) {
+      this.refill(weaponId);
     }
   }
 
@@ -106,10 +151,16 @@ export class WeaponManager {
     const weapon = this.getEquipped();
     if (!weapon) return false;
 
+    // Complete a finished reload before checking ammo.
+    this.completeReloadIfDone(weapon.id, now);
+
+    // Block firing while reloading.
+    if (this.isReloading(weapon.id, now)) return false;
+
     const last = this.lastFiredAt.get(shooterId);
     if (last !== undefined && now - last < weapon.cooldownMs) return false;
 
-    // Ammo check
+    // Ammo check.
     if (weapon.maxAmmo !== undefined) {
       const ammo = this.ammoMap.get(weapon.id) ?? weapon.maxAmmo;
       if (ammo <= 0) return false;
@@ -132,7 +183,12 @@ export class WeaponManager {
 
     if (weapon.maxAmmo !== undefined) {
       const current = this.ammoMap.get(weapon.id) ?? weapon.maxAmmo;
-      this.ammoMap.set(weapon.id, Math.max(0, current - 1));
+      const next = Math.max(0, current - 1);
+      this.ammoMap.set(weapon.id, next);
+      // Auto-reload weapons start reloading immediately when emptied.
+      if (next === 0 && weapon.autoReload) {
+        this.startReload(weapon.id, now);
+      }
     }
 
     return weapon;
