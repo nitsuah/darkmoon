@@ -24,6 +24,9 @@ vi.mock("@react-three/drei", () => ({
   Text: ({ children }: { children: React.ReactNode }) => (
     <span>{children}</span>
   ),
+  Billboard: ({ children }: { children: React.ReactNode }) => (
+    <span>{children}</span>
+  ),
 }));
 
 describe("Players", () => {

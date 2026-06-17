@@ -25,6 +25,9 @@ vi.mock("@react-three/drei", () => ({
   Text: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="text">{children}</div>
   ),
+  Billboard: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="billboard">{children}</div>
+  ),
   Stats: () => <div data-testid="stats" />,
   OrbitControls: () => <div data-testid="orbit-controls" />,
 }));
