@@ -1256,89 +1256,98 @@ const GameUI: React.FC<GameUIProps> = ({
     );
   }
 
+  // Low-health vignette: pulsing red edge overlay when HP < 30 in combat modes
+  const criticalHealth =
+    currentPlayer !== undefined &&
+    currentPlayer.health !== undefined &&
+    currentPlayer.health < 30 &&
+    currentPlayer.respawnAt === undefined &&
+    (gameState.mode === "deathmatch" || gameState.mode === "ctf") &&
+    gameState.isActive;
+
   // Game lobby/start screen
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: isMinimal ? "8px" : "10px",
-        right: isMinimal ? "8px" : "10px",
-        padding: isMinimal ? "3px 5px" : isMobile ? "6px 8px" : "10px 12px",
-        backgroundColor: "rgba(0, 0, 0, 0.9)",
-        border: "1px solid rgba(255, 255, 255, 0.25)",
-        borderRadius: isMinimal ? "3px" : "6px",
-        color: "white",
-        fontFamily: "monospace",
-        fontSize: isMinimal ? "8px" : isMobile ? "10px" : "11px",
-        zIndex: 1000,
-        minWidth: isMinimal ? "auto" : isMobile ? "auto" : "160px",
-        maxWidth: isMinimal ? "70px" : "auto",
-        textAlign: "center",
-      }}
-    >
-      {!isMobile && !isMinimal && (
-        <div
-          style={{ marginBottom: "8px", fontSize: "12px", fontWeight: "bold" }}
-        >
-          🎮 Game Modes
-        </div>
-      )}
-
-      {/* Hide player count on minimal */}
-      {!isMinimal && (
+    <>
+      {criticalHealth && (
         <div
           style={{
-            marginBottom: "6px",
-            color: "#aaa",
-            fontSize: isMobile ? "9px" : "10px",
+            position: "fixed",
+            inset: 0,
+            pointerEvents: "none",
+            zIndex: 999,
+            boxShadow: "inset 0 0 120px 40px rgba(220,0,0,0.55)",
+            animation: "criticalPulse 0.8s ease-in-out infinite alternate",
           }}
-        >
-          {isMobile ? `👥 ${players.size}` : `Players: ${players.size}`}
-        </div>
+        />
       )}
-
-      {/* Always show game controls in solo mode (players.size 0-1) or multiplayer (2+) */}
-      {players.size >= 2 || players.size <= 1 ? (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: isMinimal ? "2px" : "6px",
-          }}
-        >
-          <button
-            onClick={() => onStartGame(players.size <= 1 ? "solo" : "tag")}
+      <style>{`
+        @keyframes criticalPulse {
+          from { opacity: 0.5; }
+          to { opacity: 1; }
+        }
+      `}</style>
+      <div
+        style={{
+          position: "fixed",
+          top: isMinimal ? "8px" : "10px",
+          right: isMinimal ? "8px" : "10px",
+          padding: isMinimal ? "3px 5px" : isMobile ? "6px 8px" : "10px 12px",
+          backgroundColor: "rgba(0, 0, 0, 0.9)",
+          border: "1px solid rgba(255, 255, 255, 0.25)",
+          borderRadius: isMinimal ? "3px" : "6px",
+          color: "white",
+          fontFamily: "monospace",
+          fontSize: isMinimal ? "8px" : isMobile ? "10px" : "11px",
+          zIndex: 1000,
+          minWidth: isMinimal ? "auto" : isMobile ? "auto" : "160px",
+          maxWidth: isMinimal ? "70px" : "auto",
+          textAlign: "center",
+        }}
+      >
+        {!isMobile && !isMinimal && (
+          <div
             style={{
-              padding: isMinimal
-                ? "3px 5px"
-                : isMobile
-                  ? "6px 8px"
-                  : "6px 10px",
-              backgroundColor: "rgba(74, 144, 226, 0.8)",
-              border: "1px solid #4a90e2",
-              borderRadius: "3px",
-              color: "white",
-              cursor: "pointer",
-              fontSize: isMinimal ? "14px" : isMobile ? "14px" : "11px",
-              width: "100%",
+              marginBottom: "8px",
+              fontSize: "12px",
+              fontWeight: "bold",
             }}
           >
-            {isMinimal || isMobile
-              ? "▶️"
-              : `Start Tag ${players.size <= 1 ? "(Practice)" : ""}`}
-          </button>
+            🎮 Game Modes
+          </div>
+        )}
 
-          {players.size >= 2 && (
+        {/* Hide player count on minimal */}
+        {!isMinimal && (
+          <div
+            style={{
+              marginBottom: "6px",
+              color: "#aaa",
+              fontSize: isMobile ? "9px" : "10px",
+            }}
+          >
+            {isMobile ? `👥 ${players.size}` : `Players: ${players.size}`}
+          </div>
+        )}
+
+        {/* Always show game controls in solo mode (players.size 0-1) or multiplayer (2+) */}
+        {players.size >= 2 || players.size <= 1 ? (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: isMinimal ? "2px" : "6px",
+            }}
+          >
             <button
-              onClick={() => onStartGame("deathmatch")}
+              onClick={() => onStartGame(players.size <= 1 ? "solo" : "tag")}
               style={{
                 padding: isMinimal
                   ? "3px 5px"
                   : isMobile
                     ? "6px 8px"
                     : "6px 10px",
-                backgroundColor: "rgba(220, 53, 69, 0.8)",
-                border: "1px solid #dc3545",
+                backgroundColor: "rgba(74, 144, 226, 0.8)",
+                border: "1px solid #4a90e2",
                 borderRadius: "3px",
                 color: "white",
                 cursor: "pointer",
@@ -1346,21 +1355,69 @@ const GameUI: React.FC<GameUIProps> = ({
                 width: "100%",
               }}
             >
-              {isMinimal || isMobile ? "🔫" : "Start Deathmatch"}
+              {isMinimal || isMobile
+                ? "▶️"
+                : `Start Tag ${players.size <= 1 ? "(Practice)" : ""}`}
             </button>
-          )}
 
-          {players.size >= 2 && (
+            {players.size >= 2 && (
+              <button
+                onClick={() => onStartGame("deathmatch")}
+                style={{
+                  padding: isMinimal
+                    ? "3px 5px"
+                    : isMobile
+                      ? "6px 8px"
+                      : "6px 10px",
+                  backgroundColor: "rgba(220, 53, 69, 0.8)",
+                  border: "1px solid #dc3545",
+                  borderRadius: "3px",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: isMinimal ? "14px" : isMobile ? "14px" : "11px",
+                  width: "100%",
+                }}
+              >
+                {isMinimal || isMobile ? "🔫" : "Start Deathmatch"}
+              </button>
+            )}
+
+            {players.size >= 2 && (
+              <button
+                onClick={() => onStartGame("ctf")}
+                style={{
+                  padding: isMinimal
+                    ? "3px 5px"
+                    : isMobile
+                      ? "6px 8px"
+                      : "6px 10px",
+                  backgroundColor: "rgba(155, 89, 182, 0.8)",
+                  border: "1px solid #9b59b6",
+                  borderRadius: "3px",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: isMinimal ? "14px" : isMobile ? "14px" : "11px",
+                  width: "100%",
+                }}
+              >
+                {isMinimal || isMobile ? "🚩" : "Start CTF"}
+              </button>
+            )}
+
             <button
-              onClick={() => onStartGame("ctf")}
+              onClick={() => onToggleDebug && onToggleDebug()}
               style={{
                 padding: isMinimal
                   ? "3px 5px"
                   : isMobile
                     ? "6px 8px"
                     : "6px 10px",
-                backgroundColor: "rgba(155, 89, 182, 0.8)",
-                border: "1px solid #9b59b6",
+                backgroundColor: botDebugMode
+                  ? "rgba(220, 53, 69, 0.8)"
+                  : "rgba(255, 140, 0, 0.8)",
+                border: botDebugMode
+                  ? "1px solid #dc3545"
+                  : "1px solid #ff8c00",
                 borderRadius: "3px",
                 color: "white",
                 cursor: "pointer",
@@ -1368,56 +1425,34 @@ const GameUI: React.FC<GameUIProps> = ({
                 width: "100%",
               }}
             >
-              {isMinimal || isMobile ? "🚩" : "Start CTF"}
+              {isMinimal || isMobile
+                ? "🔧"
+                : botDebugMode
+                  ? "⏹️ Stop Debug"
+                  : "🔧 Start Debug"}
             </button>
-          )}
 
-          <button
-            onClick={() => onToggleDebug && onToggleDebug()}
+            {!isMobile && !isMinimal && (
+              <div
+                style={{ fontSize: "9px", color: "#888", textAlign: "center" }}
+              >
+                {players.size <= 1 ? "Practice vs Bot" : "3 min • Tag to pass"}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div
             style={{
-              padding: isMinimal
-                ? "3px 5px"
-                : isMobile
-                  ? "6px 8px"
-                  : "6px 10px",
-              backgroundColor: botDebugMode
-                ? "rgba(220, 53, 69, 0.8)"
-                : "rgba(255, 140, 0, 0.8)",
-              border: botDebugMode ? "1px solid #dc3545" : "1px solid #ff8c00",
-              borderRadius: "3px",
-              color: "white",
-              cursor: "pointer",
-              fontSize: isMinimal ? "14px" : isMobile ? "14px" : "11px",
-              width: "100%",
+              color: "#888",
+              textAlign: "center",
+              fontSize: isMinimal ? "8px" : isMobile ? "9px" : "10px",
             }}
           >
-            {isMinimal || isMobile
-              ? "🔧"
-              : botDebugMode
-                ? "⏹️ Stop Debug"
-                : "🔧 Start Debug"}
-          </button>
-
-          {!isMobile && !isMinimal && (
-            <div
-              style={{ fontSize: "9px", color: "#888", textAlign: "center" }}
-            >
-              {players.size <= 1 ? "Practice vs Bot" : "3 min • Tag to pass"}
-            </div>
-          )}
-        </div>
-      ) : (
-        <div
-          style={{
-            color: "#888",
-            textAlign: "center",
-            fontSize: isMinimal ? "8px" : isMobile ? "9px" : "10px",
-          }}
-        >
-          {isMinimal || isMobile ? "Need 2+" : "Need 2+ players"}
-        </div>
-      )}
-    </div>
+            {isMinimal || isMobile ? "Need 2+" : "Need 2+ players"}
+          </div>
+        )}
+      </div>
+    </>
   );
 };
 
