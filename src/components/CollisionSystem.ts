@@ -292,6 +292,27 @@ export class CollisionSystem {
     return closest;
   }
 
+  /**
+   * Returns true if there is a clear line-of-sight from `from` to `to`
+   * (i.e. no boundary box intersects the segment). Used by bot AI to skip
+   * firing when a wall is in the way.
+   */
+  hasLineOfSight(from: THREE.Vector3, to: THREE.Vector3): boolean {
+    const dir = new THREE.Vector3().subVectors(to, from);
+    const dist = dir.length();
+    if (dist < 0.01) return true;
+    dir.divideScalar(dist);
+    const ray = new THREE.Ray(from, dir);
+    for (const box of this.boundaries) {
+      const hit = ray.intersectBox(box, new THREE.Vector3());
+      if (hit !== null) {
+        const hitDist = hit.distanceTo(from);
+        if (hitDist > 0.1 && hitDist < dist - 0.3) return false;
+      }
+    }
+    return true;
+  }
+
   // Get boundary geometry for rendering (optional, for debugging)
   getBoundaryGeometry(): THREE.BufferGeometry[] {
     return this.boundaries.map((boundary) => {
