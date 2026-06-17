@@ -271,6 +271,14 @@ export const PlayerCharacter = React.forwardRef<
       });
       const [sx, sy, sz] = pickSafeSpawn(enemyPositions);
       meshRef.current.position.set(sx, sy, sz);
+      // Refill ammo on respawn so the player doesn't come back empty-handed.
+      const equipped = weaponManagerRef.current.getEquipped();
+      if (equipped) {
+        weaponManagerRef.current.refill(equipped.id);
+        gameManager?.updatePlayer(currentPlayerId, {
+          currentAmmo: weaponManagerRef.current.getAmmo(equipped.id),
+        });
+      }
     }
     prevRespawnAtRef.current = respawnAt;
   }, [respawnAt, meshRef, gameManager, currentPlayerId]);

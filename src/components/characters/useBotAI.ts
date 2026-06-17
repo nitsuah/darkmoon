@@ -111,6 +111,10 @@ export function useBotAI({
   const isSprintingRef = useRef(false);
   const sprintEndTime = useRef(0);
   const nextSprintTime = useRef(0);
+  // Obstacle avoidance: track consecutive stuck frames and jitter direction.
+  const stuckFrames = useRef(0);
+  const steerSign = useRef(1); // +1 or -1 lateral offset direction
+  const steerFramesLeft = useRef(0);
 
   // Teleport bot back to a random spawn point when it respawns after being downed.
   const prevIsDownedRef = useRef(isDowned);
@@ -211,9 +215,23 @@ export function useBotAI({
           : config.botSpeed;
 
         // Chase target
-        const direction = new THREE.Vector3()
+        let direction = new THREE.Vector3()
           .subVectors(targetPos, botPos)
           .normalize();
+
+        // Obstacle avoidance: if currently steering around something, rotate dir laterally.
+        if (steerFramesLeft.current > 0) {
+          steerFramesLeft.current--;
+          const lateral = new THREE.Vector3(
+            -direction.z * steerSign.current,
+            0,
+            direction.x * steerSign.current,
+          );
+          direction = new THREE.Vector3()
+            .addScaledVector(direction, 0.5)
+            .addScaledVector(lateral, 0.8)
+            .normalize();
+        }
 
         // Calculate new position
         const currentPos = new THREE.Vector3(botPos.x, botPos.y, botPos.z);
@@ -229,6 +247,23 @@ export function useBotAI({
             currentPos,
             newPos,
           );
+          // Detect stuck: resolved stayed at currentPos despite intended movement.
+          const actualMove =
+            Math.abs(resolved.x - currentPos.x) +
+            Math.abs(resolved.z - currentPos.z);
+          const intendedMove =
+            Math.abs(newPos.x - currentPos.x) +
+            Math.abs(newPos.z - currentPos.z);
+          if (intendedMove > 0.01 && actualMove < intendedMove * 0.15) {
+            stuckFrames.current++;
+            if (stuckFrames.current >= 3) {
+              stuckFrames.current = 0;
+              steerSign.current = Math.random() < 0.5 ? 1 : -1;
+              steerFramesLeft.current = 25;
+            }
+          } else {
+            stuckFrames.current = 0;
+          }
           botPos.x = resolved.x;
           botPos.z = resolved.z;
         } else {
@@ -299,12 +334,25 @@ export function useBotAI({
       }
 
       // Always face the target while engaging
-      const direction = new THREE.Vector3()
+      let direction = new THREE.Vector3()
         .subVectors(targetPos, botPos)
         .normalize();
       meshRef.current.rotation.y = Math.atan2(direction.x, direction.z);
 
       if (distance > FIRE_RANGE) {
+        // Apply obstacle-avoidance steering if needed.
+        if (steerFramesLeft.current > 0) {
+          steerFramesLeft.current--;
+          const lateral = new THREE.Vector3(
+            -direction.z * steerSign.current,
+            0,
+            direction.x * steerSign.current,
+          );
+          direction = new THREE.Vector3()
+            .addScaledVector(direction, 0.5)
+            .addScaledVector(lateral, 0.8)
+            .normalize();
+        }
         // Advance until within firing range
         const currentPos = new THREE.Vector3(botPos.x, botPos.y, botPos.z);
         const newPos = new THREE.Vector3(
@@ -318,6 +366,22 @@ export function useBotAI({
             currentPos,
             newPos,
           );
+          const actualMove =
+            Math.abs(resolved.x - currentPos.x) +
+            Math.abs(resolved.z - currentPos.z);
+          const intendedMove =
+            Math.abs(newPos.x - currentPos.x) +
+            Math.abs(newPos.z - currentPos.z);
+          if (intendedMove > 0.01 && actualMove < intendedMove * 0.15) {
+            stuckFrames.current++;
+            if (stuckFrames.current >= 3) {
+              stuckFrames.current = 0;
+              steerSign.current = Math.random() < 0.5 ? 1 : -1;
+              steerFramesLeft.current = 25;
+            }
+          } else {
+            stuckFrames.current = 0;
+          }
           botPos.x = resolved.x;
           botPos.z = resolved.z;
         } else {
