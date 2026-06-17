@@ -144,6 +144,21 @@ export const BotCharacter: React.FC<BotCharacterProps> = ({
         <sphereGeometry args={[0.12, 8, 8]} />
         <meshBasicMaterial color={isIt ? "#ff4444" : labelColor || color} />
       </mesh>
+      {/* Flag carrier indicator — shown in CTF when this bot holds the flag */}
+      {isCarryingFlag && (
+        <>
+          {/* Glowing yellow diamond above head */}
+          <mesh position={[0, 2.5, 0]} rotation={[0, Math.PI / 4, Math.PI / 4]}>
+            <boxGeometry args={[0.22, 0.22, 0.22]} />
+            <meshBasicMaterial color="#ffee00" />
+          </mesh>
+          {/* Small flag pole */}
+          <mesh position={[0, 2.15, 0]}>
+            <cylinderGeometry args={[0.02, 0.02, 0.7, 6]} />
+            <meshBasicMaterial color="#888888" />
+          </mesh>
+        </>
+      )}
       {/* Floating name label — always faces camera */}
       <Billboard position={[0, 2.15, 0]}>
         <Text
