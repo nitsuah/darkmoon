@@ -355,22 +355,70 @@ const Bots: React.FC<
       const botPos = gameManager.getPlayers().get(botId)?.position;
       const targetPos2 = gameManager.getPlayers().get(targetId)?.position;
 
-      // Always show a tracer beam so players can see incoming fire.
-      if (typeof window !== "undefined" && botPos && targetPos2) {
+      // Angular spread: compute a deviated aim point visible as the tracer endpoint.
+      const botConfig =
+        botId === "bot-1"
+          ? effectiveBot1Config
+          : botId === "bot-2"
+            ? effectiveBot2Config
+            : botId === "bot-3"
+              ? effectiveBot3Config
+              : effectiveBot4Config;
+
+      let tracerToX = targetPos2?.[0] ?? 0;
+      let tracerToY = (targetPos2?.[1] ?? 0) + 0.8;
+      let tracerToZ = targetPos2?.[2] ?? 0;
+      let shotHits = true;
+
+      if (botPos && targetPos2) {
+        const dist = Math.hypot(
+          botPos[0] - targetPos2[0],
+          botPos[2] - targetPos2[2],
+        );
+        const baseMiss = botConfig.missChance ?? 0;
+        // Scale miss chance by distance (up to +30% at max range).
+        const distFactor = Math.min(1, dist / weapon.range) * 0.3;
+        const effectiveMiss = Math.min(1, baseMiss + distFactor);
+
+        // Convert miss probability to a max angular deviation (radians).
+        // A miss chance of 0 → 0 rad spread, 1 → ~25° spread.
+        const maxSpreadRad = effectiveMiss * 0.44; // 0.44 rad ≈ 25°
+        const spreadAngle = (Math.random() - 0.5) * 2 * maxSpreadRad;
+
+        const dirX = targetPos2[0] - botPos[0];
+        const dirZ = targetPos2[2] - botPos[2];
+        const cos = Math.cos(spreadAngle);
+        const sin = Math.sin(spreadAngle);
+        const deviatedDirX = dirX * cos - dirZ * sin;
+        const deviatedDirZ = dirX * sin + dirZ * cos;
+
+        // Aim tracer at the deviated point at the same distance.
+        tracerToX = botPos[0] + deviatedDirX;
+        tracerToZ = botPos[2] + deviatedDirZ;
+
+        // A shot hits only if the deviation stays within ≈ half a player width (0.5 world units).
+        const deviationAtTarget = Math.abs(Math.sin(spreadAngle)) * dist;
+        shotHits = deviationAtTarget < 0.5;
+      }
+
+      // Show tracer — aimed at the deviated point so misses visibly fly wide.
+      if (typeof window !== "undefined" && botPos) {
         window.dispatchEvent(
           new window.CustomEvent("bot-shot-fired", {
             detail: {
               fromX: botPos[0],
               fromY: botPos[1] + 1.2,
               fromZ: botPos[2],
-              toX: targetPos2[0],
-              toY: targetPos2[1] + 0.8,
-              toZ: targetPos2[2],
+              toX: tracerToX,
+              toY: tracerToY,
+              toZ: tracerToZ,
               weaponId: weapon.id,
             },
           }),
         );
       }
+
+      if (!shotHits) return; // visually-deviated miss — no damage
 
       // LOS wall check: skip damage if an obstacle blocks the shot.
       if (botPos && targetPos2 && collisionSystemRef.current) {
@@ -381,27 +429,6 @@ const Bots: React.FC<
           targetPos2[0], targetPos2[1] + 0.8, targetPos2[2],
         );
         if (!collisionSystemRef.current.hasLineOfSight(from, to)) return;
-      }
-
-      // Miss-chance check: combine base miss probability with distance factor.
-      const botConfig =
-        botId === "bot-1"
-          ? effectiveBot1Config
-          : botId === "bot-2"
-            ? effectiveBot2Config
-            : botId === "bot-3"
-              ? effectiveBot3Config
-              : effectiveBot4Config;
-      const baseMiss = botConfig.missChance ?? 0;
-      if (baseMiss > 0 && botPos && targetPos2) {
-        const dist = Math.hypot(
-          botPos[0] - targetPos2[0],
-          botPos[2] - targetPos2[2],
-        );
-        // Scale up miss chance by up to 30% extra at max weapon range.
-        const distFactor = Math.min(1, dist / weapon.range) * 0.3;
-        const effectiveMiss = Math.min(1, baseMiss + distFactor);
-        if (Math.random() < effectiveMiss) return; // shot missed
       }
 
       const hitLanded = gameManager.hitPlayer(
