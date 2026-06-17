@@ -350,28 +350,46 @@ const Bots: React.FC<
         return;
       }
 
+      // Get positions early — used for tracer VFX and miss check.
+      const botPos = gameManager.getPlayers().get(botId)?.position;
+      const targetPos2 = gameManager.getPlayers().get(targetId)?.position;
+
+      // Always show a tracer beam so players can see incoming fire.
+      if (typeof window !== "undefined" && botPos && targetPos2) {
+        window.dispatchEvent(
+          new window.CustomEvent("bot-shot-fired", {
+            detail: {
+              fromX: botPos[0],
+              fromY: botPos[1] + 1.2,
+              fromZ: botPos[2],
+              toX: targetPos2[0],
+              toY: targetPos2[1] + 0.8,
+              toZ: targetPos2[2],
+              weaponId: weapon.id,
+            },
+          }),
+        );
+      }
+
       // Miss-chance check: combine base miss probability with distance factor.
-      // Determine which effective config to use based on botId.
       const botConfig =
         botId === "bot-1"
           ? effectiveBot1Config
           : botId === "bot-2"
             ? effectiveBot2Config
-            : effectiveBot3Config;
+            : botId === "bot-3"
+              ? effectiveBot3Config
+              : effectiveBot4Config;
       const baseMiss = botConfig.missChance ?? 0;
-      if (baseMiss > 0) {
-        const botPos = gameManager.getPlayers().get(botId)?.position;
-        const targetPos2 = gameManager.getPlayers().get(targetId)?.position;
-        if (botPos && targetPos2) {
-          const dist = Math.hypot(
-            botPos[0] - targetPos2[0],
-            botPos[2] - targetPos2[2],
-          );
-          // Scale up miss chance by up to 30% extra at max weapon range.
-          const distFactor = Math.min(1, dist / weapon.range) * 0.3;
-          const effectiveMiss = Math.min(1, baseMiss + distFactor);
-          if (Math.random() < effectiveMiss) return; // shot missed
-        }
+      if (baseMiss > 0 && botPos && targetPos2) {
+        const dist = Math.hypot(
+          botPos[0] - targetPos2[0],
+          botPos[2] - targetPos2[2],
+        );
+        // Scale up miss chance by up to 30% extra at max weapon range.
+        const distFactor = Math.min(1, dist / weapon.range) * 0.3;
+        const effectiveMiss = Math.min(1, baseMiss + distFactor);
+        if (Math.random() < effectiveMiss) return; // shot missed
       }
 
       const hitLanded = gameManager.hitPlayer(
@@ -387,8 +405,9 @@ const Bots: React.FC<
           // sound is best-effort only
         }
         if (typeof window !== "undefined") {
-          const targetPos = gameManager.getPlayers().get(targetId)?.position;
-          const attackerPos = gameManager.getPlayers().get(botId)?.position;
+          // Use positions already fetched for the tracer above.
+          const targetPos = targetPos2;
+          const attackerPos = botPos;
           if (targetPos) {
             window.dispatchEvent(
               new window.CustomEvent("damage-number", {

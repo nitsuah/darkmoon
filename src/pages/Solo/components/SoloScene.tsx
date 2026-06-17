@@ -8,6 +8,7 @@ import HealthPickups from "../../../components/world/HealthPickups";
 import ExplosionVFX from "../../../components/world/ExplosionVFX";
 import DamageNumbers from "../../../components/world/DamageNumbers";
 import CTFBases from "../../../components/world/CTFBases";
+import BotTracers from "../../../components/world/BotTracers";
 import type { SoloSceneProps } from "./SoloScene.types";
 
 type Props = SoloSceneProps;
@@ -127,6 +128,7 @@ export const SoloScene: React.FC<Props> = ({
       />
       <ExplosionVFX />
       <DamageNumbers />
+      <BotTracers />
       {gameState.mode === "ctf" && <CTFBases />}
     </Canvas>
   );
