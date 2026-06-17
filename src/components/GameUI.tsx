@@ -125,6 +125,32 @@ const GameUI: React.FC<GameUIProps> = ({
     return () => window.removeEventListener("player-hit-landed", handle);
   }, []);
 
+  // Crosshair spread: expands on fire, decays back to 0.
+  const [crosshairSpread, setCrosshairSpread] = React.useState(0);
+  const spreadDecayRef = React.useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
+  React.useEffect(() => {
+    const onFired = (e: unknown) => {
+      const weaponId = (e as { detail: { weaponId: string } }).detail.weaponId;
+      const addSpread =
+        weaponId === "smg" ? 8 : weaponId === "shotgun" ? 6 : 3;
+      setCrosshairSpread((prev) => Math.min(prev + addSpread, 24));
+      if (spreadDecayRef.current) clearInterval(spreadDecayRef.current);
+      spreadDecayRef.current = setInterval(() => {
+        setCrosshairSpread((prev) => {
+          if (prev <= 0) {
+            if (spreadDecayRef.current) clearInterval(spreadDecayRef.current);
+            return 0;
+          }
+          return prev - 2;
+        });
+      }, 50);
+    };
+    window.addEventListener("weapon-fired", onFired);
+    return () => window.removeEventListener("weapon-fired", onFired);
+  }, []);
+
   // Tab scoreboard overlay
   const [showScoreboard, setShowScoreboard] = React.useState(false);
   React.useEffect(() => {
@@ -838,32 +864,64 @@ const GameUI: React.FC<GameUIProps> = ({
                 transform: "translate(-50%, -50%)",
                 pointerEvents: "none",
                 zIndex: 997,
-                width: "20px",
-                height: "20px",
+                width: `${20 + crosshairSpread * 2}px`,
+                height: `${20 + crosshairSpread * 2}px`,
               }}
             >
-              {/* Horizontal bar */}
+              {/* Horizontal bar — left segment */}
               <div
                 style={{
                   position: "absolute",
-                  top: "9px",
+                  top: "50%",
                   left: 0,
-                  right: 0,
+                  width: `${6 + crosshairSpread}px`,
                   height: "2px",
+                  marginTop: "-1px",
                   backgroundColor: hitMarker
                     ? "rgba(255,60,60,1)"
                     : "rgba(255,255,255,0.85)",
                   transition: "background-color 0.05s",
                 }}
               />
-              {/* Vertical bar */}
+              {/* Horizontal bar — right segment */}
               <div
                 style={{
                   position: "absolute",
-                  left: "9px",
+                  top: "50%",
+                  right: 0,
+                  width: `${6 + crosshairSpread}px`,
+                  height: "2px",
+                  marginTop: "-1px",
+                  backgroundColor: hitMarker
+                    ? "rgba(255,60,60,1)"
+                    : "rgba(255,255,255,0.85)",
+                  transition: "background-color 0.05s",
+                }}
+              />
+              {/* Vertical bar — top segment */}
+              <div
+                style={{
+                  position: "absolute",
+                  left: "50%",
                   top: 0,
+                  width: "2px",
+                  height: `${6 + crosshairSpread}px`,
+                  marginLeft: "-1px",
+                  backgroundColor: hitMarker
+                    ? "rgba(255,60,60,1)"
+                    : "rgba(255,255,255,0.85)",
+                  transition: "background-color 0.05s",
+                }}
+              />
+              {/* Vertical bar — bottom segment */}
+              <div
+                style={{
+                  position: "absolute",
+                  left: "50%",
                   bottom: 0,
                   width: "2px",
+                  height: `${6 + crosshairSpread}px`,
+                  marginLeft: "-1px",
                   backgroundColor: hitMarker
                     ? "rgba(255,60,60,1)"
                     : "rgba(255,255,255,0.85)",

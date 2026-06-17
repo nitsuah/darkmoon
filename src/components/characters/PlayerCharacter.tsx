@@ -542,6 +542,13 @@ export const PlayerCharacter = React.forwardRef<
         now,
       });
 
+      if (fireResult && typeof window !== "undefined") {
+        window.dispatchEvent(
+          new window.CustomEvent("weapon-fired", {
+            detail: { weaponId: fireResult.weapon.id },
+          }),
+        );
+      }
       if (fireResult && laserBeamRef.current) {
         const beamLength = fireResult.hit?.distance ?? fireResult.weapon.range;
         const wid = fireResult.weapon.id;
