@@ -5,6 +5,7 @@ import * as THREE from "three";
 import CollisionSystem from "../CollisionSystem";
 import { GameState } from "../GameManager";
 import { createTagLogger } from "../../lib/utils/logger";
+import { SPAWN_POINTS } from "../../lib/constants/spawnPoints";
 
 const tagDebug = createTagLogger("BotAI");
 
@@ -109,16 +110,17 @@ export function useBotAI({
   const sprintEndTime = useRef(0);
   const nextSprintTime = useRef(0);
 
-  // Teleport bot back to spawn when it respawns after being downed.
+  // Teleport bot back to a random spawn point when it respawns after being downed.
   const prevIsDownedRef = useRef(isDowned);
   useEffect(() => {
     if (prevIsDownedRef.current && !isDowned && meshRef.current) {
-      meshRef.current.position.set(...config.initialPosition);
-      lastPosition.current.set(...config.initialPosition);
-      lastReportedPosition.current.set(...config.initialPosition);
+      const pt = SPAWN_POINTS[Math.floor(Math.random() * SPAWN_POINTS.length)];
+      meshRef.current.position.set(...pt);
+      lastPosition.current.set(...pt);
+      lastReportedPosition.current.set(...pt);
     }
     prevIsDownedRef.current = isDowned;
-  }, [isDowned, config.initialPosition, meshRef]);
+  }, [isDowned, meshRef]);
 
   // Handle being tagged by target
   useEffect(() => {
