@@ -115,6 +115,9 @@ export function useBotAI({
   const stuckFrames = useRef(0);
   const steerSign = useRef(1); // +1 or -1 lateral offset direction
   const steerFramesLeft = useRef(0);
+  // Combat strafe: bots dodge left/right while firing to be harder to hit.
+  const strafeSign = useRef<1 | -1>(1);
+  const nextStrafeChangeTime = useRef(0);
 
   // Teleport bot back to a random spawn point when it respawns after being downed.
   const prevIsDownedRef = useRef(isDowned);
@@ -388,11 +391,37 @@ export function useBotAI({
           botPos.x = newPos.x;
           botPos.z = newPos.z;
         }
-      } else if (now - lastFireTime.current > FIRE_RETRY_INTERVAL_MS) {
-        // In range - fire. The parent's WeaponManager is the authoritative
-        // cooldown gate, so just retry on a short interval.
-        lastFireTime.current = now;
-        onFireAtTarget?.();
+      } else {
+        // In range - fire and strafe laterally to dodge.
+        if (now - lastFireTime.current > FIRE_RETRY_INTERVAL_MS) {
+          lastFireTime.current = now;
+          onFireAtTarget?.();
+        }
+        // Flip strafe direction every ~1.5s so the bot zig-zags.
+        if (now >= nextStrafeChangeTime.current) {
+          strafeSign.current = Math.random() < 0.5 ? 1 : -1;
+          nextStrafeChangeTime.current = now + 1200 + Math.random() * 600;
+        }
+        const lateral = new THREE.Vector3(
+          -direction.z * strafeSign.current,
+          0,
+          direction.x * strafeSign.current,
+        );
+        const STRAFE_SPEED = config.botSpeed * 0.55;
+        const currentPos = new THREE.Vector3(botPos.x, botPos.y, botPos.z);
+        const newPos = new THREE.Vector3(
+          botPos.x + lateral.x * STRAFE_SPEED * delta,
+          botPos.y,
+          botPos.z + lateral.z * STRAFE_SPEED * delta,
+        );
+        if (collisionSystem.current) {
+          const resolved = collisionSystem.current.checkCollision(currentPos, newPos);
+          botPos.x = resolved.x;
+          botPos.z = resolved.z;
+        } else {
+          botPos.x = newPos.x;
+          botPos.z = newPos.z;
+        }
       }
     } else if (gameState.isActive && gameState.mode === "ctf" && team) {
       if (isDowned) {
