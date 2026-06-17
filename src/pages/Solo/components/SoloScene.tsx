@@ -6,6 +6,7 @@ import Bots from "./Bots";
 import WeaponPickups from "../../../components/world/WeaponPickups";
 import HealthPickups from "../../../components/world/HealthPickups";
 import ExplosionVFX from "../../../components/world/ExplosionVFX";
+import DamageNumbers from "../../../components/world/DamageNumbers";
 import type { SoloSceneProps } from "./SoloScene.types";
 
 type Props = SoloSceneProps;
@@ -118,6 +119,7 @@ export const SoloScene: React.FC<Props> = ({
         gameState={gameState}
       />
       <ExplosionVFX />
+      <DamageNumbers />
     </Canvas>
   );
 };

@@ -319,6 +319,21 @@ const Bots: React.FC<
         } catch {
           // sound is best-effort only
         }
+        if (typeof window !== "undefined") {
+          const targetPos = gameManager.getPlayers().get(targetId)?.position;
+          if (targetPos) {
+            window.dispatchEvent(
+              new window.CustomEvent("damage-number", {
+                detail: {
+                  x: targetPos[0],
+                  y: targetPos[1] + 1.5,
+                  z: targetPos[2],
+                  damage: weapon.damage,
+                },
+              }),
+            );
+          }
+        }
       }
     },
     [gameManager, gameState.mode, gameState.isActive],
