@@ -127,6 +127,36 @@ export class CollisionSystem {
         new THREE.Vector3(-2.2, 1.2, 15.8),
       ),
     );
+
+    // Mid-field cover crates — symmetric cross matching Environment.tsx geometry
+    // North crate [0, 8]: 3w × 1.5h × 2d
+    this.boundaries.push(
+      new THREE.Box3(
+        new THREE.Vector3(-1.5, 0, 7),
+        new THREE.Vector3(1.5, 1.5, 9),
+      ),
+    );
+    // South crate [0, -8]: 3w × 1.5h × 2d
+    this.boundaries.push(
+      new THREE.Box3(
+        new THREE.Vector3(-1.5, 0, -9),
+        new THREE.Vector3(1.5, 1.5, -7),
+      ),
+    );
+    // East crate [8, 0]: 2w × 1.5h × 3d
+    this.boundaries.push(
+      new THREE.Box3(
+        new THREE.Vector3(7, 0, -1.5),
+        new THREE.Vector3(9, 1.5, 1.5),
+      ),
+    );
+    // West crate [-8, 0]: 2w × 1.5h × 3d
+    this.boundaries.push(
+      new THREE.Box3(
+        new THREE.Vector3(-9, 0, -1.5),
+        new THREE.Vector3(-7, 1.5, 1.5),
+      ),
+    );
   }
 
   checkCollision(

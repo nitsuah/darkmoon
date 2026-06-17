@@ -36,6 +36,50 @@ const Environment: React.FC<Props> = ({ qualitySettings, rockPositions }) => {
           <meshStandardMaterial color="#666666" />
         </mesh>
       ))}
+
+      {/* Corner bunkers — match the 4 corner collision boxes in CollisionSystem */}
+      {(
+        [
+          [17.5, 17.5],
+          [-17.5, -17.5],
+          [17.5, -17.5],
+          [-17.5, 17.5],
+        ] as [number, number][]
+      ).map(([cx, cz], i) => (
+        <mesh
+          key={`bunker-${i}`}
+          position={[cx, 1.5, cz]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry args={[5, 3, 5]} />
+          <meshStandardMaterial color="#4a4035" roughness={0.9} />
+        </mesh>
+      ))}
+
+      {/* Mid-field cover crates — symmetric cross, match CollisionSystem entries */}
+      {(
+        [
+          [0, 8, 3, 1.5, 2], // north: 3w × 1.5h × 2d
+          [0, -8, 3, 1.5, 2], // south
+          [8, 0, 2, 1.5, 3], // east:  2w × 1.5h × 3d
+          [-8, 0, 2, 1.5, 3], // west
+        ] as [number, number, number, number, number][]
+      ).map(([cx, cz, w, h, d], i) => (
+        <mesh
+          key={`cover-${i}`}
+          position={[cx, h / 2, cz]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry args={[w, h, d]} />
+          <meshStandardMaterial
+            color="#556677"
+            roughness={0.8}
+            metalness={0.2}
+          />
+        </mesh>
+      ))}
     </>
   );
 };
