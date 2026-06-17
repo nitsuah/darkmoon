@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useRef, useEffect } from "react";
 import * as THREE from "three";
-import { Billboard } from "@react-three/drei";
+import { Billboard, Text } from "@react-three/drei";
 import SpacemanModel from "../SpacemanModel";
 import CollisionSystem from "../CollisionSystem";
 import { GameState } from "../GameManager";
@@ -144,19 +144,30 @@ export const BotCharacter: React.FC<BotCharacterProps> = ({
         <sphereGeometry args={[0.12, 8, 8]} />
         <meshBasicMaterial color={isIt ? "#ff4444" : labelColor || color} />
       </mesh>
+      {/* Floating name label — always faces camera */}
+      <Billboard position={[0, 2.15, 0]}>
+        <Text
+          fontSize={0.22}
+          color={isIt ? "#ff4444" : "#ffffff"}
+          anchorX="center"
+          anchorY="middle"
+          outlineWidth={0.03}
+          outlineColor="#000000"
+        >
+          {config.label}
+        </Text>
+      </Billboard>
       {/* Health bar — always faces camera via Billboard, hidden in tag mode */}
       {showHealthBar && (
-         
         <Billboard position={[0, 1.9, 0]}>
           {/* Background track */}
-          { }
+          {}
           <mesh>
             <boxGeometry args={[BAR_W, 0.08, 0.01]} />
             <meshBasicMaterial color="#111111" />
           </mesh>
           {/* Fill — left-anchored, shrinks right as health drops */}
           {fillW > 0 && (
-             
             <mesh position={[fillX, 0, 0.006]}>
               <boxGeometry args={[fillW, 0.08, 0.01]} />
               <meshBasicMaterial color={fillColor} />
