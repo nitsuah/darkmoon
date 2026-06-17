@@ -3,9 +3,17 @@ import express from "express";
 import { createServer } from "vite";
 import viteConfig from "../vite.config.js";
 import { Server } from "socket.io";
+import rateLimit from "express-rate-limit";
 
 // Create router
 const router = express.Router();
+
+const devLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Create vite front end dev server
 const vite = await createServer({
@@ -17,7 +25,7 @@ const vite = await createServer({
 });
 
 // Main route serves the index HTML
-router.get("/", async (req, res) => {
+router.get("/", devLimiter, async (req, res) => {
   let html = fs.readFileSync("index.html", "utf-8");
   html = await vite.transformIndexHtml(req.url, html);
   res.send(html);

@@ -26,7 +26,8 @@
     "three": "^0.180.0",
     "flatted": "^3.4.2",
     "socket.io-parser": "^4.2.6",
-    "ajv": "^6.14.0"
+    "ajv": "^6.14.0",
+    "@babel/core": ">=7.29.6"
   },
   "dependencies": {
     "@splinetool/react-spline": "^4.1.0",
