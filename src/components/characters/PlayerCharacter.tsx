@@ -18,6 +18,7 @@ import {
   KEY_2,
   KEY_3,
   KEY_4,
+  KEY_5,
 } from "../utils";
 import SpacemanModel from "../SpacemanModel";
 import { getSoundManager } from "../SoundManager";
@@ -172,6 +173,7 @@ export const PlayerCharacter = React.forwardRef<
   const prevKey2Ref = React.useRef(false);
   const prevKey3Ref = React.useRef(false);
   const prevKey4Ref = React.useRef(false);
+  const prevKey5Ref = React.useRef(false);
 
   // Equip the laser blaster by default and surface the equipped weapon to the HUD.
   React.useEffect(() => {
@@ -470,11 +472,12 @@ export const PlayerCharacter = React.forwardRef<
       }
     }
 
-    // Weapon switching: rising-edge detection for 1 (laser), 2 (shotgun), 3 (rocket), 4 (grenade).
+    // Weapon switching: rising-edge detection for 1 (laser), 2 (shotgun), 3 (rocket), 4 (grenade), 5 (smg).
     const key1 = keysPressedRef.current[KEY_1] ?? false;
     const key2 = keysPressedRef.current[KEY_2] ?? false;
     const key3 = keysPressedRef.current[KEY_3] ?? false;
     const key4 = keysPressedRef.current[KEY_4] ?? false;
+    const key5 = keysPressedRef.current[KEY_5] ?? false;
     const myId = socketClient?.id || currentPlayerId;
     if (key1 && !prevKey1Ref.current) {
       weaponManagerRef.current.equip("laser");
@@ -504,10 +507,18 @@ export const PlayerCharacter = React.forwardRef<
         currentAmmo: weaponManagerRef.current.getAmmo("grenade"),
       });
     }
+    if (key5 && !prevKey5Ref.current) {
+      weaponManagerRef.current.equip("smg");
+      gameManager?.updatePlayer(myId, {
+        equippedWeaponId: "smg",
+        currentAmmo: weaponManagerRef.current.getAmmo("smg"),
+      });
+    }
     prevKey1Ref.current = key1;
     prevKey2Ref.current = key2;
     prevKey3Ref.current = key3;
     prevKey4Ref.current = key4;
+    prevKey5Ref.current = key5;
 
     // Fire the equipped weapon while left-click is held (rate-limited by
     // WeaponManager's per-shooter cooldown).

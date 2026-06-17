@@ -47,6 +47,12 @@ export const PICKUP_DEFS: PickupDef[] = [
     weaponId: "grenade",
     color: "#44ff00",
   },
+  {
+    id: "pickup-smg",
+    position: [-14, 0.8, 0],
+    weaponId: "smg",
+    color: "#ff44cc",
+  },
 ];
 
 type PickupState = {

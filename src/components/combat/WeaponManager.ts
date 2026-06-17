@@ -49,6 +49,14 @@ export const WEAPONS: Record<string, WeaponConfig> = {
     splashRadius: 7,
     splashDamage: 75,
   },
+  smg: {
+    id: "smg",
+    name: "SMG",
+    damage: 12,
+    range: 18,
+    cooldownMs: 120,
+    maxAmmo: 40,
+  },
 };
 
 /**
