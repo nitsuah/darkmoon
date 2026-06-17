@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from "react";
+import React, { useCallback, useMemo, useRef } from "react";
 import { BotCharacter } from "../../../components/characters/BotCharacter";
 import type { SoloSceneProps } from "./SoloScene.types";
 import type { BotConfig as FullBotConfig } from "../../../components/characters/useBotAI";
@@ -57,35 +57,47 @@ const Bots: React.FC<
   playerPositionRef,
 }) => {
   // keep default bot config merging inline to preserve behavior
-  const DEFAULT_BOT_CONFIG: FullBotConfig = {
-    botSpeed: 1.5,
-    sprintSpeed: 4,
-    fleeSpeed: 1.2,
-    tagCooldown: 2000,
-    tagDistance: 1.2,
-    pauseAfterTag: 1500,
-    sprintDuration: 800,
-    sprintCooldown: 2000,
-    chaseRadius: 8,
-    initialPosition: [0, 0.5, 0],
-    label: "Bot",
-  };
+  const DEFAULT_BOT_CONFIG: FullBotConfig = useMemo(
+    () => ({
+      botSpeed: 1.5,
+      sprintSpeed: 4,
+      fleeSpeed: 1.2,
+      tagCooldown: 2000,
+      tagDistance: 1.2,
+      pauseAfterTag: 1500,
+      sprintDuration: 800,
+      sprintCooldown: 2000,
+      chaseRadius: 8,
+      initialPosition: [0, 0.5, 0] as [number, number, number],
+      label: "Bot",
+    }),
+    [],
+  );
 
   // BOT1_CONFIG/BOT2_CONFIG may be Partial; merge safely with defaults
-  const effectiveBot1Config: FullBotConfig = {
-    ...DEFAULT_BOT_CONFIG,
-    ...(BOT1_CONFIG || {}),
-  };
+  const effectiveBot1Config: FullBotConfig = useMemo(
+    () => ({
+      ...DEFAULT_BOT_CONFIG,
+      ...(BOT1_CONFIG || {}),
+    }),
+    [DEFAULT_BOT_CONFIG, BOT1_CONFIG],
+  );
 
-  const effectiveBot2Config: FullBotConfig = {
-    ...DEFAULT_BOT_CONFIG,
-    ...(BOT2_CONFIG || {}),
-  };
+  const effectiveBot2Config: FullBotConfig = useMemo(
+    () => ({
+      ...DEFAULT_BOT_CONFIG,
+      ...(BOT2_CONFIG || {}),
+    }),
+    [DEFAULT_BOT_CONFIG, BOT2_CONFIG],
+  );
 
-  const effectiveBot3Config: FullBotConfig = {
-    ...DEFAULT_BOT_CONFIG,
-    ...(BOT3_CONFIG || {}),
-  };
+  const effectiveBot3Config: FullBotConfig = useMemo(
+    () => ({
+      ...DEFAULT_BOT_CONFIG,
+      ...(BOT3_CONFIG || {}),
+    }),
+    [DEFAULT_BOT_CONFIG, BOT3_CONFIG],
+  );
 
   // Get bot IT status from game manager
   const bot1IsIt = gameManager?.getPlayers().get("bot-1")?.isIt ?? false;
@@ -307,6 +319,30 @@ const Bots: React.FC<
         return;
       }
 
+      // Miss-chance check: combine base miss probability with distance factor.
+      // Determine which effective config to use based on botId.
+      const botConfig =
+        botId === "bot-1"
+          ? effectiveBot1Config
+          : botId === "bot-2"
+            ? effectiveBot2Config
+            : effectiveBot3Config;
+      const baseMiss = botConfig.missChance ?? 0;
+      if (baseMiss > 0) {
+        const botPos = gameManager.getPlayers().get(botId)?.position;
+        const targetPos2 = gameManager.getPlayers().get(targetId)?.position;
+        if (botPos && targetPos2) {
+          const dist = Math.hypot(
+            botPos[0] - targetPos2[0],
+            botPos[2] - targetPos2[2],
+          );
+          // Scale up miss chance by up to 30% extra at max weapon range.
+          const distFactor = Math.min(1, dist / weapon.range) * 0.3;
+          const effectiveMiss = Math.min(1, baseMiss + distFactor);
+          if (Math.random() < effectiveMiss) return; // shot missed
+        }
+      }
+
       const hitLanded = gameManager.hitPlayer(
         botId,
         targetId,
@@ -336,7 +372,14 @@ const Bots: React.FC<
         }
       }
     },
-    [gameManager, gameState.mode, gameState.isActive],
+    [
+      gameManager,
+      gameState.mode,
+      gameState.isActive,
+      effectiveBot1Config,
+      effectiveBot2Config,
+      effectiveBot3Config,
+    ],
   );
 
   const handleBot1FireAtTarget = useCallback(() => {

@@ -41,6 +41,8 @@ export interface BotConfig {
   chaseRadius: number;
   initialPosition: [number, number, number];
   label: string;
+  /** Probability [0, 1] that a shot attempt misses entirely. Default: 0. */
+  missChance?: number;
 }
 
 export interface BotAIProps {
