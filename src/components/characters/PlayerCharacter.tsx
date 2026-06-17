@@ -556,11 +556,23 @@ export const PlayerCharacter = React.forwardRef<
       if (fireResult && fireResult.hit && typeof window !== "undefined") {
         // Notify HUD to flash hit marker.
         window.dispatchEvent(new window.Event("player-hit-landed"));
+        // Compute hit position for VFX/damage numbers.
+        const hitPos = fireOrigin
+          .clone()
+          .add(fireDirection.clone().multiplyScalar(fireResult.hit.distance));
+        // Floating damage number at hit point.
+        window.dispatchEvent(
+          new window.CustomEvent("damage-number", {
+            detail: {
+              x: hitPos.x,
+              y: hitPos.y + 1.0,
+              z: hitPos.z,
+              damage: fireResult.weapon.damage,
+            },
+          }),
+        );
         // Trigger explosion VFX for splash weapons (rocket, grenade).
         if (fireResult.weapon.splashRadius) {
-          const hitPos = fireOrigin
-            .clone()
-            .add(fireDirection.clone().multiplyScalar(fireResult.hit.distance));
           window.dispatchEvent(
             new window.CustomEvent("weapon-explosion", {
               detail: {
