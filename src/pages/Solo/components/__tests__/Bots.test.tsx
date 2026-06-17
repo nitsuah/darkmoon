@@ -237,18 +237,18 @@ describe("Bots", () => {
     render(<Bots {...props} />);
     const fire = botPropsByRender[0].onFireAtTarget as () => void;
 
-    // bot-1 uses the Pulse Shotgun (damage 25, cooldown 1000ms)
+    // bot-1 uses the SMG (damage 12, cooldown 120ms)
     fire();
-    expect(gm.getPlayers().get("player-1")?.health).toBe(75);
+    expect(gm.getPlayers().get("player-1")?.health).toBe(88);
 
-    // Still within the shotgun's 1000ms cooldown - the shot is gated.
+    // Still within the SMG's 120ms cooldown - the shot is gated.
     fire();
-    expect(gm.getPlayers().get("player-1")?.health).toBe(75);
+    expect(gm.getPlayers().get("player-1")?.health).toBe(88);
 
     // Cooldown elapsed - the next shot lands.
     nowSpy.mockReturnValue(6001);
     fire();
-    expect(gm.getPlayers().get("player-1")?.health).toBe(50);
+    expect(gm.getPlayers().get("player-1")?.health).toBe(76);
   });
 
   it("marks a bot as downed while it awaits respawn in deathmatch", () => {
@@ -328,8 +328,8 @@ describe("Bots", () => {
     const fire = botPropsByRender[0].onFireAtTarget as () => void;
 
     fire();
-    // bot-1 equips the Pulse Shotgun (damage 25), so 100 - 25 = 75
-    expect(gm.getPlayers().get("player-1")?.health).toBe(75);
+    // bot-1 equips the SMG (damage 12), so 100 - 12 = 88
+    expect(gm.getPlayers().get("player-1")?.health).toBe(88);
 
     nowSpy.mockRestore();
   });

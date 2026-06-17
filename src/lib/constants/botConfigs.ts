@@ -7,21 +7,21 @@
 import type { BotConfig } from "../../components/characters/useBotAI";
 
 /**
- * Bot 1 Configuration - Balanced bot
- * Good for testing, not too fast or slow
+ * Bot 1 Configuration - Aggressive SMG rusher
+ * Fast bot that gets in close and sprays the SMG
  */
 export const BOT1_CONFIG: BotConfig = {
-  botSpeed: 3.0,
-  sprintSpeed: 4.5,
+  botSpeed: 3.5,
+  sprintSpeed: 5.0,
   fleeSpeed: 1.3,
   tagCooldown: 500,
   tagDistance: 1.0,
-  pauseAfterTag: 3000, // 3 second freeze when tagged (matches player freeze)
+  pauseAfterTag: 3000,
   sprintDuration: 3000,
   sprintCooldown: 2000,
   chaseRadius: 15,
   initialPosition: [-5, 0.5, -5],
-  missChance: 0.38,
+  missChance: 0.22,
   label: "Bot1",
 };
 
