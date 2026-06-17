@@ -710,6 +710,96 @@ const GameUI: React.FC<GameUIProps> = ({
           </div>
         )}
 
+        {/* Minimap radar — top-right, combat + tag modes, hidden on minimal */}
+        {(gameState.mode === "deathmatch" ||
+          gameState.mode === "ctf" ||
+          gameState.mode === "tag") &&
+          !isMinimal &&
+          (() => {
+            const MAP_PX = 90;
+            const ARENA = 50; // world units from center to wall (±50)
+            const toMapCoord = (worldVal: number) =>
+              ((worldVal + ARENA) / (ARENA * 2)) * MAP_PX;
+            const allPlayers = Array.from(players.values());
+            return (
+              <div
+                style={{
+                  position: "fixed",
+                  top: "52px",
+                  right: "10px",
+                  width: MAP_PX,
+                  height: MAP_PX,
+                  background: "rgba(0,0,0,0.55)",
+                  border: "1px solid rgba(255,255,255,0.2)",
+                  borderRadius: "4px",
+                  zIndex: 998,
+                  pointerEvents: "none",
+                  overflow: "hidden",
+                }}
+              >
+                {/* Cover crate outlines */}
+                {[
+                  [0, -8],
+                  [0, 8],
+                  [8, 0],
+                  [-8, 0],
+                ].map(([wx, wz], i) => {
+                  const px = toMapCoord(wx) - 3;
+                  const py = toMapCoord(wz) - 3;
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        position: "absolute",
+                        left: px,
+                        top: py,
+                        width: 6,
+                        height: 6,
+                        background: "rgba(100,120,130,0.5)",
+                        borderRadius: "1px",
+                      }}
+                    />
+                  );
+                })}
+                {/* Player and bot dots */}
+                {allPlayers.map((p) => {
+                  const isMe = p.id === currentPlayerId;
+                  const isDowned = p.respawnAt !== undefined;
+                  const isIt = p.isIt;
+                  const px = toMapCoord(p.position[0]);
+                  const pz = toMapCoord(p.position[2]);
+                  const size = isMe ? 6 : 4;
+                  const color = isDowned
+                    ? "#555"
+                    : isIt
+                      ? "#ff3333"
+                      : isMe
+                        ? "#ffffff"
+                        : p.team === "a"
+                          ? "#44aaff"
+                          : p.team === "b"
+                            ? "#ff8844"
+                            : "#88ff88";
+                  return (
+                    <div
+                      key={p.id}
+                      style={{
+                        position: "absolute",
+                        left: px - size / 2,
+                        top: pz - size / 2,
+                        width: size,
+                        height: size,
+                        borderRadius: "50%",
+                        background: color,
+                        boxShadow: isMe ? `0 0 4px ${color}` : undefined,
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            );
+          })()}
+
         {/* Crosshair — combat and tag modes, hidden while downed */}
         {(gameState.mode === "deathmatch" ||
           gameState.mode === "ctf" ||
