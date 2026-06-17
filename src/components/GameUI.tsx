@@ -965,9 +965,13 @@ const GameUI: React.FC<GameUIProps> = ({
                   const wColor =
                     currentPlayer.equippedWeaponId === "rocket"
                       ? "#ff4422"
-                      : currentPlayer.equippedWeaponId === "shotgun"
-                        ? "#ff9933"
-                        : "#33ffe6";
+                      : currentPlayer.equippedWeaponId === "grenade"
+                        ? "#44ff00"
+                        : currentPlayer.equippedWeaponId === "shotgun"
+                          ? "#ff9933"
+                          : currentPlayer.equippedWeaponId === "smg"
+                            ? "#ff44cc"
+                            : "#33ffe6";
                   return (
                     <>
                       <span style={{ color: wColor }}>
@@ -976,7 +980,7 @@ const GameUI: React.FC<GameUIProps> = ({
                       <span style={{ color: "#aaaaaa", letterSpacing: "1px" }}>
                         {ammo === null || ammo === undefined
                           ? "∞"
-                          : maxAmmo
+                          : maxAmmo && maxAmmo <= 10
                             ? Array.from({ length: maxAmmo }, (_, i) => (
                                 <span
                                   key={i}
@@ -985,7 +989,7 @@ const GameUI: React.FC<GameUIProps> = ({
                                   ●
                                 </span>
                               ))
-                            : ammo}
+                            : `${ammo}`}
                       </span>
                       <span style={{ color: "#555", fontSize: "10px" }}>
                         [1/2/3]
