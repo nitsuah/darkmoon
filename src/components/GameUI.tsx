@@ -761,6 +761,30 @@ const GameUI: React.FC<GameUIProps> = ({
                     />
                   );
                 })}
+                {/* CTF flag dots */}
+                {gameState.mode === "ctf" &&
+                  (gameState.flags ?? []).map((flag) => {
+                    const pos = flag.carrierId ? undefined : flag.position;
+                    if (!pos) return null;
+                    const fx = toMapCoord(pos[0]);
+                    const fz = toMapCoord(pos[2]);
+                    const flagColor = flag.team === "a" ? "#4488ff" : "#ff5533";
+                    return (
+                      <div
+                        key={`flag-${flag.team}`}
+                        style={{
+                          position: "absolute",
+                          left: fx - 4,
+                          top: fz - 4,
+                          width: 8,
+                          height: 8,
+                          background: flagColor,
+                          clipPath: "polygon(0 0, 100% 25%, 0 50%, 0 100%)",
+                          opacity: 0.9,
+                        }}
+                      />
+                    );
+                  })}
                 {/* Player and bot dots */}
                 {allPlayers.map((p) => {
                   const isMe = p.id === currentPlayerId;
@@ -1002,6 +1026,24 @@ const GameUI: React.FC<GameUIProps> = ({
               >
                 DOWNED
               </div>
+              {(() => {
+                const lastDeath = [...(gameState.killFeed ?? [])]
+                  .reverse()
+                  .find((k) => k.targetId === currentPlayerId);
+                return lastDeath ? (
+                  <div
+                    style={{
+                      fontFamily: "monospace",
+                      fontSize: isMinimal ? "10px" : "14px",
+                      color: "#ffaaaa",
+                      marginTop: "4px",
+                      letterSpacing: "1px",
+                    }}
+                  >
+                    KILLED BY {lastDeath.killerName.toUpperCase()}
+                  </div>
+                ) : null;
+              })()}
               <div
                 style={{
                   fontFamily: "monospace",
