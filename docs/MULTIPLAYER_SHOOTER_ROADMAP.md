@@ -1,5 +1,7 @@
 # Multiplayer Shooter Roadmap — "Robot Conker's Bad Fur Day"
 
+repo: [[repos/darkmoon|darkmoon]]
+
 **Status:** Phase 1 (tag stabilization) complete. Phase A (pluggable game modes)
 complete. Phase B (combat primitives) complete. Phase C (deathmatch) complete end to
 end — backend, gameplay wiring, and bot combat AI. Phase D (CTF) is now complete end to
