@@ -79,6 +79,8 @@ export interface Player {
   spawnProtectedUntil?: number;
   /** Consecutive kills without dying (resets on death). */
   currentKillStreak?: number;
+  /** Timestamp (ms) of the most recent damage taken — used for passive health regen delay. */
+  lastDamageAt?: number;
 }
 
 export class GameManager {

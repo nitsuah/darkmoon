@@ -68,6 +68,20 @@ export class DeathmatchMode implements GameModeHandler {
       ) {
         player.spawnProtectedUntil = undefined;
       }
+      // Passive regen: 5hp/s after 5s without damage, up to half max health.
+      const REGEN_DELAY_MS = 5000;
+      const REGEN_CAP = Math.floor((player.maxHealth ?? this.DEFAULT_MAX_HEALTH) / 2);
+      if (
+        player.respawnAt === undefined &&
+        (player.health ?? 0) < REGEN_CAP &&
+        (player.lastDamageAt === undefined ||
+          now - player.lastDamageAt >= REGEN_DELAY_MS)
+      ) {
+        player.health = Math.min(
+          REGEN_CAP,
+          (player.health ?? 0) + 5 * deltaTime,
+        );
+      }
     });
 
     if (
@@ -102,6 +116,7 @@ export class DeathmatchMode implements GameModeHandler {
     const maxHealth = target.maxHealth ?? this.DEFAULT_MAX_HEALTH;
     const currentHealth = target.health ?? maxHealth;
     target.health = Math.max(0, currentHealth - damage);
+    target.lastDamageAt = Date.now();
 
     if (target.health === 0) {
       this.applyKill(
@@ -133,6 +148,7 @@ export class DeathmatchMode implements GameModeHandler {
           0,
           (nearby.health ?? nearbyMax) - splashDamage,
         );
+        nearby.lastDamageAt = Date.now();
         if (nearby.health === 0) {
           this.applyKill(
             attackerId,
