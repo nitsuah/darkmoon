@@ -504,7 +504,7 @@ const GameUI: React.FC<GameUIProps> = ({
                   currentPlayer.currentAmmo === undefined
                     ? "∞"
                     : currentPlayer.currentAmmo}
-                  ] [1/2/3]
+                  ] [1-5]
                 </div>
               )}
 
@@ -584,7 +584,7 @@ const GameUI: React.FC<GameUIProps> = ({
                   currentPlayer.currentAmmo === undefined
                     ? "∞"
                     : currentPlayer.currentAmmo}
-                  ] [1/2/3]
+                  ] [1-5]
                 </div>
               )}
 
