@@ -21,6 +21,7 @@ export const BOT1_CONFIG: BotConfig = {
   sprintCooldown: 2000,
   chaseRadius: 15,
   initialPosition: [-5, 0.5, -5],
+  missChance: 0.38,
   label: "Bot1",
 };
 
@@ -39,6 +40,7 @@ export const BOT2_CONFIG: BotConfig = {
   sprintCooldown: 2000,
   chaseRadius: 15,
   initialPosition: [8, 0.5, -8],
+  missChance: 0.28,
   label: "Bot2",
 };
 
@@ -57,6 +59,7 @@ export const BOT3_CONFIG: BotConfig = {
   sprintCooldown: 2000,
   chaseRadius: 15,
   initialPosition: [-8, 0.5, 8],
+  missChance: 0.33,
   label: "Bot3",
 };
 
