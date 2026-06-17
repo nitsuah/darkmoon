@@ -553,7 +553,7 @@ export const PlayerCharacter = React.forwardRef<
         const remainingAmmo = weaponManagerRef.current.getAmmo(wid);
         gameManager?.updatePlayer(myId, { currentAmmo: remainingAmmo });
       }
-      if (fireResult.hit && typeof window !== "undefined") {
+      if (fireResult && fireResult.hit && typeof window !== "undefined") {
         // Notify HUD to flash hit marker.
         window.dispatchEvent(new window.Event("player-hit-landed"));
         // Trigger explosion VFX for splash weapons (rocket, grenade).
