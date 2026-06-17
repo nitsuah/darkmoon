@@ -64,6 +64,30 @@ export const BOT3_CONFIG: BotConfig = {
 };
 
 /**
+ * Bot 4 Configuration - Laser sniper
+ * Slow, accurate, long-range threat using the default laser
+ */
+export const BOT4_CONFIG: BotConfig = {
+  botSpeed: 2.0,
+  sprintSpeed: 2.8,
+  fleeSpeed: 0.8,
+  tagCooldown: 500,
+  tagDistance: 1.0,
+  pauseAfterTag: 3000,
+  sprintDuration: 2000,
+  sprintCooldown: 3000,
+  chaseRadius: 25,
+  initialPosition: [8, 0.5, 8],
+  missChance: 0.12,
+  label: "Bot4",
+};
+
+/**
  * All bot configurations for easy iteration
  */
-export const BOT_CONFIGS = [BOT1_CONFIG, BOT2_CONFIG, BOT3_CONFIG] as const;
+export const BOT_CONFIGS = [
+  BOT1_CONFIG,
+  BOT2_CONFIG,
+  BOT3_CONFIG,
+  BOT4_CONFIG,
+] as const;

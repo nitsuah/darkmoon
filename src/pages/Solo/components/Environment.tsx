@@ -57,6 +57,21 @@ const Environment: React.FC<Props> = ({ qualitySettings, rockPositions }) => {
         </mesh>
       ))}
 
+      {/* Arena boundary walls at ±50 (matching CollisionSystem worldSize) */}
+      {(
+        [
+          [0, 2, 50, 100, 4, 1], // north wall
+          [0, 2, -50, 100, 4, 1], // south wall
+          [50, 2, 0, 1, 4, 100], // east wall
+          [-50, 2, 0, 1, 4, 100], // west wall
+        ] as [number, number, number, number, number, number][]
+      ).map(([x, y, z, w, h, d], i) => (
+        <mesh key={`wall-${i}`} position={[x, y, z]}>
+          <boxGeometry args={[w, h, d]} />
+          <meshStandardMaterial color="#334455" roughness={0.95} metalness={0.1} />
+        </mesh>
+      ))}
+
       {/* Mid-field cover crates — symmetric cross, match CollisionSystem entries */}
       {(
         [
