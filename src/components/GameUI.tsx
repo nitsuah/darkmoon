@@ -98,6 +98,23 @@ const GameUI: React.FC<GameUIProps> = ({
     return () => clearInterval(id);
   }, [respawnAt]);
 
+  // Hit direction indicator: show a red arc at the screen edge pointing toward the attacker.
+  const [hitAngle, setHitAngle] = React.useState<number | null>(null);
+  const hitAngleTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  React.useEffect(() => {
+    const onPlayerDamaged = (e: Event) => {
+      const angle = (e as CustomEvent<{ angle: number }>).detail.angle;
+      if (hitAngleTimerRef.current) clearTimeout(hitAngleTimerRef.current);
+      setHitAngle(angle);
+      hitAngleTimerRef.current = setTimeout(() => setHitAngle(null), 900);
+    };
+    window.addEventListener("player-damaged", onPlayerDamaged);
+    return () => {
+      window.removeEventListener("player-damaged", onPlayerDamaged);
+      if (hitAngleTimerRef.current) clearTimeout(hitAngleTimerRef.current);
+    };
+  }, []);
+
   // Damage flash: red vignette when player health drops
   const prevHealthRef = React.useRef<number | null>(null);
   const [damageFlash, setDamageFlash] = React.useState(false);
@@ -241,6 +258,48 @@ const GameUI: React.FC<GameUIProps> = ({
               zIndex: 998,
             }}
           />
+        )}
+
+        {hitAngle !== null && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              pointerEvents: "none",
+              zIndex: 997,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <div
+              style={{
+                width: "220px",
+                height: "220px",
+                position: "relative",
+                transform: `rotate(${hitAngle}rad)`,
+              }}
+            >
+              {/* Red arc at top of the circle, pointing toward attacker direction */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  width: "36px",
+                  height: "36px",
+                  background:
+                    "radial-gradient(ellipse at center top, rgba(255,40,40,0.95) 0%, rgba(255,40,40,0) 70%)",
+                  clipPath: "polygon(50% 0%, 0% 100%, 100% 100%)",
+                  filter: "drop-shadow(0 0 6px #ff2222)",
+                }}
+              />
+            </div>
+          </div>
         )}
         {killAnnouncement && (
           <div

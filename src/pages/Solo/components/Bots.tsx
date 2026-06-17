@@ -388,6 +388,7 @@ const Bots: React.FC<
         }
         if (typeof window !== "undefined") {
           const targetPos = gameManager.getPlayers().get(targetId)?.position;
+          const attackerPos = gameManager.getPlayers().get(botId)?.position;
           if (targetPos) {
             window.dispatchEvent(
               new window.CustomEvent("damage-number", {
@@ -399,6 +400,18 @@ const Bots: React.FC<
                 },
               }),
             );
+            // If the player was hit, fire direction indicator event.
+            if (targetId === currentPlayerId && attackerPos) {
+              const angle = Math.atan2(
+                attackerPos[0] - targetPos[0],
+                attackerPos[2] - targetPos[2],
+              );
+              window.dispatchEvent(
+                new window.CustomEvent("player-damaged", {
+                  detail: { angle },
+                }),
+              );
+            }
           }
         }
       }
@@ -411,6 +424,7 @@ const Bots: React.FC<
       effectiveBot2Config,
       effectiveBot3Config,
       effectiveBot4Config,
+      currentPlayerId,
     ],
   );
 
