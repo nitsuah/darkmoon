@@ -18,13 +18,16 @@ const Bots: React.FC<
     | "handleBot1PositionUpdate"
     | "handleBot2PositionUpdate"
     | "handleBot3PositionUpdate"
+    | "handleBot4PositionUpdate"
     | "collisionSystemRef"
     | "bot1GotTagged"
     | "bot2GotTagged"
     | "bot3GotTagged"
+    | "bot4GotTagged"
     | "BOT1_CONFIG"
     | "BOT2_CONFIG"
     | "BOT3_CONFIG"
+    | "BOT4_CONFIG"
     | "gameManager"
     | "gameState"
     | "setBot1GotTagged"
@@ -41,13 +44,16 @@ const Bots: React.FC<
   handleBot1PositionUpdate,
   handleBot2PositionUpdate,
   handleBot3PositionUpdate,
+  handleBot4PositionUpdate,
   collisionSystemRef,
   bot1GotTagged,
   bot2GotTagged,
   bot3GotTagged,
+  bot4GotTagged,
   BOT1_CONFIG,
   BOT2_CONFIG,
   BOT3_CONFIG,
+  BOT4_CONFIG,
   gameManager,
   gameState,
   setBot1GotTagged,
@@ -99,6 +105,14 @@ const Bots: React.FC<
     [DEFAULT_BOT_CONFIG, BOT3_CONFIG],
   );
 
+  const effectiveBot4Config: FullBotConfig = useMemo(
+    () => ({
+      ...DEFAULT_BOT_CONFIG,
+      ...(BOT4_CONFIG || {}),
+    }),
+    [DEFAULT_BOT_CONFIG, BOT4_CONFIG],
+  );
+
   // Get bot IT status from game manager
   const bot1IsIt = gameManager?.getPlayers().get("bot-1")?.isIt ?? false;
   const bot2IsIt = gameManager?.getPlayers().get("bot-2")?.isIt ?? false;
@@ -109,6 +123,8 @@ const Bots: React.FC<
     gameManager?.getPlayers().get("bot-2")?.respawnAt !== undefined;
   const bot3IsDowned =
     gameManager?.getPlayers().get("bot-3")?.respawnAt !== undefined;
+  const bot4IsDowned =
+    gameManager?.getPlayers().get("bot-4")?.respawnAt !== undefined;
   // Health for health-bar display in combat modes
   const bot1Health = gameManager?.getPlayers().get("bot-1")?.health;
   const bot1MaxHealth = gameManager?.getPlayers().get("bot-1")?.maxHealth;
@@ -116,17 +132,23 @@ const Bots: React.FC<
   const bot2MaxHealth = gameManager?.getPlayers().get("bot-2")?.maxHealth;
   const bot3Health = gameManager?.getPlayers().get("bot-3")?.health;
   const bot3MaxHealth = gameManager?.getPlayers().get("bot-3")?.maxHealth;
+  const bot4Health = gameManager?.getPlayers().get("bot-4")?.health;
+  const bot4MaxHealth = gameManager?.getPlayers().get("bot-4")?.maxHealth;
   // Team assignment and carried-flag status for CTF
   const bot1Team = gameManager?.getPlayers().get("bot-1")?.team;
   const bot2Team = gameManager?.getPlayers().get("bot-2")?.team;
   const bot3Team = gameManager?.getPlayers().get("bot-3")?.team;
+  const bot4Team = gameManager?.getPlayers().get("bot-4")?.team;
   const bot1CarryingFlag =
     gameState.flags?.some((flag) => flag.carrierId === "bot-1") ?? false;
   const bot2CarryingFlag =
     gameState.flags?.some((flag) => flag.carrierId === "bot-2") ?? false;
   const bot3CarryingFlag =
     gameState.flags?.some((flag) => flag.carrierId === "bot-3") ?? false;
-  // Combat mode: bot-2 and bot-3 are AI opponents; bot-3 is combat-only.
+  const bot4CarryingFlag =
+    gameState.flags?.some((flag) => flag.carrierId === "bot-4") ?? false;
+  const bot4TargetTeam = bot4Team === "a" ? "b" : bot4Team === "b" ? "a" : undefined;
+  // Combat mode: bot-2 and bot-3 are AI opponents; bot-3/bot-4 are combat-only.
   const isCombatMode =
     gameState.mode === "deathmatch" || gameState.mode === "ctf";
   const isTagMode = gameState.mode === "tag";
@@ -135,6 +157,7 @@ const Bots: React.FC<
     (isCombatMode && gameState.isActive) ||
     (isTagMode && gameState.isActive);
   const showBot3 = isCombatMode && gameState.isActive;
+  const showBot4 = isCombatMode && gameState.isActive;
 
   const isDeathmatch = gameState.mode === "deathmatch";
 
@@ -144,11 +167,14 @@ const Bots: React.FC<
     isDeathmatch && !bot1IsDowned ? bot1PositionRef : playerPositionRef;
   const bot3DmTargetRef =
     isDeathmatch && !bot2IsDowned ? bot2PositionRef : playerPositionRef;
+  // Bot-4 (laser sniper) always focuses on the player.
+  const bot4DmTargetRef = playerPositionRef;
   // Fire targets mirror position refs.
   const bot2DmFireTarget =
     isDeathmatch && !bot1IsDowned ? "bot-1" : currentPlayerId;
   const bot3DmFireTarget =
     isDeathmatch && !bot2IsDowned ? "bot-2" : currentPlayerId;
+  const bot4DmFireTarget = currentPlayerId;
 
   // Team of each bot's current target, so CTF combat doesn't fire on allies.
   const bot1TargetTeam = botDebugMode
@@ -266,10 +292,11 @@ const Bots: React.FC<
   ]);
 
   // Each bot gets its own WeaponManager so they can use different weapons.
-  // Bot-1: SMG (rapid-fire spray), Bot-2: Rocket Launcher, Bot-3: Frag Grenade.
+  // Bot-1: SMG (rapid-fire spray), Bot-2: Rocket Launcher, Bot-3: Frag Grenade, Bot-4: Laser.
   const bot1WeaponsRef = useRef<WeaponManager | null>(null);
   const bot2WeaponsRef = useRef<WeaponManager | null>(null);
   const bot3WeaponsRef = useRef<WeaponManager | null>(null);
+  const bot4WeaponsRef = useRef<WeaponManager | null>(null);
 
   const fireBotWeapon = useCallback(
     (botId: string, targetId: string) => {
@@ -292,7 +319,9 @@ const Bots: React.FC<
           ? bot1WeaponsRef
           : botId === "bot-2"
             ? bot2WeaponsRef
-            : bot3WeaponsRef;
+            : botId === "bot-3"
+              ? bot3WeaponsRef
+              : bot4WeaponsRef;
       if (!weaponRef.current) {
         weaponRef.current = new WeaponManager();
         const startWeapon = isTagMode
@@ -301,7 +330,9 @@ const Bots: React.FC<
             ? "smg"
             : botId === "bot-2"
               ? "rocket"
-              : "grenade";
+              : botId === "bot-3"
+                ? "grenade"
+                : "laser";
         weaponRef.current.equip(startWeapon);
       }
 
@@ -379,6 +410,7 @@ const Bots: React.FC<
       effectiveBot1Config,
       effectiveBot2Config,
       effectiveBot3Config,
+      effectiveBot4Config,
     ],
   );
 
@@ -395,6 +427,10 @@ const Bots: React.FC<
     // Deathmatch: bot-3 targets bot-2 (fallback player). Otherwise: player.
     fireBotWeapon("bot-3", bot3DmFireTarget);
   }, [fireBotWeapon, bot3DmFireTarget]);
+
+  const handleBot4FireAtTarget = useCallback(() => {
+    fireBotWeapon("bot-4", bot4DmFireTarget);
+  }, [fireBotWeapon, bot4DmFireTarget]);
 
   return (
     <>
@@ -483,6 +519,30 @@ const Bots: React.FC<
           labelColor="#ff8800"
           health={bot3Health}
           maxHealth={bot3MaxHealth}
+        />
+      )}
+
+      {showBot4 && (
+        <BotCharacter
+          targetPositionRef={bot4DmTargetRef}
+          isIt={false}
+          targetIsIt={playerIsItFromManager}
+          isPaused={isPaused}
+          onTagTarget={() => {}}
+          onFireAtTarget={handleBot4FireAtTarget}
+          isDowned={bot4IsDowned}
+          team={bot4Team}
+          isCarryingFlag={bot4CarryingFlag}
+          targetTeam={bot4TargetTeam}
+          onPositionUpdate={handleBot4PositionUpdate}
+          gameState={gameState}
+          collisionSystem={collisionSystemRef}
+          gotTaggedTimestamp={bot4GotTagged}
+          config={effectiveBot4Config}
+          color="#cc88ff"
+          labelColor="#aa44ff"
+          health={bot4Health}
+          maxHealth={bot4MaxHealth}
         />
       )}
     </>
