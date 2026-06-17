@@ -118,6 +118,11 @@ export function useBotAI({
   // Combat strafe: bots dodge left/right while firing to be harder to hit.
   const strafeSign = useRef<1 | -1>(1);
   const nextStrafeChangeTime = useRef(0);
+  // Bot jump: vertical velocity applied during jumps.
+  const jumpVelocity = useRef(0);
+  const nextJumpTime = useRef(0);
+  const JUMP_SPEED = 6;
+  const GRAVITY = 18;
 
   // Teleport bot back to a random spawn point when it respawns after being downed.
   const prevIsDownedRef = useRef(isDowned);
@@ -341,6 +346,21 @@ export function useBotAI({
         .subVectors(targetPos, botPos)
         .normalize();
       meshRef.current.rotation.y = Math.atan2(direction.x, direction.z);
+
+      // Bot jumps occasionally to be harder to hit (every 2.5–4.5s).
+      const groundY = config.initialPosition[1];
+      if (botPos.y <= groundY + 0.05 && now >= nextJumpTime.current) {
+        jumpVelocity.current = JUMP_SPEED;
+        nextJumpTime.current = now + 2500 + Math.random() * 2000;
+      }
+      if (jumpVelocity.current !== 0 || botPos.y > groundY + 0.05) {
+        jumpVelocity.current -= GRAVITY * delta;
+        botPos.y = Math.max(groundY, botPos.y + jumpVelocity.current * delta);
+        if (botPos.y <= groundY) {
+          botPos.y = groundY;
+          jumpVelocity.current = 0;
+        }
+      }
 
       if (distance > FIRE_RANGE) {
         // Apply obstacle-avoidance steering if needed.
