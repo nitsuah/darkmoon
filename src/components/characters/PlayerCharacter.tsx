@@ -558,7 +558,9 @@ export const PlayerCharacter = React.forwardRef<
               ? "#44ff00"
               : wid === "shotgun"
                 ? "#ff7700"
-                : "#33ffe6";
+                : wid === "smg"
+                  ? "#ff44cc"
+                  : "#33ffe6";
         laserBeamRef.current.visible = true;
         laserBeamRef.current.position
           .copy(fireOrigin)
