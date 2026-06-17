@@ -12,6 +12,8 @@ interface GameUIProps {
   onEndGame: () => void;
   botDebugMode?: boolean;
   onToggleDebug?: () => void;
+  /** Seconds until auto-restart fires; null = no auto-restart pending. */
+  autoRestartSecondsLeft?: number | null;
 }
 
 const GameUI: React.FC<GameUIProps> = ({
@@ -22,6 +24,7 @@ const GameUI: React.FC<GameUIProps> = ({
   onEndGame,
   botDebugMode = false,
   onToggleDebug,
+  autoRestartSecondsLeft = null,
 }) => {
   // Detect mobile viewport and landscape orientation
   const [isMobile, setIsMobile] = React.useState(window.innerWidth <= 768);
@@ -1277,6 +1280,22 @@ const GameUI: React.FC<GameUIProps> = ({
             </div>
           ))}
         </div>
+
+        {autoRestartSecondsLeft !== null && (
+          <div
+            style={{
+              fontFamily: "monospace",
+              fontSize: isMinimal ? "9px" : "11px",
+              color: "#aaaaaa",
+              marginBottom: "8px",
+              letterSpacing: "1px",
+            }}
+          >
+            {autoRestartSecondsLeft > 0
+              ? `AUTO-RESTART IN ${autoRestartSecondsLeft}s`
+              : "RESTARTING..."}
+          </div>
+        )}
 
         <button
           onClick={() => onStartGame(gameState.mode)}

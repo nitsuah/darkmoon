@@ -26,6 +26,7 @@ interface SoloHUDProps {
   onEndGame: () => void;
   botDebugMode: boolean;
   onToggleDebug: () => void;
+  autoRestartSecondsLeft?: number | null;
   notifications: Array<{ id: string; message: string; type: string }>;
   addNotification?: (message: string, type?: string) => void;
   currentFPS: number;
@@ -56,6 +57,7 @@ const SoloHUD: React.FC<SoloHUDProps> = ({
   onEndGame,
   botDebugMode,
   onToggleDebug,
+  autoRestartSecondsLeft,
   notifications,
   currentFPS,
   setQuality,
@@ -95,6 +97,7 @@ const SoloHUD: React.FC<SoloHUDProps> = ({
         onEndGame={onEndGame}
         botDebugMode={botDebugMode}
         onToggleDebug={onToggleDebug}
+        autoRestartSecondsLeft={autoRestartSecondsLeft}
       />
 
       {/* Notifications */}

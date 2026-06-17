@@ -98,6 +98,10 @@ const Solo: React.FC = () => {
     null,
   );
 
+  // Auto-restart countdown after game over in combat modes (deathmatch/ctf).
+  const [autoRestartSecondsLeft, setAutoRestartSecondsLeft] = useState<number | null>(null);
+  const autoRestartIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Mobile jetpack trigger (set to true when double-tap detected)
   const mobileJetpackTrigger = useRef(false);
 
@@ -538,6 +542,39 @@ const Solo: React.FC = () => {
     };
   }, [botDebugMode, gameState.isActive, gameState.mode, syncGameState]);
 
+  // Auto-restart combat modes (deathmatch/ctf) after a 7-second results delay.
+  useEffect(() => {
+    const isCombat = gameState.mode === "deathmatch" || gameState.mode === "ctf";
+    if (!gameState.isActive && gameState.gameResults && gameState.gameResults.length > 0 && isCombat) {
+      const AUTO_RESTART_SECS = 7;
+      setAutoRestartSecondsLeft(AUTO_RESTART_SECS);
+      let remaining = AUTO_RESTART_SECS;
+      autoRestartIntervalRef.current = setInterval(() => {
+        remaining--;
+        setAutoRestartSecondsLeft(remaining);
+        if (remaining <= 0) {
+          clearInterval(autoRestartIntervalRef.current!);
+          autoRestartIntervalRef.current = null;
+          setAutoRestartSecondsLeft(null);
+          handleStartGame(gameState.mode);
+        }
+      }, 1000);
+    } else {
+      if (autoRestartIntervalRef.current) {
+        clearInterval(autoRestartIntervalRef.current);
+        autoRestartIntervalRef.current = null;
+      }
+      setAutoRestartSecondsLeft(null);
+    }
+    return () => {
+      if (autoRestartIntervalRef.current) {
+        clearInterval(autoRestartIntervalRef.current);
+        autoRestartIntervalRef.current = null;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState.isActive, gameState.mode]);
+
   // Add/remove Bot2 when debug mode toggles
   useEffect(() => {
     if (!gameManager.current) return;
@@ -827,6 +864,7 @@ const Solo: React.FC = () => {
         onEndGame={handleEndGame}
         botDebugMode={botDebugMode}
         onToggleDebug={() => setBotDebugMode((prev) => !prev)}
+        autoRestartSecondsLeft={autoRestartSecondsLeft}
         notifications={notifications}
         currentFPS={currentFPS}
         setQuality={setQuality}
