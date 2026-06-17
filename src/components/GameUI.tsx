@@ -597,19 +597,63 @@ const GameUI: React.FC<GameUIProps> = ({
                 padding: "4px 12px",
               }}
             >
-              {/* Health — combat modes only (no health in tag mode) */}
-              {gameState.mode !== "tag" && (
-                <>
-                  <span style={{ color: "#ff6666" }}>
-                    ❤️ {currentPlayer.health ?? currentPlayer.maxHealth ?? 100}
-                    <span style={{ color: "#666", marginLeft: "2px" }}>
-                      /{currentPlayer.maxHealth ?? 100}
-                    </span>
-                  </span>
-                  {/* Divider */}
-                  <span style={{ color: "#444" }}>|</span>
-                </>
-              )}
+              {/* Health bar — combat modes only (no health in tag mode) */}
+              {gameState.mode !== "tag" &&
+                (() => {
+                  const hp =
+                    currentPlayer.health ?? currentPlayer.maxHealth ?? 100;
+                  const maxHp = currentPlayer.maxHealth ?? 100;
+                  const frac = Math.max(0, Math.min(1, hp / maxHp));
+                  const barColor =
+                    frac > 0.5
+                      ? "#44ff44"
+                      : frac > 0.25
+                        ? "#ffaa00"
+                        : "#ff3333";
+                  return (
+                    <>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: "2px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: "9px",
+                            color: barColor,
+                            fontWeight: "bold",
+                            lineHeight: 1,
+                          }}
+                        >
+                          HP {hp}/{maxHp}
+                        </div>
+                        <div
+                          style={{
+                            width: "80px",
+                            height: "7px",
+                            background: "#1a1a1a",
+                            borderRadius: "2px",
+                            overflow: "hidden",
+                            border: "1px solid #333",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: `${frac * 100}%`,
+                              height: "100%",
+                              background: barColor,
+                              transition: "width 0.15s, background 0.3s",
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <span style={{ color: "#444" }}>|</span>
+                    </>
+                  );
+                })()}
               {/* Weapon name + ammo pips */}
               {currentPlayer.equippedWeaponId &&
                 (() => {
