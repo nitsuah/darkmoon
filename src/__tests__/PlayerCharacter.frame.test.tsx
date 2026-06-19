@@ -117,6 +117,7 @@ vi.mock("../lib/hooks/usePlayerPhysics", () => ({
   usePlayerPhysics: () => ({
     velocityRef: { current: new THREE.Vector3() },
     directionRef: { current: new THREE.Vector3() },
+    currentSpeedRef: { current: 0 },
     inputDirectionRef: { current: new THREE.Vector3() },
     finalMovementRef: { current: new THREE.Vector3() },
     isJumpingRef: { current: false },
