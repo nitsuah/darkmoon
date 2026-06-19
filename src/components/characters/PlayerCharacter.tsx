@@ -536,14 +536,25 @@ export const PlayerCharacter = React.forwardRef<
     // Fire the equipped weapon while left-click is held (rate-limited by
     // WeaponManager's per-shooter cooldown).
     if (mouseControls.leftClick && gameManager) {
-      const fireDirection = new THREE.Vector3(
-        -Math.sin(cameraRotationRef.current.horizontal),
-        0,
-        -Math.cos(cameraRotationRef.current.horizontal),
-      );
       const fireOrigin = meshRef.current.position
         .clone()
         .add(new THREE.Vector3(0, 1, 0));
+
+      // Raycast mouse position onto the ground plane to find the aim target.
+      const ndcX = (mouseControls.mouseX / state.size.width) * 2 - 1;
+      const ndcY = -(mouseControls.mouseY / state.size.height) * 2 + 1;
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), state.camera);
+      const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+      const aimTarget = new THREE.Vector3();
+      const hasAimTarget = raycaster.ray.intersectPlane(groundPlane, aimTarget) !== null;
+      const fireDirection = hasAimTarget
+        ? aimTarget.clone().sub(fireOrigin).normalize()
+        : new THREE.Vector3(
+            -Math.sin(cameraRotationRef.current.horizontal),
+            0,
+            -Math.cos(cameraRotationRef.current.horizontal),
+          );
 
       const fireResult = processFiring({
         origin: fireOrigin,
@@ -585,8 +596,10 @@ export const PlayerCharacter = React.forwardRef<
         laserBeamRef.current.position
           .copy(fireOrigin)
           .add(fireDirection.clone().multiplyScalar(beamLength / 2));
-        laserBeamRef.current.rotation.y =
-          cameraRotationRef.current.horizontal + Math.PI;
+        laserBeamRef.current.rotation.y = Math.atan2(
+          fireDirection.x,
+          fireDirection.z,
+        );
         laserBeamRef.current.scale.set(
           beamHalfWidth / 0.04,
           beamHalfWidth / 0.04,

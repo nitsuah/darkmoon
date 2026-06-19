@@ -1475,7 +1475,37 @@ const GameUI: React.FC<GameUIProps> = ({
           from { opacity: 0.5; }
           to { opacity: 1; }
         }
+        .reticle::before, .reticle::after {
+          content: "";
+          position: absolute;
+          background: rgba(255,255,255,0.85);
+        }
+        .reticle::before {
+          width: 14px; height: 2px;
+          top: 50%; left: 50%;
+          transform: translate(-50%, -50%);
+        }
+        .reticle::after {
+          width: 2px; height: 14px;
+          top: 50%; left: 50%;
+          transform: translate(-50%, -50%);
+        }
       `}</style>
+      {gameState.isActive && !isMobile && (
+        <div
+          className="reticle"
+          style={{
+            position: "fixed",
+            top: "50%",
+            left: "50%",
+            width: "20px",
+            height: "20px",
+            transform: "translate(-50%, -50%)",
+            pointerEvents: "none",
+            zIndex: 1001,
+          }}
+        />
+      )}
       <div
         style={{
           position: "fixed",
