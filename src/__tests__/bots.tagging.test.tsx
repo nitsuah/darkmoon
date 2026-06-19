@@ -76,7 +76,7 @@ describe("Bots tagging behavior", () => {
         bot3GotTagged={0}
         handleBot4PositionUpdate={() => {}}
         bot4GotTagged={0}
-        BOT4_CONFIG={{ label="Bot4" }}
+        BOT4_CONFIG={{ label: "Bot4" }}
         gameManager={manager}
         gameState={manager.getGameState()}
         setBot1GotTagged={() => {}}
