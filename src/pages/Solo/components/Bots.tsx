@@ -148,7 +148,8 @@ const Bots: React.FC<
     gameState.flags?.some((flag) => flag.carrierId === "bot-3") ?? false;
   const bot4CarryingFlag =
     gameState.flags?.some((flag) => flag.carrierId === "bot-4") ?? false;
-  const bot4TargetTeam = bot4Team === "a" ? "b" : bot4Team === "b" ? "a" : undefined;
+  const bot4TargetTeam =
+    bot4Team === "a" ? "b" : bot4Team === "b" ? "a" : undefined;
   // Combat mode: bot-2 and bot-3 are AI opponents; bot-3/bot-4 are combat-only.
   const isCombatMode =
     gameState.mode === "deathmatch" || gameState.mode === "ctf";
@@ -422,11 +423,11 @@ const Bots: React.FC<
 
       // LOS wall check: skip damage if an obstacle blocks the shot.
       if (botPos && targetPos2 && collisionSystemRef.current) {
-        const from = new THREE.Vector3(
-          botPos[0], botPos[1] + 1.2, botPos[2],
-        );
+        const from = new THREE.Vector3(botPos[0], botPos[1] + 1.2, botPos[2]);
         const to = new THREE.Vector3(
-          targetPos2[0], targetPos2[1] + 0.8, targetPos2[2],
+          targetPos2[0],
+          targetPos2[1] + 0.8,
+          targetPos2[2],
         );
         if (!collisionSystemRef.current.hasLineOfSight(from, to)) return;
       }
@@ -483,6 +484,7 @@ const Bots: React.FC<
       effectiveBot3Config,
       effectiveBot4Config,
       currentPlayerId,
+      collisionSystemRef,
     ],
   );
 

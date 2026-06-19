@@ -24,9 +24,6 @@ export const WEAPONS: Record<string, WeaponConfig> = {
     damage: 10,
     range: 30,
     cooldownMs: 500,
-    maxAmmo: 10,
-    reloadTimeMs: 1800,
-    autoReload: true,
   },
   shotgun: {
     id: "shotgun",
@@ -104,7 +101,7 @@ export class WeaponManager {
     const weapon = WEAPONS[weaponId];
     if (!weapon?.reloadTimeMs) return false;
     if (this.reloadStartAt.has(weaponId)) return false; // already reloading
-    const current = this.ammoMap.get(weaponId) ?? (weapon.maxAmmo ?? 0);
+    const current = this.ammoMap.get(weaponId) ?? weapon.maxAmmo ?? 0;
     if (current >= (weapon.maxAmmo ?? 0)) return false; // already full
     this.reloadStartAt.set(weaponId, now);
     return true;

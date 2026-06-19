@@ -99,8 +99,12 @@ const Solo: React.FC = () => {
   );
 
   // Auto-restart countdown after game over in combat modes (deathmatch/ctf).
-  const [autoRestartSecondsLeft, setAutoRestartSecondsLeft] = useState<number | null>(null);
-  const autoRestartIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [autoRestartSecondsLeft, setAutoRestartSecondsLeft] = useState<
+    number | null
+  >(null);
+  const autoRestartIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
 
   // Mobile jetpack trigger (set to true when double-tap detected)
   const mobileJetpackTrigger = useRef(false);
@@ -427,6 +431,125 @@ const Solo: React.FC = () => {
   // Player position tracking - use refs to avoid re-render loops. Also sync
   // into GameManager (callback-free) so projectile hit checks see live
   // positions.
+  const handleStartGame = useCallback(
+    (mode: string) => {
+      if (!gameManager.current) return;
+
+      if (mode === "deathmatch") {
+        // Ensure bot-2 and bot-3 are registered before the match so all combatants
+        // get health/respawn initialised by DeathmatchMode.onStart.
+        if (!gameManager.current.getPlayers().has("bot-2")) {
+          const bot2: Player = {
+            id: "bot-2",
+            name: BOT2_CONFIG.label || "Bot2",
+            position: BOT2_CONFIG.initialPosition,
+            rotation: ZERO_ROTATION,
+            isIt: false,
+          };
+          gameManager.current.addPlayer(bot2);
+        }
+        if (!gameManager.current.getPlayers().has("bot-3")) {
+          const bot3: Player = {
+            id: "bot-3",
+            name: BOT3_CONFIG.label || "Bot3",
+            position: BOT3_CONFIG.initialPosition,
+            rotation: ZERO_ROTATION,
+            isIt: false,
+          };
+          gameManager.current.addPlayer(bot3);
+        }
+        if (!gameManager.current.getPlayers().has("bot-4")) {
+          const bot4: Player = {
+            id: "bot-4",
+            name: BOT4_CONFIG.label || "Bot4",
+            position: BOT4_CONFIG.initialPosition,
+            rotation: ZERO_ROTATION,
+            isIt: false,
+          };
+          gameManager.current.addPlayer(bot4);
+        }
+        gameManager.current.startDeathmatchGame();
+        const newGameState = gameManager.current.getGameState();
+        setGameState(newGameState);
+        addNotification(
+          `Deathmatch started! First to ${newGameState.killLimit} kills wins!`,
+          "warning",
+        );
+        return;
+      }
+
+      if (mode === "ctf") {
+        // Ensure bot-2 and bot-3 are registered before the match so CTFMode.onStart
+        // can assign them to teams.
+        if (!gameManager.current.getPlayers().has("bot-2")) {
+          const bot2: Player = {
+            id: "bot-2",
+            name: BOT2_CONFIG.label || "Bot2",
+            position: BOT2_CONFIG.initialPosition,
+            rotation: ZERO_ROTATION,
+            isIt: false,
+          };
+          gameManager.current.addPlayer(bot2);
+        }
+        if (!gameManager.current.getPlayers().has("bot-3")) {
+          const bot3: Player = {
+            id: "bot-3",
+            name: BOT3_CONFIG.label || "Bot3",
+            position: BOT3_CONFIG.initialPosition,
+            rotation: ZERO_ROTATION,
+            isIt: false,
+          };
+          gameManager.current.addPlayer(bot3);
+        }
+        if (!gameManager.current.getPlayers().has("bot-4")) {
+          const bot4: Player = {
+            id: "bot-4",
+            name: BOT4_CONFIG.label || "Bot4",
+            position: BOT4_CONFIG.initialPosition,
+            rotation: ZERO_ROTATION,
+            isIt: false,
+          };
+          gameManager.current.addPlayer(bot4);
+        }
+        gameManager.current.startCTFGame();
+        const newGameState = gameManager.current.getGameState();
+        setGameState(newGameState);
+        addNotification(
+          "Capture the Flag started! Grab the enemy flag and bring it home!",
+          "warning",
+        );
+        return;
+      }
+
+      // Add bot-2 so tag games are 3-way (player + bot-1 + bot-2).
+      if (!gameManager.current.getPlayers().has("bot-2")) {
+        const bot2Tag: Player = {
+          id: "bot-2",
+          name: BOT2_CONFIG.label || "Bot2",
+          position: BOT2_CONFIG.initialPosition,
+          rotation: ZERO_ROTATION,
+          isIt: false,
+        };
+        gameManager.current.addPlayer(bot2Tag);
+      }
+      gameManager.current.startTagGame();
+      const newGameState = gameManager.current.getGameState();
+      setGameState(newGameState);
+
+      // Show correct notification based on who is IT
+      const itPlayerId = newGameState.itPlayerId;
+
+      if (itPlayerId === currentPlayerId) {
+        addNotification("Tag game started! You're IT!", "warning");
+      } else {
+        const itPlayer = gameManager.current.getPlayers().get(itPlayerId || "");
+        const itName = itPlayer?.name || "Someone";
+        addNotification(`Tag game started! ${itName} is IT!`, "info");
+      }
+    },
+    [gameManager, setGameState, addNotification, currentPlayerId],
+  );
+
   const handlePlayerPositionUpdate = useCallback(
     (position: [number, number, number]) => {
       playerPositionRef.current = position;
@@ -544,8 +667,14 @@ const Solo: React.FC = () => {
 
   // Auto-restart combat modes (deathmatch/ctf) after a 7-second results delay.
   useEffect(() => {
-    const isCombat = gameState.mode === "deathmatch" || gameState.mode === "ctf";
-    if (!gameState.isActive && gameState.gameResults && gameState.gameResults.length > 0 && isCombat) {
+    const isCombat =
+      gameState.mode === "deathmatch" || gameState.mode === "ctf";
+    if (
+      !gameState.isActive &&
+      gameState.gameResults &&
+      gameState.gameResults.length > 0 &&
+      isCombat
+    ) {
       const AUTO_RESTART_SECS = 7;
       setAutoRestartSecondsLeft(AUTO_RESTART_SECS);
       let remaining = AUTO_RESTART_SECS;
@@ -572,7 +701,7 @@ const Solo: React.FC = () => {
         autoRestartIntervalRef.current = null;
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState.isActive, gameState.mode]);
 
   // Add/remove Bot2 when debug mode toggles
@@ -648,122 +777,6 @@ const Solo: React.FC = () => {
     socketClient.emit("chat-message", {
       message: filteredMessage,
     });
-  };
-
-  const handleStartGame = (mode: string) => {
-    if (!gameManager.current) return;
-
-    if (mode === "deathmatch") {
-      // Ensure bot-2 and bot-3 are registered before the match so all combatants
-      // get health/respawn initialised by DeathmatchMode.onStart.
-      if (!gameManager.current.getPlayers().has("bot-2")) {
-        const bot2: Player = {
-          id: "bot-2",
-          name: BOT2_CONFIG.label || "Bot2",
-          position: BOT2_CONFIG.initialPosition,
-          rotation: ZERO_ROTATION,
-          isIt: false,
-        };
-        gameManager.current.addPlayer(bot2);
-      }
-      if (!gameManager.current.getPlayers().has("bot-3")) {
-        const bot3: Player = {
-          id: "bot-3",
-          name: BOT3_CONFIG.label || "Bot3",
-          position: BOT3_CONFIG.initialPosition,
-          rotation: ZERO_ROTATION,
-          isIt: false,
-        };
-        gameManager.current.addPlayer(bot3);
-      }
-      if (!gameManager.current.getPlayers().has("bot-4")) {
-        const bot4: Player = {
-          id: "bot-4",
-          name: BOT4_CONFIG.label || "Bot4",
-          position: BOT4_CONFIG.initialPosition,
-          rotation: ZERO_ROTATION,
-          isIt: false,
-        };
-        gameManager.current.addPlayer(bot4);
-      }
-      gameManager.current.startDeathmatchGame();
-      const newGameState = gameManager.current.getGameState();
-      setGameState(newGameState);
-      addNotification(
-        `Deathmatch started! First to ${newGameState.killLimit} kills wins!`,
-        "warning",
-      );
-      return;
-    }
-
-    if (mode === "ctf") {
-      // Ensure bot-2 and bot-3 are registered before the match so CTFMode.onStart
-      // can assign them to teams.
-      if (!gameManager.current.getPlayers().has("bot-2")) {
-        const bot2: Player = {
-          id: "bot-2",
-          name: BOT2_CONFIG.label || "Bot2",
-          position: BOT2_CONFIG.initialPosition,
-          rotation: ZERO_ROTATION,
-          isIt: false,
-        };
-        gameManager.current.addPlayer(bot2);
-      }
-      if (!gameManager.current.getPlayers().has("bot-3")) {
-        const bot3: Player = {
-          id: "bot-3",
-          name: BOT3_CONFIG.label || "Bot3",
-          position: BOT3_CONFIG.initialPosition,
-          rotation: ZERO_ROTATION,
-          isIt: false,
-        };
-        gameManager.current.addPlayer(bot3);
-      }
-      if (!gameManager.current.getPlayers().has("bot-4")) {
-        const bot4: Player = {
-          id: "bot-4",
-          name: BOT4_CONFIG.label || "Bot4",
-          position: BOT4_CONFIG.initialPosition,
-          rotation: ZERO_ROTATION,
-          isIt: false,
-        };
-        gameManager.current.addPlayer(bot4);
-      }
-      gameManager.current.startCTFGame();
-      const newGameState = gameManager.current.getGameState();
-      setGameState(newGameState);
-      addNotification(
-        "Capture the Flag started! Grab the enemy flag and bring it home!",
-        "warning",
-      );
-      return;
-    }
-
-    // Add bot-2 so tag games are 3-way (player + bot-1 + bot-2).
-    if (!gameManager.current.getPlayers().has("bot-2")) {
-      const bot2Tag: Player = {
-        id: "bot-2",
-        name: BOT2_CONFIG.label || "Bot2",
-        position: BOT2_CONFIG.initialPosition,
-        rotation: ZERO_ROTATION,
-        isIt: false,
-      };
-      gameManager.current.addPlayer(bot2Tag);
-    }
-    gameManager.current.startTagGame();
-    const newGameState = gameManager.current.getGameState();
-    setGameState(newGameState);
-
-    // Show correct notification based on who is IT
-    const itPlayerId = newGameState.itPlayerId;
-
-    if (itPlayerId === currentPlayerId) {
-      addNotification("Tag game started! You're IT!", "warning");
-    } else {
-      const itPlayer = gameManager.current.getPlayers().get(itPlayerId || "");
-      const itName = itPlayer?.name || "Someone";
-      addNotification(`Tag game started! ${itName} is IT!`, "info");
-    }
   };
 
   const handleEndGame = useCallback(() => {

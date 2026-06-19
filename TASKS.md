@@ -87,22 +87,29 @@ Last Updated: 2026-06-11
 - [x] **[Phase A] Pluggable game modes** — extract tag logic out of `GameManager` behind a `GameModeHandler` interface (`onStart`/`onTick`/`onAction`/`onPlayerRemoved`/`onEnd`), with a `TagMode` implementation preserving current behavior.
   - Done: `src/components/gameModes/{GameModeHandler,TagMode}.ts`; `GameManager` is now a thin host delegating to the active mode. Existing `gameManager.*.test.ts` and `Bots.test.tsx` pass unchanged.
 
-- [ ] **[Phase B] Combat primitives** — add `WeaponManager`, projectile/hit-detection (extends `CollisionSystem`), and `health`/`respawn` fields on `Player`.
-  - Priority: P2
-  - Problem: no weapon or damage model exists yet; required before any deathmatch/CTF mode.
-  - Progress: `WeaponManager` (`src/components/combat/WeaponManager.ts`), `CollisionSystem.checkProjectileHit`, and `Player.health/maxHealth/respawnAt` are done and tested. Remaining: wire a visible laser-fire action into Solo mode (keybind, beam visual, hit feedback, SFX).
-  - Acceptance Criteria: see `docs/MULTIPLAYER_SHOOTER_ROADMAP.md` Phase B.
+- [x] **[Phase B] Combat primitives** — `WeaponManager`, projectile/hit-detection, `health`/`respawn` on `Player`, full vertical slice in Solo mode.
+  - Done: all primitives plus full combat-feel polish (Phases BG–BL):
+    - BG: bot shot tracer effects (visual streaks for every bot shot)
+    - BH: per-weapon ammo + reload system (laser auto-reload, R-key manual reload, reload bar HUD, `WeaponManager.startReload/isReloading/getReloadProgress`)
+    - BI: bot LOS wall check (`CollisionSystem.hasLineOfSight`, bots can't fire through obstacles)
+    - BJ: bot angular spread (2D rotation-matrix deviation so misses fly to a visible off-target point)
+    - BK: smooth player movement (velocity scalar lerp — 10×/s accel, 15×/s decel)
+    - BL: player reticle + mouse-aimed firing (ground-plane raycast, CSS crosshair) — PR #321
 
-- [ ] **[Phase C] Deathmatch mode** — kill tracking, respawn, and scoreboard via `GameUI`.
+- [ ] **[Phase BM] Grenade hold-to-throw + trajectory arc** — hold LMB to charge, release to throw; dotted arc previews the parabolic landing zone.
   - Priority: P2
-  - Acceptance Criteria: see `docs/MULTIPLAYER_SHOOTER_ROADMAP.md` Phase C.
+  - Problem: grenade currently fires like a laser (instant, straight-line). Intended mechanic is hold-to-charge + release with a live arc preview.
+  - Acceptance Criteria: holding LMB with grenade equipped renders a dotted parabolic arc from player to predicted landing zone; releasing fires along that arc; throw distance scales with hold duration; existing grenade damage/splash radius unchanged.
 
-- [ ] **[Phase D] Capture the Flag mode** — teams, flag entities, and capture zones.
-  - Priority: P2
-  - Acceptance Criteria: see `docs/MULTIPLAYER_SHOOTER_ROADMAP.md` Phase D.
+- [x] **[Phase C] Deathmatch mode** — kill tracking, respawn, and scoreboard via `GameUI`.
+  - Done: `DeathmatchMode`, kill-limit win condition, respawn timer, bot combat AI, health/kill HUD; see `docs/MULTIPLAYER_SHOOTER_ROADMAP.md` Phase C.
 
-- [ ] **[Phase E] Multiplayer shooter polish** — aiming camera, combat audio layer, and HUD additions for health/ammo/kills/flag status.
+- [x] **[Phase D] Capture the Flag mode** — teams, flag entities, and capture zones.
+  - Done: `CTFMode`, team assignment, flag pickup/carry/capture/drop-on-death, bot CTF AI, CTF combat, team HUD; see `docs/MULTIPLAYER_SHOOTER_ROADMAP.md` Phase D.
+
+- [ ] **[Phase E] Multiplayer shooter polish** — over-the-shoulder aim camera and combat music cross-fade layer.
   - Priority: P2
+  - Note: HUD, ammo, reload bar, kill feed, damage numbers, and hit marker are already done. Remaining: aim-mode camera offset and a combat music layer that cross-fades when shooting/hit events occur.
   - Acceptance Criteria: see `docs/MULTIPLAYER_SHOOTER_ROADMAP.md` Phase E.
 
 - [ ] Fix server-side multiplayer tag parity before Multiplayer Tag ships.
