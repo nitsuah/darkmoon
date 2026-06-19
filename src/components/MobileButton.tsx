@@ -57,14 +57,13 @@ export const MobileButton: React.FC<MobileButtonProps> = ({
     if (!button) return;
 
     // Use native events with passive: false
-    // eslint-disable-next-line no-undef
+
     const touchStartHandler = (e: TouchEvent) => {
       e.preventDefault();
       button.classList.add("pressed");
       handlePress();
     };
 
-    // eslint-disable-next-line no-undef
     const touchEndHandler = (e: TouchEvent) => {
       e.preventDefault();
       button.classList.remove("pressed");

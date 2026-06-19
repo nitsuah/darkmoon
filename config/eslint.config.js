@@ -61,6 +61,9 @@ export default [
                 OscillatorNode: 'readonly',
                 GainNode: 'readonly',
                 AudioContext: 'readonly',
+                Event: 'readonly',
+                CustomEvent: 'readonly',
+                TouchEvent: 'readonly',
             },
         },
         plugins: {
