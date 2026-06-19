@@ -86,10 +86,14 @@ players, shooterId)` casts a ray and returns the closest hit `{ hitPlayerId, dis
 - ✅ **`Player` additions** (`GameManager.ts`): `health?: number`, `maxHealth?: number`,
   `respawnAt?: number`. Damage/respawn flow (mutate player, fire callback, mirroring
   `tagPlayer`) is implemented by the mode that needs it (Phase C `DeathmatchMode`).
-- **Remaining — vertical slice**: wire `WeaponManager` + `checkProjectileHit` into Solo
-  mode as a visible laser-fire action (keybind, beam visual, hit feedback), reusing
-  `SoundManager` for fire/hit SFX (`playTagSound`/`playTaggedSound` are good templates for
-  `playWeaponFireSound`/`playHitSound`). This is the next increment.
+- ✅ **Vertical slice + combat feel (Phases BG–BL)** — full in-game combat wiring plus a
+  polish pass:
+  - **BG** — bot shot tracer effects: every bot shot emits `"bot-shot-fired"` rendered as a coloured streak in `BotTracers.tsx`.
+  - **BH** — per-weapon ammo + reload: `WeaponManager` gained `startReload`/`isReloading`/`getReloadProgress`; laser auto-reloads; R key manual reload; reload bar in `GameUI`.
+  - **BI** — bot LOS wall check: `CollisionSystem.hasLineOfSight` raycasts against all boundary `Box3` objects; bots skip fire when a wall is in the way.
+  - **BJ** — bot angular spread: 2D rotation-matrix deviation so bot misses fly to a visible off-target point.
+  - **BK** — smooth player movement: `currentSpeedRef` scalar lerps at 10×/s on input and 15×/s to zero on release.
+  - **BL** — player reticle + mouse-aimed firing: mouse NDC raycasted to ground plane for fire direction; CSS `+` crosshair at screen centre during active gameplay (PR #321).
 
 **Acceptance:**
 
@@ -97,6 +101,26 @@ players, shooterId)` casts a ray and returns the closest hit `{ hitPlayerId, dis
   per-shooter tracking/unequip.
 - ✅ `src/components/__tests__/CollisionSystem.test.ts` covers `checkProjectileHit`
   (direct hit, out-of-range, off-axis miss, behind-shooter, closest-of-multiple).
+
+---
+
+## Phase BM — Grenade Hold-to-Throw + Trajectory Arc
+
+**Goal:** replace the grenade's instant laser-style fire with a hold-to-charge mechanic
+and a dotted parabolic arc preview.
+
+- Hold LMB with grenade equipped → render a dotted arc (small spheres along the
+  parabolic trajectory) from the player's shoulder to the predicted landing zone; updates
+  live as hold time / aim changes.
+- Release LMB → fires the grenade along that arc; distance scales with hold duration,
+  capped at max range.
+- Existing `WeaponManager` grenade config (`damage`, `splashRadius`, `cooldownMs`,
+  `maxAmmo: 3`) and `"weapon-explosion"` VFX unchanged.
+- Mobile degrades gracefully: no arc preview; tap fires at max range.
+
+**Files to change:** `PlayerCharacter.tsx` (hold/release detection replacing continuous
+leftClick fire for grenade weapon), new `GrenadeArc.tsx` R3F component (dotted arc
+mesh via parabola), `GameUI.tsx` (suppress ammo hint while arc is visible).
 
 ---
 
