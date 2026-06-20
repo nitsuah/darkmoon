@@ -14,7 +14,7 @@
     "lint": "eslint src --config ./config/eslint.config.js --max-warnings=0 --cache",
     "lint:all": "eslint . --config ./config/eslint.config.js --max-warnings=0 --cache",
     "lint:fix": "eslint src --config ./config/eslint.config.js --max-warnings=0 --fix",
-    "lint:docker": "docker compose -f config/docker-compose.yml run --rm app npx lint-staged --config ./config/lint-staged.config.json",
+    "lint:docker": "docker compose run --rm solo npx lint-staged --config ./config/lint-staged.config.json",
     "precommit": "lint-staged --config ./config/lint-staged.config.json",
     "ci": "npm run typecheck && npm run lint && npm run test:ci && npm run build",
     "test": "vitest --config ./config/vitest.config.ts --configLoader runner",
