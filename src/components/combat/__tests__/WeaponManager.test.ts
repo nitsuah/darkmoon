@@ -92,6 +92,7 @@ describe("WeaponManager", () => {
     it("laser has no ammo limit (getAmmo returns null)", () => {
       const manager = new WeaponManager();
       manager.equip("laser");
+      // Laser has no maxAmmo defined, so getAmmo returns null for infinite ammo
       expect(manager.getAmmo("laser")).toBeNull();
     });
 
