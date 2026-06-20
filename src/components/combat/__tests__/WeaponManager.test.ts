@@ -90,65 +90,64 @@ describe("WeaponManager", () => {
 
   describe("ammo system", () => {
     it("laser has no ammo limit (getAmmo returns null)", () => {
-      const manager = new WeaponManager();
-      manager.equip("laser");
-      // Laser has no maxAmmo defined, so getAmmo returns null for infinite ammo
-      expect(manager.getAmmo("laser")).toBeNull();
+      const mgr = new WeaponManager();
+      mgr.equip("laser");
+      expect(mgr.getAmmo("laser")).toBeNull();
     });
 
     it("shotgun starts with full ammo on first equip", () => {
-      const manager = new WeaponManager();
-      manager.equip("shotgun");
-      expect(manager.getAmmo("shotgun")).toBe(WEAPONS.shotgun.maxAmmo);
+      const mgr = new WeaponManager();
+      mgr.equip("shotgun");
+      expect(mgr.getAmmo("shotgun")).toBe(WEAPONS.shotgun.maxAmmo);
     });
 
     it("shotgun ammo decrements on each shot", () => {
-      const manager = new WeaponManager();
-      manager.equip("shotgun");
+      const mgr = new WeaponManager();
+      mgr.equip("shotgun");
       const max = WEAPONS.shotgun.maxAmmo!;
 
-      manager.fire("p1", 1000);
-      expect(manager.getAmmo("shotgun")).toBe(max - 1);
+      mgr.fire("p1", 1000);
+      expect(mgr.getAmmo("shotgun")).toBe(max - 1);
 
-      manager.fire("p1", 2001);
-      expect(manager.getAmmo("shotgun")).toBe(max - 2);
+      mgr.fire("p1", 2001);
+      expect(mgr.getAmmo("shotgun")).toBe(max - 2);
     });
 
     it("shotgun cannot fire when ammo is empty", () => {
-      const manager = new WeaponManager();
-      manager.equip("shotgun");
+      const mgr = new WeaponManager();
+      mgr.equip("shotgun");
       const max = WEAPONS.shotgun.maxAmmo!;
 
       let t = 1000;
       for (let i = 0; i < max; i++) {
-        expect(manager.fire("p1", t)).not.toBeNull();
+        expect(mgr.fire("p1", t)).not.toBeNull();
         t += 1001; // past cooldown
       }
 
-      expect(manager.getAmmo("shotgun")).toBe(0);
-      expect(manager.fire("p1", t)).toBeNull();
+      expect(mgr.getAmmo("shotgun")).toBe(0);
+      expect(mgr.fire("p1", t)).toBeNull();
     });
 
     it("refill restores ammo to maximum", () => {
-      const manager = new WeaponManager();
-      manager.equip("shotgun");
-      manager.fire("p1", 1000);
-      manager.fire("p1", 2001);
-      expect(manager.getAmmo("shotgun")).toBe(WEAPONS.shotgun.maxAmmo! - 2);
+      const mgr = new WeaponManager();
+      mgr.equip("shotgun");
+      mgr.fire("p1", 1000);
+      mgr.fire("p1", 2001);
+      expect(mgr.getAmmo("shotgun")).toBe(WEAPONS.shotgun.maxAmmo! - 2);
 
-      manager.refill("shotgun");
-      expect(manager.getAmmo("shotgun")).toBe(WEAPONS.shotgun.maxAmmo);
+      mgr.refill("shotgun");
+      expect(mgr.getAmmo("shotgun")).toBe(WEAPONS.shotgun.maxAmmo);
     });
 
     it("ammo persists across weapon switches", () => {
-      const manager = new WeaponManager();
-      manager.equip("shotgun");
-      manager.fire("p1", 1000); // uses 1 shotgun ammo
+      const mgr = new WeaponManager();
+      mgr.equip("shotgun");
+      mgr.fire("p1", 1000); // uses 1 shotgun ammo
 
-      manager.equip("laser"); // switch away
-      manager.equip("shotgun"); // switch back
+      mgr.equip("laser"); // switch away
+      mgr.equip("shotgun"); // switch back
 
-      expect(manager.getAmmo("shotgun")).toBe(WEAPONS.shotgun.maxAmmo! - 1);
+      expect(mgr.getAmmo("shotgun")).toBe(WEAPONS.shotgun.maxAmmo! - 1);
     });
 
     it("rocket launcher has correct stats and starts with 3 ammo", () => {
@@ -158,20 +157,20 @@ describe("WeaponManager", () => {
       expect(WEAPONS.rocket.splashRadius).toBeDefined();
       expect(WEAPONS.rocket.splashDamage).toBeDefined();
 
-      const manager = new WeaponManager();
-      manager.equip("rocket");
-      expect(manager.getAmmo("rocket")).toBe(3);
+      const mgr = new WeaponManager();
+      mgr.equip("rocket");
+      expect(mgr.getAmmo("rocket")).toBe(3);
     });
 
     it("rocket fires 3 times then is empty", () => {
-      const manager = new WeaponManager();
-      manager.equip("rocket");
+      const mgr = new WeaponManager();
+      mgr.equip("rocket");
 
-      expect(manager.fire("p1", 1000)).not.toBeNull(); // 2 left
-      expect(manager.fire("p1", 3001)).not.toBeNull(); // 1 left
-      expect(manager.fire("p1", 5001)).not.toBeNull(); // 0 left
-      expect(manager.fire("p1", 7001)).toBeNull(); // empty
-      expect(manager.getAmmo("rocket")).toBe(0);
+      expect(mgr.fire("p1", 1000)).not.toBeNull(); // 2 left
+      expect(mgr.fire("p1", 3001)).not.toBeNull(); // 1 left
+      expect(mgr.fire("p1", 5001)).not.toBeNull(); // 0 left
+      expect(mgr.fire("p1", 7001)).toBeNull(); // empty
+      expect(mgr.getAmmo("rocket")).toBe(0);
     });
   });
 });
