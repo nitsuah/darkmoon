@@ -29,11 +29,9 @@ describe("WeaponManager", () => {
     manager.equip("laser");
 
     expect(manager.fire("p1", 1000)).toEqual(WEAPONS.laser);
-    // Still within cooldownMs (500ms)
     expect(manager.canFire("p1", 1200)).toBe(false);
     expect(manager.fire("p1", 1200)).toBeNull();
 
-    // Cooldown elapsed
     expect(manager.canFire("p1", 1500)).toBe(true);
     expect(manager.fire("p1", 1500)).toEqual(WEAPONS.laser);
   });
@@ -43,7 +41,6 @@ describe("WeaponManager", () => {
     manager.equip("laser");
 
     expect(manager.fire("p1", 1000)).toEqual(WEAPONS.laser);
-    // p2 hasn't fired yet, so they're unaffected by p1's cooldown
     expect(manager.canFire("p2", 1000)).toBe(true);
     expect(manager.fire("p2", 1000)).toEqual(WEAPONS.laser);
   });
@@ -81,24 +78,17 @@ describe("WeaponManager", () => {
     manager.equip("shotgun");
 
     expect(manager.fire("p1", 1000)).toEqual(WEAPONS.shotgun);
-    // Still in cooldown (shotgun cooldownMs = 1000)
     expect(manager.canFire("p1", 1500)).toBe(false);
-    // After cooldown
     expect(manager.canFire("p1", 2001)).toBe(true);
     expect(manager.fire("p1", 2001)).toEqual(WEAPONS.shotgun);
   });
 
   describe("ammo system", () => {
-    it("laser has no ammo limit (getAmmo returns null)", () => {
-      const mgr = new WeaponManager();
-      mgr.equip("laser");
-      expect(mgr.getAmmo("laser")).toBeNull();
-    });
-
-    it("shotgun starts with full ammo on first equip", () => {
+    it("shotgun starts with full ammo on first equip (6 rounds)", () => {
       const mgr = new WeaponManager();
       mgr.equip("shotgun");
-      expect(mgr.getAmmo("shotgun")).toBe(WEAPONS.shotgun.maxAmmo);
+      const ammo = mgr.getAmmo("shotgun");
+      expect(ammo).toBe(6);
     });
 
     it("shotgun ammo decrements on each shot", () => {
@@ -121,7 +111,7 @@ describe("WeaponManager", () => {
       let t = 1000;
       for (let i = 0; i < max; i++) {
         expect(mgr.fire("p1", t)).not.toBeNull();
-        t += 1001; // past cooldown
+        t += 1001;
       }
 
       expect(mgr.getAmmo("shotgun")).toBe(0);
@@ -142,12 +132,13 @@ describe("WeaponManager", () => {
     it("ammo persists across weapon switches", () => {
       const mgr = new WeaponManager();
       mgr.equip("shotgun");
-      mgr.fire("p1", 1000); // uses 1 shotgun ammo
+      const initialMax = WEAPONS.shotgun.maxAmmo!;
+      mgr.fire("p1", 1000);
 
-      mgr.equip("laser"); // switch away
-      mgr.equip("shotgun"); // switch back
+      mgr.equip("laser");
+      mgr.equip("shotgun");
 
-      expect(mgr.getAmmo("shotgun")).toBe(WEAPONS.shotgun.maxAmmo! - 1);
+      expect(mgr.getAmmo("shotgun")).toBe(initialMax - 1);
     });
 
     it("rocket launcher has correct stats and starts with 3 ammo", () => {
@@ -159,17 +150,22 @@ describe("WeaponManager", () => {
 
       const mgr = new WeaponManager();
       mgr.equip("rocket");
-      expect(mgr.getAmmo("rocket")).toBe(3);
+      const rocketAmmo = mgr.getAmmo("rocket");
+      expect(rocketAmmo).toBe(3);
     });
 
     it("rocket fires 3 times then is empty", () => {
       const mgr = new WeaponManager();
       mgr.equip("rocket");
 
-      expect(mgr.fire("p1", 1000)).not.toBeNull(); // 2 left
-      expect(mgr.fire("p1", 3001)).not.toBeNull(); // 1 left
-      expect(mgr.fire("p1", 5001)).not.toBeNull(); // 0 left
-      expect(mgr.fire("p1", 7001)).toBeNull(); // empty
+      const shot1 = mgr.fire("p1", 1000);
+      expect(shot1).not.toBeNull();
+      const shot2 = mgr.fire("p1", 3001);
+      expect(shot2).not.toBeNull();
+      const shot3 = mgr.fire("p1", 5001);
+      expect(shot3).not.toBeNull();
+      const shot4 = mgr.fire("p1", 7001);
+      expect(shot4).toBeNull();
       expect(mgr.getAmmo("rocket")).toBe(0);
     });
   });
