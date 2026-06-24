@@ -130,7 +130,8 @@ const ShootingGallery: React.FC<Props> = ({
   isActive,
 }) => {
   const targets = useRef<TargetState[]>([]);
-  const meshRefs = useRef<Map<string, THREE.Mesh>>(new Map());
+  const meshRefs = useRef<Map<string, THREE.Mesh>>(new Map()); // hitbox + material flash
+  const groupRefs = useRef<Map<string, THREE.Group>>(new Map()); // position / visibility / scale
   const lastSpawnRef = useRef(0);
   const initialized = useRef(false);
 
@@ -154,6 +155,7 @@ const ShootingGallery: React.FC<Props> = ({
     (now: number) => {
       targets.current = TARGET_DEFS.map((def) => makeTargetState(def, now));
       meshRefs.current.clear();
+      groupRefs.current.clear();
       bonusX.current = -16;
       bonusUp.current = false;
       bonusY.current = bonusYDown;
@@ -323,7 +325,8 @@ const ShootingGallery: React.FC<Props> = ({
     // ── Animate existing targets ──────────────────────────────────────────
     targets.current.forEach((t) => {
       const mesh = meshRefs.current.get(t.def.id);
-      if (!mesh) return;
+      const group = groupRefs.current.get(t.def.id);
+      if (!mesh || !group) return;
 
       const elapsed = now - t.phaseStartTime;
       const frac = Math.min(1, elapsed / ANIM_DURATION);
@@ -350,18 +353,18 @@ const ShootingGallery: React.FC<Props> = ({
         t.y = t.yDown;
       }
 
-      mesh.position.y = t.y;
-      mesh.visible = t.phase !== "down";
+      group.position.y = t.y;
+      group.visible = t.phase !== "down";
 
       // Scale pop on hit: briefly enlarge then let the fall animation take over.
       if (t.phase === "hit" && elapsed < 80) {
         const popT = elapsed / 80;
-        mesh.scale.setScalar(1 + 0.4 * Math.sin(popT * Math.PI));
+        group.scale.setScalar(1 + 0.4 * Math.sin(popT * Math.PI));
       } else {
-        mesh.scale.setScalar(1);
+        group.scale.setScalar(1);
       }
 
-      // White flash when hit — mutate material color directly on the mesh.
+      // White flash when hit — mutate material color directly on the body mesh.
       if (t.hitFlashUntil) {
         const mat = mesh.material as THREE.MeshStandardMaterial;
         if (now < t.hitFlashUntil) {
@@ -460,28 +463,48 @@ const ShootingGallery: React.FC<Props> = ({
         <meshStandardMaterial color="#1a1008" roughness={1} />
       </mesh>
 
-      {/* ── Targets ──────────────────────────────────────────────────── */}
-      {TARGET_DEFS.map((def) => (
-        <mesh
-          key={def.id}
-          ref={(el) => {
-            if (el) meshRefs.current.set(def.id, el);
-            else meshRefs.current.delete(def.id);
-          }}
-          position={[def.x, def.counterY - def.targetH, def.z]}
-          visible={false}
-          castShadow
-        >
-          {/* Silhouette body */}
-          <boxGeometry args={[def.targetW * 2, def.targetH * 2, 0.12]} />
-          <meshStandardMaterial
-            color={def.color}
-            emissive={def.color}
-            emissiveIntensity={0.4}
-            roughness={0.5}
-          />
-        </mesh>
-      ))}
+      {/* ── Targets — silhouette groups (body + head) ───────────────── */}
+      {TARGET_DEFS.map((def) => {
+        const headR = def.row === 0 ? 0.3 : def.row === 1 ? 0.22 : 0.15;
+        return (
+          <group
+            key={def.id}
+            ref={(el) => {
+              if (el) groupRefs.current.set(def.id, el);
+              else groupRefs.current.delete(def.id);
+            }}
+            position={[def.x, def.counterY - def.targetH, def.z]}
+            visible={false}
+          >
+            {/* Hitbox + body — used by raycaster */}
+            <mesh
+              ref={(el) => {
+                if (el) meshRefs.current.set(def.id, el);
+                else meshRefs.current.delete(def.id);
+              }}
+              castShadow
+            >
+              <boxGeometry args={[def.targetW * 2, def.targetH * 2, 0.12]} />
+              <meshStandardMaterial
+                color={def.color}
+                emissive={def.color}
+                emissiveIntensity={0.4}
+                roughness={0.5}
+              />
+            </mesh>
+            {/* Head sphere — classic carnival silhouette look */}
+            <mesh position={[0, def.targetH + headR * 0.9, 0]} castShadow>
+              <sphereGeometry args={[headR, 10, 8]} />
+              <meshStandardMaterial
+                color={def.color}
+                emissive={def.color}
+                emissiveIntensity={0.5}
+                roughness={0.5}
+              />
+            </mesh>
+          </group>
+        );
+      })}
 
       {/* Bonus duck (gold, wider, slides across mid row) */}
       <mesh
