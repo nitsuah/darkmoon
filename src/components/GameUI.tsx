@@ -163,11 +163,14 @@ const GameUI: React.FC<GameUIProps> = ({
     return undefined;
   }, [currentPlayer?.health]);
 
-  // Hit marker: crosshair flashes red when player's shot connects
+  // Hit marker: crosshair flashes on player's shot connects.
   const [hitMarker, setHitMarker] = React.useState(false);
+  // Increment key each hit to retrigger the expanding ring CSS animation.
+  const [hitRingKey, setHitRingKey] = React.useState(0);
   React.useEffect(() => {
     const handle = () => {
       setHitMarker(true);
+      setHitRingKey((k) => k + 1);
       setTimeout(() => setHitMarker(false), 300);
     };
     window.addEventListener("player-hit-landed", handle);
@@ -1072,65 +1075,83 @@ const GameUI: React.FC<GameUIProps> = ({
               }}
             >
               {/* Horizontal bar — left segment */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: "50%",
-                  left: 0,
-                  width: `${6 + crosshairSpread}px`,
-                  height: "2px",
-                  marginTop: "-1px",
-                  backgroundColor: hitMarker
-                    ? "rgba(255,60,60,1)"
-                    : "rgba(255,255,255,0.85)",
-                  transition: "background-color 0.05s",
-                }}
-              />
-              {/* Horizontal bar — right segment */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: "50%",
-                  right: 0,
-                  width: `${6 + crosshairSpread}px`,
-                  height: "2px",
-                  marginTop: "-1px",
-                  backgroundColor: hitMarker
-                    ? "rgba(255,60,60,1)"
-                    : "rgba(255,255,255,0.85)",
-                  transition: "background-color 0.05s",
-                }}
-              />
-              {/* Vertical bar — top segment */}
-              <div
-                style={{
-                  position: "absolute",
-                  left: "50%",
-                  top: 0,
-                  width: "2px",
-                  height: `${6 + crosshairSpread}px`,
-                  marginLeft: "-1px",
-                  backgroundColor: hitMarker
-                    ? "rgba(255,60,60,1)"
-                    : "rgba(255,255,255,0.85)",
-                  transition: "background-color 0.05s",
-                }}
-              />
-              {/* Vertical bar — bottom segment */}
-              <div
-                style={{
-                  position: "absolute",
-                  left: "50%",
-                  bottom: 0,
-                  width: "2px",
-                  height: `${6 + crosshairSpread}px`,
-                  marginLeft: "-1px",
-                  backgroundColor: hitMarker
-                    ? "rgba(255,60,60,1)"
-                    : "rgba(255,255,255,0.85)",
-                  transition: "background-color 0.05s",
-                }}
-              />
+              {(() => {
+                const hitColor =
+                  gameState.mode === "shooting_gallery"
+                    ? "#ffd700"
+                    : "rgba(255,60,60,1)";
+                const barColor = hitMarker
+                  ? hitColor
+                  : "rgba(255,255,255,0.85)";
+                return (
+                  <>
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: 0,
+                        width: `${6 + crosshairSpread}px`,
+                        height: "2px",
+                        marginTop: "-1px",
+                        backgroundColor: barColor,
+                        transition: "background-color 0.05s",
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "50%",
+                        right: 0,
+                        width: `${6 + crosshairSpread}px`,
+                        height: "2px",
+                        marginTop: "-1px",
+                        backgroundColor: barColor,
+                        transition: "background-color 0.05s",
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: "50%",
+                        top: 0,
+                        width: "2px",
+                        height: `${6 + crosshairSpread}px`,
+                        marginLeft: "-1px",
+                        backgroundColor: barColor,
+                        transition: "background-color 0.05s",
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: "50%",
+                        bottom: 0,
+                        width: "2px",
+                        height: `${6 + crosshairSpread}px`,
+                        marginLeft: "-1px",
+                        backgroundColor: barColor,
+                        transition: "background-color 0.05s",
+                      }}
+                    />
+                    {/* Expanding ring — plays once per hit via key change */}
+                    {hitRingKey > 0 && (
+                      <div
+                        key={hitRingKey}
+                        style={{
+                          position: "absolute",
+                          top: "50%",
+                          left: "50%",
+                          borderRadius: "50%",
+                          border: `2px solid ${hitColor}`,
+                          transform: "translate(-50%, -50%)",
+                          animation: "hitRingExpand 0.28s ease-out forwards",
+                          pointerEvents: "none",
+                        }}
+                      />
+                    )}
+                  </>
+                );
+              })()}
             </div>
           )}
 
@@ -1651,6 +1672,10 @@ const GameUI: React.FC<GameUIProps> = ({
         @keyframes criticalPulse {
           from { opacity: 0.5; }
           to { opacity: 1; }
+        }
+        @keyframes hitRingExpand {
+          from { width: 4px; height: 4px; opacity: 1; }
+          to { width: 44px; height: 44px; opacity: 0; }
         }
         .reticle::before, .reticle::after {
           content: "";
