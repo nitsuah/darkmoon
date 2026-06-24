@@ -16,6 +16,8 @@ interface GameUIProps {
   autoRestartSecondsLeft?: number | null;
 }
 
+const GALLERY_HS_KEY = "darkmoon_gallery_highscore";
+
 const GameUI: React.FC<GameUIProps> = ({
   gameState,
   players,
@@ -188,6 +190,42 @@ const GameUI: React.FC<GameUIProps> = ({
     window.addEventListener("mousemove", onMove);
     return () => window.removeEventListener("mousemove", onMove);
   }, []);
+
+  // Gallery high-score — persisted in localStorage.
+  const [galleryHighScore, setGalleryHighScore] = React.useState<number>(() => {
+    try {
+      return parseInt(localStorage.getItem(GALLERY_HS_KEY) ?? "0", 10) || 0;
+    } catch {
+      return 0;
+    }
+  });
+  const [isNewRecord, setIsNewRecord] = React.useState(false);
+
+  // Detect gallery game-over and update high score.
+  React.useEffect(() => {
+    if (gameState.isActive) {
+      setIsNewRecord(false);
+      return;
+    }
+    if (
+      gameState.mode === "shooting_gallery" &&
+      gameState.gameResults &&
+      gameState.gameResults.length > 0
+    ) {
+      const score = gameState.gameResults[0].score ?? 0;
+      try {
+        const prev =
+          parseInt(localStorage.getItem(GALLERY_HS_KEY) ?? "0", 10) || 0;
+        if (score > prev) {
+          localStorage.setItem(GALLERY_HS_KEY, String(score));
+          setGalleryHighScore(score);
+          setIsNewRecord(true);
+        }
+      } catch {
+        // localStorage unavailable
+      }
+    }
+  }, [gameState.isActive, gameState.mode, gameState.gameResults]);
 
   // Gallery combo/streak display — updated by gallery-combo CustomEvents.
   const [galleryCombo, setGalleryCombo] = React.useState(0);
@@ -793,6 +831,18 @@ const GameUI: React.FC<GameUIProps> = ({
               >
                 🎯 {gameState.scores[currentPlayerId] ?? 0} pts
               </div>
+              {!isMinimal && galleryHighScore > 0 && (
+                <div
+                  style={{
+                    marginBottom: "3px",
+                    fontSize: "9px",
+                    color: "#888",
+                    textAlign: "center",
+                  }}
+                >
+                  Best: {galleryHighScore} pts
+                </div>
+              )}
               {!isMinimal && galleryCombo >= 3 && (
                 <div
                   style={{
@@ -1541,6 +1591,31 @@ const GameUI: React.FC<GameUIProps> = ({
         >
           {isGallery ? "GALLERY CLOSED!" : isWinner ? "VICTORY!" : "DEFEATED"}
         </div>
+        {isGallery && isNewRecord && (
+          <div
+            style={{
+              fontSize: isMinimal ? "13px" : "18px",
+              color: "#ffd700",
+              fontWeight: "bold",
+              marginBottom: "6px",
+              textShadow: "0 0 14px #ffa500",
+              letterSpacing: "2px",
+            }}
+          >
+            🏆 NEW RECORD!
+          </div>
+        )}
+        {isGallery && !isNewRecord && galleryHighScore > 0 && (
+          <div
+            style={{
+              fontSize: isMinimal ? "9px" : "11px",
+              color: "#888",
+              marginBottom: "6px",
+            }}
+          >
+            Best: {galleryHighScore} pts
+          </div>
+        )}
         {isGallery && (
           <div
             style={{

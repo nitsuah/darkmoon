@@ -64,6 +64,7 @@ export default [
                 Event: 'readonly',
                 CustomEvent: 'readonly',
                 TouchEvent: 'readonly',
+                localStorage: 'readonly',
             },
         },
         plugins: {
