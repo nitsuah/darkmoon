@@ -141,7 +141,8 @@ const ShootingGallery: React.FC<Props> = ({
   const COMBO_BREAK_MS = 3500;
 
   // Bonus duck that slides across the mid row
-  const bonusMeshRef = useRef<THREE.Mesh | null>(null);
+  const bonusMeshRef = useRef<THREE.Mesh | null>(null); // hitbox for raycasting
+  const bonusGroupRef = useRef<THREE.Group | null>(null); // visual group for position/visibility
   const bonusX = useRef(-16);
   const bonusUp = useRef(false);
   const bonusY = useRef(0);
@@ -396,8 +397,8 @@ const ShootingGallery: React.FC<Props> = ({
     }
 
     // ── Bonus duck ────────────────────────────────────────────────────────
-    const bonusMesh = bonusMeshRef.current;
-    if (bonusMesh) {
+    const bonusGroup = bonusGroupRef.current;
+    if (bonusGroup) {
       if (!bonusUp.current) {
         if (now >= bonusLastAppear.current) {
           bonusUp.current = true;
@@ -412,8 +413,9 @@ const ShootingGallery: React.FC<Props> = ({
           bonusUp.current = false;
         }
       }
-      bonusMesh.position.set(bonusX.current, bonusY.current, ROWS[1].z);
-      bonusMesh.visible = bonusUp.current || bonusY.current > bonusYDown + 0.05;
+      bonusGroup.position.set(bonusX.current, bonusY.current, ROWS[1].z);
+      bonusGroup.visible =
+        bonusUp.current || bonusY.current > bonusYDown + 0.05;
     }
   });
 
@@ -506,24 +508,52 @@ const ShootingGallery: React.FC<Props> = ({
         );
       })}
 
-      {/* Bonus duck (gold, wider, slides across mid row) */}
-      <mesh
+      {/* Bonus duck — gold silhouette: body + head sphere + orange beak */}
+      <group
         ref={(el) => {
-          bonusMeshRef.current = el;
+          bonusGroupRef.current = el;
         }}
         position={[-16, bonusYDown, ROWS[1].z]}
         visible={false}
-        castShadow
       >
-        <boxGeometry args={[0.55, 0.9, 0.14]} />
-        <meshStandardMaterial
-          color="#ffd700"
-          emissive="#ffd700"
-          emissiveIntensity={0.6}
-          roughness={0.3}
-          metalness={0.4}
-        />
-      </mesh>
+        {/* Body — hitbox for raycasting */}
+        <mesh
+          ref={(el) => {
+            bonusMeshRef.current = el;
+          }}
+          castShadow
+        >
+          <boxGeometry args={[0.52, 0.5, 0.14]} />
+          <meshStandardMaterial
+            color="#ffd700"
+            emissive="#ffd700"
+            emissiveIntensity={0.6}
+            roughness={0.3}
+            metalness={0.3}
+          />
+        </mesh>
+        {/* Head */}
+        <mesh position={[0.18, 0.44, 0]} castShadow>
+          <sphereGeometry args={[0.21, 10, 8]} />
+          <meshStandardMaterial
+            color="#ffd700"
+            emissive="#ffd700"
+            emissiveIntensity={0.7}
+            roughness={0.3}
+            metalness={0.3}
+          />
+        </mesh>
+        {/* Beak — orange, pointing +x (duck moves rightward) */}
+        <mesh position={[0.41, 0.38, 0]} castShadow>
+          <boxGeometry args={[0.17, 0.08, 0.1]} />
+          <meshStandardMaterial
+            color="#ff9900"
+            emissive="#ff7700"
+            emissiveIntensity={0.5}
+            roughness={0.4}
+          />
+        </mesh>
+      </group>
 
       {/* ── Point labels (static signs above each row) ───────────────── */}
       {ROWS.map((row, ri) => (
