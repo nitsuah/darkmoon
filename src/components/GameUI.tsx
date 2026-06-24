@@ -186,6 +186,19 @@ const GameUI: React.FC<GameUIProps> = ({
     return () => window.removeEventListener("mousemove", onMove);
   }, []);
 
+  // Gallery combo/streak display — updated by gallery-combo CustomEvents.
+  const [galleryCombo, setGalleryCombo] = React.useState(0);
+  const [galleryMultiplier, setGalleryMultiplier] = React.useState(1);
+  React.useEffect(() => {
+    const onCombo = (e: unknown) => {
+      const d = (e as { detail: { combo: number; multiplier: number } }).detail;
+      setGalleryCombo(d.combo);
+      setGalleryMultiplier(d.multiplier);
+    };
+    window.addEventListener("gallery-combo", onCombo);
+    return () => window.removeEventListener("gallery-combo", onCombo);
+  }, []);
+
   // Crosshair spread: expands on fire, decays back to 0.
   const [crosshairSpread, setCrosshairSpread] = React.useState(0);
   const spreadDecayRef = React.useRef<ReturnType<typeof setInterval> | null>(
@@ -761,6 +774,30 @@ const GameUI: React.FC<GameUIProps> = ({
               >
                 🎯 {gameState.scores[currentPlayerId] ?? 0} pts
               </div>
+              {!isMinimal && galleryCombo >= 3 && (
+                <div
+                  style={{
+                    marginBottom: "4px",
+                    padding: "2px 6px",
+                    backgroundColor: "rgba(255,120,0,0.25)",
+                    borderRadius: "3px",
+                    border: "1px solid #ff8800",
+                    fontSize: "11px",
+                    color: "#ff8800",
+                    fontWeight: "bold",
+                    textAlign: "center",
+                    textShadow: "0 0 8px #ff6600",
+                    letterSpacing: "1px",
+                  }}
+                >
+                  {galleryMultiplier >= 4
+                    ? "GODLIKE"
+                    : galleryMultiplier >= 3
+                      ? "RAMPAGE"
+                      : "COMBO"}{" "}
+                  x{galleryMultiplier} ({galleryCombo})
+                </div>
+              )}
               {!isMinimal && (
                 <div
                   style={{

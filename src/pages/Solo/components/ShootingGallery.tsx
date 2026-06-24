@@ -95,6 +95,7 @@ interface TargetState {
   yUp: number; // fully-visible Y
   phaseStartTime: number;
   upDuration: number; // how long this target stays up (ms)
+  hitFlashUntil?: number; // timestamp when white flash should end
 }
 
 function makeTargetState(def: TargetDef, now: number): TargetState {
@@ -132,6 +133,11 @@ const ShootingGallery: React.FC<Props> = ({
   const meshRefs = useRef<Map<string, THREE.Mesh>>(new Map());
   const lastSpawnRef = useRef(0);
   const initialized = useRef(false);
+
+  // Combo/streak tracking — resets on miss or after COMBO_BREAK_MS of inactivity.
+  const comboRef = useRef(0);
+  const comboLastHitRef = useRef(0);
+  const COMBO_BREAK_MS = 3500;
 
   // Bonus duck that slides across the mid row
   const bonusMeshRef = useRef<THREE.Mesh | null>(null);
@@ -236,8 +242,26 @@ const ShootingGallery: React.FC<Props> = ({
       const pts = targetState.def.points;
       targetState.phase = "hit";
       targetState.phaseStartTime = Date.now();
+      targetState.hitFlashUntil = Date.now() + 80;
 
-      if (gameManager) gameManager.recordGalleryShot(currentPlayerId, pts);
+      // Combo streak — counts consecutive hits; breaks on miss or 3.5s gap.
+      if (Date.now() - comboLastHitRef.current > COMBO_BREAK_MS) {
+        comboRef.current = 0;
+      }
+      comboRef.current++;
+      comboLastHitRef.current = Date.now();
+      const multiplier =
+        comboRef.current >= 7
+          ? 4
+          : comboRef.current >= 5
+            ? 3
+            : comboRef.current >= 3
+              ? 2
+              : 1;
+      const awardedPts = pts * multiplier;
+
+      if (gameManager)
+        gameManager.recordGalleryShot(currentPlayerId, awardedPts);
       window.dispatchEvent(new window.Event("player-hit-landed"));
       window.dispatchEvent(
         new window.CustomEvent("damage-number", {
@@ -245,11 +269,16 @@ const ShootingGallery: React.FC<Props> = ({
             x: targetState.def.x,
             y: targetState.yUp + 0.3,
             z: targetState.def.z,
-            damage: pts,
+            damage: awardedPts,
           },
         }),
       );
-      return pts;
+      window.dispatchEvent(
+        new window.CustomEvent("gallery-combo", {
+          detail: { combo: comboRef.current, multiplier, pts: awardedPts },
+        }),
+      );
+      return awardedPts;
     },
     [gameManager, currentPlayerId, bonusYUp],
   );
@@ -273,8 +302,14 @@ const ShootingGallery: React.FC<Props> = ({
       const dir = new THREE.Vector3(d.dirX, d.dirY, d.dirZ);
       const pts = checkHit(origin, dir, d.range);
       if (pts === 0 && gameManager) {
-        // miss — still count the shot
+        // miss — count shot and break combo
         gameManager.recordGalleryShot(currentPlayerId, 0);
+        comboRef.current = 0;
+        window.dispatchEvent(
+          new window.CustomEvent("gallery-combo", {
+            detail: { combo: 0, multiplier: 1, pts: 0 },
+          }),
+        );
       }
     };
     window.addEventListener("gallery-fire", onFire);
@@ -317,6 +352,29 @@ const ShootingGallery: React.FC<Props> = ({
 
       mesh.position.y = t.y;
       mesh.visible = t.phase !== "down";
+
+      // Scale pop on hit: briefly enlarge then let the fall animation take over.
+      if (t.phase === "hit" && elapsed < 80) {
+        const popT = elapsed / 80;
+        mesh.scale.setScalar(1 + 0.4 * Math.sin(popT * Math.PI));
+      } else {
+        mesh.scale.setScalar(1);
+      }
+
+      // White flash when hit — mutate material color directly on the mesh.
+      if (t.hitFlashUntil) {
+        const mat = mesh.material as THREE.MeshStandardMaterial;
+        if (now < t.hitFlashUntil) {
+          mat.color.set("#ffffff");
+          mat.emissive.set("#ffffff");
+          mat.emissiveIntensity = 2;
+        } else {
+          mat.color.set(t.def.color);
+          mat.emissive.set(t.def.color);
+          mat.emissiveIntensity = 0.4;
+          t.hitFlashUntil = undefined;
+        }
+      }
     });
 
     // ── Spawn new targets ────────────────────────────────────────────────
