@@ -223,6 +223,8 @@ const ShootingGallery: React.FC<Props> = ({
               y: bonusYUp + 0.3,
               z: ROWS[1].z,
               damage: 100,
+              color: "#ffd700",
+              positive: true,
             },
           }),
         );
@@ -273,6 +275,13 @@ const ShootingGallery: React.FC<Props> = ({
             y: targetState.yUp + 0.3,
             z: targetState.def.z,
             damage: awardedPts,
+            color:
+              multiplier >= 3
+                ? "#ff8800"
+                : multiplier >= 2
+                  ? "#ffdd00"
+                  : "#ffd700",
+            positive: true,
           },
         }),
       );
