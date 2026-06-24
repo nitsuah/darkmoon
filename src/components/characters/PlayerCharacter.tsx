@@ -51,7 +51,7 @@ import {
 const tagDebug = createTagLogger("PlayerCharacter");
 
 // How long a fired laser beam stays visible before fading out.
-const LASER_BEAM_VISIBLE_MS = 100;
+const LASER_BEAM_VISIBLE_MS = 160;
 
 type WindowWithPlayerFreeze = typeof globalThis & {
   __playerFreezeUntil?: number;
@@ -169,6 +169,7 @@ export const PlayerCharacter = React.forwardRef<
   const lookIndicatorRef = React.useRef<THREE.Group>(null);
   const laserBeamRef = React.useRef<THREE.Group>(null);
   const beamMeshRef = React.useRef<THREE.Mesh>(null);
+  const beamGlowRef = React.useRef<THREE.Mesh>(null);
   const laserBeamHideAtRef = React.useRef(0);
   const weaponManagerRef = React.useRef(new WeaponManager());
   const prevKey1Ref = React.useRef(false);
@@ -642,6 +643,11 @@ export const PlayerCharacter = React.forwardRef<
         laserBeamHideAtRef.current = now + LASER_BEAM_VISIBLE_MS;
         if (beamMeshRef.current) {
           (beamMeshRef.current.material as THREE.MeshBasicMaterial).color.set(
+            beamColor,
+          );
+        }
+        if (beamGlowRef.current) {
+          (beamGlowRef.current.material as THREE.MeshBasicMaterial).color.set(
             beamColor,
           );
         }
@@ -1213,9 +1219,15 @@ export const PlayerCharacter = React.forwardRef<
           toward the hit point (or weapon range on a miss). Color and width
           are updated imperatively in useFrame based on equipped weapon. */}
       <group ref={laserBeamRef} visible={false}>
+        {/* Core beam */}
         <mesh ref={beamMeshRef}>
-          <boxGeometry args={[0.04, 0.04, 1]} />
-          <meshBasicMaterial color="#33ffe6" transparent opacity={0.85} />
+          <boxGeometry args={[0.06, 0.06, 1]} />
+          <meshBasicMaterial color="#33ffe6" transparent opacity={0.9} />
+        </mesh>
+        {/* Outer glow — same color at low opacity, slightly larger */}
+        <mesh ref={beamGlowRef}>
+          <boxGeometry args={[0.16, 0.16, 1.01]} />
+          <meshBasicMaterial color="#33ffe6" transparent opacity={0.2} />
         </mesh>
       </group>
       {/* Muzzle flash: brief warm point light burst at gun origin on fire. */}

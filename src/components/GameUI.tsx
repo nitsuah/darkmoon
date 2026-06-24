@@ -564,15 +564,31 @@ const GameUI: React.FC<GameUIProps> = ({
             </div>
           )}
 
-          <div
-            style={{
-              marginBottom: isMinimal ? "2px" : "6px",
-              fontSize: isMinimal ? "13px" : isMobile ? "10px" : "11px",
-              fontWeight: isMinimal ? "bold" : "normal",
-            }}
-          >
-            ⏱️ {formatTime(gameState.timeRemaining)}
-          </div>
+          {(() => {
+            const t = gameState.timeRemaining;
+            const isLow = t <= 15 && gameState.mode === "shooting_gallery";
+            const pulse = isLow && Math.floor(Date.now() / 500) % 2 === 0;
+            return (
+              <div
+                style={{
+                  marginBottom: isMinimal ? "2px" : "6px",
+                  fontSize: isMinimal
+                    ? "13px"
+                    : isLow
+                      ? "14px"
+                      : isMobile
+                        ? "10px"
+                        : "11px",
+                  fontWeight: isLow ? "bold" : isMinimal ? "bold" : "normal",
+                  color: isLow ? (pulse ? "#ff3333" : "#ff8888") : undefined,
+                  textShadow: isLow ? "0 0 8px #ff0000" : undefined,
+                  transition: "color 0.25s",
+                }}
+              >
+                ⏱️ {formatTime(t)}
+              </div>
+            );
+          })()}
 
           {gameState.mode === "tag" && (
             <>
