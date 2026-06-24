@@ -118,16 +118,21 @@ interface Props {
   gameManager: GameManager | null;
   currentPlayerId: string;
   isActive: boolean;
+  timeRemaining?: number;
 }
 
 const ANIM_DURATION = 280; // ms for rising/falling transition
 const MAX_UP = 5; // max targets simultaneously visible
 const SPAWN_INTERVAL_MS = 900; // how often a new target pops up
 
+const BONUS_ROUND_TRIGGER_SECS = 30; // fires when timer crosses this threshold
+const BONUS_ROUND_DURATION_MS = 8000;
+
 const ShootingGallery: React.FC<Props> = ({
   gameManager,
   currentPlayerId,
   isActive,
+  timeRemaining = 0,
 }) => {
   const targets = useRef<TargetState[]>([]);
   const meshRefs = useRef<Map<string, THREE.Mesh>>(new Map()); // hitbox + material flash
@@ -139,6 +144,11 @@ const ShootingGallery: React.FC<Props> = ({
   const comboRef = useRef(0);
   const comboLastHitRef = useRef(0);
   const COMBO_BREAK_MS = 3500;
+
+  // Bonus round: fires once when timeRemaining crosses BONUS_ROUND_TRIGGER_SECS.
+  const bonusRoundEndRef = useRef(0); // timestamp when bonus round ends (0 = inactive)
+  const prevTimeRemainingRef = useRef(timeRemaining);
+  const bonusRoundFiredRef = useRef(false); // ensures it fires only once per game
 
   // Bonus duck that slides across the mid row
   const bonusMeshRef = useRef<THREE.Mesh | null>(null); // hitbox for raycasting
@@ -168,6 +178,8 @@ const ShootingGallery: React.FC<Props> = ({
   useEffect(() => {
     if (!isActive) {
       initialized.current = false;
+      bonusRoundFiredRef.current = false;
+      bonusRoundEndRef.current = 0;
       return;
     }
     if (!initialized.current) {
@@ -176,13 +188,35 @@ const ShootingGallery: React.FC<Props> = ({
     }
   }, [isActive, init]);
 
-  // Difficulty: as score grows, targets stay up for less time
+  // Trigger the bonus round when the clock crosses BONUS_ROUND_TRIGGER_SECS.
+  useEffect(() => {
+    if (!isActive || bonusRoundFiredRef.current) return;
+    const prev = prevTimeRemainingRef.current;
+    prevTimeRemainingRef.current = timeRemaining;
+    if (
+      prev > BONUS_ROUND_TRIGGER_SECS &&
+      timeRemaining <= BONUS_ROUND_TRIGGER_SECS
+    ) {
+      bonusRoundFiredRef.current = true;
+      bonusRoundEndRef.current = Date.now() + BONUS_ROUND_DURATION_MS;
+      window.dispatchEvent(
+        new window.CustomEvent("gallery-bonus-round", {
+          detail: { duration: BONUS_ROUND_DURATION_MS },
+        }),
+      );
+    }
+  }, [isActive, timeRemaining]);
+
+  // Difficulty: as score grows, targets stay up for less time.
+  // During bonus round: halved stay-time for extra frenzy.
   const getUpDuration = useCallback((): number => {
     const score = gameManager
       ? (gameManager.getGameState().scores[currentPlayerId] ?? 0)
       : 0;
-    // starts at 2500ms, bottoms out at 1000ms at 500 pts
-    return Math.max(1000, 2500 - score * 3);
+    const base = Math.max(1000, 2500 - score * 3);
+    return bonusRoundEndRef.current > Date.now()
+      ? Math.max(600, base * 0.55)
+      : base;
   }, [gameManager, currentPlayerId]);
 
   // Raycasting hit detection — stored in a ref so mutations are allowed
@@ -263,7 +297,8 @@ const ShootingGallery: React.FC<Props> = ({
             : comboRef.current >= 3
               ? 2
               : 1;
-      const awardedPts = pts * multiplier;
+      const bonusActive = bonusRoundEndRef.current > Date.now();
+      const awardedPts = pts * multiplier * (bonusActive ? 2 : 1);
 
       if (gameManager)
         gameManager.recordGalleryShot(currentPlayerId, awardedPts);
@@ -275,8 +310,9 @@ const ShootingGallery: React.FC<Props> = ({
             y: targetState.yUp + 0.3,
             z: targetState.def.z,
             damage: awardedPts,
-            color:
-              multiplier >= 3
+            color: bonusActive
+              ? "#ff44ff"
+              : multiplier >= 3
                 ? "#ff8800"
                 : multiplier >= 2
                   ? "#ffdd00"
@@ -391,10 +427,15 @@ const ShootingGallery: React.FC<Props> = ({
     });
 
     // ── Spawn new targets ────────────────────────────────────────────────
+    const isBonusRound = bonusRoundEndRef.current > now;
+    const spawnInterval = isBonusRound
+      ? SPAWN_INTERVAL_MS * 0.5
+      : SPAWN_INTERVAL_MS;
+    const maxUp = isBonusRound ? MAX_UP + 3 : MAX_UP;
     const upCount = targets.current.filter(
       (t) => t.phase === "up" || t.phase === "rising",
     ).length;
-    if (upCount < MAX_UP && now - lastSpawnRef.current > SPAWN_INTERVAL_MS) {
+    if (upCount < maxUp && now - lastSpawnRef.current > spawnInterval) {
       const down = targets.current.filter((t) => t.phase === "down");
       if (down.length > 0) {
         const pick = down[Math.floor(Math.random() * down.length)];

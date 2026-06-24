@@ -135,6 +135,7 @@ export const SoloScene: React.FC<Props> = ({
         gameManager={gameManager}
         currentPlayerId={currentPlayerId}
         isActive={gameState.mode === "shooting_gallery" && gameState.isActive}
+        timeRemaining={gameState.timeRemaining}
       />
     </Canvas>
   );
