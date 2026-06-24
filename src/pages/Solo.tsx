@@ -98,6 +98,13 @@ const Solo: React.FC = () => {
     null,
   );
 
+  // Gallery debug mode — a bot auto-plays the shooting gallery solo with hitbox
+  // wireframes visible and per-shot diagnostics logged to the console.
+  const [galleryDebugMode, setGalleryDebugMode] = useState(false);
+  const galleryDebugRestartRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
   // Auto-restart countdown after game over in combat modes (deathmatch/ctf).
   const [autoRestartSecondsLeft, setAutoRestartSecondsLeft] = useState<
     number | null
@@ -681,6 +688,38 @@ const Solo: React.FC = () => {
     };
   }, [botDebugMode, gameState.isActive, gameState.mode, syncGameState]);
 
+  // Gallery debug mode: auto-start + auto-restart gallery games.
+  useEffect(() => {
+    if (!galleryDebugMode) return;
+
+    if (!gameState.isActive && gameState.mode !== "shooting_gallery") {
+      // Auto-start gallery when debug mode is first enabled.
+      const t = setTimeout(() => {
+        if (gameManager.current) {
+          gameManager.current.startShootingGalleryGame();
+          syncGameState();
+        }
+      }, 500);
+      galleryDebugRestartRef.current = t;
+    } else if (!gameState.isActive && gameState.mode === "shooting_gallery") {
+      // Auto-restart after each gallery session ends.
+      const t = setTimeout(() => {
+        if (gameManager.current) {
+          gameManager.current.startShootingGalleryGame();
+          syncGameState();
+        }
+      }, 3000);
+      galleryDebugRestartRef.current = t;
+    }
+
+    return () => {
+      if (galleryDebugRestartRef.current) {
+        clearTimeout(galleryDebugRestartRef.current);
+        galleryDebugRestartRef.current = null;
+      }
+    };
+  }, [galleryDebugMode, gameState.isActive, gameState.mode, syncGameState]);
+
   // Auto-restart combat modes (deathmatch/ctf) after a 7-second results delay.
   useEffect(() => {
     const isCombat =
@@ -858,6 +897,7 @@ const Solo: React.FC = () => {
         gameState={gameState}
         setGameState={setGameState}
         botDebugMode={botDebugMode}
+        galleryDebugMode={galleryDebugMode}
         playerPositionRef={playerPositionRef}
         bot1PositionRef={bot1PositionRef}
         bot2PositionRef={bot2PositionRef}
@@ -893,6 +933,8 @@ const Solo: React.FC = () => {
         onEndGame={handleEndGame}
         botDebugMode={botDebugMode}
         onToggleDebug={() => setBotDebugMode((prev) => !prev)}
+        galleryDebugMode={galleryDebugMode}
+        onToggleGalleryDebug={() => setGalleryDebugMode((prev) => !prev)}
         autoRestartSecondsLeft={autoRestartSecondsLeft}
         notifications={notifications}
         currentFPS={currentFPS}

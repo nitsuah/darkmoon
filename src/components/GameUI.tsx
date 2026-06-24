@@ -12,6 +12,9 @@ interface GameUIProps {
   onEndGame: () => void;
   botDebugMode?: boolean;
   onToggleDebug?: () => void;
+  /** Gallery debug mode — bot plays solo with hitbox wireframes + console diagnostics. */
+  galleryDebugMode?: boolean;
+  onToggleGalleryDebug?: () => void;
   /** Seconds until auto-restart fires; null = no auto-restart pending. */
   autoRestartSecondsLeft?: number | null;
 }
@@ -26,6 +29,8 @@ const GameUI: React.FC<GameUIProps> = ({
   onEndGame,
   botDebugMode = false,
   onToggleDebug,
+  galleryDebugMode = false,
+  onToggleGalleryDebug,
   autoRestartSecondsLeft = null,
 }) => {
   // Detect mobile viewport and landscape orientation
@@ -955,6 +960,32 @@ const GameUI: React.FC<GameUIProps> = ({
                 : botDebugMode
                   ? "⏹️ Stop Debug"
                   : "🔧 Debug Mode"}
+            </button>
+          )}
+          {onToggleGalleryDebug && (
+            <button
+              onClick={onToggleGalleryDebug}
+              style={{
+                marginTop: isMinimal ? "2px" : "3px",
+                padding: isMinimal ? "2px 4px" : "3px 6px",
+                backgroundColor: galleryDebugMode
+                  ? "rgba(220, 53, 69, 0.8)"
+                  : "rgba(0, 170, 100, 0.8)",
+                border: galleryDebugMode
+                  ? "1px solid #dc3545"
+                  : "1px solid #00aa64",
+                borderRadius: "3px",
+                color: "white",
+                cursor: "pointer",
+                fontSize: isMinimal ? "10px" : isMobile ? "9px" : "10px",
+                width: "100%",
+              }}
+            >
+              {isMinimal || isMobile
+                ? "🎯"
+                : galleryDebugMode
+                  ? "⏹️ Stop Gallery"
+                  : "🎯 Gallery Debug"}
             </button>
           )}
         </div>
@@ -2002,6 +2033,37 @@ const GameUI: React.FC<GameUIProps> = ({
                   ? "⏹️ Stop Debug"
                   : "🔧 Start Debug"}
             </button>
+
+            {onToggleGalleryDebug && (
+              <button
+                onClick={onToggleGalleryDebug}
+                style={{
+                  padding: isMinimal
+                    ? "3px 5px"
+                    : isMobile
+                      ? "6px 8px"
+                      : "6px 10px",
+                  backgroundColor: galleryDebugMode
+                    ? "rgba(220, 53, 69, 0.8)"
+                    : "rgba(0, 170, 100, 0.8)",
+                  border: galleryDebugMode
+                    ? "1px solid #dc3545"
+                    : "1px solid #00aa64",
+                  borderRadius: "3px",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: isMinimal ? "14px" : isMobile ? "14px" : "11px",
+                  width: "100%",
+                  marginTop: "3px",
+                }}
+              >
+                {isMinimal || isMobile
+                  ? "🎯"
+                  : galleryDebugMode
+                    ? "⏹️ Stop Gallery Debug"
+                    : "🎯 Gallery Debug"}
+              </button>
+            )}
 
             {!isMobile && !isMinimal && (
               <div

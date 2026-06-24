@@ -108,6 +108,7 @@ export default [
                         'visible',
                         'emissive',
                         'emissiveIntensity',
+                        'wireframe',
                     ],
                 },
             ],

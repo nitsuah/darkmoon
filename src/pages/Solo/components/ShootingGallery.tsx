@@ -3,6 +3,9 @@ import { useRef, useEffect, useCallback } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import type GameManager from "../../../components/GameManager";
+import type { GalleryBotConfig } from "./GalleryBotConfig";
+import { GALLERY_BOT_PRESETS } from "./GalleryBotConfig";
+import { useGalleryBot } from "./useGalleryBot";
 
 // ─── Target layout ────────────────────────────────────────────────────────────
 // Three rows: back (large/10pt), mid (medium/25pt), front (small/50pt).
@@ -87,7 +90,7 @@ const TARGET_DEFS = buildTargetDefs();
 
 // ─── Runtime target state ─────────────────────────────────────────────────────
 
-interface TargetState {
+export interface TargetState {
   def: TargetDef;
   phase: "down" | "rising" | "up" | "falling" | "hit";
   y: number; // current world Y of target centre
@@ -96,6 +99,22 @@ interface TargetState {
   phaseStartTime: number;
   upDuration: number; // how long this target stays up (ms)
   hitFlashUntil?: number; // timestamp when white flash should end
+}
+
+/**
+ * Pure scoring function — extracted for testability.
+ * Returns the awarded points and active multiplier for a gallery hit.
+ */
+export function computeGalleryAward(
+  pts: number,
+  combo: number,
+  bonusRoundActive: boolean,
+): { awardedPts: number; multiplier: number } {
+  const multiplier = combo >= 7 ? 4 : combo >= 5 ? 3 : combo >= 3 ? 2 : 1;
+  return {
+    awardedPts: pts * multiplier * (bonusRoundActive ? 2 : 1),
+    multiplier,
+  };
 }
 
 function makeTargetState(def: TargetDef, now: number): TargetState {
@@ -119,6 +138,10 @@ interface Props {
   currentPlayerId: string;
   isActive: boolean;
   timeRemaining?: number;
+  /** When true, a bot auto-plays the gallery and hitbox wireframes are shown. */
+  debugMode?: boolean;
+  /** Bot configuration; defaults to the "medium" preset when omitted. */
+  botConfig?: GalleryBotConfig;
 }
 
 const ANIM_DURATION = 280; // ms for rising/falling transition
@@ -133,7 +156,10 @@ const ShootingGallery: React.FC<Props> = ({
   currentPlayerId,
   isActive,
   timeRemaining = 0,
+  debugMode = false,
+  botConfig,
 }) => {
+  const activeBotConfig = botConfig ?? GALLERY_BOT_PRESETS.medium;
   const targets = useRef<TargetState[]>([]);
   const meshRefs = useRef<Map<string, THREE.Mesh>>(new Map()); // hitbox + material flash
   const groupRefs = useRef<Map<string, THREE.Group>>(new Map()); // position / visibility / scale
@@ -206,6 +232,9 @@ const ShootingGallery: React.FC<Props> = ({
       );
     }
   }, [isActive, timeRemaining]);
+
+  // Gallery bot — runs only when debugMode is true; no-ops otherwise.
+  useGalleryBot(targets, isActive, debugMode, activeBotConfig);
 
   // Difficulty: as score grows, targets stay up for less time.
   // During bonus round: halved stay-time for extra frenzy.
@@ -289,16 +318,12 @@ const ShootingGallery: React.FC<Props> = ({
       }
       comboRef.current++;
       comboLastHitRef.current = Date.now();
-      const multiplier =
-        comboRef.current >= 7
-          ? 4
-          : comboRef.current >= 5
-            ? 3
-            : comboRef.current >= 3
-              ? 2
-              : 1;
       const bonusActive = bonusRoundEndRef.current > Date.now();
-      const awardedPts = pts * multiplier * (bonusActive ? 2 : 1);
+      const { awardedPts, multiplier } = computeGalleryAward(
+        pts,
+        comboRef.current,
+        bonusActive,
+      );
 
       if (gameManager)
         gameManager.recordGalleryShot(currentPlayerId, awardedPts);
@@ -544,6 +569,13 @@ const ShootingGallery: React.FC<Props> = ({
                 roughness={0.5}
               />
             </mesh>
+            {/* Debug wireframe — shows exact raycast hitbox extents */}
+            {debugMode && (
+              <mesh>
+                <boxGeometry args={[def.targetW * 2, def.targetH * 2, 0.12]} />
+                <meshBasicMaterial color="#00ff88" wireframe />
+              </mesh>
+            )}
             {/* Head sphere — classic carnival silhouette look */}
             <mesh position={[0, def.targetH + headR * 0.9, 0]} castShadow>
               <sphereGeometry args={[headR, 10, 8]} />

@@ -36,6 +36,7 @@ export const SoloScene: React.FC<Props> = ({
   gameState,
   setGameState,
   botDebugMode,
+  galleryDebugMode = false,
   playerPositionRef,
   bot1PositionRef,
   bot2PositionRef,
@@ -136,6 +137,7 @@ export const SoloScene: React.FC<Props> = ({
         currentPlayerId={currentPlayerId}
         isActive={gameState.mode === "shooting_gallery" && gameState.isActive}
         timeRemaining={gameState.timeRemaining}
+        debugMode={galleryDebugMode}
       />
     </Canvas>
   );
