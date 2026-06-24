@@ -547,7 +547,8 @@ export const PlayerCharacter = React.forwardRef<
       raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), state.camera);
       const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
       const aimTarget = new THREE.Vector3();
-      const hasAimTarget = raycaster.ray.intersectPlane(groundPlane, aimTarget) !== null;
+      const hasAimTarget =
+        raycaster.ray.intersectPlane(groundPlane, aimTarget) !== null;
       const fireDirection = hasAimTarget
         ? aimTarget.clone().sub(fireOrigin).normalize()
         : new THREE.Vector3(
@@ -572,6 +573,34 @@ export const PlayerCharacter = React.forwardRef<
             detail: { weaponId: fireResult.weapon.id },
           }),
         );
+        // In shooting-gallery mode, broadcast the raw camera ray so the gallery
+        // scene can hit targets above the ground plane. The ground-plane-reflected
+        // fireDirection misses elevated targets; the camera ray direction is exact.
+        if (gameManager?.getGameState().mode === "shooting_gallery") {
+          const galleryRaycaster = new THREE.Raycaster();
+          galleryRaycaster.setFromCamera(
+            new THREE.Vector2(
+              (mouseControls.mouseX / state.size.width) * 2 - 1,
+              -(mouseControls.mouseY / state.size.height) * 2 + 1,
+            ),
+            state.camera,
+          );
+          const galleryRayDir = galleryRaycaster.ray.direction;
+          const galleryOrigin = galleryRaycaster.ray.origin;
+          window.dispatchEvent(
+            new window.CustomEvent("gallery-fire", {
+              detail: {
+                originX: galleryOrigin.x,
+                originY: galleryOrigin.y,
+                originZ: galleryOrigin.z,
+                dirX: galleryRayDir.x,
+                dirY: galleryRayDir.y,
+                dirZ: galleryRayDir.z,
+                range: 80,
+              },
+            }),
+          );
+        }
       }
       if (fireResult && laserBeamRef.current) {
         const beamLength = fireResult.hit?.distance ?? fireResult.weapon.range;
@@ -614,7 +643,10 @@ export const PlayerCharacter = React.forwardRef<
         // Sync ammo + reload progress to HUD after each shot.
         const remainingAmmo = weaponManagerRef.current.getAmmo(wid);
         const reloadProgress = weaponManagerRef.current.getReloadProgress(wid);
-        gameManager?.updatePlayer(myId, { currentAmmo: remainingAmmo, reloadProgress });
+        gameManager?.updatePlayer(myId, {
+          currentAmmo: remainingAmmo,
+          reloadProgress,
+        });
       }
       if (fireResult && fireResult.hit && typeof window !== "undefined") {
         // Notify HUD to flash hit marker.
@@ -1009,7 +1041,10 @@ export const PlayerCharacter = React.forwardRef<
         const rp = weaponManagerRef.current.getReloadProgress(equipped.id);
         const ammo = weaponManagerRef.current.getAmmo(equipped.id);
         const myId2 = socketClient?.id || currentPlayerId;
-        gameManager?.updatePlayer(myId2, { currentAmmo: ammo, reloadProgress: rp });
+        gameManager?.updatePlayer(myId2, {
+          currentAmmo: ammo,
+          reloadProgress: rp,
+        });
       }
     }
 

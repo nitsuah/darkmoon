@@ -435,6 +435,16 @@ const Solo: React.FC = () => {
     (mode: string) => {
       if (!gameManager.current) return;
 
+      if (mode === "shooting_gallery") {
+        gameManager.current.startShootingGalleryGame();
+        syncGameState();
+        addNotification(
+          "Shooting Gallery! Hit targets to score. 🔴=10 🟠=25 🟡=50 ⭐=100",
+          "info",
+        );
+        return;
+      }
+
       if (mode === "deathmatch") {
         // Ensure bot-2 and bot-3 are registered before the match so all combatants
         // get health/respawn initialised by DeathmatchMode.onStart.
@@ -547,7 +557,13 @@ const Solo: React.FC = () => {
         addNotification(`Tag game started! ${itName} is IT!`, "info");
       }
     },
-    [gameManager, setGameState, addNotification, currentPlayerId],
+    [
+      gameManager,
+      setGameState,
+      addNotification,
+      currentPlayerId,
+      syncGameState,
+    ],
   );
 
   const handlePlayerPositionUpdate = useCallback(

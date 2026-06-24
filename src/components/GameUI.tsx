@@ -61,18 +61,28 @@ const GameUI: React.FC<GameUIProps> = ({
 
   // Score tension: warn when any player is 1 kill from winning in deathmatch.
   const tensionWarning: string | null = (() => {
-    if (gameState.mode !== "deathmatch" || !gameState.isActive || !gameState.killLimit) return null;
+    if (
+      gameState.mode !== "deathmatch" ||
+      !gameState.isActive ||
+      !gameState.killLimit
+    )
+      return null;
     const limit = gameState.killLimit;
     let highest = -1;
     let leaderId = "";
     Object.entries(gameState.scores).forEach(([id, score]) => {
-      if (score > highest) { highest = score; leaderId = id; }
+      if (score > highest) {
+        highest = score;
+        leaderId = id;
+      }
     });
     if (highest < limit - 2) return null;
     const leaderName = players.get(leaderId)?.name ?? leaderId;
     const needed = limit - highest;
-    if (needed === 1) return `${leaderName.toUpperCase()} NEEDS 1 MORE KILL TO WIN!`;
-    if (needed === 2) return `${leaderName.toUpperCase()} NEEDS 2 MORE KILLS TO WIN`;
+    if (needed === 1)
+      return `${leaderName.toUpperCase()} NEEDS 1 MORE KILL TO WIN!`;
+    if (needed === 2)
+      return `${leaderName.toUpperCase()} NEEDS 2 MORE KILLS TO WIN`;
     return null;
   })();
 
@@ -117,7 +127,9 @@ const GameUI: React.FC<GameUIProps> = ({
 
   // Hit direction indicator: show a red arc at the screen edge pointing toward the attacker.
   const [hitAngle, setHitAngle] = React.useState<number | null>(null);
-  const hitAngleTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hitAngleTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   React.useEffect(() => {
     const onPlayerDamaged = (e: Event) => {
       const angle = (e as CustomEvent<{ angle: number }>).detail.angle;
@@ -162,6 +174,18 @@ const GameUI: React.FC<GameUIProps> = ({
     return () => window.removeEventListener("player-hit-landed", handle);
   }, []);
 
+  // Track real mouse position so the crosshair follows the cursor.
+  const [mousePos, setMousePos] = React.useState({
+    x: typeof window !== "undefined" ? window.innerWidth / 2 : 0,
+    y: typeof window !== "undefined" ? window.innerHeight / 2 : 0,
+  });
+  React.useEffect(() => {
+    const onMove = (e: MouseEvent) =>
+      setMousePos({ x: e.clientX, y: e.clientY });
+    window.addEventListener("mousemove", onMove);
+    return () => window.removeEventListener("mousemove", onMove);
+  }, []);
+
   // Crosshair spread: expands on fire, decays back to 0.
   const [crosshairSpread, setCrosshairSpread] = React.useState(0);
   const spreadDecayRef = React.useRef<ReturnType<typeof setInterval> | null>(
@@ -170,8 +194,7 @@ const GameUI: React.FC<GameUIProps> = ({
   React.useEffect(() => {
     const onFired = (e: unknown) => {
       const weaponId = (e as { detail: { weaponId: string } }).detail.weaponId;
-      const addSpread =
-        weaponId === "smg" ? 8 : weaponId === "shotgun" ? 6 : 3;
+      const addSpread = weaponId === "smg" ? 8 : weaponId === "shotgun" ? 6 : 3;
       setCrosshairSpread((prev) => Math.min(prev + addSpread, 24));
       if (spreadDecayRef.current) clearInterval(spreadDecayRef.current);
       spreadDecayRef.current = setInterval(() => {
@@ -722,6 +745,53 @@ const GameUI: React.FC<GameUIProps> = ({
             </>
           )}
 
+          {gameState.mode === "shooting_gallery" && (
+            <>
+              <div
+                style={{
+                  marginBottom: isMinimal ? "2px" : "6px",
+                  padding: isMinimal ? "2px 3px" : "4px 8px",
+                  backgroundColor: "rgba(255,215,0,0.15)",
+                  borderRadius: "3px",
+                  border: "1px solid #ffd700",
+                  fontSize: isMinimal ? "8px" : isMobile ? "10px" : "11px",
+                  color: "#ffd700",
+                  fontWeight: "bold",
+                }}
+              >
+                🎯 {gameState.scores[currentPlayerId] ?? 0} pts
+              </div>
+              {!isMinimal && (
+                <div
+                  style={{
+                    marginBottom: "6px",
+                    fontSize: "10px",
+                    color: "#aaaaaa",
+                  }}
+                >
+                  {(() => {
+                    const shots = gameState.galleryShots ?? 0;
+                    const hits = gameState.galleryHits ?? 0;
+                    const acc =
+                      shots > 0 ? Math.round((hits / shots) * 100) : 0;
+                    return `Hits: ${hits}/${shots} (${acc}% acc)`;
+                  })()}
+                </div>
+              )}
+              {!isMinimal && (
+                <div
+                  style={{
+                    fontSize: "9px",
+                    color: "#888",
+                    marginBottom: "4px",
+                  }}
+                >
+                  🔴=10 🟠=25 🟡=50 ⭐=100
+                </div>
+              )}
+            </>
+          )}
+
           <button
             onClick={onEndGame}
             style={{
@@ -929,17 +999,18 @@ const GameUI: React.FC<GameUIProps> = ({
             );
           })()}
 
-        {/* Crosshair — combat and tag modes, hidden while downed */}
+        {/* Crosshair — combat, tag, and gallery modes; follows real mouse cursor */}
         {(gameState.mode === "deathmatch" ||
           gameState.mode === "ctf" ||
-          gameState.mode === "tag") &&
+          gameState.mode === "tag" ||
+          gameState.mode === "shooting_gallery") &&
           respawnSecondsLeft === null &&
           !isMinimal && (
             <div
               style={{
                 position: "fixed",
-                top: "50%",
-                left: "50%",
+                top: mousePos.y,
+                left: mousePos.x,
                 transform: "translate(-50%, -50%)",
                 pointerEvents: "none",
                 zIndex: 997,
@@ -1010,10 +1081,11 @@ const GameUI: React.FC<GameUIProps> = ({
             </div>
           )}
 
-        {/* Bottom-center ammo + health bar — combat and tag modes */}
+        {/* Bottom-center ammo + health bar — combat, tag, and gallery modes */}
         {(gameState.mode === "deathmatch" ||
           gameState.mode === "ctf" ||
-          gameState.mode === "tag") &&
+          gameState.mode === "tag" ||
+          gameState.mode === "shooting_gallery") &&
           !isMinimal &&
           currentPlayer &&
           respawnSecondsLeft === null && (
@@ -1100,7 +1172,10 @@ const GameUI: React.FC<GameUIProps> = ({
                   const ammo = currentPlayer.currentAmmo;
                   const maxAmmo = wDef?.maxAmmo;
                   const reloadPct = currentPlayer.reloadProgress;
-                  const isReloading = reloadPct !== null && reloadPct !== undefined && reloadPct < 1;
+                  const isReloading =
+                    reloadPct !== null &&
+                    reloadPct !== undefined &&
+                    reloadPct < 1;
                   const wColor =
                     currentPlayer.equippedWeaponId === "rocket"
                       ? "#ff4422"
@@ -1117,21 +1192,46 @@ const GameUI: React.FC<GameUIProps> = ({
                         {wDef?.name ?? currentPlayer.equippedWeaponId}
                       </span>
                       {isReloading ? (
-                        <span style={{ color: "#ffcc00", letterSpacing: "1px" }}>
+                        <span
+                          style={{ color: "#ffcc00", letterSpacing: "1px" }}
+                        >
                           {" RELOADING "}
-                          <span style={{ color: "#555", display: "inline-block", width: "40px", background: "#222", borderRadius: "2px", verticalAlign: "middle", height: "6px", position: "relative", overflow: "hidden" }}>
-                            <span style={{ display: "block", width: `${((reloadPct ?? 0) * 100).toFixed(0)}%`, background: "#ffcc00", height: "100%" }} />
+                          <span
+                            style={{
+                              color: "#555",
+                              display: "inline-block",
+                              width: "40px",
+                              background: "#222",
+                              borderRadius: "2px",
+                              verticalAlign: "middle",
+                              height: "6px",
+                              position: "relative",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <span
+                              style={{
+                                display: "block",
+                                width: `${((reloadPct ?? 0) * 100).toFixed(0)}%`,
+                                background: "#ffcc00",
+                                height: "100%",
+                              }}
+                            />
                           </span>
                         </span>
                       ) : (
-                        <span style={{ color: "#aaaaaa", letterSpacing: "1px" }}>
+                        <span
+                          style={{ color: "#aaaaaa", letterSpacing: "1px" }}
+                        >
                           {ammo === null || ammo === undefined
                             ? "∞"
                             : maxAmmo && maxAmmo <= 10
                               ? Array.from({ length: maxAmmo }, (_, i) => (
                                   <span
                                     key={i}
-                                    style={{ color: i < ammo ? wColor : "#444" }}
+                                    style={{
+                                      color: i < ammo ? wColor : "#444",
+                                    }}
                                   >
                                     ●
                                   </span>
@@ -1316,13 +1416,20 @@ const GameUI: React.FC<GameUIProps> = ({
     gameState.gameResults.length > 0
   ) {
     const winner = gameState.gameResults[0];
-    const isWinner = winner.id === currentPlayerId;
+    const isGallery = gameState.mode === "shooting_gallery";
+    const isWinner = isGallery || winner.id === currentPlayerId;
     const scoreLabel =
       gameState.mode === "ctf"
         ? "caps"
         : gameState.mode === "tag"
           ? "pts"
-          : "kills";
+          : isGallery
+            ? "pts"
+            : "kills";
+    const galleryShots = gameState.galleryShots ?? 0;
+    const galleryHits = gameState.galleryHits ?? 0;
+    const galleryAcc =
+      galleryShots > 0 ? Math.round((galleryHits / galleryShots) * 100) : 0;
     return (
       <div
         style={{
@@ -1331,7 +1438,9 @@ const GameUI: React.FC<GameUIProps> = ({
           left: "50%",
           transform: "translate(-50%, -50%)",
           backgroundColor: "rgba(0,0,0,0.92)",
-          border: "2px solid rgba(255,255,255,0.3)",
+          border: isGallery
+            ? "2px solid #ffd700"
+            : "2px solid rgba(255,255,255,0.3)",
           borderRadius: "10px",
           color: "white",
           fontFamily: "monospace",
@@ -1346,14 +1455,29 @@ const GameUI: React.FC<GameUIProps> = ({
           style={{
             fontSize: isMinimal ? "18px" : "28px",
             fontWeight: "bold",
-            color: isWinner ? "#ffdd44" : "#ff6666",
-            textShadow: isWinner ? "0 0 14px #ffaa00" : "0 0 10px #ff4444",
+            color: isGallery ? "#ffd700" : isWinner ? "#ffdd44" : "#ff6666",
+            textShadow: isGallery
+              ? "0 0 14px #ffa500"
+              : isWinner
+                ? "0 0 14px #ffaa00"
+                : "0 0 10px #ff4444",
             marginBottom: "10px",
             letterSpacing: "2px",
           }}
         >
-          {isWinner ? "VICTORY!" : "DEFEATED"}
+          {isGallery ? "GALLERY CLOSED!" : isWinner ? "VICTORY!" : "DEFEATED"}
         </div>
+        {isGallery && (
+          <div
+            style={{
+              fontSize: isMinimal ? "11px" : "14px",
+              color: "#aaa",
+              marginBottom: "8px",
+            }}
+          >
+            Accuracy: {galleryHits}/{galleryShots} ({galleryAcc}%)
+          </div>
+        )}
 
         <div
           style={{
@@ -1558,6 +1682,28 @@ const GameUI: React.FC<GameUIProps> = ({
               gap: isMinimal ? "2px" : "6px",
             }}
           >
+            {/* Shooting Gallery — always available solo or multiplayer */}
+            <button
+              onClick={() => onStartGame("shooting_gallery")}
+              style={{
+                padding: isMinimal
+                  ? "3px 5px"
+                  : isMobile
+                    ? "6px 8px"
+                    : "6px 10px",
+                backgroundColor: "rgba(255, 200, 0, 0.85)",
+                border: "1px solid #ffd700",
+                borderRadius: "3px",
+                color: "#111",
+                cursor: "pointer",
+                fontSize: isMinimal ? "14px" : isMobile ? "14px" : "11px",
+                fontWeight: "bold",
+                width: "100%",
+              }}
+            >
+              {isMinimal || isMobile ? "🎯" : "🎯 Shooting Gallery"}
+            </button>
+
             <button
               onClick={() => onStartGame(players.size <= 1 ? "solo" : "tag")}
               style={{
