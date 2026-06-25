@@ -62,7 +62,6 @@ const ExplosionVFX: React.FC = () => {
     }
   });
 
-  /* eslint-disable react/no-unknown-property */
   return (
     <>
       {Array.from({ length: MAX_SIMULTANEOUS }).map((_, i) => (
@@ -84,7 +83,6 @@ const ExplosionVFX: React.FC = () => {
       ))}
     </>
   );
-  /* eslint-enable react/no-unknown-property */
 };
 
 export default ExplosionVFX;

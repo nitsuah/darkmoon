@@ -4,7 +4,7 @@ import { Billboard, Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 
 const DURATION_MS = 1100;
-const MAX_SLOTS = 8;
+const MAX_SLOTS = 12;
 
 type Slot = {
   active: boolean;
@@ -13,6 +13,8 @@ type Slot = {
   y: number;
   z: number;
   damage: number;
+  color: string;
+  positive: boolean;
 };
 
 const makeSlot = (): Slot => ({
@@ -22,6 +24,8 @@ const makeSlot = (): Slot => ({
   y: 0,
   z: 0,
   damage: 0,
+  color: "#ff4444",
+  positive: false,
 });
 
 const DamageNumbers: React.FC = () => {
@@ -35,8 +39,17 @@ const DamageNumbers: React.FC = () => {
 
   React.useEffect(() => {
     const handle = (e: unknown) => {
-      const { x, y, z, damage } = (
-        e as { detail: { x: number; y: number; z: number; damage: number } }
+      const d = (
+        e as {
+          detail: {
+            x: number;
+            y: number;
+            z: number;
+            damage: number;
+            color?: string;
+            positive?: boolean;
+          };
+        }
       ).detail;
       const now = Date.now();
       const i = poolRef.current.findIndex(
@@ -44,7 +57,16 @@ const DamageNumbers: React.FC = () => {
       );
       if (i === -1) return;
       const next = [...poolRef.current];
-      next[i] = { active: true, startedAt: now, x, y, z, damage };
+      next[i] = {
+        active: true,
+        startedAt: now,
+        x: d.x,
+        y: d.y,
+        z: d.z,
+        damage: d.damage,
+        color: d.color ?? "#ff4444",
+        positive: d.positive ?? false,
+      };
       poolRef.current = next;
       setPool(next);
     };
@@ -69,37 +91,49 @@ const DamageNumbers: React.FC = () => {
       }
       g.visible = true;
       const t = elapsed / DURATION_MS;
-      g.position.set(slot.x, slot.y + 0.5 + t * 2.2, slot.z);
+      // Float upward; shrink slightly at the end for a "pop" exit.
+      g.position.set(slot.x, slot.y + 0.5 + t * 2.5, slot.z);
+      const shrink = t > 0.75 ? 1 - (t - 0.75) * 2.5 : 1;
+      g.scale.setScalar(Math.max(0.05, shrink));
     }
   });
 
   return (
     <>
-      {pool.map((slot, i) => (
-        <group
-          key={i}
-          ref={(el: THREE.Group | null) => {
-            groupRefs.current[i] = el;
-          }}
-          // eslint-disable-next-line react/no-unknown-property
-          visible={false}
-        >
-          {slot.active && (
-            <Billboard>
-              <Text
-                fontSize={0.45}
-                color="#ff4444"
-                anchorX="center"
-                anchorY="middle"
-                outlineWidth={0.04}
-                outlineColor="#000000"
-              >
-                {`-${slot.damage}`}
-              </Text>
-            </Billboard>
-          )}
-        </group>
-      ))}
+      {pool.map((slot, i) => {
+        const size =
+          slot.damage >= 100
+            ? 0.65
+            : slot.damage >= 50
+              ? 0.52
+              : slot.damage >= 25
+                ? 0.44
+                : 0.38;
+        return (
+          <group
+            key={i}
+            ref={(el: THREE.Group | null) => {
+              groupRefs.current[i] = el;
+            }}
+            visible={false}
+          >
+            {slot.active && (
+              <Billboard>
+                <Text
+                  fontSize={size}
+                  color={slot.color}
+                  anchorX="center"
+                  anchorY="middle"
+                  outlineWidth={0.05}
+                  outlineColor="#000000"
+                >
+                  {slot.positive ? `+${slot.damage}` : `-${slot.damage}`}
+                </Text>
+              </Billboard>
+            )}
+          </group>
+        );
+      })}
     </>
   );
 };

@@ -64,6 +64,7 @@ export default [
                 Event: 'readonly',
                 CustomEvent: 'readonly',
                 TouchEvent: 'readonly',
+                localStorage: 'readonly',
             },
         },
         plugins: {
@@ -104,6 +105,10 @@ export default [
                         'roughness',
                         'side',
                         'scale',
+                        'visible',
+                        'emissive',
+                        'emissiveIntensity',
+                        'wireframe',
                     ],
                 },
             ],

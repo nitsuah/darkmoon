@@ -55,6 +55,7 @@ export type SoloSceneProps = {
   gameState: GameState;
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
   botDebugMode: boolean;
+  galleryDebugMode?: boolean;
   playerPositionRef: React.RefObject<[number, number, number]>;
   bot1PositionRef: React.RefObject<[number, number, number]>;
   bot2PositionRef: React.RefObject<[number, number, number]>;

@@ -16,6 +16,7 @@ export interface KillEvent {
 import TagMode from "./gameModes/TagMode";
 import DeathmatchMode from "./gameModes/DeathmatchMode";
 import CTFMode from "./gameModes/CTFMode";
+import ShootingGalleryMode from "./gameModes/ShootingGalleryMode";
 
 const log = createLogger("GameManager");
 
@@ -26,7 +27,8 @@ export type GameMode =
   | "ctf"
   | "collectible"
   | "race"
-  | "solo";
+  | "solo"
+  | "shooting_gallery";
 
 export interface GameState {
   mode: GameMode;
@@ -45,6 +47,10 @@ export interface GameState {
   streakAnnouncement?: { killerName: string; count: number; timestamp: number };
   /** Sorted results from the most recently ended game, cleared on next start. */
   gameResults?: GameResult[];
+  /** Shooting gallery: total shots fired this round. */
+  galleryShots?: number;
+  /** Shooting gallery: total targets hit this round. */
+  galleryHits?: number;
 }
 
 export interface TagGameState extends GameState {
@@ -322,6 +328,36 @@ export class GameManager {
     }
 
     return accepted;
+  }
+
+  startShootingGalleryGame(duration: number = 90): boolean {
+    this.gameState = {
+      mode: "shooting_gallery",
+      isActive: true,
+      timeRemaining: duration,
+      scores: {},
+      galleryShots: 0,
+      galleryHits: 0,
+    };
+    this.mode = new ShootingGalleryMode();
+    this.mode.onStart(this.players, this.gameState);
+    this.callbacks.onGameStateUpdate?.(this.gameState);
+    this.callbacks.onPlayerUpdate?.(this.players);
+    log.debug("Shooting gallery started!");
+    return true;
+  }
+
+  /** Called by the ShootingGallery scene component each time the player fires. */
+  recordGalleryShot(playerId: string, points: number): void {
+    if (this.gameState.mode !== "shooting_gallery" || !this.gameState.isActive)
+      return;
+    this.gameState.galleryShots = (this.gameState.galleryShots ?? 0) + 1;
+    if (points > 0) {
+      this.gameState.galleryHits = (this.gameState.galleryHits ?? 0) + 1;
+      this.gameState.scores[playerId] =
+        (this.gameState.scores[playerId] ?? 0) + points;
+    }
+    this.callbacks.onGameStateUpdate?.(this.gameState);
   }
 
   updateGameTimer(deltaTime: number) {
