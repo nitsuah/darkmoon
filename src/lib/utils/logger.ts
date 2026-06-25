@@ -95,3 +95,18 @@ export const createTagLogger = (namespace: string) => {
     }
   };
 };
+
+/**
+ * Create a specialized gallery logger with consistent formatting.
+ * Used for shooting gallery bot diagnostics and hit/miss analysis.
+ */
+export const createGalleryLogger = (namespace: string) => {
+  const isDev = isDevelopment();
+
+  return (...args: unknown[]) => {
+    if (isDev) {
+      const timestamp = new Date().toISOString().split("T")[1].slice(0, -1);
+      console.log(`[GALLERY ${timestamp}]`, `[${namespace}]`, ...args);
+    }
+  };
+};

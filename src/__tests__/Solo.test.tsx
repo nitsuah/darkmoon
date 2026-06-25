@@ -18,6 +18,12 @@ vi.mock("@react-three/fiber", () => ({
     <div data-testid="canvas">{children}</div>
   ),
   useFrame: vi.fn(),
+  useThree: vi.fn(() => ({
+    camera: { position: { x: 0, y: 5, z: 10 } },
+    size: { width: 1280, height: 720 },
+    scene: {},
+    gl: {},
+  })),
 }));
 
 // Mock Drei components

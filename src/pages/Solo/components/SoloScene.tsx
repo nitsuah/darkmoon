@@ -9,6 +9,7 @@ import ExplosionVFX from "../../../components/world/ExplosionVFX";
 import DamageNumbers from "../../../components/world/DamageNumbers";
 import CTFBases from "../../../components/world/CTFBases";
 import BotTracers from "../../../components/world/BotTracers";
+import ShootingGallery from "./ShootingGallery";
 import type { SoloSceneProps } from "./SoloScene.types";
 
 type Props = SoloSceneProps;
@@ -35,6 +36,7 @@ export const SoloScene: React.FC<Props> = ({
   gameState,
   setGameState,
   botDebugMode,
+  galleryDebugMode = false,
   playerPositionRef,
   bot1PositionRef,
   bot2PositionRef,
@@ -130,6 +132,13 @@ export const SoloScene: React.FC<Props> = ({
       <DamageNumbers />
       <BotTracers />
       {gameState.mode === "ctf" && <CTFBases />}
+      <ShootingGallery
+        gameManager={gameManager}
+        currentPlayerId={currentPlayerId}
+        isActive={gameState.mode === "shooting_gallery" && gameState.isActive}
+        timeRemaining={gameState.timeRemaining}
+        debugMode={galleryDebugMode}
+      />
     </Canvas>
   );
 };

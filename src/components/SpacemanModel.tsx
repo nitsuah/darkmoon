@@ -302,9 +302,7 @@ const SpacemanModel: React.FC<SpacemanModelProps> = ({
             color="#222222"
             metalness={0.9}
             roughness={0.1}
-            // eslint-disable-next-line react/no-unknown-property
             emissive="#ff6600"
-            // eslint-disable-next-line react/no-unknown-property
             emissiveIntensity={isJetpackActive ? 0.8 : 0.3}
           />
         </mesh>
@@ -314,9 +312,7 @@ const SpacemanModel: React.FC<SpacemanModelProps> = ({
             color="#222222"
             metalness={0.9}
             roughness={0.1}
-            // eslint-disable-next-line react/no-unknown-property
             emissive="#ff6600"
-            // eslint-disable-next-line react/no-unknown-property
             emissiveIntensity={isJetpackActive ? 0.8 : 0.3}
           />
         </mesh>
@@ -361,9 +357,7 @@ const SpacemanModel: React.FC<SpacemanModelProps> = ({
             color="#00ff00"
             metalness={0.5}
             roughness={0.5}
-            // eslint-disable-next-line react/no-unknown-property
             emissive="#00ff00"
-            // eslint-disable-next-line react/no-unknown-property
             emissiveIntensity={isIt ? 0.5 : 0.2}
           />
         </mesh>

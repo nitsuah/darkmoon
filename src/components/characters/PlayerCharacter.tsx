@@ -51,7 +51,7 @@ import {
 const tagDebug = createTagLogger("PlayerCharacter");
 
 // How long a fired laser beam stays visible before fading out.
-const LASER_BEAM_VISIBLE_MS = 100;
+const LASER_BEAM_VISIBLE_MS = 160;
 
 type WindowWithPlayerFreeze = typeof globalThis & {
   __playerFreezeUntil?: number;
@@ -169,6 +169,7 @@ export const PlayerCharacter = React.forwardRef<
   const lookIndicatorRef = React.useRef<THREE.Group>(null);
   const laserBeamRef = React.useRef<THREE.Group>(null);
   const beamMeshRef = React.useRef<THREE.Mesh>(null);
+  const beamGlowRef = React.useRef<THREE.Mesh>(null);
   const laserBeamHideAtRef = React.useRef(0);
   const weaponManagerRef = React.useRef(new WeaponManager());
   const prevKey1Ref = React.useRef(false);
@@ -177,6 +178,11 @@ export const PlayerCharacter = React.forwardRef<
   const prevKey4Ref = React.useRef(false);
   const prevKey5Ref = React.useRef(false);
   const prevKeyRRef = React.useRef(false);
+  // Camera shake impulse vector — decays each frame after weapon fire.
+  const cameraShakeRef = React.useRef(new THREE.Vector3());
+  // Muzzle flash point light — toggled visible for ~55ms per shot.
+  const muzzleFlashRef = React.useRef<THREE.PointLight | null>(null);
+  const muzzleFlashHideAtRef = React.useRef(0);
 
   // Equip the laser blaster by default and surface the equipped weapon to the HUD.
   React.useEffect(() => {
@@ -547,7 +553,8 @@ export const PlayerCharacter = React.forwardRef<
       raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), state.camera);
       const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
       const aimTarget = new THREE.Vector3();
-      const hasAimTarget = raycaster.ray.intersectPlane(groundPlane, aimTarget) !== null;
+      const hasAimTarget =
+        raycaster.ray.intersectPlane(groundPlane, aimTarget) !== null;
       const fireDirection = hasAimTarget
         ? aimTarget.clone().sub(fireOrigin).normalize()
         : new THREE.Vector3(
@@ -572,6 +579,34 @@ export const PlayerCharacter = React.forwardRef<
             detail: { weaponId: fireResult.weapon.id },
           }),
         );
+        // In shooting-gallery mode, broadcast the raw camera ray so the gallery
+        // scene can hit targets above the ground plane. The ground-plane-reflected
+        // fireDirection misses elevated targets; the camera ray direction is exact.
+        if (gameManager?.getGameState().mode === "shooting_gallery") {
+          const galleryRaycaster = new THREE.Raycaster();
+          galleryRaycaster.setFromCamera(
+            new THREE.Vector2(
+              (mouseControls.mouseX / state.size.width) * 2 - 1,
+              -(mouseControls.mouseY / state.size.height) * 2 + 1,
+            ),
+            state.camera,
+          );
+          const galleryRayDir = galleryRaycaster.ray.direction;
+          const galleryOrigin = galleryRaycaster.ray.origin;
+          window.dispatchEvent(
+            new window.CustomEvent("gallery-fire", {
+              detail: {
+                originX: galleryOrigin.x,
+                originY: galleryOrigin.y,
+                originZ: galleryOrigin.z,
+                dirX: galleryRayDir.x,
+                dirY: galleryRayDir.y,
+                dirZ: galleryRayDir.z,
+                range: 80,
+              },
+            }),
+          );
+        }
       }
       if (fireResult && laserBeamRef.current) {
         const beamLength = fireResult.hit?.distance ?? fireResult.weapon.range;
@@ -611,10 +646,40 @@ export const PlayerCharacter = React.forwardRef<
             beamColor,
           );
         }
+        if (beamGlowRef.current) {
+          (beamGlowRef.current.material as THREE.MeshBasicMaterial).color.set(
+            beamColor,
+          );
+        }
+        // Camera shake per weapon — decays in useFrame via exponential falloff.
+        const shakeAmt =
+          wid === "shotgun"
+            ? 0.11
+            : wid === "rocket"
+              ? 0.09
+              : wid === "grenade"
+                ? 0.07
+                : wid === "smg"
+                  ? 0.03
+                  : 0.04;
+        cameraShakeRef.current.set(
+          (Math.random() - 0.5) * shakeAmt,
+          (0.3 + Math.random() * 0.5) * shakeAmt,
+          (Math.random() - 0.5) * shakeAmt * 0.3,
+        );
+        // Muzzle flash: show a warm point light at gun origin for ~55ms.
+        if (muzzleFlashRef.current) {
+          muzzleFlashRef.current.position.copy(fireOrigin);
+          muzzleFlashRef.current.visible = true;
+          muzzleFlashHideAtRef.current = now + 55;
+        }
         // Sync ammo + reload progress to HUD after each shot.
         const remainingAmmo = weaponManagerRef.current.getAmmo(wid);
         const reloadProgress = weaponManagerRef.current.getReloadProgress(wid);
-        gameManager?.updatePlayer(myId, { currentAmmo: remainingAmmo, reloadProgress });
+        gameManager?.updatePlayer(myId, {
+          currentAmmo: remainingAmmo,
+          reloadProgress,
+        });
       }
       if (fireResult && fireResult.hit && typeof window !== "undefined") {
         // Notify HUD to flash hit marker.
@@ -652,6 +717,13 @@ export const PlayerCharacter = React.forwardRef<
 
     if (laserBeamRef.current && now >= laserBeamHideAtRef.current) {
       laserBeamRef.current.visible = false;
+    }
+    if (
+      muzzleFlashRef.current &&
+      muzzleFlashHideAtRef.current > 0 &&
+      now >= muzzleFlashHideAtRef.current
+    ) {
+      muzzleFlashRef.current.visible = false;
     }
 
     // WoW-style auto-run: both mouse buttons held = move forward
@@ -1009,7 +1081,10 @@ export const PlayerCharacter = React.forwardRef<
         const rp = weaponManagerRef.current.getReloadProgress(equipped.id);
         const ammo = weaponManagerRef.current.getAmmo(equipped.id);
         const myId2 = socketClient?.id || currentPlayerId;
-        gameManager?.updatePlayer(myId2, { currentAmmo: ammo, reloadProgress: rp });
+        gameManager?.updatePlayer(myId2, {
+          currentAmmo: ammo,
+          reloadProgress: rp,
+        });
       }
     }
 
@@ -1048,12 +1123,17 @@ export const PlayerCharacter = React.forwardRef<
       meshRef.current.position.y + 0.5,
       meshRef.current.position.z,
     );
+
+    // Apply camera shake from weapon recoil and decay exponentially.
+    if (cameraShakeRef.current.lengthSq() > 0.00001) {
+      state.camera.position.add(cameraShakeRef.current);
+      cameraShakeRef.current.multiplyScalar(Math.max(0, 1 - delta * 18));
+    }
   });
 
   const currentPlayer = gameManager?.getPlayers().get(currentPlayerId);
   const isIt = currentPlayer?.isIt || false;
 
-  /* eslint-disable react/no-unknown-property */
   // Calculate current velocity for animation
   const currentVelocity: [number, number, number] = [
     velocityRef.current.x,
@@ -1138,14 +1218,25 @@ export const PlayerCharacter = React.forwardRef<
           toward the hit point (or weapon range on a miss). Color and width
           are updated imperatively in useFrame based on equipped weapon. */}
       <group ref={laserBeamRef} visible={false}>
+        {/* Core beam */}
         <mesh ref={beamMeshRef}>
-          <boxGeometry args={[0.04, 0.04, 1]} />
-          <meshBasicMaterial color="#33ffe6" transparent opacity={0.85} />
+          <boxGeometry args={[0.06, 0.06, 1]} />
+          <meshBasicMaterial color="#33ffe6" transparent opacity={0.9} />
+        </mesh>
+        {/* Outer glow — same color at low opacity, slightly larger */}
+        <mesh ref={beamGlowRef}>
+          <boxGeometry args={[0.16, 0.16, 1.01]} />
+          <meshBasicMaterial color="#33ffe6" transparent opacity={0.2} />
         </mesh>
       </group>
+      {/* Muzzle flash: brief warm point light burst at gun origin on fire. */}
+      <pointLight
+        ref={muzzleFlashRef}
+        args={["#ffeecc", 5, 5]}
+        visible={false}
+      />
     </>
   );
-  /* eslint-enable react/no-unknown-property */
 });
 
 PlayerCharacter.displayName = "PlayerCharacter";

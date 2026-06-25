@@ -98,7 +98,6 @@ const HealthPickups: React.FC<HealthPickupsProps> = ({
     }
   });
 
-  /* eslint-disable react/no-unknown-property */
   return (
     <>
       {HEALTH_PICKUP_DEFS.map((def, i) => (
@@ -141,7 +140,6 @@ const HealthPickups: React.FC<HealthPickupsProps> = ({
       ))}
     </>
   );
-  /* eslint-enable react/no-unknown-property */
 };
 
 export default HealthPickups;

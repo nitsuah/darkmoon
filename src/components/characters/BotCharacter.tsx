@@ -196,7 +196,6 @@ export const BotCharacter: React.FC<BotCharacterProps> = ({
           <sphereGeometry args={[0.5, 16, 16]} />
           <meshBasicMaterial
             color="#ffff00"
-            // eslint-disable-next-line react/no-unknown-property
             wireframe={true}
             opacity={0.3}
             transparent
