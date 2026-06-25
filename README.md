@@ -24,7 +24,7 @@
 
 ```bash
 # Dev server (hot reload via Vite)
-docker compose -f config/docker-compose.yml up app
+docker compose -f config/docker-compose.yml up solo
 ```
 
 Visit `http://localhost:4444`. **Solo mode is the only live experience; multiplayer is not yet available.**
