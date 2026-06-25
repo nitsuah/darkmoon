@@ -1134,7 +1134,6 @@ export const PlayerCharacter = React.forwardRef<
   const currentPlayer = gameManager?.getPlayers().get(currentPlayerId);
   const isIt = currentPlayer?.isIt || false;
 
-  /* eslint-disable react/no-unknown-property */
   // Calculate current velocity for animation
   const currentVelocity: [number, number, number] = [
     velocityRef.current.x,
@@ -1238,7 +1237,6 @@ export const PlayerCharacter = React.forwardRef<
       />
     </>
   );
-  /* eslint-enable react/no-unknown-property */
 });
 
 PlayerCharacter.displayName = "PlayerCharacter";

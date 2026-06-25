@@ -135,7 +135,6 @@ const WeaponPickups: React.FC<WeaponPickupsProps> = ({
     }
   });
 
-  /* eslint-disable react/no-unknown-property */
   return (
     <>
       {PICKUP_DEFS.map((def, i) => (
@@ -164,7 +163,6 @@ const WeaponPickups: React.FC<WeaponPickupsProps> = ({
       ))}
     </>
   );
-  /* eslint-enable react/no-unknown-property */
 };
 
 export default WeaponPickups;
