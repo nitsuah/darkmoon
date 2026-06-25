@@ -4,7 +4,6 @@ Status guide: `[shipped]` is live today, `[in-progress]` is partially implemente
 
 ## Game Modes
 
-
 ### 🤖 Solo Mode with AI Bots `[shipped/live]`
 
 - **Bot AI**: Intelligent bots with pathfinding and tagging behavior
@@ -66,6 +65,52 @@ Status guide: `[shipped]` is live today, `[in-progress]` is partially implemente
 
 - **Sound Effects**: Tag sounds, jump sounds, ambient audio
 - **Music**: Background music with volume controls
+
+## Combat & Gameplay
+
+### 🔫 Shooting Gallery Mode `[shipped]`
+
+- **Phase BM**: standalone target-practice mode with dedicated crosshair overlay and improved bot tracer rendering
+
+### 🎯 Player Reticle & Mouse-Aimed Firing `[shipped]`
+
+- **Phase BL**: ground-plane raycast maps mouse position to a world-space aim target; CSS crosshair follows cursor; all player shots fire toward the aimed point
+
+### 🏃 Smooth Velocity-Based Player Movement `[shipped]`
+
+- **Phase BK**: velocity scalar lerp (10×/s acceleration, 15×/s deceleration) replaces instant movement; gives movement weight and responsiveness
+
+### 🌀 Bot Angular Spread / Miss Physics `[shipped]`
+
+- **Phase BJ**: 2D rotation-matrix deviation applied to bot shots so misses fly to a visible off-target point rather than vanishing silently
+
+### 👁️ Bot Line-of-Sight Wall Checks `[shipped]`
+
+- **Phase BI**: `CollisionSystem.hasLineOfSight` raycast prevents bots from firing through obstacles; bots wait until a clear sight-line exists
+
+### 🔁 Weapon Reload System `[shipped]`
+
+- **Phase BH**: per-weapon ammo limits; laser auto-reloads, all weapons support R-key manual reload; reload progress bar rendered in HUD via `WeaponManager.startReload/isReloading/getReloadProgress`
+
+### ✨ Bot Shot Tracer Beams `[shipped]`
+
+- **Phase BG**: visual streak rendered for every bot projectile, giving players clear feedback on incoming fire direction
+
+### ⚠️ Score Tension Warning `[shipped]`
+
+- **Phase BF**: pulsing alert triggers when the score leader is 1–2 kills from winning, raising match tension in the final moments
+
+### 🦘 Bot Jumping in Deathmatch `[shipped]`
+
+- **Phase BE**: bots execute jumps during combat, making them harder to track and improving AI believability
+
+### 🔴 Hit Direction Indicator `[shipped]`
+
+- **Phase BD**: red arrow rendered at the screen edge in the direction of incoming damage, giving the player spatial awareness of attackers
+
+### 🔄 Auto-Restart After Results Screen `[shipped]`
+
+- **Phase BC**: combat modes (Deathmatch, CTF) automatically restart after a 7-second results screen, keeping sessions flowing without manual input
 
 ## Technical Features
 
