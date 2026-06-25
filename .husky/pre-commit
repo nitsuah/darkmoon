@@ -21,19 +21,19 @@ if [ -f ".git" ]; then
     npx lint-staged --no-stash --no-hide-partially-staged --config ./config/lint-staged.config.json
 # Prefer Docker if available; fallback to host lint-staged.
 elif command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
-    if ! docker compose -f config/docker-compose.yml ps app 2>/dev/null | grep -q 'running'; then
-        echo "🦖 'app' container not running. Starting container..."
-        docker compose -f config/docker-compose.yml up -d app
+    if ! docker compose -f config/docker-compose.yml ps solo 2>/dev/null | grep -q 'running'; then
+        echo "🦖 'solo' container not running. Starting container..."
+        docker compose -f config/docker-compose.yml up -d solo
     fi
-    echo "✓ Using docker compose lint-staged in app container"
-    docker compose -f config/docker-compose.yml exec -T app sh -c 'cd /app && git config --global --add safe.directory /app && npx lint-staged --no-stash --no-hide-partially-staged --config ./config/lint-staged.config.json'
+    echo "✓ Using docker compose lint-staged in solo container"
+    docker compose -f config/docker-compose.yml exec -T solo sh -c 'cd /app && git config --global --add safe.directory /app && npx lint-staged --no-stash --no-hide-partially-staged --config ./config/lint-staged.config.json'
 elif command -v docker-compose >/dev/null 2>&1; then
-    if ! docker-compose -f config/docker-compose.yml ps | grep -q 'app.*Up'; then
-        echo "🦖 'app' container not running. Starting container..."
-        docker-compose -f config/docker-compose.yml up -d app
+    if ! docker-compose -f config/docker-compose.yml ps | grep -q 'solo.*Up'; then
+        echo "🦖 'solo' container not running. Starting container..."
+        docker-compose -f config/docker-compose.yml up -d solo
     fi
-    echo "✓ Using docker-compose lint-staged in app container"
-    docker-compose -f config/docker-compose.yml exec -T app sh -c 'cd /app && git config --global --add safe.directory /app && npx lint-staged --no-stash --no-hide-partially-staged --config ./config/lint-staged.config.json'
+    echo "✓ Using docker-compose lint-staged in solo container"
+    docker-compose -f config/docker-compose.yml exec -T solo sh -c 'cd /app && git config --global --add safe.directory /app && npx lint-staged --no-stash --no-hide-partially-staged --config ./config/lint-staged.config.json'
 else
     echo "⚠️ Docker compose not found. Running lint-staged on host."
     npx lint-staged --no-stash --no-hide-partially-staged --config ./config/lint-staged.config.json
