@@ -36,7 +36,7 @@
     "express": "^5.2.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.7",
-    "react-router-dom": "^7.17.0",
+    "react-router-dom": "^7.18.0",
     "socket.io": "^4.8.3",
     "three": "^0.180.0",
     "express-rate-limit": "^8.3.2"
@@ -47,13 +47,13 @@
     "@react-three/fiber": "^9.6.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
-    "@types/node": "^25.9.3",
+    "@types/node": "^26.0.0",
     "@types/react-dom": "^19.2.3",
-    "@typescript-eslint/eslint-plugin": "^8.61.0",
-    "@typescript-eslint/parser": "^8.59.1",
+    "@typescript-eslint/eslint-plugin": "^8.61.1",
+    "@typescript-eslint/parser": "^8.62.0",
     "@vitejs/plugin-react": "^6.0.2",
     "@vitest/coverage-v8": "^4.1.9",
-    "baseline-browser-mapping": "^2.10.37",
+    "baseline-browser-mapping": "^2.10.38",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-jsx-a11y": "^6.10.2",
@@ -61,7 +61,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "husky": "^9.1.7",
     "jsdom": "^29.1.1",
-    "lint-staged": "^17.0.7",
+    "lint-staged": "^17.0.8",
     "nodemon": "^3.1.14",
     "prettier": "^3.8.4",
     "rollup-plugin-visualizer": "^7.0.1",
@@ -72,6 +72,6 @@
     "typescript": "^6.0.3"
   },
   "optionalDependencies": {
-    "@rollup/rollup-win32-x64-msvc": "^4.62.0"
+    "@rollup/rollup-win32-x64-msvc": "^4.62.2"
   }
 }
