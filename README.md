@@ -3,7 +3,7 @@
 [![CI](https://github.com/nitsuah/darkmoon/actions/workflows/ci.yml/badge.svg)](https://github.com/nitsuah/darkmoon/actions)
 [![Netlify Status](https://api.netlify.com/api/v1/badges/2ae05c81-761a-4d3a-91ac-dcd5980d48d3/deploy-status)](https://app.netlify.com/projects/darkmoon-dev/deploys)
 
-> Solo-live 3D browser tag game built with React 19, Three Fiber, Socket.io, and Vite. **Solo mode is the live experience; multiplayer is planned.**
+> 3D browser combat game built with React 19, Three Fiber, Socket.io, and Vite. **Solo mode with full combat gameplay is live; multiplayer is planned.**
 
 **Live Demo:** [darkmoon.dev](https://darkmoon.dev)
 
@@ -14,9 +14,12 @@
 
 ## ✨ Features
 
-- `[shipped]` **Solo Mode with AI Bots** — Practice against intelligent bot opponents on the live site.
-- `[in-progress]` **Multiplayer 3D Gameplay** — Multiplayer foundations exist, but the deployed experience is still solo-first.
+- `[shipped]` **Combat Gameplay with AI Bots** — Full deathmatch and CTF modes with bot LOS checks, weapon reload system, angular spread, bot jumping, tracer beams, hit direction indicators, and score tension alerts.
+- `[shipped]` **Shooting Gallery Mode** — Standalone target-practice mode (Phase BM) with crosshair and bot tracer improvements.
+- `[shipped]` **Mouse-Aimed Firing & Player Reticle** — Ground-plane raycast aiming with CSS crosshair overlay; velocity-based smooth movement.
+- `[shipped]` **Pluggable Game Mode Architecture** — `GameModeHandler` interface decouples mode logic; `TagMode`, `DeathmatchMode`, and `CTFMode` ship as reference implementations.
 - `[shipped]` **WebSocket Server Foundation** — Socket.io and server validation are in place for future live modes.
+- `[in-progress]` **Multiplayer 3D Gameplay** — Multiplayer foundations exist, but the deployed experience is still solo-first.
 - `[in-progress]` **Mobile Support** — Responsive layout and touch controls exist, but device validation is still open.
 - `[shipped]` **Modern Tooling** — Vite, Vitest, ESLint, Prettier, TypeScript, and CI are wired into the repo.
 
@@ -34,7 +37,7 @@ Visit `http://localhost:4444`. **Solo mode is the only live experience; multipla
 All checks run via Docker — no local Node.js required.
 
 ```bash
-# Run all tests (366 tests, Vitest)
+# Run all tests (378+ tests, Vitest)
 docker compose -f config/docker-compose.yml --project-name darkmoon --profile test run --rm test
 
 # Lint
