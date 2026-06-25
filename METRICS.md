@@ -4,7 +4,7 @@
 
 | Metric           | Value  | Notes                                                    |
 | ---------------- | ------ | -------------------------------------------------------- |
-| Code Coverage    | 96.10% | Measured by Vitest v8 (Docker), statements at 95.16%     |
+| Code Coverage    | 79.93% | Measured by Vitest v8 (Docker), statements at 95.16%     |
 | Build Time       | ~5s    | Vite production build (measured on M1 Mac, Mar 2026)     |
 | Bundle Size      | 2.1MB  | Measured: `dist/` output, Mar 2026                       |
 | Test Files       | 62     | Vitest unit and integration tests                        |
