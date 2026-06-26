@@ -19,7 +19,7 @@ Status guide: `[shipped]` is live today, `[in-progress]` is partially implemente
 
 ### 🎮 Multiplayer Tag `[planned]`
 
-- **Real-time Multiplayer**: WebSocket-based synchronization with Socket.io (not live)
+- **Real-time Multiplayer**: WebSocket-based synchronization with Socket.io; solo-first experience is live; multiplayer planned.
 - **Lobby System**: Planned for future release
 - **Tag Mechanics**: Planned for future release
 - **Player Sync**: Planned for future release
