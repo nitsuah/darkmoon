@@ -19,7 +19,7 @@ describe("PauseMenu Component", () => {
           onResume={mockOnResume}
           onRestart={mockOnRestart}
           onQuit={mockOnQuit}
-        />
+        />,
       );
 
       expect(screen.queryByText(/PAUSED/i)).not.toBeInTheDocument();
@@ -32,7 +32,7 @@ describe("PauseMenu Component", () => {
           onResume={mockOnResume}
           onRestart={mockOnRestart}
           onQuit={mockOnQuit}
-        />
+        />,
       );
 
       expect(screen.getByText(/PAUSED/i)).toBeInTheDocument();
@@ -45,17 +45,17 @@ describe("PauseMenu Component", () => {
           onResume={mockOnResume}
           onRestart={mockOnRestart}
           onQuit={mockOnQuit}
-        />
+        />,
       );
 
       expect(
-        screen.getByRole("button", { name: /▶️ Resume/i })
+        screen.getByRole("button", { name: /▶️ Resume/i }),
       ).toBeInTheDocument();
       expect(
-        screen.getByRole("button", { name: /🔄 Restart/i })
+        screen.getByRole("button", { name: /🔄 Restart/i }),
       ).toBeInTheDocument();
       expect(
-        screen.getByRole("button", { name: /🚪 Quit to Menu/i })
+        screen.getByRole("button", { name: /🚪 Quit to Menu/i }),
       ).toBeInTheDocument();
     });
 
@@ -66,7 +66,7 @@ describe("PauseMenu Component", () => {
           onResume={mockOnResume}
           onRestart={mockOnRestart}
           onQuit={mockOnQuit}
-        />
+        />,
       );
 
       expect(screen.getByText(/Press ESC to resume/i)).toBeInTheDocument();
@@ -79,7 +79,7 @@ describe("PauseMenu Component", () => {
           onResume={mockOnResume}
           onRestart={mockOnRestart}
           onQuit={mockOnQuit}
-        />
+        />,
       );
 
       const overlay = container.firstChild as HTMLElement;
@@ -99,7 +99,7 @@ describe("PauseMenu Component", () => {
           onResume={mockOnResume}
           onRestart={mockOnRestart}
           onQuit={mockOnQuit}
-        />
+        />,
       );
 
       const resumeButton = screen.getByRole("button", { name: /▶️ Resume/i });
@@ -117,7 +117,7 @@ describe("PauseMenu Component", () => {
           onResume={mockOnResume}
           onRestart={mockOnRestart}
           onQuit={mockOnQuit}
-        />
+        />,
       );
 
       const restartButton = screen.getByRole("button", { name: /🔄 Restart/i });
@@ -135,7 +135,7 @@ describe("PauseMenu Component", () => {
           onResume={mockOnResume}
           onRestart={mockOnRestart}
           onQuit={mockOnQuit}
-        />
+        />,
       );
 
       const quitButton = screen.getByRole("button", {
@@ -155,7 +155,7 @@ describe("PauseMenu Component", () => {
           onResume={mockOnResume}
           onRestart={mockOnRestart}
           onQuit={mockOnQuit}
-        />
+        />,
       );
 
       // Hide the menu
@@ -165,7 +165,7 @@ describe("PauseMenu Component", () => {
           onResume={mockOnResume}
           onRestart={mockOnRestart}
           onQuit={mockOnQuit}
-        />
+        />,
       );
 
       // Try to query buttons (they shouldn't exist)
@@ -182,7 +182,7 @@ describe("PauseMenu Component", () => {
           onResume={mockOnResume}
           onRestart={mockOnRestart}
           onQuit={mockOnQuit}
-        />
+        />,
       );
 
       const resumeButton = screen.getByRole("button", { name: /▶️ Resume/i });
@@ -214,7 +214,7 @@ describe("PauseMenu Component", () => {
           onResume={mockOnResume}
           onRestart={mockOnRestart}
           onQuit={mockOnQuit}
-        />
+        />,
       );
 
       const restartButton = screen.getByRole("button", { name: /🔄 Restart/i });
@@ -239,7 +239,7 @@ describe("PauseMenu Component", () => {
           onResume={mockOnResume}
           onRestart={mockOnRestart}
           onQuit={mockOnQuit}
-        />
+        />,
       );
 
       const quitButton = screen.getByRole("button", {
@@ -268,7 +268,7 @@ describe("PauseMenu Component", () => {
           onResume={mockOnResume}
           onRestart={mockOnRestart}
           onQuit={mockOnQuit}
-        />
+        />,
       );
 
       expect(screen.queryByText(/PAUSED/i)).not.toBeInTheDocument();
@@ -279,7 +279,7 @@ describe("PauseMenu Component", () => {
           onResume={mockOnResume}
           onRestart={mockOnRestart}
           onQuit={mockOnQuit}
-        />
+        />,
       );
 
       expect(screen.getByText(/PAUSED/i)).toBeInTheDocument();
@@ -290,7 +290,7 @@ describe("PauseMenu Component", () => {
           onResume={mockOnResume}
           onRestart={mockOnRestart}
           onQuit={mockOnQuit}
-        />
+        />,
       );
 
       expect(screen.queryByText(/PAUSED/i)).not.toBeInTheDocument();
@@ -303,7 +303,7 @@ describe("PauseMenu Component", () => {
           onResume={mockOnResume}
           onRestart={mockOnRestart}
           onQuit={mockOnQuit}
-        />
+        />,
       );
 
       const resumeButton = screen.getByRole("button", { name: /▶️ Resume/i });
@@ -324,7 +324,7 @@ describe("PauseMenu Component", () => {
           onResume={mockOnResume}
           onRestart={mockOnRestart}
           onQuit={mockOnQuit}
-        />
+        />,
       );
 
       const buttons = screen.getAllByRole("button");
@@ -340,7 +340,7 @@ describe("PauseMenu Component", () => {
           onResume={mockOnResume}
           onRestart={mockOnRestart}
           onQuit={mockOnQuit}
-        />
+        />,
       );
 
       const resumeButton = screen.getByRole("button", { name: /▶️ Resume/i });
@@ -370,7 +370,7 @@ describe("PauseMenu Component", () => {
           onResume={mockOnResume}
           onRestart={mockOnRestart}
           onQuit={mockOnQuit}
-        />
+        />,
       );
 
       const overlay = container.firstChild as HTMLElement;
@@ -388,7 +388,7 @@ describe("PauseMenu Component", () => {
           onResume={mockOnResume}
           onRestart={mockOnRestart}
           onQuit={mockOnQuit}
-        />
+        />,
       );
 
       const resumeButton = screen.getByRole("button", { name: /▶️ Resume/i });
@@ -407,7 +407,7 @@ describe("PauseMenu Component", () => {
           onResume={mockOnResume}
           onRestart={mockOnRestart}
           onQuit={mockOnQuit}
-        />
+        />,
       );
 
       const overlay = container.firstChild as HTMLElement;

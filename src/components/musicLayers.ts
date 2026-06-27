@@ -5,7 +5,7 @@
  */
 export function createBackgroundMusic(
   ctx: AudioContext,
-  destinationGain: GainNode
+  destinationGain: GainNode,
 ): { masterGain: GainNode; oscillators: OscillatorNode[] } {
   const masterGain = ctx.createGain();
   masterGain.gain.value = 1.0;

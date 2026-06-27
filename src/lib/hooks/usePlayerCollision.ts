@@ -3,7 +3,7 @@ import * as THREE from "three";
 export interface CollisionSystem {
   checkCollision: (
     current: THREE.Vector3,
-    next: THREE.Vector3
+    next: THREE.Vector3,
   ) => THREE.Vector3;
   checkPlayerCollision: (a: THREE.Vector3, b: THREE.Vector3) => boolean;
 }
@@ -15,7 +15,7 @@ export interface CollisionSystem {
 export function resolveMovement(
   collisionSystem: CollisionSystem,
   currentPosition: THREE.Vector3,
-  desiredPosition: THREE.Vector3
+  desiredPosition: THREE.Vector3,
 ): THREE.Vector3 {
   return collisionSystem.checkCollision(currentPosition, desiredPosition);
 }
@@ -23,7 +23,7 @@ export function resolveMovement(
 export function detectPlayerCollision(
   collisionSystem: CollisionSystem,
   a: THREE.Vector3,
-  b: THREE.Vector3
+  b: THREE.Vector3,
 ): boolean {
   return collisionSystem.checkPlayerCollision(a, b);
 }

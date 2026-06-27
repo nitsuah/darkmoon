@@ -1,26 +1,26 @@
 services:
-  test:
-    container_name: darkmoon-test
-    build:
-      context: ..
-      dockerfile: Dockerfile
-      target: test
-    profiles:
-      - test
+    test:
+        container_name: darkmoon-test
+        build:
+            context: ..
+            dockerfile: Dockerfile
+            target: test
+        profiles:
+            - test
 
-  solo:
-    container_name: darkmoon-solo
-    build:
-      context: ..
-      dockerfile: Dockerfile
-      target: dev
-    volumes:
-      - ../:/app
-      - /app/node_modules
-    working_dir: /app
-    command: npm run dev
-    environment:
-      - NODE_ENV=development
-    ports:
-      - "4444:4444"
-    tty: true
+    solo:
+        container_name: darkmoon-solo
+        build:
+            context: ..
+            dockerfile: Dockerfile
+            target: dev
+        volumes:
+            - ../:/app
+            - /app/node_modules
+        working_dir: /app
+        command: npm run dev
+        environment:
+            - NODE_ENV=development
+        ports:
+            - '4444:4444'
+        tty: true

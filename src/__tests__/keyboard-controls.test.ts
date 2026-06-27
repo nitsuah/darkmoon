@@ -36,7 +36,7 @@ describe("Keyboard Controls", () => {
       if (
         el.textContent &&
         ["W", "A", "S", "D", "Q", "E", "SHIFT", "SPACE"].includes(
-          el.textContent as string
+          el.textContent as string,
         )
       ) {
         el.remove();
@@ -105,12 +105,12 @@ describe("Keyboard Controls", () => {
 
       keyDisplay.down("w");
       expect(keyDisplay.map.get(W)?.style.color).toBe(
-        "rgba(255, 100, 100, 0.9)"
+        "rgba(255, 100, 100, 0.9)",
       );
 
       keyDisplay.down("a");
       expect(keyDisplay.map.get(A)?.style.color).toBe(
-        "rgba(255, 100, 100, 0.9)"
+        "rgba(255, 100, 100, 0.9)",
       );
     });
 
@@ -119,7 +119,7 @@ describe("Keyboard Controls", () => {
 
       keyDisplay.down("w");
       expect(keyDisplay.map.get(W)?.style.color).toBe(
-        "rgba(255, 100, 100, 0.9)"
+        "rgba(255, 100, 100, 0.9)",
       );
 
       keyDisplay.up("w");
@@ -131,7 +131,7 @@ describe("Keyboard Controls", () => {
 
       keyDisplay.down("W");
       expect(keyDisplay.map.get(W)?.style.color).toBe(
-        "rgba(255, 100, 100, 0.9)"
+        "rgba(255, 100, 100, 0.9)",
       );
 
       keyDisplay.up("W");
@@ -165,10 +165,10 @@ describe("Keyboard Controls", () => {
       keyDisplay.down("a");
 
       expect(keyDisplay.map.get(W)?.style.color).toBe(
-        "rgba(255, 100, 100, 0.9)"
+        "rgba(255, 100, 100, 0.9)",
       );
       expect(keyDisplay.map.get(A)?.style.color).toBe(
-        "rgba(255, 100, 100, 0.9)"
+        "rgba(255, 100, 100, 0.9)",
       );
       expect(keyDisplay.map.get(S)?.style.color).toBe("rgba(128, 0, 128, 0.7)");
       expect(keyDisplay.map.get(D)?.style.color).toBe("rgba(128, 0, 128, 0.7)");
@@ -194,7 +194,7 @@ describe("Keyboard Controls", () => {
 
       expect(keyDisplay.map.get(W)?.style.color).toBe("rgba(128, 0, 128, 0.7)");
       expect(keyDisplay.map.get(D)?.style.color).toBe(
-        "rgba(255, 100, 100, 0.9)"
+        "rgba(255, 100, 100, 0.9)",
       );
       expect(keyDisplay.map.get(A)?.style.color).toBe("rgba(128, 0, 128, 0.7)");
     });

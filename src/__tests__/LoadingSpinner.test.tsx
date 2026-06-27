@@ -12,7 +12,7 @@ describe("LoadingSpinner Component", () => {
     it("should render spinner element", () => {
       const { container } = render(<LoadingSpinner />);
       const spinner = container.querySelector(
-        'div[style*="border-radius: 50%"]'
+        'div[style*="border-radius: 50%"]',
       );
       expect(spinner).toBeInTheDocument();
     });
@@ -59,7 +59,7 @@ describe("LoadingSpinner Component", () => {
     it("should have circular border", () => {
       const { container } = render(<LoadingSpinner />);
       const spinner = container.querySelector(
-        'div[style*="border-radius: 50%"]'
+        'div[style*="border-radius: 50%"]',
       );
       expect(spinner).toHaveStyle({ borderRadius: "50%" });
     });
@@ -67,7 +67,7 @@ describe("LoadingSpinner Component", () => {
     it("should have white border top for spin effect", () => {
       const { container } = render(<LoadingSpinner />);
       const spinner = container.querySelector(
-        'div[style*="border-radius: 50%"]'
+        'div[style*="border-radius: 50%"]',
       );
       expect(spinner).toHaveStyle({ borderTop: "5px solid #fff" });
     });
@@ -75,7 +75,7 @@ describe("LoadingSpinner Component", () => {
     it("should have defined border styles", () => {
       const { container } = render(<LoadingSpinner />);
       const spinner = container.querySelector(
-        'div[style*="border-radius: 50%"]'
+        'div[style*="border-radius: 50%"]',
       );
       // Border is defined in inline styles, exact style check varies by browser
       expect(spinner).toBeInTheDocument();
@@ -84,7 +84,7 @@ describe("LoadingSpinner Component", () => {
     it("should have fixed dimensions", () => {
       const { container } = render(<LoadingSpinner />);
       const spinner = container.querySelector(
-        'div[style*="border-radius: 50%"]'
+        'div[style*="border-radius: 50%"]',
       );
       expect(spinner).toHaveStyle({
         width: "50px",
@@ -95,7 +95,7 @@ describe("LoadingSpinner Component", () => {
     it("should have spin animation", () => {
       const { container } = render(<LoadingSpinner />);
       const spinner = container.querySelector(
-        'div[style*="border-radius: 50%"]'
+        'div[style*="border-radius: 50%"]',
       );
       expect(spinner).toHaveStyle({ animation: "spin 1s linear infinite" });
     });

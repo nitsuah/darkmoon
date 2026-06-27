@@ -31,7 +31,7 @@ describe("ThemeContext", () => {
       render(
         <ThemeProvider>
           <TestComponent />
-        </ThemeProvider>
+        </ThemeProvider>,
       );
 
       expect(screen.getByTestId("theme")).toHaveTextContent("dark");
@@ -41,7 +41,7 @@ describe("ThemeContext", () => {
       render(
         <ThemeProvider>
           <TestComponent />
-        </ThemeProvider>
+        </ThemeProvider>,
       );
 
       const themeElement = screen.getByTestId("theme");
@@ -60,7 +60,7 @@ describe("ThemeContext", () => {
       render(
         <ThemeProvider>
           <TestComponent />
-        </ThemeProvider>
+        </ThemeProvider>,
       );
 
       const toggleButton = screen.getByTestId("toggle");
@@ -75,7 +75,7 @@ describe("ThemeContext", () => {
       render(
         <ThemeProvider>
           <TestComponent />
-        </ThemeProvider>
+        </ThemeProvider>,
       );
 
       expect(screen.getByTestId("theme")).toHaveTextContent("light");
@@ -85,7 +85,7 @@ describe("ThemeContext", () => {
       render(
         <ThemeProvider>
           <TestComponent />
-        </ThemeProvider>
+        </ThemeProvider>,
       );
 
       expect(document.documentElement.getAttribute("data-theme")).toBe("dark");

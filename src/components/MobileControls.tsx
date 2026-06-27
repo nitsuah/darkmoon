@@ -1,6 +1,6 @@
 import * as React from "react";
 import { MobileJoystick } from "./MobileJoystick";
-import { MobileButton } from "./MobileButton";
+import { MobileActionButton } from "./21st.dev/MobileActionButton";
 
 interface MobileControlsProps {
   onJoystickMove: (x: number, y: number) => void;
@@ -26,16 +26,18 @@ export const MobileControls: React.FC<MobileControlsProps> = ({
   return (
     <>
       <MobileJoystick side="left" label="Move" onMove={onJoystickMove} />
-      <MobileButton
+      <MobileActionButton
         position="bottom-right"
         label="Jump"
+        icon="⬆️"
         onPress={onJumpPress}
         onRelease={onJumpRelease}
         onDoubleTap={onJumpDoubleTap}
       />
-      <MobileButton
+      <MobileActionButton
         position="bottom-center"
         label="Sprint"
+        icon="⚡"
         onPress={onSprintPress}
         onRelease={onSprintRelease}
       />

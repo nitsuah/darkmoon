@@ -27,7 +27,7 @@ describe("App Routing", () => {
     const playButton = await screen.findByText(
       /PLAY.*DARKMOON/i,
       {},
-      { timeout: 3000 }
+      { timeout: 3000 },
     );
     expect(playButton).toBeInTheDocument();
   });

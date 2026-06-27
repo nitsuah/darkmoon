@@ -16,7 +16,7 @@ export interface JetpackConstants {
 export function computeJetpackThrust(
   holdTime: number,
   delta: number,
-  constants: JetpackConstants
+  constants: JetpackConstants,
 ): number {
   if (holdTime >= constants.JETPACK_MAX_HOLD_TIME) return 0;
   const thrustMultiplier =
@@ -30,7 +30,7 @@ export function computeJetpackThrust(
  * throttling logic later.
  */
 export function shouldActivateJetpackFromMobile(
-  mobileDoubleTap: boolean
+  mobileDoubleTap: boolean,
 ): boolean {
   return !!mobileDoubleTap;
 }

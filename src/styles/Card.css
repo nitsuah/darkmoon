@@ -1,0 +1,137 @@
+/* Placeholder for 21st.dev Card styles */
+:root {
+  --card-bg-front: #1a1a1a;
+  --card-bg-back: #2a2a2a;
+  --card-text-primary: #ffffff;
+  --card-text-secondary: #cccccc;
+  --card-status-live-bg: #28a745;
+  --card-status-soon-bg: #ffc107;
+  --card-status-soon-text: #333333;
+  --card-status-disabled-bg: #6c757d;
+}
+
+.mode-card-flip-container {
+  background-color: transparent;
+  width: 300px;
+  height: 200px;
+  perspective: 1000px; /* 3D effect */
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out;
+}
+
+.mode-card-flip-container:hover {
+  transform: scale(1.03);
+}
+
+.mode-card-flip-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+  border-radius: 8px; /* Rounded corners for the card */
+}
+
+.mode-card-flip-container.flipped .mode-card-flip-inner {
+  transform: rotateY(180deg);
+}
+
+.mode-card-front, .mode-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden; /* Safari */
+  backface-visibility: hidden;
+  border-radius: 8px; /* Rounded corners for faces */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.mode-card-front {
+  background-color: var(--card-bg-front);
+  color: var(--card-text-primary);
+}
+
+.mode-card-back {
+  background-color: var(--card-bg-back);
+  color: var(--card-text-primary);
+  transform: rotateY(180deg);
+}
+
+/* Specific styles for card content */
+.mode-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.mode-card h3 {
+  font-size: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.mode-card p {
+  font-size: 0.9rem;
+  color: var(--card-text-secondary);
+}
+
+.mode-status {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.mode-status.status-live {
+  background-color: var(--card-status-live-bg);
+}
+
+.mode-status.status-coming-soon {
+  background-color: var(--card-status-soon-bg);
+  color: var(--card-status-soon-text);
+}
+
+.mode-status.status-disabled {
+  background-color: var(--card-status-disabled-bg);
+}
+
+.flip-features-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  font-size: 0.8rem;
+  color: var(--card-text-secondary);
+}
+
+.flip-features-list li {
+  margin-bottom: 0.2rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .mode-card-flip-container {
+    width: 250px;
+    height: 180px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mode-card-flip-container {
+    width: 90%; /* Take more width on very small screens */
+    height: 160px;
+    margin: 1rem auto;
+  }
+  .game-modes-grid {
+    flex-direction: column;
+    align-items: center;
+  }
+}

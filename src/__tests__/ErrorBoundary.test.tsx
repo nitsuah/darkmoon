@@ -25,7 +25,7 @@ describe("ErrorBoundary Component", () => {
       render(
         <ErrorBoundary>
           <div>Test content</div>
-        </ErrorBoundary>
+        </ErrorBoundary>,
       );
 
       expect(screen.getByText("Test content")).toBeInTheDocument();
@@ -36,7 +36,7 @@ describe("ErrorBoundary Component", () => {
         <ErrorBoundary>
           <div>Child 1</div>
           <div>Child 2</div>
-        </ErrorBoundary>
+        </ErrorBoundary>,
       );
 
       expect(screen.getByText("Child 1")).toBeInTheDocument();
@@ -49,7 +49,7 @@ describe("ErrorBoundary Component", () => {
       render(
         <ErrorBoundary>
           <ThrowError />
-        </ErrorBoundary>
+        </ErrorBoundary>,
       );
 
       expect(screen.getByText("Something went wrong")).toBeInTheDocument();
@@ -62,7 +62,7 @@ describe("ErrorBoundary Component", () => {
       render(
         <ErrorBoundary>
           <ThrowError message={customMessage} />
-        </ErrorBoundary>
+        </ErrorBoundary>,
       );
 
       expect(screen.getByText(customMessage)).toBeInTheDocument();
@@ -72,11 +72,11 @@ describe("ErrorBoundary Component", () => {
       render(
         <ErrorBoundary>
           <ThrowError message="" />
-        </ErrorBoundary>
+        </ErrorBoundary>,
       );
 
       expect(
-        screen.getByText("An unexpected error occurred")
+        screen.getByText("An unexpected error occurred"),
       ).toBeInTheDocument();
     });
 
@@ -86,7 +86,7 @@ describe("ErrorBoundary Component", () => {
       render(
         <ErrorBoundary>
           <ThrowError message="Logged error" />
-        </ErrorBoundary>
+        </ErrorBoundary>,
       );
 
       expect(consoleErrorSpy).toHaveBeenCalled();
@@ -100,12 +100,12 @@ describe("ErrorBoundary Component", () => {
       render(
         <ErrorBoundary fallback={customFallback}>
           <ThrowError />
-        </ErrorBoundary>
+        </ErrorBoundary>,
       );
 
       expect(screen.getByText("Custom fallback UI")).toBeInTheDocument();
       expect(
-        screen.queryByText("Something went wrong")
+        screen.queryByText("Something went wrong"),
       ).not.toBeInTheDocument();
     });
 
@@ -115,7 +115,7 @@ describe("ErrorBoundary Component", () => {
       render(
         <ErrorBoundary fallback={customFallback}>
           <ThrowError message="Error message" />
-        </ErrorBoundary>
+        </ErrorBoundary>,
       );
 
       expect(screen.getByText("Override default")).toBeInTheDocument();
@@ -128,11 +128,11 @@ describe("ErrorBoundary Component", () => {
       render(
         <ErrorBoundary>
           <ThrowError />
-        </ErrorBoundary>
+        </ErrorBoundary>,
       );
 
       expect(
-        screen.getByRole("button", { name: /reload page/i })
+        screen.getByRole("button", { name: /reload page/i }),
       ).toBeInTheDocument();
     });
 
@@ -146,7 +146,7 @@ describe("ErrorBoundary Component", () => {
       render(
         <ErrorBoundary>
           <ThrowError />
-        </ErrorBoundary>
+        </ErrorBoundary>,
       );
 
       const reloadButton = screen.getByRole("button", { name: /reload page/i });
@@ -161,7 +161,7 @@ describe("ErrorBoundary Component", () => {
       render(
         <ErrorBoundary>
           <ThrowError />
-        </ErrorBoundary>
+        </ErrorBoundary>,
       );
 
       const container = screen.getByText("Something went wrong").parentElement;
@@ -172,7 +172,7 @@ describe("ErrorBoundary Component", () => {
       render(
         <ErrorBoundary>
           <ThrowError />
-        </ErrorBoundary>
+        </ErrorBoundary>,
       );
 
       const container = screen.getByText("Something went wrong").parentElement;
@@ -187,7 +187,7 @@ describe("ErrorBoundary Component", () => {
       render(
         <ErrorBoundary>
           <ThrowError />
-        </ErrorBoundary>
+        </ErrorBoundary>,
       );
 
       const container = screen.getByText("Something went wrong").parentElement;

@@ -1,0 +1,170 @@
+/* Styles for 21st.dev Button component */
+.btn {
+  /* Common button styles */
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: monospace;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none; /* Remove underline for anchor-like buttons */
+}
+
+.btn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Variants */
+.btn-primary {
+  background-color: #4a90e2; /* Blue */
+  color: white;
+  border-color: #4a90e2;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #357bd8;
+  border-color: #357bd8;
+}
+
+.btn-secondary {
+  background-color: #6c757d; /* Grey */
+  color: white;
+  border-color: #6c757d;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #5a6268;
+  border-color: #5a6268;
+}
+
+.btn-danger {
+  background-color: #dc3545; /* Red */
+  color: white;
+  border-color: #dc3545;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #c82333;
+  border-color: #c82333;
+}
+
+.btn-warning {
+  background-color: #ffc107; /* Orange */
+  color: #333;
+  border-color: #ffc107;
+}
+
+.btn-warning:hover:not(:disabled) {
+  background-color: #e0a800;
+  border-color: #e0a800;
+}
+
+.btn-info {
+  background-color: #17a2b8; /* Cyan */
+  color: white;
+  border-color: #17a2b8;
+}
+
+.btn-info:hover:not(:disabled) {
+  background-color: #138496;
+  border-color: #138496;
+}
+
+.btn-success {
+  background-color: #28a745; /* Green */
+  color: white;
+  border-color: #28a745;
+}
+
+.btn-success:hover:not(:disabled) {
+  background-color: #218838;
+  border-color: #218838;
+}
+
+/* Sizes */
+.btn-small {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.btn-medium {
+  padding: 8px 16px;
+  font-size: 14px;
+}
+
+.btn-large {
+  padding: 12px 24px;
+  font-size: 16px;
+}
+
+/* Custom styles for GameUI buttons to override some defaults */
+.game-ui-button-container .btn {
+  width: 100%;
+  margin-top: 6px; /* Spacing between buttons */
+}
+
+.round-btn {
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.85);
+  border: 2px solid rgba(255, 255, 255, 0.3); /* Default border */
+  color: white; /* Default color */
+  padding: 0; /* Override default button padding */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Custom styles for chat close button */
+.chat-close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.2rem; /* Matches existing style */
+  padding: 0; /* Override default button padding */
+  width: 20px; /* Specific width */
+  height: 20px; /* Specific height */
+}
+.chat-close-btn:hover {
+  opacity: 0.7;
+}
+
+/* QualitySettings specific buttons */
+.quality-setting-button {
+  display: block;
+  width: 100%;
+  margin: 4px 0;
+  text-align: left;
+}
+
+.quality-settings-toggle-button {
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.7);
+  border: 1px solid #555;
+  color: #fff;
+  font-size: 20px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.quality-settings-toggle-button:hover {
+  transform: scale(1.1);
+}

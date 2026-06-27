@@ -1,6 +1,8 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
 import "../styles/HelpModal.css";
+import { Button } from "./21st.dev/Button";
+import "../styles/Button.css";
 
 const HelpModal: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -43,12 +45,14 @@ const HelpModal: React.FC = () => {
       >
         <div className="help-modal-header">
           <h2>Help & Controls</h2>
-          <button
+          <Button
             onClick={() => setIsOpen(false)}
             className="help-close-button"
+            variant="secondary"
+            size="small"
           >
             ×
-          </button>
+          </Button>
         </div>
         <div className="help-modal-body">
           <section className="help-section">

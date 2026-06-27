@@ -1,5 +1,5 @@
 /* Mobile Button Styles */
-.mobile-button {
+.mobile-action-button {
   position: fixed;
   z-index: 1000;
   pointer-events: auto;
@@ -29,13 +29,13 @@
   cursor: pointer;
 }
 
-.mobile-button.bottom-center {
+.mobile-action-button.bottom-center {
   bottom: max(40px, env(safe-area-inset-bottom, 20px));
   left: 50%;
   transform: translateX(-50%);
 }
 
-.mobile-button.bottom-right {
+.mobile-action-button.bottom-right {
   bottom: max(140px, calc(140px + env(safe-area-inset-bottom, 0px)));
   right: max(40px, env(safe-area-inset-right, 20px));
 }
@@ -53,42 +53,44 @@
   color: rgba(255, 255, 255, 0.8);
 }
 
-.mobile-button:active,
-.mobile-button.pressed {
+.mobile-action-button:active,
+.mobile-action-button.pressed {
   transform: translateX(-50%) scale(0.92);
   background: linear-gradient(135deg, rgba(117, 6, 145, 1), rgba(0, 0, 0, 0.9));
   border-color: rgba(255, 255, 255, 0.6);
-  box-shadow: 0 6px 20px rgba(117, 6, 145, 0.6), 0 0 30px rgba(117, 6, 145, 0.4);
+  box-shadow:
+    0 6px 20px rgba(117, 6, 145, 0.6),
+    0 0 30px rgba(117, 6, 145, 0.4);
 }
 
-.mobile-button.bottom-right:active,
-.mobile-button.bottom-right.pressed {
+.mobile-action-button.bottom-right:active,
+.mobile-action-button.bottom-right.pressed {
   transform: scale(0.92);
 }
 
 /* Hide on desktop (non-touch devices) */
 @media (hover: hover) and (pointer: fine) {
-  .mobile-button {
+  .mobile-action-button {
     display: none !important;
   }
 }
 
 /* Show only on touch devices */
 @media (hover: none) and (pointer: coarse) {
-  .mobile-button {
+  .mobile-action-button {
     display: flex;
   }
 }
 
 /* Smaller button on very small screens */
 @media (max-width: 400px) {
-  .mobile-button {
+  .mobile-action-button {
     width: 70px;
     height: 70px;
     bottom: max(20px, env(safe-area-inset-bottom, 10px));
   }
 
-  .mobile-button.bottom-right {
+  .mobile-action-button.bottom-right {
     bottom: max(120px, calc(120px + env(safe-area-inset-bottom, 0px)));
     right: max(20px, env(safe-area-inset-right, 10px));
   }
@@ -104,24 +106,24 @@
 
 /* Portrait mode */
 @media (max-width: 767px) and (orientation: portrait) {
-  .mobile-button {
+  .mobile-action-button {
     bottom: max(30px, env(safe-area-inset-bottom, 20px));
   }
 
-  .mobile-button.bottom-right {
+  .mobile-action-button.bottom-right {
     bottom: max(130px, calc(130px + env(safe-area-inset-bottom, 0px)));
   }
 }
 
 /* Landscape mode - more compact */
 @media (max-height: 500px) and (orientation: landscape) {
-  .mobile-button {
+  .mobile-action-button {
     width: 65px;
     height: 65px;
     bottom: max(15px, env(safe-area-inset-bottom, 10px));
   }
 
-  .mobile-button.bottom-right {
+  .mobile-action-button.bottom-right {
     bottom: max(100px, calc(100px + env(safe-area-inset-bottom, 0px)));
     right: max(15px, env(safe-area-inset-right, 10px));
   }

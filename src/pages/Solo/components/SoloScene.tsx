@@ -9,6 +9,7 @@ import ExplosionVFX from "../../../components/world/ExplosionVFX";
 import DamageNumbers from "../../../components/world/DamageNumbers";
 import CTFBases from "../../../components/world/CTFBases";
 import BotTracers from "../../../components/world/BotTracers";
+import GrenadeProjectiles from "../../../components/world/GrenadeProjectiles";
 import ShootingGallery from "./ShootingGallery";
 import type { SoloSceneProps } from "./SoloScene.types";
 
@@ -131,6 +132,7 @@ export const SoloScene: React.FC<Props> = ({
       <ExplosionVFX />
       <DamageNumbers />
       <BotTracers />
+      <GrenadeProjectiles />
       {gameState.mode === "ctf" && <CTFBases />}
       <ShootingGallery
         gameManager={gameManager}

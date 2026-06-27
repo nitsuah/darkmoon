@@ -9,7 +9,7 @@ export function applyVolumes(
   musicVolume: number,
   sfxVolume: number,
   masterVolume: number,
-  isMuted: boolean
+  isMuted: boolean,
 ) {
   if (musicGain) {
     musicGain.gain.value = isMuted

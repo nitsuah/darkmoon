@@ -1,5 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { createLogger } from "../lib/utils/logger";
+import { Button } from "./21st.dev/Button";
+import "../styles/Button.css";
 
 const log = createLogger("ErrorBoundary");
 

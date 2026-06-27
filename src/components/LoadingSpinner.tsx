@@ -1,4 +1,6 @@
 import React from "react";
+import { Spinner } from "./21st.dev/Spinner";
+import "../styles/Spinner.css";
 
 const LoadingSpinner: React.FC = () => {
   return (
@@ -14,16 +16,7 @@ const LoadingSpinner: React.FC = () => {
         color: "#fff",
       }}
     >
-      <div
-        style={{
-          width: "50px",
-          height: "50px",
-          border: "5px solid rgba(255, 255, 255, 0.1)",
-          borderTop: "5px solid #fff",
-          borderRadius: "50%",
-          animation: "spin 1s linear infinite",
-        }}
-      />
+      <Spinner size="large" color="#fff" thickness={5} />
       <p style={{ marginTop: "20px", fontSize: "16px" }}>Loading DARKMOON...</p>
       <style>{`
         @keyframes spin {

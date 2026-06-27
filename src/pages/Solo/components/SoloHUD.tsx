@@ -7,9 +7,11 @@ import PerformanceMonitor from "../../../components/PerformanceMonitor";
 import UtilityMenu from "../../../components/UtilityMenu";
 import PauseMenu from "../../../components/PauseMenu";
 import ChatBox from "../../../components/ChatBox";
+import { Notification } from "../../../components/21st.dev/Notification";
 import type { ChatMessage } from "../../../lib/hooks/useChatMessages";
 import type { GameState, Player } from "../../../components/GameManager";
 import type { QualityLevel } from "../../../components/QualitySettings";
+import "../../../styles/Notification.css";
 
 interface SoloHUDProps {
   isMobileDevice: boolean;
@@ -116,36 +118,12 @@ const SoloHUD: React.FC<SoloHUDProps> = ({
           display: "flex",
           flexDirection: "column",
           gap: "10px",
-          pointerEvents: "none",
+          pointerEvents: "none", // Default to none, components can override
           maxWidth: "300px",
         }}
       >
         {notifications.map((notification) => (
-          <div
-            key={notification.id}
-            style={{
-              padding: "12px 16px",
-              backgroundColor:
-                notification.type === "success"
-                  ? "rgba(0, 200, 0, 0.9)"
-                  : notification.type === "warning"
-                    ? "rgba(255, 165, 0, 0.9)"
-                    : notification.type === "error"
-                      ? "rgba(200, 0, 0, 0.9)"
-                      : "rgba(74, 144, 226, 0.9)",
-              color: "white",
-              borderRadius: "6px",
-              fontFamily: "monospace",
-              fontSize: "14px",
-              border: "1px solid rgba(255, 255, 255, 0.3)",
-              boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
-              animation: "slideIn 0.3s ease-out",
-              minWidth: "200px",
-              textAlign: "center",
-            }}
-          >
-            {notification.message}
-          </div>
+          <Notification key={notification.id} {...notification} />
         ))}
       </div>
 

@@ -3,6 +3,8 @@ import { GameState, KillEvent, Player } from "./GameManager";
 import { WEAPONS } from "./combat/WeaponManager";
 import { STREAK_LABELS } from "./gameModes/DeathmatchMode";
 import { TAG_STREAK_LABELS } from "./gameModes/TagMode";
+import { Button } from "./21st.dev/Button";
+import "../../styles/Button.css";
 
 interface GameUIProps {
   gameState: GameState;
@@ -914,79 +916,43 @@ const GameUI: React.FC<GameUIProps> = ({
             </>
           )}
 
-          <button
+          <Button
             onClick={onEndGame}
-            style={{
-              marginTop: isMinimal ? "2px" : "4px",
-              padding: isMinimal ? "2px 4px" : isMobile ? "3px 6px" : "3px 6px",
-              backgroundColor: "rgba(255, 100, 100, 0.8)",
-              border: "1px solid #ff6464",
-              borderRadius: "3px",
-              color: "white",
-              cursor: "pointer",
-              fontSize: isMinimal ? "10px" : isMobile ? "9px" : "10px",
-              width: "100%",
-            }}
+            variant="danger"
+            size={isMinimal ? "small" : isMobile ? "small" : "medium"}
+            className="game-ui-button-container"
           >
             {isMinimal || isMobile ? "⏹️" : "End Game"}
-          </button>
+          </Button>
 
           {/* Debug mode toggle - always available */}
           {onToggleDebug && (
-            <button
+            <Button
               onClick={onToggleDebug}
-              style={{
-                marginTop: isMinimal ? "2px" : "4px",
-                padding: isMinimal
-                  ? "2px 4px"
-                  : isMobile
-                    ? "3px 6px"
-                    : "3px 6px",
-                backgroundColor: botDebugMode
-                  ? "rgba(220, 53, 69, 0.8)"
-                  : "rgba(255, 140, 0, 0.8)",
-                border: botDebugMode
-                  ? "1px solid #dc3545"
-                  : "1px solid #ff8c00",
-                borderRadius: "3px",
-                color: "white",
-                cursor: "pointer",
-                fontSize: isMinimal ? "10px" : isMobile ? "9px" : "10px",
-                width: "100%",
-              }}
+              variant={botDebugMode ? "danger" : "warning"}
+              size={isMinimal ? "small" : isMobile ? "small" : "medium"}
+              className="game-ui-button-container"
             >
               {isMinimal || isMobile
                 ? "🔧"
                 : botDebugMode
                   ? "⏹️ Stop Debug"
                   : "🔧 Debug Mode"}
-            </button>
+            </Button>
           )}
           {onToggleGalleryDebug && (
-            <button
+            <Button
               onClick={onToggleGalleryDebug}
-              style={{
-                marginTop: isMinimal ? "2px" : "3px",
-                padding: isMinimal ? "2px 4px" : "3px 6px",
-                backgroundColor: galleryDebugMode
-                  ? "rgba(220, 53, 69, 0.8)"
-                  : "rgba(0, 170, 100, 0.8)",
-                border: galleryDebugMode
-                  ? "1px solid #dc3545"
-                  : "1px solid #00aa64",
-                borderRadius: "3px",
-                color: "white",
-                cursor: "pointer",
-                fontSize: isMinimal ? "10px" : isMobile ? "9px" : "10px",
-                width: "100%",
-              }}
+              variant={galleryDebugMode ? "danger" : "success"}
+              size={isMinimal ? "small" : isMobile ? "small" : "medium"}
+              className="game-ui-button-container"
             >
               {isMinimal || isMobile
                 ? "🎯"
                 : galleryDebugMode
                   ? "⏹️ Stop Gallery"
                   : "🎯 Gallery Debug"}
-            </button>
+            </Button>
           )}
         </div>
         {!isMinimal && recentKills.length > 0 && (

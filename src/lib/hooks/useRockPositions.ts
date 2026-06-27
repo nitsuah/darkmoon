@@ -20,7 +20,7 @@ export const useRockPositions = (count: number = 25): RockPosition[] => {
       z: (Math.random() - 0.5) * 80,
       size: 0.5 + Math.random() * 1.5,
       height: 0.3 + Math.random() * 0.7,
-    }))
+    })),
   );
 
   return positions;
