@@ -1609,45 +1609,45 @@ Follow this sequence to build the game up incrementally:
 
 ### Phase 2 — Interaction
 
-5. `ContextSystem` with 3 example zones
-6. `TailWhip` combat + 1 enemy type (zombie scarecrow)
-7. `HUD` — health, money, context prompt
-8. `AudioManager` — footsteps, hits, ambient music
+1. `ContextSystem` with 3 example zones
+2. `TailWhip` combat + 1 enemy type (zombie scarecrow)
+3. `HUD` — health, money, context prompt
+4. `AudioManager` — footsteps, hits, ambient music
 
 ### Phase 3 — First Chapter (Hungover)
 
-9. Full Hungover chapter with all objectives
-10. `ChapterDirector` + opening/closing cutscenes
-11. `DialogueBox` + `CutsceneDirector`
-12. Mrs. Bee boss fight
-13. `SaveManager`
+1. Full Hungover chapter with all objectives
+2. `ChapterDirector` + opening/closing cutscenes
+3. `DialogueBox` + `CutsceneDirector`
+4. Mrs. Bee boss fight
+5. `SaveManager`
 
 ### Phase 4 — Graphics Polish
 
-14. PBR materials across all existing meshes
-15. Post-processing stack (SSAO, Bloom)
-16. Dynamic lighting per chapter
-17. Cel-shader hybrid on Conker
+1. PBR materials across all existing meshes
+2. Post-processing stack (SSAO, Bloom)
+3. Dynamic lighting per chapter
+4. Cel-shader hybrid on Conker
 
 ### Phase 5 — Remaining Chapters
 
-18. Implement chapters in story order: Barn Boys → Bats Tower → Uga Buga → Spooky → It's War → Heist → Future World
+1. Implement chapters in story order: Barn Boys → Bats Tower → Uga Buga → Spooky → It's War → Heist → Future World
 
 ### Phase 6 — Multiplayer
 
-19. Split-screen renderer
-20. Beach (deathmatch) mode
-21. Heist mode
-22. War mode
-23. Race mode
-24. Raptor mode
+1. Split-screen renderer
+2. Beach (deathmatch) mode
+3. Heist mode
+4. War mode
+5. Race mode
+6. Raptor mode
 
 ### Phase 7 — Polish & QA
 
-25. Full audio pass (all SFX, music layers)
-26. Performance profiling (target 60fps on mid-range GPU)
-27. Mobile/gamepad input support
-28. Loading screens, main menu, credits
+1. Full audio pass (all SFX, music layers)
+2. Performance profiling (target 60fps on mid-range GPU)
+3. Mobile/gamepad input support
+4. Loading screens, main menu, credits
 
 ---
 
