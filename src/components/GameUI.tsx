@@ -4,7 +4,7 @@ import { WEAPONS } from "./combat/WeaponManager";
 import { STREAK_LABELS } from "./gameModes/DeathmatchMode";
 import { TAG_STREAK_LABELS } from "./gameModes/TagMode";
 import { Button } from "./21st.dev/Button";
-import "../../styles/Button.css";
+import "../styles/Button.css";
 
 interface GameUIProps {
   gameState: GameState;
