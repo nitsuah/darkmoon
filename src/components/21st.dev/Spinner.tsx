@@ -13,10 +13,11 @@ export const Spinner: React.FC<SpinnerProps> = ({
   thickness = 5,
 }) => {
   const spinnerClasses = `spinner spinner-${size}`;
-  const spinnerStyle = {
+  const spinnerStyle: React.CSSProperties = {
     borderColor: `${color}40`, // Lighter shade for the track
     borderTopColor: color,
     borderWidth: thickness,
+    borderStyle: "solid",
   };
 
   return <div className={spinnerClasses} style={spinnerStyle}></div>;

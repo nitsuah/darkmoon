@@ -28,21 +28,34 @@ export const Card: React.FC<CardProps> = ({
 }) => {
   const statusClass = statusType ? `status-${statusType}` : "";
   const cardClasses = `mode-card ${className} ${isFlipped ? "flipped" : ""}`;
+  const isInteractive = !!onClick;
 
   return (
     <div
       className={`mode-card-flip-container ${cardClasses}`}
       onClick={onClick}
-      onKeyDown={onKeyDown}
-      role="button"
-      tabIndex={0}
+      onKeyDown={
+        isInteractive
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onKeyDown?.(e);
+                onClick?.();
+              }
+            }
+          : undefined
+      }
+      role={isInteractive ? "button" : undefined}
+      tabIndex={isInteractive ? 0 : undefined}
     >
       <div className="mode-card-flip-inner">
         <div className="mode-card-front">
           {icon && <div className="mode-icon">{icon}</div>}
           <h3>{title}</h3>
           <p>{description}</p>
-          {status && <div className={`mode-status ${statusClass}`}>{status}</div>}
+          {status && (
+            <div className={`mode-status ${statusClass}`}>{status}</div>
+          )}
         </div>
         <div className="mode-card-back">{children}</div>
       </div>
