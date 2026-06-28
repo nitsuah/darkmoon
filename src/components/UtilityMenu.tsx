@@ -223,7 +223,7 @@ const UtilityMenu: React.FC<UtilityMenuProps> = ({
                 setIsExpanded(false);
               }}
               className="round-btn"
-              title="Show Chat"
+              title={isChatVisible ? "Hide Chat" : "Show Chat"}
               style={{
                 width: `${drawerButtonSize}px`,
                 height: `${drawerButtonSize}px`,
@@ -245,7 +245,7 @@ const UtilityMenu: React.FC<UtilityMenuProps> = ({
             setShowQualityMenu(false);
           }}
           className="round-btn"
-          title="Open Utilities"
+          title={isExpanded ? "Close Utilities" : "Open Utilities"}
           style={{
             width: `${mainButtonSize}px`,
             height: `${mainButtonSize}px`,

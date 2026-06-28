@@ -921,6 +921,8 @@ const GameUI: React.FC<GameUIProps> = ({
             variant="danger"
             size={isMinimal ? "small" : isMobile ? "small" : "medium"}
             className="game-ui-button-container"
+            aria-label="End Game"
+            title={isMinimal || isMobile ? "End Game" : undefined}
           >
             {isMinimal || isMobile ? "⏹️" : "End Game"}
           </Button>
@@ -932,6 +934,14 @@ const GameUI: React.FC<GameUIProps> = ({
               variant={botDebugMode ? "danger" : "warning"}
               size={isMinimal ? "small" : isMobile ? "small" : "medium"}
               className="game-ui-button-container"
+              aria-label={botDebugMode ? "Stop Debug Mode" : "Start Debug Mode"}
+              title={
+                isMinimal || isMobile
+                  ? botDebugMode
+                    ? "Stop Debug Mode"
+                    : "Start Debug Mode"
+                  : undefined
+              }
             >
               {isMinimal || isMobile
                 ? "🔧"
@@ -946,6 +956,16 @@ const GameUI: React.FC<GameUIProps> = ({
               variant={galleryDebugMode ? "danger" : "success"}
               size={isMinimal ? "small" : isMobile ? "small" : "medium"}
               className="game-ui-button-container"
+              aria-label={
+                galleryDebugMode ? "Stop Gallery Debug" : "Start Gallery Debug"
+              }
+              title={
+                isMinimal || isMobile
+                  ? galleryDebugMode
+                    ? "Stop Gallery Debug"
+                    : "Start Gallery Debug"
+                  : undefined
+              }
             >
               {isMinimal || isMobile
                 ? "🎯"
