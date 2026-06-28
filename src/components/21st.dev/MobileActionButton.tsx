@@ -98,10 +98,12 @@ export const MobileActionButton: React.FC<MobileActionButtonProps> = ({
   return (
     <Button
       id={`mobile-action-button-${label}`}
-      onClick={() => {
-        onPress();
-        // Mimic touch-end logic with a small delay
-        setTimeout(onRelease, 150);
+      onClick={(e) => {
+        // Accessibility: ensure native click triggers actions
+        if (e.type === "click") {
+          onPress();
+          setTimeout(onRelease, 150);
+        }
       }}
       className={`mobile-action-button ${position}`}
       variant="primary"
