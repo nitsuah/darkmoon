@@ -5,6 +5,7 @@ import { useFrame } from "@react-three/fiber";
 const PROJECTILE_SPEED = 15;
 const GRAVITY = 9.8;
 const MAX_SIMULTANEOUS = 5;
+const LAUNCH_ANGLE = Math.PI / 4; // 45 degrees
 
 type Slot = {
   startedAt: number;
@@ -70,10 +71,12 @@ const GrenadeProjectiles: React.FC = () => {
       const elapsed = (now - slot.startedAt) / 1000;
 
       // Parabolic motion: x = v*t, y = v*t - 0.5*g*t^2
-      const x = slot.initialVelocity * elapsed;
-      const y =
-        slot.initialVelocity * Math.sin(Math.PI / 4) * elapsed -
-        0.5 * GRAVITY * elapsed * elapsed;
+      const initialVelocity = slot.initialVelocity;
+      const v0x = initialVelocity * Math.cos(LAUNCH_ANGLE);
+      const v0y = initialVelocity * Math.sin(LAUNCH_ANGLE);
+
+      const x = v0x * elapsed;
+      const y = v0y * elapsed - 0.5 * GRAVITY * elapsed * elapsed;
 
       const pos = slot.origin
         .clone()
@@ -82,14 +85,18 @@ const GrenadeProjectiles: React.FC = () => {
 
       mesh.position.copy(pos);
 
-      if (pos.y < -1) {
+      // Impact ground check
+      if (pos.y <= 0.5) {
         slot.active = false;
         mesh.visible = false;
+        pos.y = 0.5;
+        mesh.position.copy(pos);
+
         window.dispatchEvent(
           new window.CustomEvent("weapon-explosion", {
             detail: {
               x: pos.x,
-              y: 0, // Impact ground
+              y: pos.y,
               z: pos.z,
               radius: 7, // Should be weapon config
             },
