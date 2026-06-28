@@ -318,6 +318,8 @@ export const PlayerCharacter = React.forwardRef<
 
     const now = Date.now();
 
+    const mePlayer = gameManager?.getPlayers().get(currentPlayerId);
+
     // Grenade charge logic
     const equipped = weaponManagerRef.current.getEquipped();
     const isGrenade = equipped?.id === "grenade";
@@ -338,7 +340,6 @@ export const PlayerCharacter = React.forwardRef<
     }
 
     // Freeze all input while the player is awaiting respawn (downed in deathmatch/CTF).
-    const mePlayer = gameManager?.getPlayers().get(currentPlayerId);
     if (mePlayer?.respawnAt !== undefined) {
       return;
     }

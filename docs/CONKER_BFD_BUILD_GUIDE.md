@@ -944,6 +944,7 @@ export class HeistMode {
     this.cashCarried = 0;
     this.cashGoal = 5;
     this.map = map;
+    this.scene = scene;
   }
 
   start() {
