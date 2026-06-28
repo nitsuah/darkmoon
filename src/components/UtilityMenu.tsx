@@ -168,6 +168,7 @@ const UtilityMenu: React.FC<UtilityMenuProps> = ({
               setIsExpanded(false);
             }}
             className="round-btn"
+            title={theme === "dark" ? "Light Mode" : "Dark Mode"}
             style={{
               width: `${drawerButtonSize}px`,
               height: `${drawerButtonSize}px`,
@@ -184,6 +185,7 @@ const UtilityMenu: React.FC<UtilityMenuProps> = ({
               setIsExpanded(false);
             }}
             className="round-btn"
+            title={isMuted ? "Unmute" : "Mute"}
             style={{
               width: `${drawerButtonSize}px`,
               height: `${drawerButtonSize}px`,
@@ -200,6 +202,7 @@ const UtilityMenu: React.FC<UtilityMenuProps> = ({
               setShowQualityMenu(!showQualityMenu);
             }}
             className="round-btn"
+            title="Quality Settings"
             style={{
               width: `${drawerButtonSize}px`,
               height: `${drawerButtonSize}px`,
@@ -220,6 +223,7 @@ const UtilityMenu: React.FC<UtilityMenuProps> = ({
                 setIsExpanded(false);
               }}
               className="round-btn"
+              title="Show Chat"
               style={{
                 width: `${drawerButtonSize}px`,
                 height: `${drawerButtonSize}px`,
@@ -241,6 +245,7 @@ const UtilityMenu: React.FC<UtilityMenuProps> = ({
             setShowQualityMenu(false);
           }}
           className="round-btn"
+          title="Open Utilities"
           style={{
             width: `${mainButtonSize}px`,
             height: `${mainButtonSize}px`,
