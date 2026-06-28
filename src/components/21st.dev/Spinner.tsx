@@ -1,5 +1,5 @@
 import React from "react";
-import "../../styles/Spinner.css"; // Assuming a shared style or equivalent
+import "../../styles/Spinner.css";
 
 interface SpinnerProps {
   size?: "small" | "medium" | "large";
@@ -14,7 +14,10 @@ export const Spinner: React.FC<SpinnerProps> = ({
 }) => {
   const spinnerClasses = `spinner spinner-${size}`;
   const spinnerStyle: React.CSSProperties = {
-    borderColor: `${color}40`, // Lighter shade for the track
+    // If color is a CSS variable (starts with --) or hex, use it directly.
+    // If it's a standard color name or RGB/HSL, it still works.
+    // We add opacity using filter or rgba if it's a hex color.
+    borderColor: color.startsWith("#") ? `${color}40` : `${color}80`,
     borderTopColor: color,
     borderWidth: thickness,
     borderStyle: "solid",
