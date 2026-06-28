@@ -36,6 +36,12 @@ vi.mock("@react-three/drei", () => ({
   ),
   Stats: () => <div data-testid="stats" />,
   OrbitControls: () => <div data-testid="orbit-controls" />,
+  Line: () => null, // Added Line mock
+}));
+
+// Mock PlayerCharacter to avoid R3F issues in Solo.test.tsx
+vi.mock("../components/characters/PlayerCharacter", () => ({
+  PlayerCharacter: vi.fn(() => null),
 }));
 
 interface MockSocket {
