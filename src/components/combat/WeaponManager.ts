@@ -162,6 +162,9 @@ export class WeaponManager {
   }
 
   unequip(): void {
+    if (this.equippedWeaponId) {
+      this.stopCharge(this.equippedWeaponId);
+    }
     this.equippedWeaponId = null;
   }
 
