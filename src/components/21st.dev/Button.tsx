@@ -1,12 +1,12 @@
 import React from "react";
-import "../../styles/Button.css"; // Assuming a shared style or equivalent
+import "../../styles/Button.css";
 
-interface ButtonProps {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   onClick: () => void;
   children: React.ReactNode;
   className?: string;
-  variant?: "primary" | "secondary" | "danger" | "warning" | "info" | "success";
-  size?: "small" | "medium" | "large";
+  variant?: "primary" | "secondary" | "danger" | "warning" | "info" | "success" | "mobile-action";
+  size?: "small" | "medium" | "large" | "custom";
   disabled?: boolean;
 }
 
@@ -17,11 +17,23 @@ export const Button: React.FC<ButtonProps> = ({
   variant = "primary",
   size = "medium",
   disabled = false,
+  style,
+  title,
+  id,
+  ...rest
 }) => {
   const buttonClasses = `btn btn-${variant} btn-${size} ${className}`;
 
   return (
-    <button className={buttonClasses} onClick={onClick} disabled={disabled}>
+    <button
+      className={buttonClasses}
+      onClick={onClick}
+      disabled={disabled}
+      style={style}
+      title={title}
+      id={id}
+      {...rest}
+    >
       {children}
     </button>
   );

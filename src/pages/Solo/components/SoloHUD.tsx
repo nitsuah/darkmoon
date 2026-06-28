@@ -123,7 +123,12 @@ const SoloHUD: React.FC<SoloHUDProps> = ({
         }}
       >
         {notifications.map((notification) => (
-          <Notification key={notification.id} {...notification} />
+          <Notification
+            key={notification.id}
+            id={notification.id}
+            message={notification.message}
+            type={notification.type as "info" | "error" | "warning" | "success"}
+          />
         ))}
       </div>
 

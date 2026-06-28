@@ -22,7 +22,21 @@ export const TrajectoryArc: React.FC<TrajectoryArcProps> = ({
 
   // Simple parabolic projection
   const points = React.useMemo(() => {
-    // ... same logic ...
+    const pts: THREE.Vector3[] = [];
+    const maxDistance = 18 * chargeProgress; // Based on range in WeaponManager
+    const gravity = 9.8;
+    const initialVelocity = 15 * chargeProgress;
+    const angle = Math.PI / 4; // 45 degrees
+
+    for (let i = 0; i <= 20; i++) {
+      const t = (i / 20) * (maxDistance / (initialVelocity * Math.cos(angle)));
+      const x = initialVelocity * Math.cos(angle) * t;
+      const y = initialVelocity * Math.sin(angle) * t - 0.5 * gravity * t * t;
+
+      const vec = direction.clone().multiplyScalar(x);
+      pts.push(new THREE.Vector3(origin.x + vec.x, origin.y + y, origin.z + vec.z));
+    }
+    return pts;
   }, [origin, direction, chargeProgress]);
 
   // Color from green to red based on charge

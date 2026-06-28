@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, fireEvent } from "@testing-library/react";
 import { MobileJoystick } from "../components/MobileJoystick";
-import { MobileButton } from "../components/MobileButton";
+import { MobileActionButton } from "../components/21st.dev/MobileActionButton";
 import React from "react";
 
 describe("MobileJoystick", () => {
@@ -58,7 +58,7 @@ describe("MobileJoystick", () => {
   });
 });
 
-describe("MobileButton", () => {
+describe("MobileActionButton", () => {
   let mockOnPress: () => void;
   let mockOnRelease: () => void;
 
@@ -69,7 +69,7 @@ describe("MobileButton", () => {
 
   it("should render button", () => {
     const { getByText } = render(
-      <MobileButton
+      <MobileActionButton
         onPress={mockOnPress}
         onRelease={mockOnRelease}
         label="Jump"
@@ -81,7 +81,7 @@ describe("MobileButton", () => {
 
   it("should call onPress on touch start", () => {
     const { container } = render(
-      <MobileButton
+      <MobileActionButton
         onPress={mockOnPress}
         onRelease={mockOnRelease}
         label="Jump"
@@ -89,7 +89,7 @@ describe("MobileButton", () => {
       />,
     );
 
-    const button = container.querySelector(".mobile-button");
+    const button = container.querySelector(".mobile-action-button");
     expect(button).toBeTruthy();
 
     fireEvent.touchStart(button!);
@@ -99,7 +99,7 @@ describe("MobileButton", () => {
 
   it("should call onRelease on touch end", () => {
     const { container } = render(
-      <MobileButton
+      <MobileActionButton
         onPress={mockOnPress}
         onRelease={mockOnRelease}
         label="Jump"
@@ -107,7 +107,7 @@ describe("MobileButton", () => {
       />,
     );
 
-    const button = container.querySelector(".mobile-button");
+    const button = container.querySelector(".mobile-action-button");
 
     fireEvent.touchStart(button!);
     fireEvent.touchEnd(button!);
@@ -117,7 +117,7 @@ describe("MobileButton", () => {
 
   it("should support bottom-right position", () => {
     const { container } = render(
-      <MobileButton
+      <MobileActionButton
         onPress={mockOnPress}
         onRelease={mockOnRelease}
         label="Jump"
@@ -125,13 +125,13 @@ describe("MobileButton", () => {
       />,
     );
 
-    const button = container.querySelector(".mobile-button");
+    const button = container.querySelector(".mobile-action-button");
     expect(button).toBeTruthy();
   });
 
   it("should support bottom-center position", () => {
     const { container } = render(
-      <MobileButton
+      <MobileActionButton
         onPress={mockOnPress}
         onRelease={mockOnRelease}
         label="Sprint"
@@ -139,13 +139,13 @@ describe("MobileButton", () => {
       />,
     );
 
-    const button = container.querySelector(".mobile-button");
+    const button = container.querySelector(".mobile-action-button");
     expect(button).toBeTruthy();
   });
 
   it("should display correct label", () => {
     const { getByText } = render(
-      <MobileButton
+      <MobileActionButton
         onPress={mockOnPress}
         onRelease={mockOnRelease}
         label="Custom Label"
@@ -166,7 +166,7 @@ describe("Mobile Controls Integration", () => {
     const { container, getByText } = render(
       <div>
         <MobileJoystick onMove={onMove} side="left" label="Move" />
-        <MobileButton
+        <MobileActionButton
           onPress={onJump}
           onRelease={onJumpRelease}
           label="Jump"
@@ -176,7 +176,7 @@ describe("Mobile Controls Integration", () => {
     );
 
     const joystick = container.querySelector(".joystick-container");
-    const button = container.querySelector(".mobile-button");
+    const button = container.querySelector(".mobile-action-button");
 
     expect(joystick).toBeTruthy();
     expect(button).toBeTruthy();
@@ -207,7 +207,7 @@ describe("Mobile Controls Integration", () => {
     const { getByText } = render(
       <div>
         <MobileJoystick onMove={onMove} side="left" label="Move" />
-        <MobileButton
+        <MobileActionButton
           onPress={onPress}
           onRelease={onRelease}
           label="Jump"

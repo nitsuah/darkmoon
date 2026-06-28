@@ -15,6 +15,10 @@ export interface WeaponConfig {
   splashRadius?: number;
   /** Damage dealt to entities caught in the splash radius (not the direct-hit target). */
   splashDamage?: number;
+  /** If true, this weapon can be charged for distance (e.g. grenades). */
+  isChargeable?: boolean;
+  /** Charge time in ms for maximum throw distance. */
+  maxChargeTimeMs?: number;
 }
 
 export const WEAPONS: Record<string, WeaponConfig> = {

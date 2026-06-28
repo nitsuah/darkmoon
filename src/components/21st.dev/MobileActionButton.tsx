@@ -1,13 +1,13 @@
 import React, { useRef, useCallback, useEffect } from "react";
 import { Button } from "./Button";
-import "../../styles/MobileActionButton.css"; // Specific styles for this component
+import "../../styles/MobileActionButton.css";
 
 interface MobileActionButtonProps {
   label: string;
   icon?: string;
   onPress: () => void;
   onRelease: () => void;
-  onDoubleTap?: () => void; // Optional double-tap handler
+  onDoubleTap?: () => void;
   position?: "bottom-center" | "bottom-right";
 }
 
@@ -21,13 +21,12 @@ export const MobileActionButton: React.FC<MobileActionButtonProps> = ({
 }) => {
   const pressedRef = useRef(false);
   const lastTapTimeRef = useRef(0);
-  const DOUBLE_TAP_WINDOW = 300; // ms - must match desktop double-jump window
+  const DOUBLE_TAP_WINDOW = 300;
 
   const handlePress = useCallback(() => {
     if (!pressedRef.current) {
       pressedRef.current = true;
 
-      // Check for double-tap
       const currentTime = Date.now();
       const timeSinceLastTap = currentTime - lastTapTimeRef.current;
 
@@ -36,7 +35,6 @@ export const MobileActionButton: React.FC<MobileActionButtonProps> = ({
         timeSinceLastTap < DOUBLE_TAP_WINDOW &&
         timeSinceLastTap > 0
       ) {
-        // Double-tap detected!
         onDoubleTap();
       }
 
@@ -52,13 +50,10 @@ export const MobileActionButton: React.FC<MobileActionButtonProps> = ({
     }
   }, [onRelease]);
 
-  // Use useEffect to manage touch/pointer event listeners
-  // This setup is crucial for responsive and robust mobile interaction
   useEffect(() => {
     const buttonElement = document.getElementById(`mobile-action-button-${label}`);
     if (!buttonElement) return;
 
-    // Use native events with passive: false to allow e.preventDefault()
     const touchStartHandler = (e: TouchEvent) => {
       e.preventDefault();
       buttonElement.classList.add("pressed");
@@ -85,7 +80,6 @@ export const MobileActionButton: React.FC<MobileActionButtonProps> = ({
     };
   }, [handlePress, handleRelease, label]);
 
-  // Combine label and icon for the button children
   const children = (
     <>
       {icon && <span className="mobile-button-icon">{icon}</span>}
@@ -96,11 +90,26 @@ export const MobileActionButton: React.FC<MobileActionButtonProps> = ({
   return (
     <Button
       id={`mobile-action-button-${label}`}
-      onClick={() => {}} // onClick is required by Button, but we'll use touch events
+      onClick={() => {}}
       className={`mobile-action-button ${position}`}
-      variant="mobile-action" // Custom variant for mobile action buttons
-      size="custom" // Custom size handled by specific mobile styles
-      disabled={false} // Mobile action buttons are typically not disabled
+      variant="primary"
+      size="large"
+      style={{
+        width: "80px",
+        height: "80px",
+        borderRadius: "50%",
+        background: "linear-gradient(135deg, rgba(117, 6, 145, 0.8), rgba(0, 0, 0, 0.8))",
+        border: "2px solid rgba(255, 255, 255, 0.3)",
+        backdropFilter: "blur(5px)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "4px",
+        transition: "all 0.15s ease",
+        padding: 0,
+      }}
+      disabled={false}
     >
       {children}
     </Button>
