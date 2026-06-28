@@ -6,6 +6,7 @@ interface NotificationProps {
   message: string;
   type?: "success" | "warning" | "error" | "info";
   onClose?: (id: string) => void;
+  style?: React.CSSProperties;
 }
 
 export const Notification: React.FC<NotificationProps> = ({
@@ -13,12 +14,13 @@ export const Notification: React.FC<NotificationProps> = ({
   message,
   type = "info",
   onClose,
+  style,
 }) => {
   const notificationClasses = `notification notification-${type}`;
 
   return (
-    <div className={notificationClasses}>
-      <p>{message}</p>
+    <div className={notificationClasses} style={style}>
+      <p style={{ margin: 0 }}>{message}</p>
       {onClose && (
         <button className="notification-close-btn" onClick={() => onClose(id)}>
           &times;

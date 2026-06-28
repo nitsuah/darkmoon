@@ -128,6 +128,7 @@ const SoloHUD: React.FC<SoloHUDProps> = ({
             id={notification.id}
             message={notification.message}
             type={notification.type as "info" | "error" | "warning" | "success"}
+            style={{ pointerEvents: "auto" }}
           />
         ))}
       </div>
