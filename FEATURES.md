@@ -69,6 +69,7 @@ Status guide: `[shipped]` is live today, `[in-progress]` is partially implemente
 ## Combat & Gameplay
 
 ### 🔫 Grenade Hold-to-Throw `[shipped]`
+
 - **Phase BM/BN**: Grenade weapon supports hold-to-charge with parabolic trajectory preview arc; throw distance scales with charge duration.
 - **Visual Feedback**: Trajectory arc color shifts from green to red based on charge progress.
 - **Projectile System**: Handles parabolic physics and explosion on impact.
