@@ -7,12 +7,16 @@ vi.mock('@splinetool/react-spline', () => ({
     default: () => null,
 }))
 
-vi.mock('@react-three/drei', () => ({
-    Line: () => null,
-    OrbitControls: () => null,
-    Text: () => null,
-    Stats: () => null,
-}))
+vi.mock('@react-three/drei', async (importOriginal) => {
+    const actual = await importOriginal()
+    return {
+        ...(actual as object),
+        Line: () => null,
+        OrbitControls: () => null,
+        Text: () => null,
+        Stats: () => null,
+    }
+})
 
 // Polyfill ResizeObserver for React Three Fiber tests
 if (typeof window !== 'undefined' && !window.ResizeObserver) {
