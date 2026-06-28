@@ -1,6 +1,8 @@
 import * as React from "react";
 import { useState, useEffect, useRef } from "react";
 import { ChatMessage } from "../lib/hooks/useChatMessages";
+import { Button } from "./21st.dev/Button";
+import "../styles/Button.css";
 
 interface ChatBoxProps {
   isVisible: boolean;
@@ -96,24 +98,13 @@ const ChatBox: React.FC<ChatBoxProps> = ({
         }}
       >
         <span>Chat</span>
-        <button
+        <Button
           onClick={onToggle}
-          style={{
-            background: "none",
-            border: "none",
-            color: "white",
-            cursor: "pointer",
-            fontSize: "16px",
-            padding: "0",
-            width: "20px",
-            height: "20px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
+          className="chat-close-btn"
+          size="small"
         >
           ×
-        </button>
+        </Button>
       </div>
 
       {/* Messages Area */}

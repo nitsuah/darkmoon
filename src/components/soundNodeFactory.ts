@@ -1,7 +1,7 @@
 export function createOscillatorWithGain(
   ctx: AudioContext,
   type: string,
-  frequency?: number
+  frequency?: number,
 ) {
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();

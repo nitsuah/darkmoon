@@ -27,11 +27,11 @@ export const useNotifications = () => {
       // Auto-remove after 4 seconds
       setTimeout(() => {
         setNotifications((prev) =>
-          prev.filter((n) => n.id !== notification.id)
+          prev.filter((n) => n.id !== notification.id),
         );
       }, 4000);
     },
-    []
+    [],
   );
 
   const removeNotification = useCallback((id: string) => {

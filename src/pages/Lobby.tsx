@@ -124,32 +124,28 @@ const Lobby: React.FC = () => {
 
   if (!socketClient) return null;
 
-  return React.createElement(
-    React.Fragment,
-    null,
-    React.createElement(
-      "div",
-      { className: "App" },
-      React.createElement(
-        Canvas,
-        { camera: { position: [0, 1, -5], near: 0.1, far: 1000 } },
-        React.createElement(Stats, null),
-        React.createElement(ControlsWrapper, { socket: socketClient }),
-        React.createElement("gridHelper", { rotation: [0, 0, 0] }),
-        Object.keys(clients)
+  return (
+    <div className="App">
+      <Canvas camera={{ position: [0, 1, -5], near: 0.1, far: 1000 }}>
+        <Stats />
+        {socketClient && <ControlsWrapper socket={socketClient} />}
+        <gridHelper rotation={[0, 0, 0]} />
+        {Object.keys(clients)
           .filter((clientKey) => clientKey !== socketClient.id)
           .map((client) => {
             const { position, rotation } = clients[client];
-            return React.createElement(UserWrapper, {
-              key: client,
-              id: client,
-              position: position,
-              rotation: rotation,
-            });
-          })
-      ),
-      React.createElement(Footer, null)
-    )
+            return (
+              <UserWrapper
+                key={client}
+                id={client}
+                position={position}
+                rotation={rotation}
+              />
+            );
+          })}
+      </Canvas>
+      <Footer />
+    </div>
   );
 };
 

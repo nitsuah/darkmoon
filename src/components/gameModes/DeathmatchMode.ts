@@ -70,7 +70,9 @@ export class DeathmatchMode implements GameModeHandler {
       }
       // Passive regen: 5hp/s after 5s without damage, up to half max health.
       const REGEN_DELAY_MS = 5000;
-      const REGEN_CAP = Math.floor((player.maxHealth ?? this.DEFAULT_MAX_HEALTH) / 2);
+      const REGEN_CAP = Math.floor(
+        (player.maxHealth ?? this.DEFAULT_MAX_HEALTH) / 2,
+      );
       if (
         player.respawnAt === undefined &&
         (player.health ?? 0) < REGEN_CAP &&

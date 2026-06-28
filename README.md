@@ -14,7 +14,7 @@
 
 ## ✨ Features
 
-- `[shipped]` **Combat Gameplay with AI Bots** — Full deathmatch and CTF modes with bot LOS checks, weapon reload system, angular spread, bot jumping, tracer beams, hit direction indicators, and score tension alerts.
+- `[shipped]` **Combat Gameplay with AI Bots** — Full deathmatch and CTF modes with bot LOS checks, weapon reload system, angular spread, bot jumping, tracer beams, hit direction indicators, score tension alerts, and a **new hold-to-throw grenade mechanic with trajectory preview.**
 - `[shipped]` **Shooting Gallery Mode** — Standalone target-practice mode (Phase BM) with crosshair and bot tracer improvements.
 - `[shipped]` **Mouse-Aimed Firing & Player Reticle** — Ground-plane raycast aiming with CSS crosshair overlay; velocity-based smooth movement.
 - `[shipped]` **Pluggable Game Mode Architecture** — `GameModeHandler` interface decouples mode logic; `TagMode`, `DeathmatchMode`, and `CTFMode` ship as reference implementations.

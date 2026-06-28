@@ -68,7 +68,11 @@ const Environment: React.FC<Props> = ({ qualitySettings, rockPositions }) => {
       ).map(([x, y, z, w, h, d], i) => (
         <mesh key={`wall-${i}`} position={[x, y, z]}>
           <boxGeometry args={[w, h, d]} />
-          <meshStandardMaterial color="#334455" roughness={0.95} metalness={0.1} />
+          <meshStandardMaterial
+            color="#334455"
+            roughness={0.95}
+            metalness={0.1}
+          />
         </mesh>
       ))}
 

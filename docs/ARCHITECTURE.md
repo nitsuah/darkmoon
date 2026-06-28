@@ -27,5 +27,6 @@ Darkmoon is a solo-first 3D browser game built with React 19, Three Fiber, Vite,
 - **WebSocket**: Socket.io events for multiplayer (planned), not active in solo mode.
 
 ## Related
+
 - [[repos/darkmoon/docs/archive/ARCHITECTURE_IMPROVEMENTS|Architecture Improvements]] — actionable improvement plan
 - [[repos/darkmoon/docs/archive/L7_ENGINEERING_REVIEW|L7 Engineering Review]] — source analysis

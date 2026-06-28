@@ -44,7 +44,7 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
       const normalizedY = deltaY / maxDistance;
       onMove(normalizedX, normalizedY);
     },
-    [maxDistance, onMove]
+    [maxDistance, onMove],
   );
 
   const handleEnd = useCallback(() => {
@@ -97,7 +97,7 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
       if (!activeRef.current || pointerIdRef.current == null) return;
 
       const touch = Array.from(e.touches).find(
-        (t) => t.identifier === pointerIdRef.current
+        (t) => t.identifier === pointerIdRef.current,
       );
       if (touch) {
         // Only prevent default if we're actively tracking this touch
@@ -110,7 +110,7 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
     const touchEndHandler = (e: globalThis.TouchEvent) => {
       if (pointerIdRef.current == null) return;
       const stillActive = Array.from(e.touches).some(
-        (t) => t.identifier === pointerIdRef.current
+        (t) => t.identifier === pointerIdRef.current,
       );
       if (!stillActive) {
         // Only call preventDefault if we were tracking a touch (to avoid interfering with other gestures)
@@ -169,36 +169,36 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
     if (window.PointerEvent) {
       base.addEventListener(
         "pointerdown",
-        pointerDownHandler as globalThis.EventListener
+        pointerDownHandler as globalThis.EventListener,
       );
 
       // pointermove/pointerup normally delivered to element when pointer capture is used.
       // Some devices/browsers don't support pointer capture; add window-level fallbacks.
       base.addEventListener(
         "pointermove",
-        pointerMoveHandler as globalThis.EventListener
+        pointerMoveHandler as globalThis.EventListener,
       );
       base.addEventListener(
         "pointerup",
-        pointerUpHandler as globalThis.EventListener
+        pointerUpHandler as globalThis.EventListener,
       );
       base.addEventListener(
         "pointercancel",
-        pointerUpHandler as globalThis.EventListener
+        pointerUpHandler as globalThis.EventListener,
       );
 
       // Fallbacks on window so movement/ups are tracked even when pointer leaves base
       window.addEventListener(
         "pointermove",
-        pointerMoveHandler as globalThis.EventListener
+        pointerMoveHandler as globalThis.EventListener,
       );
       window.addEventListener(
         "pointerup",
-        pointerUpHandler as globalThis.EventListener
+        pointerUpHandler as globalThis.EventListener,
       );
       window.addEventListener(
         "pointercancel",
-        pointerUpHandler as globalThis.EventListener
+        pointerUpHandler as globalThis.EventListener,
       );
     }
 
@@ -206,23 +206,23 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
     base.addEventListener(
       "touchstart",
       touchStartHandler as globalThis.EventListener,
-      touchOptions
+      touchOptions,
     );
     // Track touch moves/ends on window to ensure we receive events when finger moves off the base
     window.addEventListener(
       "touchmove",
       touchMoveHandler as globalThis.EventListener,
-      touchOptions
+      touchOptions,
     );
     window.addEventListener(
       "touchend",
       touchEndHandler as globalThis.EventListener,
-      touchOptions
+      touchOptions,
     );
     window.addEventListener(
       "touchcancel",
       touchEndHandler as globalThis.EventListener,
-      touchOptions
+      touchOptions,
     );
 
     // Cleanup on unmount
@@ -230,50 +230,50 @@ export const MobileJoystick: React.FC<JoystickProps> = ({
       if (window.PointerEvent) {
         base.removeEventListener(
           "pointerdown",
-          pointerDownHandler as globalThis.EventListener
+          pointerDownHandler as globalThis.EventListener,
         );
         base.removeEventListener(
           "pointermove",
-          pointerMoveHandler as globalThis.EventListener
+          pointerMoveHandler as globalThis.EventListener,
         );
         base.removeEventListener(
           "pointerup",
-          pointerUpHandler as globalThis.EventListener
+          pointerUpHandler as globalThis.EventListener,
         );
         base.removeEventListener(
           "pointercancel",
-          pointerUpHandler as globalThis.EventListener
+          pointerUpHandler as globalThis.EventListener,
         );
 
         window.removeEventListener(
           "pointermove",
-          pointerMoveHandler as globalThis.EventListener
+          pointerMoveHandler as globalThis.EventListener,
         );
         window.removeEventListener(
           "pointerup",
-          pointerUpHandler as globalThis.EventListener
+          pointerUpHandler as globalThis.EventListener,
         );
         window.removeEventListener(
           "pointercancel",
-          pointerUpHandler as globalThis.EventListener
+          pointerUpHandler as globalThis.EventListener,
         );
       }
 
       base.removeEventListener(
         "touchstart",
-        touchStartHandler as globalThis.EventListener
+        touchStartHandler as globalThis.EventListener,
       );
       window.removeEventListener(
         "touchmove",
-        touchMoveHandler as globalThis.EventListener
+        touchMoveHandler as globalThis.EventListener,
       );
       window.removeEventListener(
         "touchend",
-        touchEndHandler as globalThis.EventListener
+        touchEndHandler as globalThis.EventListener,
       );
       window.removeEventListener(
         "touchcancel",
-        touchEndHandler as globalThis.EventListener
+        touchEndHandler as globalThis.EventListener,
       );
       if (activeRef.current) {
         handleEnd();

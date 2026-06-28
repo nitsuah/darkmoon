@@ -396,7 +396,7 @@ describe("usePlayerMovement", () => {
     const keysPressed = { current: { [W]: true } };
 
     const { result } = renderHook(() =>
-      usePlayerMovement(meshRef, keysPressed, false)
+      usePlayerMovement(meshRef, keysPressed, false),
     );
 
     // Simulate frame update
@@ -650,6 +650,7 @@ export const setupMovementHandlers = (io) => {
 - [ROADMAP.md](./ROADMAP.md) - Implementation timeline
 
 ## Related
+
 - [[repos/darkmoon/docs/archive/L7_ENGINEERING_REVIEW|L7 Engineering Review]] — full analysis this document is derived from
 - [[repos/darkmoon/docs/ARCHITECTURE|Architecture]] — current active architecture document
 - [[repos/darkmoon|darkmoon runbook]] — repo context

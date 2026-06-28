@@ -51,7 +51,7 @@ This file provides custom instructions to GitHub Copilot when working in this re
 
 ### API Design
 
-- RESTful endpoints with consistent naming (if applicable).  Most real-time communication happens over websockets.
+- RESTful endpoints with consistent naming (if applicable). Most real-time communication happens over websockets.
 - Validate all inputs at the API boundary.
 - Return appropriate HTTP status codes.
 - Include proper error messages and context.

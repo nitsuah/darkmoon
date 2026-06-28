@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 import Footer from "../components/Footer";
 import ErrorBoundary from "../components/ErrorBoundary";
 import UtilityMenu from "../components/UtilityMenu";
+import { Card } from "../components/21st.dev/Card";
 import "../styles/App.css";
 import "../styles/Home.css";
+import "../styles/Card.css";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -17,7 +19,7 @@ const Home = () => {
       document.documentElement.style.setProperty("--vh", `${vh}px`);
       document.documentElement.style.setProperty(
         "--app-height",
-        `${window.innerHeight}px`
+        `${window.innerHeight}px`,
       );
     };
 
@@ -79,106 +81,90 @@ const Home = () => {
 
       {/* Game Modes Grid */}
       <div className="game-modes-grid">
-        <div
-          className={`mode-card mode-card-solo mode-card-flip-container ${
-            flippedCard === "solo" ? "flipped" : ""
-          }`}
+        <Card
+          title="Solo Practice"
+          description="Hone your skills against AI opponents"
+          icon="🎯"
+          status="● LIVE NOW"
+          statusType="live"
           onClick={() => handleCardInteraction("solo", "/solo")}
           onKeyDown={(e) => e.key === "Enter" && navigate("/solo")}
-          role="button"
-          tabIndex={0}
+          isFlipped={flippedCard === "solo"}
         >
-          <div className="mode-card-flip-inner">
-            <div className="mode-card-front">
-              <div className="mode-icon">🎯</div>
-              <h3>Solo Practice</h3>
-              <p>Hone your skills against AI opponents</p>
-              <div className="mode-status status-live">● LIVE NOW</div>
-            </div>
-            <div className="mode-card-back">
-              <div className="mode-icon">✨</div>
-              <h3>Game Features</h3>
-              <ul className="flip-features-list">
-                <li>🤖 Smart AI opponents</li>
-                <li>🏃 Tag game mechanics</li>
-                <li>🚀 Jetpack movement</li>
-                <li>🎮 WASD controls</li>
-                <li>💬 Live chat</li>
-                <li>🎨 Theme support</li>
-              </ul>
-            </div>
-          </div>
-        </div>
+          <h3>Game Features</h3>
+          <ul className="flip-features-list">
+            <li>🤖 Smart AI opponents</li>
+            <li>🏃 Tag game mechanics</li>
+            <li>🚀 Jetpack movement</li>
+            <li>🎮 WASD controls</li>
+            <li>💬 Live chat</li>
+            <li>🎨 Theme support</li>
+          </ul>
+        </Card>
 
-        <div
-          className={`mode-card mode-card-disabled mode-card-flip-container ${
-            flippedCard === "multiplayer" ? "flipped" : ""
-          }`}
-          onClick={() => handleCardInteraction("multiplayer")}
-          onKeyDown={(e) =>
-            e.key === "Enter" && handleCardInteraction("multiplayer")
-          }
-          role="button"
-          tabIndex={0}
+        <Card
+          title="Multiplayer Tag"
+          description="Compete with players worldwide"
+          icon="👥"
+          status="⏳ Coming Soon"
+          statusType="coming-soon"
+          className="mode-card-disabled"
+          onClick={() => {
+            if (window.innerWidth <= 1024) {
+              handleCardInteraction("multiplayer", "/multiplayer");
+            } else {
+              setFlippedCard(
+                flippedCard === "multiplayer" ? null : "multiplayer",
+              );
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              if (window.innerWidth <= 1024) {
+                handleCardInteraction("multiplayer", "/multiplayer");
+              } else {
+                setFlippedCard(
+                  flippedCard === "multiplayer" ? null : "multiplayer",
+                );
+              }
+            }
+          }}
+          isFlipped={flippedCard === "multiplayer"}
         >
-          <div className="mode-card-flip-inner">
-            <div className="mode-card-front">
-              <div className="mode-icon">👥</div>
-              <h3>Multiplayer Tag</h3>
-              <p>Compete with players worldwide</p>
-              <div className="mode-status status-coming-soon">
-                ⏳ Coming Soon
-              </div>
-            </div>
-            <div className="mode-card-back">
-              <div className="mode-icon">🌍</div>
-              <h3>Planned Features</h3>
-              <ul className="flip-features-list">
-                <li>🌐 Global matchmaking</li>
-                <li>🏃 Real-time multiplayer</li>
-                <li>💬 Voice chat support</li>
-                <li>📱 Cross-platform play</li>
-                <li>🎮 Custom lobbies</li>
-                <li>📊 Stats tracking</li>
-              </ul>
-            </div>
-          </div>
-        </div>
+          <h3>Planned Features</h3>
+          <ul className="flip-features-list">
+            <li>🌐 Global matchmaking</li>
+            <li>🏃 Real-time multiplayer</li>
+            <li>💬 Voice chat support</li>
+            <li>📱 Cross-platform play</li>
+            <li>🎮 Custom lobbies</li>
+            <li>📊 Stats tracking</li>
+          </ul>
+        </Card>
 
-        <div
-          className={`mode-card mode-card-disabled mode-card-flip-container ${
-            flippedCard === "tournament" ? "flipped" : ""
-          }`}
+        <Card
+          title="Tournament"
+          description="Ranked competitive matches"
+          icon="🏆"
+          status="⏳ Coming Soon"
+          statusType="coming-soon"
+          className="mode-card-disabled"
           onClick={() => handleCardInteraction("tournament")}
           onKeyDown={(e) =>
             e.key === "Enter" && handleCardInteraction("tournament")
           }
-          role="button"
-          tabIndex={0}
+          isFlipped={flippedCard === "tournament"}
         >
-          <div className="mode-card-flip-inner">
-            <div className="mode-card-front">
-              <div className="mode-icon">🏆</div>
-              <h3>Tournament</h3>
-              <p>Ranked competitive matches</p>
-              <div className="mode-status status-coming-soon">
-                ⏳ Coming Soon
-              </div>
-            </div>
-            <div className="mode-card-back">
-              <div className="mode-icon">🎯</div>
-              <h3>Future Modes</h3>
-              <ul className="flip-features-list">
-                <li>🏁 Race mode</li>
-                <li>💎 Collectible hunt</li>
-                <li>🎭 Emotes & actions</li>
-                <li>👤 Custom avatars</li>
-                <li>🏅 Leaderboards</li>
-                <li>🎁 Rewards system</li>
-              </ul>
-            </div>
-          </div>
-        </div>
+          <h3>Future Modes</h3>
+          <ul className="flip-features-list">
+            <li>🏁 Race mode</li>
+            <li>💎 Collectible hunt</li>
+            <li>🎭 Emotes & actions</li>
+            <li>👤 Custom avatars</li>
+            <li>🏅 Leaderboards</li>
+            <li>🎁 Rewards system</li>
+          </ul>
+        </Card>
       </div>
     </div>
   );

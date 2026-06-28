@@ -83,7 +83,7 @@ describe("musicLayers.createBackgroundMusic", () => {
 
     const { masterGain, oscillators } = createBackgroundMusic(
       ctx as unknown as AudioContext,
-      destGain as unknown as GainNode
+      destGain as unknown as GainNode,
     );
 
     expect(masterGain).toBeTruthy();

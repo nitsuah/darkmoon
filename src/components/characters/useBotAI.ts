@@ -435,7 +435,10 @@ export function useBotAI({
           botPos.z + lateral.z * STRAFE_SPEED * delta,
         );
         if (collisionSystem.current) {
-          const resolved = collisionSystem.current.checkCollision(currentPos, newPos);
+          const resolved = collisionSystem.current.checkCollision(
+            currentPos,
+            newPos,
+          );
           botPos.x = resolved.x;
           botPos.z = resolved.z;
         } else {

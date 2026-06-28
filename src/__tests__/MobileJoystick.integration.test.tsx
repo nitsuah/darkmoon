@@ -10,7 +10,7 @@ describe("MobileJoystick integration", () => {
     const onMove = (x: number, y: number) => moves.push([x, y]);
 
     const { container } = render(
-      <MobileJoystick side="left" label="Left" onMove={onMove} />
+      <MobileJoystick side="left" label="Left" onMove={onMove} />,
     );
 
     const base = container.querySelector(".joystick-base") as HTMLElement;
@@ -49,7 +49,7 @@ describe("MobileJoystick integration", () => {
     const onMove = (x: number, y: number) => moves.push([x, y]);
 
     const { container } = render(
-      <MobileJoystick side="right" label="Right" onMove={onMove} />
+      <MobileJoystick side="right" label="Right" onMove={onMove} />,
     );
 
     const base = container.querySelector(".joystick-base") as HTMLElement;

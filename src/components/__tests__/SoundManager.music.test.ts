@@ -96,7 +96,8 @@ type GlobalWithAudioContext = Record<string, unknown> & {
 let originalAudioContext: unknown;
 
 beforeEach(() => {
-  const globalWithAudioContext = globalThis as unknown as GlobalWithAudioContext;
+  const globalWithAudioContext =
+    globalThis as unknown as GlobalWithAudioContext;
   originalAudioContext = globalWithAudioContext.AudioContext;
   globalWithAudioContext.AudioContext = MockAudioContext;
   // Patch window for SoundManager browser checks
@@ -109,7 +110,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  const globalWithAudioContext = globalThis as unknown as GlobalWithAudioContext;
+  const globalWithAudioContext =
+    globalThis as unknown as GlobalWithAudioContext;
   globalWithAudioContext.AudioContext = originalAudioContext;
   if (globalWithAudioContext.window) {
     delete globalWithAudioContext.window.AudioContext;
@@ -129,10 +131,10 @@ describe("SoundManager background music lifecycle", () => {
 
     // internal flags should be set
     expect((sm as unknown as Record<string, unknown>).isMusicPlaying).toBe(
-      true
+      true,
     );
     expect(
-      (sm as unknown as Record<string, unknown>).backgroundMusic
+      (sm as unknown as Record<string, unknown>).backgroundMusic,
     ).not.toBeNull();
 
     // the created oscillators should have been started (we created many; check that at least one started)
@@ -151,7 +153,7 @@ describe("SoundManager background music lifecycle", () => {
     // After timers, stop should have been invoked on the stored oscillator
     expect(osc!.stop).toHaveBeenCalled();
     expect((sm as unknown as Record<string, unknown>).isMusicPlaying).toBe(
-      false
+      false,
     );
   });
 });

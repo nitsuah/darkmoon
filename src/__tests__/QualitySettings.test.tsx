@@ -48,7 +48,7 @@ describe("QualitySettings Component", () => {
         expect(screen.getByText(/High - Best visuals/i)).toBeInTheDocument();
         expect(screen.getByText(/Medium - Balanced/i)).toBeInTheDocument();
         expect(
-          screen.getByText(/Low - Better performance/i)
+          screen.getByText(/Low - Better performance/i),
         ).toBeInTheDocument();
       });
     });
@@ -61,7 +61,7 @@ describe("QualitySettings Component", () => {
         const autoButton = screen
           .getByText(/Auto - Adaptive/i)
           .closest("button");
-        expect(autoButton).toHaveStyle({ backgroundColor: "rgb(117, 6, 145)" });
+        expect(autoButton).toHaveClass("btn-primary");
       });
     });
 
@@ -191,7 +191,7 @@ describe("QualitySettings Component", () => {
 
     it("should update recommendation when FPS changes", async () => {
       const { rerender } = render(
-        <QualitySettings onChange={mockOnChange} currentFPS={60} />
+        <QualitySettings onChange={mockOnChange} currentFPS={60} />,
       );
 
       await waitFor(() => {

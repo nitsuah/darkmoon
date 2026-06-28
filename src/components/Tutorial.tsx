@@ -1,6 +1,8 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
 import "../styles/Tutorial.css";
+import { Button } from "./21st.dev/Button";
+import "../styles/Button.css";
 
 interface TutorialProps {
   onComplete?: () => void;
@@ -13,7 +15,7 @@ const Tutorial: React.FC<TutorialProps> = ({ onComplete }) => {
   useEffect(() => {
     // Check if user has seen the tutorial
     const hasSeenTutorial = window.localStorage.getItem(
-      "darkmoon-tutorial-complete"
+      "darkmoon-tutorial-complete",
     );
     if (!hasSeenTutorial) {
       setIsVisible(true);
@@ -79,12 +81,12 @@ const Tutorial: React.FC<TutorialProps> = ({ onComplete }) => {
           <p>{currentStep.content}</p>
         </div>
         <div className="tutorial-footer">
-          <button onClick={handleSkip} className="tutorial-button secondary">
+          <Button onClick={handleSkip} variant="secondary" className="tutorial-button">
             Skip Tutorial
-          </button>
-          <button onClick={handleNext} className="tutorial-button primary">
+          </Button>
+          <Button onClick={handleNext} variant="primary" className="tutorial-button">
             {step < steps.length - 1 ? "Next" : "Get Started"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

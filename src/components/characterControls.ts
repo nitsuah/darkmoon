@@ -30,7 +30,7 @@ export class CharacterControls {
     animationsMap: Map<string, THREE.AnimationAction>,
     orbitControl: OrbitControls,
     camera: THREE.Camera,
-    currentAction: string
+    currentAction: string,
   ) {
     this.model = model;
     this.mixer = mixer;
@@ -52,7 +52,7 @@ export class CharacterControls {
 
   public update(delta: number, keysPressed: Record<string, boolean>) {
     const directionPressed = DIRECTIONS.some(
-      (key) => keysPressed[key] === true
+      (key) => keysPressed[key] === true,
     );
 
     let play = "";
@@ -82,7 +82,7 @@ export class CharacterControls {
       // calculate towards camera direction
       var angleYCameraDirection = Math.atan2(
         this.camera.position.x - this.model.position.x,
-        this.camera.position.z - this.model.position.z
+        this.camera.position.z - this.model.position.z,
       );
       // diagonal movement angle offset
       var directionOffset = this.directionOffset(keysPressed);
@@ -90,7 +90,7 @@ export class CharacterControls {
       // rotate model
       this.rotateQuarternion.setFromAxisAngle(
         this.rotateAngle,
-        angleYCameraDirection + directionOffset
+        angleYCameraDirection + directionOffset,
       );
       this.model.quaternion.rotateTowards(this.rotateQuarternion, 0.2);
 

@@ -70,7 +70,7 @@ describe("PerformanceMonitor Component", () => {
       render(<PerformanceMonitor />);
       expect(screen.getByRole("button")).toHaveAttribute(
         "title",
-        "Click to switch to icon mode"
+        "Click to switch to icon mode",
       );
     });
   });

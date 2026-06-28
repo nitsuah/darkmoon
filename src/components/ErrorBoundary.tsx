@@ -1,5 +1,8 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { createLogger } from "../lib/utils/logger";
+import { Button } from "./21st.dev/Button";
+import "../styles/Button.css";
+import "../styles/ErrorBoundary.css";
 
 const log = createLogger("ErrorBoundary");
 
@@ -35,6 +38,7 @@ class ErrorBoundary extends Component<Props, State> {
 
       return (
         <div
+          className="error-boundary"
           style={{
             display: "flex",
             flexDirection: "column",
@@ -48,26 +52,14 @@ class ErrorBoundary extends Component<Props, State> {
             textAlign: "center",
           }}
         >
-          <h1 style={{ fontSize: "48px", marginBottom: "20px" }}>🌑</h1>
-          <h2 style={{ marginBottom: "10px" }}>Something went wrong</h2>
-          <p style={{ marginBottom: "20px", opacity: 0.7 }}>
+          <h1 className="error-boundary-icon">🌑</h1>
+          <h2 className="error-boundary-title">Something went wrong</h2>
+          <p className="error-boundary-message">
             {this.state.error?.message || "An unexpected error occurred"}
           </p>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              padding: "12px 24px",
-              backgroundColor: "#fff",
-              color: "#000",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontSize: "16px",
-              fontWeight: "bold",
-            }}
-          >
+          <Button onClick={() => window.location.reload()} variant="primary">
             Reload Page
-          </button>
+          </Button>
         </div>
       );
     }

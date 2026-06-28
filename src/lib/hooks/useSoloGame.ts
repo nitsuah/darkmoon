@@ -26,7 +26,7 @@ export const useSoloGame = () => {
         setGameState: Dispatch<SetStateAction<GameState>>;
         setPlayerIsIt: Dispatch<SetStateAction<boolean>>;
       },
-      botConfig: BotConfig = BOT1_CONFIG
+      botConfig: BotConfig = BOT1_CONFIG,
     ) => {
       if (gameManagerRef.current) return gameManagerRef.current;
 
@@ -70,7 +70,7 @@ export const useSoloGame = () => {
 
       return manager;
     },
-    []
+    [],
   );
 
   return { gameManagerRef, initializeForSocket } as const;
@@ -87,14 +87,14 @@ export const attachToConnection = (
       setGameState: Dispatch<SetStateAction<GameState>>;
       setPlayerIsIt: Dispatch<SetStateAction<boolean>>;
     },
-    botConfig?: BotConfig
+    botConfig?: BotConfig,
   ) => GameManager | null,
   handlers: {
     setGamePlayers: Dispatch<SetStateAction<Map<string, Player>>>;
     setGameState: Dispatch<SetStateAction<GameState>>;
     setPlayerIsIt: Dispatch<SetStateAction<boolean>>;
   },
-  botConfig?: BotConfig
+  botConfig?: BotConfig,
 ): (() => void) => {
   // Mirror the page-level connect logic here so Solo.tsx stays thin
   const socket = connect();
@@ -107,7 +107,7 @@ export const attachToConnection = (
   };
   // Type guard for objects that expose event methods like socket.io clients
   const isEvented = (
-    v: unknown
+    v: unknown,
   ): v is {
     on?: (ev: string, cb: (...args: unknown[]) => void) => void;
     off?: (ev: string, cb?: (...args: unknown[]) => void) => void;

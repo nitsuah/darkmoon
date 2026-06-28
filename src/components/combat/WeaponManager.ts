@@ -15,6 +15,10 @@ export interface WeaponConfig {
   splashRadius?: number;
   /** Damage dealt to entities caught in the splash radius (not the direct-hit target). */
   splashDamage?: number;
+  /** If true, this weapon can be charged for distance (e.g. grenades). */
+  isChargeable?: boolean;
+  /** Charge time in ms for maximum throw distance. */
+  maxChargeTimeMs?: number;
 }
 
 export const WEAPONS: Record<string, WeaponConfig> = {
@@ -54,6 +58,8 @@ export const WEAPONS: Record<string, WeaponConfig> = {
     maxAmmo: 3,
     splashRadius: 7,
     splashDamage: 75,
+    isChargeable: true,
+    maxChargeTimeMs: 2000,
   },
   smg: {
     id: "smg",
@@ -75,6 +81,7 @@ export class WeaponManager {
   private lastFiredAt: Map<string, number> = new Map();
   private ammoMap: Map<string, number> = new Map();
   private reloadStartAt: Map<string, number> = new Map();
+  private chargeStartAt: Map<string, number> = new Map();
 
   equip(weaponId: string): boolean {
     const weapon = WEAPONS[weaponId];
@@ -121,6 +128,31 @@ export class WeaponManager {
     return progress !== null && progress < 1;
   }
 
+  isCharging(weaponId: string): boolean {
+    return this.chargeStartAt.has(weaponId);
+  }
+
+  startCharge(weaponId: string, now: number = Date.now()): void {
+    if (WEAPONS[weaponId]?.isChargeable) {
+      this.chargeStartAt.set(weaponId, now);
+    }
+  }
+
+  stopCharge(weaponId: string): number | null {
+    const start = this.chargeStartAt.get(weaponId);
+    this.chargeStartAt.delete(weaponId);
+    if (start === undefined) return null;
+    return Date.now() - start;
+  }
+
+  getChargeProgress(weaponId: string, now: number = Date.now()): number {
+    const weapon = WEAPONS[weaponId];
+    if (!weapon?.isChargeable || !weapon.maxChargeTimeMs) return 0;
+    const start = this.chargeStartAt.get(weaponId);
+    if (start === undefined) return 0;
+    return Math.min(1, (now - start) / weapon.maxChargeTimeMs);
+  }
+
   /** Completes a finished reload, refilling ammo. Called from canFire/fire checks. */
   private completeReloadIfDone(weaponId: string, now: number): void {
     const progress = this.getReloadProgress(weaponId, now);
@@ -130,6 +162,9 @@ export class WeaponManager {
   }
 
   unequip(): void {
+    if (this.equippedWeaponId) {
+      this.stopCharge(this.equippedWeaponId);
+    }
     this.equippedWeaponId = null;
   }
 

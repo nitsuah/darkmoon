@@ -77,7 +77,7 @@ describe("Tutorial Component", () => {
       fireEvent.click(screen.getByText("Get Started"));
 
       expect(window.localStorage.getItem("darkmoon-tutorial-complete")).toBe(
-        "true"
+        "true",
       );
       expect(screen.queryByText("Need Help?")).toBeNull();
     });
@@ -87,7 +87,7 @@ describe("Tutorial Component", () => {
       fireEvent.click(screen.getByText("Skip Tutorial"));
 
       expect(window.localStorage.getItem("darkmoon-tutorial-complete")).toBe(
-        "true"
+        "true",
       );
       expect(screen.queryByText("Welcome to DARKMOON")).toBeNull();
     });
@@ -206,8 +206,8 @@ describe("Tutorial Component", () => {
       const skipButton = screen.getByText("Skip Tutorial");
       const nextButton = screen.getByText("Next");
 
-      expect(skipButton).toHaveClass("tutorial-button", "secondary");
-      expect(nextButton).toHaveClass("tutorial-button", "primary");
+      expect(skipButton).toHaveClass("tutorial-button", "btn-secondary");
+      expect(nextButton).toHaveClass("tutorial-button", "btn-primary");
     });
 
     it("should change Next button text on last step", () => {

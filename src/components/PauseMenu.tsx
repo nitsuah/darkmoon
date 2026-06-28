@@ -1,4 +1,6 @@
 import * as React from "react";
+import { Button } from "./21st.dev/Button";
+import "../styles/Button.css";
 
 interface PauseMenuProps {
   isVisible: boolean;
@@ -62,81 +64,17 @@ const PauseMenu: React.FC<PauseMenuProps> = ({
             marginTop: "20px",
           }}
         >
-          <button
-            onClick={onResume}
-            style={{
-              padding: "12px 24px",
-              backgroundColor: "rgba(74, 144, 226, 0.9)",
-              border: "1px solid #4a90e2",
-              borderRadius: "6px",
-              color: "white",
-              cursor: "pointer",
-              fontSize: "16px",
-              fontWeight: "bold",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(74, 144, 226, 1)";
-              e.currentTarget.style.transform = "scale(1.05)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(74, 144, 226, 0.9)";
-              e.currentTarget.style.transform = "scale(1)";
-            }}
-          >
+          <Button onClick={onResume} variant="primary" size="large">
             ▶️ Resume
-          </button>
+          </Button>
 
-          <button
-            onClick={onRestart}
-            style={{
-              padding: "12px 24px",
-              backgroundColor: "rgba(255, 165, 0, 0.9)",
-              border: "1px solid #ffa500",
-              borderRadius: "6px",
-              color: "white",
-              cursor: "pointer",
-              fontSize: "16px",
-              fontWeight: "bold",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(255, 165, 0, 1)";
-              e.currentTarget.style.transform = "scale(1.05)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(255, 165, 0, 0.9)";
-              e.currentTarget.style.transform = "scale(1)";
-            }}
-          >
+          <Button onClick={onRestart} variant="warning" size="large">
             🔄 Restart
-          </button>
+          </Button>
 
-          <button
-            onClick={onQuit}
-            style={{
-              padding: "12px 24px",
-              backgroundColor: "rgba(255, 100, 100, 0.9)",
-              border: "1px solid #ff6464",
-              borderRadius: "6px",
-              color: "white",
-              cursor: "pointer",
-              fontSize: "16px",
-              fontWeight: "bold",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(255, 100, 100, 1)";
-              e.currentTarget.style.transform = "scale(1.05)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor =
-                "rgba(255, 100, 100, 0.9)";
-              e.currentTarget.style.transform = "scale(1)";
-            }}
-          >
+          <Button onClick={onQuit} variant="danger" size="large">
             🚪 Quit to Menu
-          </button>
+          </Button>
         </div>
 
         <div

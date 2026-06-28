@@ -7,7 +7,7 @@ import { spawnSync } from "child_process";
 const cwd = process.cwd();
 console.log(
   "Running tests with VITEST_MAX_WORKERS=%s",
-  process.env.VITEST_MAX_WORKERS
+  process.env.VITEST_MAX_WORKERS,
 );
 
 // Run vitest directly using npx to avoid spawning an npm child process which
@@ -46,7 +46,7 @@ for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
 // environments.
 try {
   console.warn(
-    "Parallel test run failed — attempting sequential test run as fallback..."
+    "Parallel test run failed — attempting sequential test run as fallback...",
   );
 
   const fs = await import("fs");
@@ -80,7 +80,7 @@ try {
 
   if (testFiles.length === 0) {
     console.error(
-      "No test files found for sequential fallback. Exiting with last status."
+      "No test files found for sequential fallback. Exiting with last status.",
     );
     process.exit((lastResult && lastResult.status) || 1);
   }
@@ -98,7 +98,7 @@ try {
           ...process.env,
           VITEST_MAX_WORKERS: process.env.VITEST_MAX_WORKERS || "1",
         },
-      }
+      },
     );
     if (res.status !== 0) {
       console.error(`Test file failed: ${tf}`);

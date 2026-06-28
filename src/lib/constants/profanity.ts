@@ -46,7 +46,7 @@ export function escapeRegex(str: string): string {
  */
 export function filterProfanity(
   text: string,
-  customWords: string[] = []
+  customWords: string[] = [],
 ): string {
   if (!text) return text;
 

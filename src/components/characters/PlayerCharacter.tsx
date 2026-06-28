@@ -47,6 +47,7 @@ import {
   computeJetpackThrust,
   shouldActivateJetpackFromMobile,
 } from "../../lib/hooks/useJetpack";
+import { TrajectoryArc } from "../world/vfx/TrajectoryArc";
 
 const tagDebug = createTagLogger("PlayerCharacter");
 
@@ -237,6 +238,7 @@ export const PlayerCharacter = React.forwardRef<
   React.useEffect(() => {
     function handleWeaponPickup(e: unknown) {
       const { weaponId } = (e as { detail: { weaponId: string } }).detail;
+      weaponManagerRef.current.unequip();
       weaponManagerRef.current.equip(weaponId);
       weaponManagerRef.current.refill(weaponId);
       const newAmmo = weaponManagerRef.current.getAmmo(weaponId);
@@ -316,8 +318,28 @@ export const PlayerCharacter = React.forwardRef<
 
     const now = Date.now();
 
-    // Freeze all input while the player is awaiting respawn (downed in deathmatch/CTF).
     const mePlayer = gameManager?.getPlayers().get(currentPlayerId);
+
+    // Grenade charge logic
+    const equipped = weaponManagerRef.current.getEquipped();
+    const isGrenade = equipped?.id === "grenade";
+    const canAct =
+      mePlayer?.respawnAt === undefined && !isPlayerFrozenRef.current;
+
+    if (isGrenade && canAct) {
+      if (mouseControls.rightClick) {
+        if (!weaponManagerRef.current.isCharging("grenade")) {
+          weaponManagerRef.current.startCharge("grenade", now);
+        }
+      } else if (weaponManagerRef.current.isCharging("grenade")) {
+        weaponManagerRef.current.stopCharge("grenade");
+      }
+    } else if (weaponManagerRef.current.isCharging("grenade")) {
+      // Clear charge if player cannot act or grenade unequipped
+      weaponManagerRef.current.stopCharge("grenade");
+    }
+
+    // Freeze all input while the player is awaiting respawn (downed in deathmatch/CTF).
     if (mePlayer?.respawnAt !== undefined) {
       return;
     }
@@ -1229,6 +1251,23 @@ export const PlayerCharacter = React.forwardRef<
           <meshBasicMaterial color="#33ffe6" transparent opacity={0.2} />
         </mesh>
       </group>
+
+      <TrajectoryArc
+        origin={
+          meshRef.current?.position.clone().add(new THREE.Vector3(0, 1, 0)) ??
+          new THREE.Vector3()
+        }
+        direction={
+          new THREE.Vector3(
+            -Math.sin(cameraRotationRef.current.horizontal),
+            0,
+            -Math.cos(cameraRotationRef.current.horizontal),
+          )
+        }
+        chargeProgress={weaponManagerRef.current.getChargeProgress("grenade")}
+        isVisible={weaponManagerRef.current.isCharging("grenade")}
+      />
+
       {/* Muzzle flash: brief warm point light burst at gun origin on fire. */}
       <pointLight
         ref={muzzleFlashRef}

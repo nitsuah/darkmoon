@@ -3,6 +3,8 @@ import { getSoundManager } from "./SoundManager";
 import { QualityLevel } from "./QualitySettings";
 import { useTheme } from "../contexts/ThemeContext";
 import { createLogger } from "../lib/utils/logger";
+import { Button } from "./21st.dev/Button";
+import "../styles/Button.css";
 
 const log = createLogger("UtilityMenu");
 
@@ -160,143 +162,101 @@ const UtilityMenu: React.FC<UtilityMenuProps> = ({
             pointerEvents: isExpanded ? "auto" : "none",
           }}
         >
-          {/* Theme Toggle Button */}
-          <button
+          <Button
             onClick={() => {
               toggleTheme();
               setIsExpanded(false);
             }}
+            className="round-btn"
+            title={theme === "dark" ? "Light Mode" : "Dark Mode"}
             style={{
               width: `${drawerButtonSize}px`,
               height: `${drawerButtonSize}px`,
-              backgroundColor: "rgba(0, 0, 0, 0.85)",
-              border: "2px solid rgba(255, 255, 255, 0.3)",
-              borderRadius: "50%",
-              color: theme === "dark" ? "#ffd700" : "#1e40af",
-              cursor: "pointer",
               fontSize: isMinimal ? "16px" : "20px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "all 0.2s ease",
             }}
-            title={theme === "dark" ? "Light Mode" : "Dark Mode"}
           >
             {theme === "dark" ? "☀️" : "🌙"}
-          </button>
+          </Button>
 
           {/* Mute Button */}
-          <button
+          <Button
             onClick={() => {
               handleToggleMute();
               setIsExpanded(false);
             }}
+            className="round-btn"
+            title={isMuted ? "Unmute" : "Mute"}
             style={{
               width: `${drawerButtonSize}px`,
               height: `${drawerButtonSize}px`,
-              backgroundColor: "rgba(0, 0, 0, 0.85)",
-              border: `2px solid ${isMuted ? "#ff6464" : "#64ff64"}`,
-              borderRadius: "50%",
-              color: "white",
-              cursor: "pointer",
               fontSize: isMinimal ? "16px" : "20px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "all 0.2s ease",
+              border: `2px solid ${isMuted ? "#ff6464" : "#64ff64"}`,
             }}
-            title={isMuted ? "Unmute" : "Mute"}
           >
             {isMuted ? "🔇" : "🔊"}
-          </button>
+          </Button>
 
           {/* Quality/Settings Button */}
-          <button
+          <Button
             onClick={() => {
               setShowQualityMenu(!showQualityMenu);
             }}
+            className="round-btn"
+            title="Quality Settings"
             style={{
               width: `${drawerButtonSize}px`,
               height: `${drawerButtonSize}px`,
+              fontSize: isMinimal ? "16px" : "20px",
               backgroundColor: showQualityMenu
                 ? "rgba(102, 126, 234, 0.7)"
                 : "rgba(0, 0, 0, 0.85)",
-              border: "2px solid rgba(255, 255, 255, 0.3)",
-              borderRadius: "50%",
-              color: "white",
-              cursor: "pointer",
-              fontSize: isMinimal ? "16px" : "20px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "all 0.2s ease",
             }}
-            title="Quality Settings"
           >
             ⚙️
-          </button>
+          </Button>
 
           {/* Chat Button */}
           {onToggleChat && (
-            <button
+            <Button
               onClick={() => {
                 onToggleChat();
                 setIsExpanded(false);
               }}
+              className="round-btn"
+              title={isChatVisible ? "Hide Chat" : "Show Chat"}
               style={{
                 width: `${drawerButtonSize}px`,
                 height: `${drawerButtonSize}px`,
-                backgroundColor: "rgba(0, 0, 0, 0.85)",
+                fontSize: isMinimal ? "16px" : "20px",
                 border: `2px solid ${
                   isChatVisible ? "#4a90e2" : "rgba(255, 255, 255, 0.3)"
                 }`,
-                borderRadius: "50%",
-                color: "white",
-                cursor: "pointer",
-                fontSize: isMinimal ? "16px" : "20px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "all 0.2s ease",
               }}
-              title={isChatVisible ? "Hide Chat" : "Show Chat"}
             >
               💬
-            </button>
+            </Button>
           )}
         </div>
 
         {/* Main toggle button */}
-        <button
+        <Button
           onClick={() => {
             setIsExpanded(!isExpanded);
             setShowQualityMenu(false);
           }}
+          className="round-btn"
+          title={isExpanded ? "Close Utilities" : "Open Utilities"}
           style={{
             width: `${mainButtonSize}px`,
             height: `${mainButtonSize}px`,
-            backgroundColor: isExpanded
-              ? "rgba(102, 126, 234, 0.9)"
-              : "rgba(0, 0, 0, 0.85)",
-            border: isMinimal
-              ? "2px solid rgba(255, 255, 255, 0.4)"
-              : "3px solid rgba(255, 255, 255, 0.4)",
-            borderRadius: "50%",
-            color: "white",
-            cursor: "pointer",
             fontSize: isMinimal ? "20px" : isMobile ? "24px" : "28px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "all 0.3s ease",
             boxShadow: isExpanded
               ? "0 0 20px rgba(102, 126, 234, 0.6)"
               : "0 4px 12px rgba(0, 0, 0, 0.4)",
           }}
-          title={isExpanded ? "Close Menu" : "Open Utilities"}
         >
           {isExpanded ? "✕" : "☰"}
-        </button>
+        </Button>
       </div>
     </div>
   );
