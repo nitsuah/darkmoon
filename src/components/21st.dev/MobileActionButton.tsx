@@ -51,7 +51,9 @@ export const MobileActionButton: React.FC<MobileActionButtonProps> = ({
   }, [onRelease]);
 
   useEffect(() => {
-    const buttonElement = document.getElementById(`mobile-action-button-${label}`);
+    const buttonElement = document.getElementById(
+      `mobile-action-button-${label}`,
+    );
     if (!buttonElement) return;
 
     const touchStartHandler = (e: TouchEvent) => {
@@ -66,9 +68,15 @@ export const MobileActionButton: React.FC<MobileActionButtonProps> = ({
       handleRelease();
     };
 
-    buttonElement.addEventListener("touchstart", touchStartHandler, { passive: false });
-    buttonElement.addEventListener("touchend", touchEndHandler, { passive: false });
-    buttonElement.addEventListener("touchcancel", touchEndHandler, { passive: false });
+    buttonElement.addEventListener("touchstart", touchStartHandler, {
+      passive: false,
+    });
+    buttonElement.addEventListener("touchend", touchEndHandler, {
+      passive: false,
+    });
+    buttonElement.addEventListener("touchcancel", touchEndHandler, {
+      passive: false,
+    });
 
     return () => {
       buttonElement.removeEventListener("touchstart", touchStartHandler);
@@ -90,25 +98,14 @@ export const MobileActionButton: React.FC<MobileActionButtonProps> = ({
   return (
     <Button
       id={`mobile-action-button-${label}`}
-      onClick={() => {}}
+      onClick={() => {
+        onPress();
+        // Mimic touch-end logic with a small delay
+        setTimeout(onRelease, 150);
+      }}
       className={`mobile-action-button ${position}`}
       variant="primary"
       size="large"
-      style={{
-        width: "80px",
-        height: "80px",
-        borderRadius: "50%",
-        background: "linear-gradient(135deg, rgba(117, 6, 145, 0.8), rgba(0, 0, 0, 0.8))",
-        border: "2px solid rgba(255, 255, 255, 0.3)",
-        backdropFilter: "blur(5px)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "4px",
-        transition: "all 0.15s ease",
-        padding: 0,
-      }}
       disabled={false}
     >
       {children}
