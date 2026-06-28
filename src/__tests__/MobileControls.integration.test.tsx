@@ -5,6 +5,7 @@
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, fireEvent } from "@testing-library/react";
+import { MobileControls } from "../components/MobileControls";
 import { MobileJoystick } from "../components/MobileJoystick";
 import { MobileActionButton } from "../components/21st.dev/MobileActionButton";
 import React from "react";
@@ -158,66 +159,57 @@ describe("MobileActionButton", () => {
 });
 
 describe("Mobile Controls Integration", () => {
-  it("should render both joystick and button together", () => {
+  it("should render MobileControls with joystick and action buttons", () => {
     const onMove = vi.fn();
-    const onJump = vi.fn();
+    const onJumpPress = vi.fn();
     const onJumpRelease = vi.fn();
+    const onJumpDoubleTap = vi.fn();
+    const onSprintPress = vi.fn();
+    const onSprintRelease = vi.fn();
 
     const { container, getByText } = render(
-      <div>
-        <MobileJoystick onMove={onMove} side="left" label="Move" />
-        <MobileActionButton
-          onPress={onJump}
-          onRelease={onJumpRelease}
-          label="Jump"
-          position="bottom-right"
-        />
-      </div>,
+      <MobileControls
+        onJoystickMove={onMove}
+        onJumpPress={onJumpPress}
+        onJumpRelease={onJumpRelease}
+        onJumpDoubleTap={onJumpDoubleTap}
+        onSprintPress={onSprintPress}
+        onSprintRelease={onSprintRelease}
+      />,
     );
 
     const joystick = container.querySelector(".joystick-container");
-    const button = container.querySelector(".mobile-action-button");
+    const buttons = container.querySelectorAll(".mobile-action-button");
 
     expect(joystick).toBeTruthy();
-    expect(button).toBeTruthy();
+    expect(buttons.length).toBe(2);
     expect(getByText("Move")).toBeTruthy();
     expect(getByText("Jump")).toBeTruthy();
-  });
-
-  it("should render two joysticks for move and camera", () => {
-    const onMove = vi.fn();
-    const onCamera = vi.fn();
-
-    const { container } = render(
-      <div>
-        <MobileJoystick onMove={onMove} side="left" label="Move" />
-        <MobileJoystick onMove={onCamera} side="right" label="Look" />
-      </div>,
-    );
-
-    const joysticks = container.querySelectorAll(".joystick-container");
-    expect(joysticks.length).toBe(2);
+    expect(getByText("Sprint")).toBeTruthy();
   });
 
   it("should have proper accessibility", () => {
     const onMove = vi.fn();
-    const onPress = vi.fn();
-    const onRelease = vi.fn();
+    const onJumpPress = vi.fn();
+    const onJumpRelease = vi.fn();
+    const onJumpDoubleTap = vi.fn();
+    const onSprintPress = vi.fn();
+    const onSprintRelease = vi.fn();
 
     const { getByText } = render(
-      <div>
-        <MobileJoystick onMove={onMove} side="left" label="Move" />
-        <MobileActionButton
-          onPress={onPress}
-          onRelease={onRelease}
-          label="Jump"
-          position="bottom-right"
-        />
-      </div>,
+      <MobileControls
+        onJoystickMove={onMove}
+        onJumpPress={onJumpPress}
+        onJumpRelease={onJumpRelease}
+        onJumpDoubleTap={onJumpDoubleTap}
+        onSprintPress={onSprintPress}
+        onSprintRelease={onSprintRelease}
+      />,
     );
 
     // Labels should be accessible
     expect(getByText("Move")).toBeTruthy();
     expect(getByText("Jump")).toBeTruthy();
+    expect(getByText("Sprint")).toBeTruthy();
   });
 });
