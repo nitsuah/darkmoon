@@ -238,6 +238,7 @@ export const PlayerCharacter = React.forwardRef<
   React.useEffect(() => {
     function handleWeaponPickup(e: unknown) {
       const { weaponId } = (e as { detail: { weaponId: string } }).detail;
+      weaponManagerRef.current.unequip();
       weaponManagerRef.current.equip(weaponId);
       weaponManagerRef.current.refill(weaponId);
       const newAmmo = weaponManagerRef.current.getAmmo(weaponId);
