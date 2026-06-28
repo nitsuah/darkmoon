@@ -31,8 +31,15 @@ interface SoloHUDProps {
   galleryDebugMode?: boolean;
   onToggleGalleryDebug?: () => void;
   autoRestartSecondsLeft?: number | null;
-  notifications: Array<{ id: string; message: string; type: string }>;
-  addNotification?: (message: string, type?: string) => void;
+  notifications: Array<{
+    id: string;
+    message: string;
+    type: "success" | "warning" | "error" | "info";
+  }>;
+  addNotification?: (
+    message: string,
+    type?: "success" | "warning" | "error" | "info",
+  ) => void;
   currentFPS: number;
   setQuality: React.Dispatch<React.SetStateAction<QualityLevel>>;
   isPaused: boolean;
@@ -127,7 +134,7 @@ const SoloHUD: React.FC<SoloHUDProps> = ({
             key={notification.id}
             id={notification.id}
             message={notification.message}
-            type={notification.type as "info" | "error" | "warning" | "success"}
+            type={notification.type}
             style={{ pointerEvents: "auto" }}
           />
         ))}
