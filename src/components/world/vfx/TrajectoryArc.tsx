@@ -16,11 +16,12 @@ export const TrajectoryArc: React.FC<TrajectoryArcProps> = ({
   origin,
   direction,
   chargeProgress,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   isVisible,
 }) => {
   // Simple parabolic projection
   const points = React.useMemo(() => {
+    if (!isVisible || chargeProgress <= 0) return [];
+
     const pts: THREE.Vector3[] = [];
     const maxDistance = 18 * chargeProgress; // Based on range in WeaponManager
     const gravity = 9.8;
@@ -38,7 +39,9 @@ export const TrajectoryArc: React.FC<TrajectoryArcProps> = ({
       );
     }
     return pts;
-  }, [origin, direction, chargeProgress]);
+  }, [origin, direction, chargeProgress, isVisible]);
+
+  if (points.length === 0) return null;
 
   // Color from green to red based on charge
   const color = new THREE.Color().lerpColors(
