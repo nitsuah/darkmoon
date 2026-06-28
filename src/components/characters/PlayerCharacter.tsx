@@ -320,7 +320,10 @@ export const PlayerCharacter = React.forwardRef<
     // Grenade charge logic
     const equipped = weaponManagerRef.current.getEquipped();
     const isGrenade = equipped?.id === "grenade";
-    if (isGrenade) {
+    const canAct =
+      mePlayer?.respawnAt === undefined && !isPlayerFrozenRef.current;
+
+    if (isGrenade && canAct) {
       if (mouseControls.rightClick) {
         if (!weaponManagerRef.current.isCharging("grenade")) {
           weaponManagerRef.current.startCharge("grenade", now);
@@ -328,6 +331,9 @@ export const PlayerCharacter = React.forwardRef<
       } else if (weaponManagerRef.current.isCharging("grenade")) {
         weaponManagerRef.current.stopCharge("grenade");
       }
+    } else if (weaponManagerRef.current.isCharging("grenade")) {
+      // Clear charge if player cannot act or grenade unequipped
+      weaponManagerRef.current.stopCharge("grenade");
     }
 
     // Freeze all input while the player is awaiting respawn (downed in deathmatch/CTF).
