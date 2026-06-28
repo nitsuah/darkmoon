@@ -206,8 +206,8 @@ describe("Tutorial Component", () => {
       const skipButton = screen.getByText("Skip Tutorial");
       const nextButton = screen.getByText("Next");
 
-      expect(skipButton).toHaveClass("tutorial-button", "secondary");
-      expect(nextButton).toHaveClass("tutorial-button", "primary");
+      expect(skipButton).toHaveClass("tutorial-button", "btn-secondary");
+      expect(nextButton).toHaveClass("tutorial-button", "btn-primary");
     });
 
     it("should change Next button text on last step", () => {

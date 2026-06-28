@@ -61,7 +61,7 @@ describe("QualitySettings Component", () => {
         const autoButton = screen
           .getByText(/Auto - Adaptive/i)
           .closest("button");
-        expect(autoButton).toHaveStyle({ backgroundColor: "rgb(117, 6, 145)" });
+        expect(autoButton).toHaveClass("btn-primary");
       });
     });
 
