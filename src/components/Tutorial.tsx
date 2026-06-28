@@ -81,10 +81,10 @@ const Tutorial: React.FC<TutorialProps> = ({ onComplete }) => {
           <p>{currentStep.content}</p>
         </div>
         <div className="tutorial-footer">
-          <Button onClick={handleSkip} variant="secondary">
+          <Button onClick={handleSkip} variant="secondary" className="tutorial-button">
             Skip Tutorial
           </Button>
-          <Button onClick={handleNext} variant="primary">
+          <Button onClick={handleNext} variant="primary" className="tutorial-button">
             {step < steps.length - 1 ? "Next" : "Get Started"}
           </Button>
         </div>
