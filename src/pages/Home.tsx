@@ -109,10 +109,26 @@ const Home = () => {
           status="⏳ Coming Soon"
           statusType="coming-soon"
           className="mode-card-disabled"
-          onClick={() => handleCardInteraction("multiplayer")}
-          onKeyDown={(e) =>
-            e.key === "Enter" && handleCardInteraction("multiplayer")
-          }
+          onClick={() => {
+            if (window.innerWidth <= 1024) {
+              handleCardInteraction("multiplayer", "/multiplayer");
+            } else {
+              setFlippedCard(
+                flippedCard === "multiplayer" ? null : "multiplayer",
+              );
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              if (window.innerWidth <= 1024) {
+                handleCardInteraction("multiplayer", "/multiplayer");
+              } else {
+                setFlippedCard(
+                  flippedCard === "multiplayer" ? null : "multiplayer",
+                );
+              }
+            }
+          }}
           isFlipped={flippedCard === "multiplayer"}
         >
           <h3>Planned Features</h3>

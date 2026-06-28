@@ -22,7 +22,11 @@ export const Notification: React.FC<NotificationProps> = ({
     <div className={notificationClasses} style={style}>
       <p style={{ margin: 0 }}>{message}</p>
       {onClose && (
-        <button className="notification-close-btn" onClick={() => onClose(id)}>
+        <button
+          type="button"
+          className="notification-close-btn"
+          onClick={() => onClose(id)}
+        >
           &times;
         </button>
       )}
