@@ -34,12 +34,12 @@
     "@splinetool/runtime": "^1.12.97",
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.3.2",
     "react": "^19.2.3",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.0",
     "socket.io": "^4.8.3",
-    "three": "^0.180.0",
-    "express-rate-limit": "^8.3.2"
+    "three": "^0.180.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
@@ -54,7 +54,7 @@
     "@vitejs/plugin-react": "^6.0.2",
     "@vitest/coverage-v8": "^4.1.9",
     "baseline-browser-mapping": "^2.10.38",
-    "eslint": "^9.39.4",
+    "eslint": "^10.6.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react": "^7.37.5",
@@ -66,10 +66,10 @@
     "prettier": "^3.8.4",
     "rollup-plugin-visualizer": "^7.0.1",
     "socket.io-client": "^4.8.3",
+    "typescript": "^6.0.3",
     "vite": "^8.0.16",
     "vite-plugin-bundle-analyzer": "^0.0.1",
-    "vitest": "^4.1.8",
-    "typescript": "^6.0.3"
+    "vitest": "^4.1.8"
   },
   "optionalDependencies": {
     "@rollup/rollup-win32-x64-msvc": "^4.62.2"

@@ -16,10 +16,9 @@ export const TrajectoryArc: React.FC<TrajectoryArcProps> = ({
   origin,
   direction,
   chargeProgress,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   isVisible,
 }) => {
-  if (!isVisible) return null;
-
   // Simple parabolic projection
   const points = React.useMemo(() => {
     const pts: THREE.Vector3[] = [];
