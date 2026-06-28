@@ -326,28 +326,7 @@ export const PlayerCharacter = React.forwardRef<
           weaponManagerRef.current.startCharge("grenade", now);
         }
       } else if (weaponManagerRef.current.isCharging("grenade")) {
-        const chargeProgress =
-          weaponManagerRef.current.getChargeProgress("grenade");
         weaponManagerRef.current.stopCharge("grenade");
-
-        // Trigger throw event
-        const fireOrigin = meshRef.current.position
-          .clone()
-          .add(new THREE.Vector3(0, 1, 0));
-        const fireDirection = new THREE.Vector3(
-          -Math.sin(cameraRotationRef.current.horizontal),
-          0,
-          -Math.cos(cameraRotationRef.current.horizontal),
-        );
-        window.dispatchEvent(
-          new window.CustomEvent("grenade-throw", {
-            detail: {
-              origin: fireOrigin,
-              direction: fireDirection,
-              chargeProgress: chargeProgress,
-            },
-          }),
-        );
       }
     }
 
