@@ -5,7 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import CollisionSystem from "../components/CollisionSystem";
 import { GameManager } from "../components/GameManager";
 import { useBotAI, BotConfig } from "../components/characters/useBotAI";
-import { SPAWN_POINTS } from "../../lib/constants/spawnPoints"; // Import SPAWN_POINTS
+import { SPAWN_POINTS } from "../lib/constants/spawnPoints";
 
 // Mock @react-three/fiber's useFrame
 vi.mock("@react-three/fiber", () => ({
@@ -49,11 +49,6 @@ describe("useBotAI", () => {
       roundTime: 60000,
       maxRounds: 3,
       currentRound: 1,
-      tagCooldown: 0,
-      freezeDuration: 0,
-      spawnProtection: 0,
-      killLimit: 0,
-      scoreLimit: 0,
       scores: {},
       flags: [],
     };
@@ -70,6 +65,7 @@ describe("useBotAI", () => {
       initialPosition: [0, 0, 0],
       label: "TestBot",
       missChance: 0, // Ensure no miss chance for predictable firing
+      fireRange: 10, // Default fire range for tests
     };
 
     // Reset useFrame mock before each test
@@ -241,20 +237,24 @@ describe("useBotAI", () => {
       mockGameState.mode = "tag";
       mockGameState.isActive = true;
 
-      const { rerender } = renderHook(() =>
-        useBotAI({
-          targetPositionRef: mockTargetPositionRef,
-          isPaused: false,
-          isIt: false,
-          targetIsIt: true,
-          onTagTarget: mockOnTagTarget,
-          onPositionUpdate: mockOnPositionUpdate,
-          gameState: mockGameState,
-          collisionSystem: mockCollisionSystem,
-          config: defaultBotConfig,
-          meshRef: mockMeshRef,
-          gotTaggedTimestamp: mockNow, // Bot just got tagged
-        }),
+      const { rerender } = renderHook(
+        (props) => useBotAI(props),
+        {
+          initialProps: {
+            targetPositionRef: mockTargetPositionRef,
+            isPaused: false,
+            isIt: false,
+            targetIsIt: true,
+            onTagTarget: mockOnTagTarget,
+            onFireAtTarget: mockOnFireAtTarget,
+            onPositionUpdate: mockOnPositionUpdate,
+            gameState: mockGameState,
+            collisionSystem: mockCollisionSystem,
+            config: defaultBotConfig,
+            meshRef: mockMeshRef,
+            gotTaggedTimestamp: mockNow, // Bot just got tagged
+          }
+        }
       );
 
       // Bot should be paused and not move
@@ -264,8 +264,8 @@ describe("useBotAI", () => {
       // Advance time by pauseAfterTag duration
       advanceTime(defaultBotConfig.pauseAfterTag + 10); // +10 to ensure it's past the pauseEndTime
 
-      rerender(); // Re-render to trigger useEffect for timestamp change (if needed)
-
+      rerender({ ...rerender.current.props, gotTaggedTimestamp: mockNow }); // Re-render with updated timestamp to trigger useEffect
+      rerender({ ...rerender.current.props, isPaused: false }); // Unpause after timer ends
       simulateFrame(0.1);
       // After pause, if target is IT and within range, bot should flee
       // Target is at [10,0,0], bot at [0,0,0], target is IT -> bot flees
@@ -341,7 +341,8 @@ describe("useBotAI", () => {
 
     it("should strafe while in fire range", () => {
       mockMeshRef.current!.position.set(0, 0, 0);
-      mockTargetPositionRef.current = [1, 0, 0]; // Within FIRE_RANGE (10)
+      // Target position within fireRange (10) but outside minDistance (5)
+      mockTargetPositionRef.current = [7, 0, 0];
 
       renderHook(() =>
         useBotAI({
@@ -376,20 +377,23 @@ describe("useBotAI", () => {
       randomSpy.mockReturnValueOnce(0.1) // for steerSign if it gets stuck, which it won't here
                  .mockReturnValueOnce(0.1); // for nextJumpTime calc
 
-      const { rerender } = renderHook(() =>
-        useBotAI({
-          targetPositionRef: mockTargetPositionRef,
-          isPaused: false,
-          isIt: false,
-          targetIsIt: false,
-          onTagTarget: mockOnTagTarget,
-          onFireAtTarget: mockOnFireAtTarget,
-          onPositionUpdate: mockOnPositionUpdate,
-          gameState: mockGameState,
-          collisionSystem: mockCollisionSystem,
-          config: defaultBotConfig,
-          meshRef: mockMeshRef,
-        }),
+      const { rerender } = renderHook(
+        (props) => useBotAI(props),
+        {
+          initialProps: {
+            targetPositionRef: mockTargetPositionRef,
+            isPaused: false,
+            isIt: false,
+            targetIsIt: false,
+            onTagTarget: mockOnTagTarget,
+            onFireAtTarget: mockOnFireAtTarget,
+            onPositionUpdate: mockOnPositionUpdate,
+            gameState: mockGameState,
+            collisionSystem: mockCollisionSystem,
+            config: defaultBotConfig,
+            meshRef: mockMeshRef,
+          }
+        }
       );
 
       // Advance time past initial jump cooldown
@@ -402,21 +406,24 @@ describe("useBotAI", () => {
     it("should be downed and respawn at a random spawn point", () => {
       mockMeshRef.current!.position.set(1, 1, 1); // Start at a custom position
 
-      const { rerender } = renderHook(() =>
-        useBotAI({
-          targetPositionRef: mockTargetPositionRef,
-          isPaused: false,
-          isIt: false,
-          targetIsIt: false,
-          onTagTarget: mockOnTagTarget,
-          onFireAtTarget: mockOnFireAtTarget,
-          onPositionUpdate: mockOnPositionUpdate,
-          gameState: mockGameState,
-          collisionSystem: mockCollisionSystem,
-          config: defaultBotConfig,
-          meshRef: mockMeshRef,
-          isDowned: true, // Bot is downed
-        }),
+      const { rerender } = renderHook(
+        (props) => useBotAI(props),
+        {
+          initialProps: {
+            targetPositionRef: mockTargetPositionRef,
+            isPaused: false,
+            isIt: false,
+            targetIsIt: false,
+            onTagTarget: mockOnTagTarget,
+            onFireAtTarget: mockOnFireAtTarget,
+            onPositionUpdate: mockOnPositionUpdate,
+            gameState: mockGameState,
+            collisionSystem: mockCollisionSystem,
+            config: defaultBotConfig,
+            meshRef: mockMeshRef,
+            isDowned: true, // Bot is downed
+          }
+        }
       );
 
       // Bot should be pulsing when downed (visual indicator, not physical movement)
@@ -424,17 +431,15 @@ describe("useBotAI", () => {
       expect(mockMeshRef.current!.scale.x).not.toBeCloseTo(1);
 
       // Simulate respawn (isDowned becomes false)
-      rerender({ ...rerender.current.props, isDowned: false }); // Pass all current props, just change isDowned
+      rerender({ ...rerender.current.props, isDowned: false });
       simulateFrame(0.1);
 
       // Bot should have teleported to a spawn point
-      // (exact point depends on Math.random, so just check it's not the original (1,1,1) or current (0,0,0) (initialPosition))
       const currentPos = mockMeshRef.current!.position;
       expect(currentPos.x).not.toBeCloseTo(1);
       expect(currentPos.y).not.toBeCloseTo(1);
       expect(currentPos.z).not.toBeCloseTo(1);
       expect(currentPos.equals(new THREE.Vector3(...defaultBotConfig.initialPosition))).toBe(false); // Should not be initial position either
-      // Add a more specific check for spawn points
       const spawnPointsVecs = SPAWN_POINTS.map(p => new THREE.Vector3(...p));
       const isAtSpawnPoint = spawnPointsVecs.some(sp => sp.distanceTo(currentPos) < 0.01);
       expect(isAtSpawnPoint).toBe(true);
@@ -452,7 +457,7 @@ describe("useBotAI", () => {
       mockTargetPositionRef.current = [0, 0, 0]; // Default target for firing
     });
 
-    it("should move towards enemy flag if not carrying flag and enemy flag is free", () => {
+    it("should move towards enemy flag if not carrying flag and enemy flag is free (attacker)", () => {
       mockMeshRef.current!.position.set(0, 0, 0);
 
       renderHook(() =>
@@ -466,7 +471,7 @@ describe("useBotAI", () => {
           onPositionUpdate: mockOnPositionUpdate,
           gameState: mockGameState,
           collisionSystem: mockCollisionSystem,
-          config: { ...defaultBotConfig, botSpeed: 5 },
+          config: { ...defaultBotConfig, botSpeed: 5, role: "attacker" },
           meshRef: mockMeshRef,
           team: "a", // Bot is on team A
           isCarryingFlag: false,
@@ -482,11 +487,10 @@ describe("useBotAI", () => {
       expect(mockOnPositionUpdate).toHaveBeenCalled();
     });
 
-    it("should move towards own base if carrying enemy flag", () => {
+    it("should move towards own base if carrying enemy flag (attacker)", () => {
       mockMeshRef.current!.position.set(0, 0, 0);
       // Simulate bot (team A) carrying team B's flag.
-      // So the enemy flag should be considered 'carried' and not a target
-      mockGameState.flags![1].carrierId = "test-bot-id";
+      mockGameState.flags![1].carrierId = "test-bot-id"; // Bot 'test-bot-id' is carrying enemy flag
 
       renderHook(() =>
         useBotAI({
@@ -499,7 +503,7 @@ describe("useBotAI", () => {
           onPositionUpdate: mockOnPositionUpdate,
           gameState: mockGameState,
           collisionSystem: mockCollisionSystem,
-          config: { ...defaultBotConfig, botSpeed: 5 },
+          config: { ...defaultBotConfig, botSpeed: 5, role: "attacker" },
           meshRef: mockMeshRef,
           team: "a", // Bot is on team A
           isCarryingFlag: true, // Bot is carrying the flag
@@ -510,6 +514,101 @@ describe("useBotAI", () => {
       simulateFrame(1); // Simulate 1 second
 
       // Bot (team A) should move towards its own base (team A's base at [10, 0, 10])
+      expect(mockMeshRef.current!.position.x).toBeCloseTo(3.535);
+      expect(mockMeshRef.current!.position.z).toBeCloseTo(3.535);
+      expect(mockOnPositionUpdate).toHaveBeenCalled();
+    });
+
+    it("should guard own flag if no immediate objective (defender)", () => {
+      mockMeshRef.current!.position.set(0, 0, 0); // Bot is away from its base
+
+      renderHook(() =>
+        useBotAI({
+          targetPositionRef: mockTargetPositionRef,
+          isPaused: false,
+          isIt: false,
+          targetIsIt: false,
+          onTagTarget: mockOnTagTarget,
+          onFireAtTarget: mockOnFireAtTarget,
+          onPositionUpdate: mockOnPositionUpdate,
+          gameState: mockGameState,
+          collisionSystem: mockCollisionSystem,
+          config: { ...defaultBotConfig, botSpeed: 5, role: "defender" },
+          meshRef: mockMeshRef,
+          team: "a", // Bot is on team A
+          isCarryingFlag: false,
+          targetTeam: "b", // Target is on enemy team
+        }),
+      );
+
+      simulateFrame(1); // Simulate 1 second
+
+      // Defender should move towards its own base (team A's base at [10, 0, 10])
+      expect(mockMeshRef.current!.position.x).toBeCloseTo(3.535);
+      expect(mockMeshRef.current!.position.z).toBeCloseTo(3.535);
+      expect(mockOnPositionUpdate).toHaveBeenCalled();
+    });
+
+    it("should chase enemy carrying own flag (defender)", () => {
+      mockMeshRef.current!.position.set(0, 0, 0); // Defender is at spawn
+      mockGameState.players = new Map([
+        ["enemy1", { id: "enemy1", name: "Enemy", position: [15, 0, 15], rotation: [0, 0, 0] }]
+      ]);
+      mockGameState.flags![0].carrierId = "enemy1"; // Enemy is carrying our flag
+
+      renderHook(() =>
+        useBotAI({
+          targetPositionRef: { current: [15, 0, 15] }, // Set target to enemy's position
+          isPaused: false,
+          isIt: false,
+          targetIsIt: false,
+          onTagTarget: mockOnTagTarget,
+          onFireAtTarget: mockOnFireAtTarget,
+          onPositionUpdate: mockOnPositionUpdate,
+          gameState: mockGameState,
+          collisionSystem: mockCollisionSystem,
+          config: { ...defaultBotConfig, botSpeed: 5, role: "defender" },
+          meshRef: mockMeshRef,
+          team: "a", // Bot is on team A
+          isCarryingFlag: false,
+          targetTeam: "b", // Target is on enemy team
+        }),
+      );
+
+      simulateFrame(1); // Simulate 1 second
+
+      // Defender should move towards the enemy carrying its flag (at [15, 0, 15])
+      expect(mockMeshRef.current!.position.x).toBeCloseTo(3.535);
+      expect(mockMeshRef.current!.position.z).toBeCloseTo(3.535);
+      expect(mockOnPositionUpdate).toHaveBeenCalled();
+    });
+
+    it("should move to return dropped flag (defender)", () => {
+      mockMeshRef.current!.position.set(0, 0, 0); // Defender is at spawn
+      mockGameState.flags![0].position = [5, 0, 5]; // Our flag is dropped at [5, 0, 5]
+
+      renderHook(() =>
+        useBotAI({
+          targetPositionRef: mockTargetPositionRef,
+          isPaused: false,
+          isIt: false,
+          targetIsIt: false,
+          onTagTarget: mockOnTagTarget,
+          onFireAtTarget: mockOnFireAtTarget,
+          onPositionUpdate: mockOnPositionUpdate,
+          gameState: mockGameState,
+          collisionSystem: mockCollisionSystem,
+          config: { ...defaultBotConfig, botSpeed: 5, role: "defender" },
+          meshRef: mockMeshRef,
+          team: "a", // Bot is on team A
+          isCarryingFlag: false,
+          targetTeam: "b", // Target is on enemy team
+        }),
+      );
+
+      simulateFrame(1); // Simulate 1 second
+
+      // Defender should move towards the dropped flag (at [5, 0, 5])
       expect(mockMeshRef.current!.position.x).toBeCloseTo(3.535);
       expect(mockMeshRef.current!.position.z).toBeCloseTo(3.535);
       expect(mockOnPositionUpdate).toHaveBeenCalled();
@@ -541,6 +640,33 @@ describe("useBotAI", () => {
       simulateFrame();
       expect(mockOnFireAtTarget).toHaveBeenCalledTimes(1);
       expect(mockMeshRef.current!.position.x).not.toBeCloseTo(0); // Should still move
+    });
+
+    it("should use custom fireRange for CTF engagement", () => {
+      const CUSTOM_CTF_RANGE = 8;
+      mockMeshRef.current!.position.set(0, 0, 0);
+      mockTargetPositionRef.current = [5, 0, 0]; // Enemy target within CUSTOM_CTF_RANGE (8)
+
+      renderHook(() =>
+        useBotAI({
+          targetPositionRef: mockTargetPositionRef,
+          isPaused: false,
+          isIt: false,
+          targetIsIt: false,
+          onTagTarget: mockOnTagTarget,
+          onFireAtTarget: mockOnFireAtTarget,
+          onPositionUpdate: mockOnPositionUpdate,
+          gameState: mockGameState,
+          collisionSystem: mockCollisionSystem,
+          config: { ...defaultBotConfig, fireRange: CUSTOM_CTF_RANGE },
+          meshRef: mockMeshRef,
+          team: "a",
+          targetTeam: "b", // Target is an enemy
+        }),
+      );
+
+      simulateFrame();
+      expect(mockOnFireAtTarget).toHaveBeenCalledTimes(1);
     });
   });
 

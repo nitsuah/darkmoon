@@ -477,7 +477,7 @@ export function useBotAI({
       if (
         targetTeam !== undefined &&
         targetTeam !== team &&
-        distance <= FIRE_RANGE &&
+        distance <= (config.fireRange ?? 10) &&
         now - lastFireTime.current > FIRE_RETRY_INTERVAL_MS
       ) {
         lastFireTime.current = now;

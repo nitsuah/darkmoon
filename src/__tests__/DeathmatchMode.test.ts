@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { DeathmatchMode, STREAK_THRESHOLDS } from "../components/gameModes/DeathmatchMode";
+import { DeathmatchMode } from "../components/gameModes/DeathmatchMode";
 import { GameState, Player } from "../components/GameManager";
 
 describe("DeathmatchMode", () => {
@@ -15,19 +15,9 @@ describe("DeathmatchMode", () => {
     gameState = {
       mode: "deathmatch",
       isActive: true,
-      players: {},
       timeRemaining: 60000,
-      roundTime: 60000,
-      maxRounds: 3,
-      currentRound: 1,
-      tagCooldown: 0,
-      freezeDuration: 0,
-      spawnProtection: 0,
-      killLimit: 10,
-      scoreLimit: 0,
       scores: {},
-      flags: [],
-      killFeed: [],
+      killLimit: 10,
     };
   });
 
@@ -116,6 +106,7 @@ describe("DeathmatchMode", () => {
       const attacker = players.get("player1")!;
       gameState.killLimit = 3;
       attacker.currentKillStreak = 2;
+      gameState.scores["player1"] = 2; // Seed score
       deathmatchMode.onAction({ type: "hit", attackerId: "player1", targetId: "player2", damage: 100, weaponId: "laser" }, players, gameState);
       expect(attacker.currentKillStreak).toBe(3);
       expect(gameState.streakAnnouncement).toBeDefined();
