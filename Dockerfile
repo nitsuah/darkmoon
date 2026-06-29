@@ -51,15 +51,15 @@ CMD ["npm", "run", "test:run"]
 # Stage 4: Dev
 # Runs the application in development mode
 # ================================
-FROM node:22-alpine AS dev
-RUN apk add --no-cache git
+FROM node:22 AS dev
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
 # Install all dependencies, including devDependencies
-RUN npm ci
+RUN npm install && apt-get update && apt-get install -y libnspr4 libnss3 libatk1.0-0 libgtk-3-0 libgbm-dev libcups2 libdrm-dev libxkbcommon0 libxss1 libasound2
+RUN npx playwright install chromium
 
 # Copy source code
 COPY . .

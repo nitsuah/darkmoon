@@ -19,11 +19,6 @@ const FLEE_SPEED_MULTIPLIER = 0.7;
 // elapses (it is intentionally much shorter than GameManager's cooldowns).
 const TAG_RETRY_INTERVAL_MS = 200;
 
-// Deathmatch engagement range: the bot advances until within this distance,
-// then holds position and fires. Kept well under the laser's 30-unit range
-// so shots connect reliably.
-const FIRE_RANGE = 10;
-
 // How often the bot retries firing while in range. The actual weapon
 // cooldown is enforced authoritatively by the parent's WeaponManager (same
 // pattern as TAG_RETRY_INTERVAL_MS vs GameManager's tag cooldowns).
@@ -43,6 +38,10 @@ export interface BotConfig {
   label: string;
   /** Probability [0, 1] that a shot attempt misses entirely. Default: 0. */
   missChance?: number;
+  /** Deathmatch engagement range. Default: 10. */
+  fireRange?: number;
+  /** CTF role. Default: 'attacker'. */
+  role?: "attacker" | "defender";
 }
 
 export interface BotAIProps {
@@ -362,7 +361,8 @@ export function useBotAI({
         }
       }
 
-      if (distance > FIRE_RANGE) {
+            const fireRange = config.fireRange ?? 10;
+      if (distance > fireRange) {
         // Apply obstacle-avoidance steering if needed.
         if (steerFramesLeft.current > 0) {
           steerFramesLeft.current--;
@@ -417,33 +417,51 @@ export function useBotAI({
           lastFireTime.current = now;
           onFireAtTarget?.();
         }
-        // Flip strafe direction every ~1.5s so the bot zig-zags.
-        if (now >= nextStrafeChangeTime.current) {
-          strafeSign.current = Math.random() < 0.5 ? 1 : -1;
-          nextStrafeChangeTime.current = now + 1200 + Math.random() * 600;
-        }
-        const lateral = new THREE.Vector3(
-          -direction.z * strafeSign.current,
-          0,
-          direction.x * strafeSign.current,
-        );
-        const STRAFE_SPEED = config.botSpeed * 0.55;
-        const currentPos = new THREE.Vector3(botPos.x, botPos.y, botPos.z);
-        const newPos = new THREE.Vector3(
-          botPos.x + lateral.x * STRAFE_SPEED * delta,
-          botPos.y,
-          botPos.z + lateral.z * STRAFE_SPEED * delta,
-        );
-        if (collisionSystem.current) {
-          const resolved = collisionSystem.current.checkCollision(
-            currentPos,
-            newPos,
+
+        // Maintain a minimum distance to avoid clumping
+        const minDistance = fireRange * 0.5;
+        if (distance < minDistance) {
+          // Back away from the target
+          const direction = new THREE.Vector3().subVectors(botPos, targetPos).normalize();
+          const backAwaySpeed = config.botSpeed * 0.5;
+          const newPos = new THREE.Vector3(
+            botPos.x + direction.x * backAwaySpeed * delta,
+            botPos.y,
+            botPos.z + direction.z * backAwaySpeed * delta
           );
-          botPos.x = resolved.x;
-          botPos.z = resolved.z;
+          if (collisionSystem.current) {
+            const resolved = collisionSystem.current.checkCollision(botPos, newPos);
+            botPos.x = resolved.x;
+            botPos.z = resolved.z;
+          } else {
+            botPos.x = newPos.x;
+            botPos.z = newPos.z;
+          }
         } else {
-          botPos.x = newPos.x;
-          botPos.z = newPos.z;
+          // Strafe when at optimal distance
+          if (now >= nextStrafeChangeTime.current) {
+            strafeSign.current = Math.random() < 0.5 ? 1 : -1;
+            nextStrafeChangeTime.current = now + 1200 + Math.random() * 600;
+          }
+          const lateral = new THREE.Vector3(-direction.z * strafeSign.current, 0, direction.x * strafeSign.current);
+          const STRAFE_SPEED = config.botSpeed * 0.55;
+          const currentPos = new THREE.Vector3(botPos.x, botPos.y, botPos.z);
+          const newPos = new THREE.Vector3(
+            botPos.x + lateral.x * STRAFE_SPEED * delta,
+            botPos.y,
+            botPos.z + lateral.z * STRAFE_SPEED * delta,
+          );
+          if (collisionSystem.current) {
+            const resolved = collisionSystem.current.checkCollision(
+              currentPos,
+              newPos,
+            );
+            botPos.x = resolved.x;
+            botPos.z = resolved.z;
+          } else {
+            botPos.x = newPos.x;
+            botPos.z = newPos.z;
+          }
         }
       }
     } else if (gameState.isActive && gameState.mode === "ctf" && team) {
@@ -472,13 +490,36 @@ export function useBotAI({
       const flags = gameState.flags ?? [];
       const myFlag = flags.find((f) => f.team === team);
       const enemyFlag = flags.find((f) => f.team !== team);
+      const role = config.role ?? "attacker";
 
-      const destination =
-        isCarryingFlag && myFlag
-          ? myFlag.basePosition
-          : enemyFlag && enemyFlag.carrierId === undefined
-            ? enemyFlag.position
-            : myFlag?.basePosition;
+      let destination: [number, number, number] | undefined;
+
+      if (role === "attacker") {
+        if (isCarryingFlag && myFlag) {
+          destination = myFlag.basePosition;
+        } else if (enemyFlag && enemyFlag.carrierId === undefined) {
+          destination = enemyFlag.position;
+        } else if (myFlag && enemyFlag) {
+          // Patrol between flags
+          const t = (now / 10000) % 1; // Cycle every 10 seconds
+          const patrolPoint = new THREE.Vector3().lerpVectors(new THREE.Vector3(...myFlag.basePosition), new THREE.Vector3(...enemyFlag.basePosition), t);
+          destination = [patrolPoint.x, patrolPoint.y, patrolPoint.z];
+        }
+      } else { // defender
+        const enemyPlayerId = myFlag?.carrierId;
+        const enemyPlayer = enemyPlayerId ? (gameState.players instanceof Map ? gameState.players.get(enemyPlayerId) : gameState.players[enemyPlayerId]) : undefined;
+
+        if (myFlag && enemyPlayer) {
+          // If our flag is taken by an enemy, hunt them down
+          destination = enemyPlayer.position;
+        } else if (myFlag && myFlag.position !== myFlag.basePosition) {
+          // If our flag is dropped, go return it
+          destination = myFlag.position;
+        } else if (myFlag) {
+          // Otherwise, guard our flag
+          destination = myFlag.basePosition;
+        }
+      }
 
       if (destination) {
         const destPos = new THREE.Vector3(...destination);
