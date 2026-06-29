@@ -38,11 +38,12 @@ RUN npm run build
 # Stage 3: Test
 # Runs Vitest unit tests
 # ================================
-FROM node:22-alpine AS test
-RUN apk add --no-cache git
+FROM node:22 AS test
+RUN apt-get update && apt-get install -y git libnspr4 libnss3 libatk1.0-0 libgtk-3-0 libgbm-dev libcups2 libdrm-dev libxkbcommon0 libxss1 libasound2
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
+RUN npx playwright install chromium
 COPY . .
 RUN mkdir -p /app/node_modules/.vite-temp && chmod -R 775 /app/node_modules/.vite-temp
 CMD ["npm", "run", "test:run"]
