@@ -23,7 +23,7 @@ describe("useBotAI", () => {
   let mockOnTagTarget: () => void;
   let mockOnFireAtTarget: () => void;
   let mockOnPositionUpdate: (position: [number, number, number]) => void;
-  let mockCollisionSystem: { current: { checkCollision: (currentPosition: THREE.Vector3, newPosition: THREE.Vector3) => THREE.Vector3 } | null };
+  let mockCollisionSystem: React.RefObject<CollisionSystem | null>;
   let mockGameState: GameManager["gameState"];
   let defaultBotConfig: BotConfig;
   let randomSpy: ReturnType<typeof vi.spyOn>;
@@ -39,7 +39,16 @@ describe("useBotAI", () => {
     mockCollisionSystem = {
       current: {
         checkCollision: vi.fn((_curr: THREE.Vector3, next: THREE.Vector3) => next),
-      },
+        checkPlayerCollision: vi.fn(() => false),
+        checkProjectileHit: vi.fn(() => null),
+        hasLineOfSight: vi.fn(() => true),
+        resolveCollision: vi.fn((_, next) => next),
+        initializeBoundaries: vi.fn(),
+        boundaries: [],
+        playerRadius: 0.25,
+        projectileHitRadius: 0.6,
+        getBoundaryGeometry: vi.fn(() => []),
+      } as unknown as CollisionSystem,
     };
     mockGameState = {
       mode: "tag",
@@ -48,6 +57,7 @@ describe("useBotAI", () => {
       scores: {},
       flags: [],
       killFeed: [],
+      players: new Map(),
     };
     defaultBotConfig = {
       botSpeed: 1,
@@ -261,8 +271,34 @@ describe("useBotAI", () => {
       // Advance time by pauseAfterTag duration
       advanceTime(defaultBotConfig.pauseAfterTag + 10); // +10 to ensure it's past the pauseEndTime
 
-      rerender({ ...rerender.current.props, gotTaggedTimestamp: mockNow }); // Re-render with updated timestamp to trigger useEffect
-      rerender({ ...rerender.current.props, isPaused: false }); // Unpause after timer ends
+      rerender({
+            targetPositionRef: mockTargetPositionRef,
+            isPaused: false,
+            isIt: false,
+            targetIsIt: true,
+            onTagTarget: mockOnTagTarget,
+            onFireAtTarget: mockOnFireAtTarget,
+            onPositionUpdate: mockOnPositionUpdate,
+            gameState: mockGameState,
+            collisionSystem: mockCollisionSystem,
+            config: defaultBotConfig,
+            meshRef: mockMeshRef,
+            gotTaggedTimestamp: mockNow,
+          });
+      rerender({
+            targetPositionRef: mockTargetPositionRef,
+            isPaused: false,
+            isIt: false,
+            targetIsIt: true,
+            onTagTarget: mockOnTagTarget,
+            onFireAtTarget: mockOnFireAtTarget,
+            onPositionUpdate: mockOnPositionUpdate,
+            gameState: mockGameState,
+            collisionSystem: mockCollisionSystem,
+            config: defaultBotConfig,
+            meshRef: mockMeshRef,
+            gotTaggedTimestamp: mockNow,
+          });
       simulateFrame(0.1);
       // After pause, if target is IT and within range, bot should flee
       // Target is at [10,0,0], bot at [0,0,0], target is IT -> bot flees
@@ -428,7 +464,20 @@ describe("useBotAI", () => {
       expect(mockMeshRef.current!.scale.x).not.toBeCloseTo(1);
 
       // Simulate respawn (isDowned becomes false)
-      rerender({ ...rerender.current.props, isDowned: false });
+      rerender({
+            targetPositionRef: mockTargetPositionRef,
+            isPaused: false,
+            isIt: false,
+            targetIsIt: false,
+            onTagTarget: mockOnTagTarget,
+            onFireAtTarget: mockOnFireAtTarget,
+            onPositionUpdate: mockOnPositionUpdate,
+            gameState: mockGameState,
+            collisionSystem: mockCollisionSystem,
+            config: defaultBotConfig,
+            meshRef: mockMeshRef,
+            isDowned: false,
+          });
       simulateFrame(0.1);
 
       // Bot should have teleported to a spawn point

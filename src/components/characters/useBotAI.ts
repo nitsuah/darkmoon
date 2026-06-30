@@ -507,7 +507,8 @@ export function useBotAI({
         }
       } else { // defender
         const enemyPlayerId = myFlag?.carrierId;
-        const enemyPlayer = enemyPlayerId ? (gameState.players instanceof Map ? gameState.players.get(enemyPlayerId) : gameState.players[enemyPlayerId]) : undefined;
+        const players = gameState.players;
+        const enemyPlayer = enemyPlayerId && players ? (players instanceof Map ? players.get(enemyPlayerId) : players[enemyPlayerId]) : undefined;
 
         if (myFlag && enemyPlayer) {
           // If our flag is taken by an enemy, hunt them down
