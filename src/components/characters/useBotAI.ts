@@ -422,12 +422,18 @@ export function useBotAI({
         const minDistance = fireRange * 0.5;
         if (distance < minDistance) {
           // Back away from the target
-          const direction = new THREE.Vector3().subVectors(botPos, targetPos).normalize();
+          const diff = new THREE.Vector3().subVectors(botPos, targetPos);
+          if (diff.lengthSq() < 0.0001) {
+            // Positions overlap - pick a fallback escape direction using strafeSign
+            diff.set(strafeSign.current, 0, 0).normalize();
+          } else {
+            diff.normalize();
+          }
           const backAwaySpeed = config.botSpeed * 0.5;
           const newPos = new THREE.Vector3(
-            botPos.x + direction.x * backAwaySpeed * delta,
+            botPos.x + diff.x * backAwaySpeed * delta,
             botPos.y,
-            botPos.z + direction.z * backAwaySpeed * delta
+            botPos.z + diff.z * backAwaySpeed * delta
           );
           if (collisionSystem.current) {
             const resolved = collisionSystem.current.checkCollision(botPos, newPos);
@@ -513,8 +519,8 @@ export function useBotAI({
         if (myFlag && enemyPlayer) {
           // If our flag is taken by an enemy, hunt them down
           destination = enemyPlayer.position;
-        } else if (myFlag && myFlag.position !== myFlag.basePosition) {
-          // If our flag is dropped, go return it
+        } else if (myFlag && (myFlag.position[0] !== myFlag.basePosition[0] || myFlag.position[1] !== myFlag.basePosition[1] || myFlag.position[2] !== myFlag.basePosition[2])) {
+          // If our flag is dropped (position differs from basePosition), go return it
           destination = myFlag.position;
         } else if (myFlag) {
           // Otherwise, guard our flag

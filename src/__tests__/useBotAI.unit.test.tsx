@@ -9,17 +9,24 @@ vi.mock("@react-three/fiber", () => ({
 
 import React from "react";
 import { describe, it, expect, beforeEach } from "vitest";
-import { useBotAI } from "../components/characters/useBotAI";
+import { useBotAI, BotConfig } from "../components/characters/useBotAI";
 import * as THREE from "three";
 import type CollisionSystem from "../components/CollisionSystem";
 
-const makeMesh = () => ({
-  current: {
-    position: new THREE.Vector3(0, 0, 0),
-    rotation: { y: 0 },
-    scale: { set: vi.fn() },
-  },
-});
+const makeMesh = () => {
+  const mockScale = { set: vi.fn() };
+  const group = new THREE.Group();
+  group.position.set(0, 0, 0);
+  group.rotation.set(0, 0, 0);
+  group.scale.set(1, 1, 1);
+  return {
+    current: {
+      position: group.position,
+      rotation: group.rotation,
+      scale: mockScale,
+    } as unknown as THREE.Group,
+  };
+};
 
 const fakeCollision: React.RefObject<CollisionSystem> = {
   current: {
@@ -73,8 +80,24 @@ type HarnessProps = {
     chaseRadius: number;
     initialPosition: [number, number, number];
     label: string;
+    role?: "attacker" | "defender";
   };
   meshRef: React.RefObject<THREE.Group | null>;
+};
+
+const baseConfig: BotConfig = {
+  botSpeed: 1,
+  sprintSpeed: 2,
+  fleeSpeed: 1.5,
+  tagCooldown: 1000,
+  tagDistance: 0.5,
+  pauseAfterTag: 500,
+  sprintDuration: 200,
+  sprintCooldown: 500,
+  chaseRadius: 5,
+  initialPosition: [0, 0, 0] as [number, number, number],
+  label: "TestBot",
+  role: "attacker",
 };
 
 function mountHook(overrides?: Partial<HarnessProps>) {
@@ -100,19 +123,7 @@ function mountHook(overrides?: Partial<HarnessProps>) {
     },
     collisionSystem: fakeCollision,
     gotTaggedTimestamp: undefined as number | undefined,
-    config: {
-      botSpeed: 1,
-      sprintSpeed: 2,
-      fleeSpeed: 1.5,
-      tagCooldown: 1000,
-      tagDistance: 0.5,
-      pauseAfterTag: 500,
-      sprintDuration: 200,
-      sprintCooldown: 500,
-      chaseRadius: 5,
-      initialPosition: [0, 0, 0] as [number, number, number],
-      label: "TestBot",
-    },
+    config: baseConfig,
     meshRef: meshRef as unknown as React.RefObject<THREE.Group | null>,
   };
 
@@ -415,24 +426,27 @@ describe("useBotAI", () => {
   it("holds position near its own base when the enemy flag is guarded in CTF", () => {
     vi.spyOn(Date, "now").mockReturnValue(5000);
 
+    // Use an asymmetric starting position to clearly distinguish defender behavior
     const { meshRef } = mountHook({
       isIt: false,
       targetIsIt: false,
       team: "a",
       isCarryingFlag: false,
+      config: { ...baseConfig, role: "defender" },
       gameState: ctfState([
         { team: "a", position: TEAM_A_BASE, basePosition: TEAM_A_BASE },
         {
           team: "b",
-          position: [1, 0.5, 0],
+          position: [1, 0.5, 0], // Enemy flag is at [1, 0.5, 0] - carried/guarded
           basePosition: TEAM_B_BASE,
           carrierId: "enemy-1",
         },
       ]),
+      meshRef: makeMesh(), // Start at origin, not at base
     });
 
     // Enemy flag is carried, so the bot defends by returning to its own
-    // base (TEAM_A_BASE, -x of the bot's start) instead of chasing it.
+    // base (TEAM_A_BASE at [-15, 0.5, 0], -x of the bot's start at origin)
     frameCallback!(null, 1);
 
     expect(meshRef.current.position.x).toBeLessThan(0);
@@ -514,27 +528,32 @@ describe("useBotAI", () => {
   it("doesn't move once it has reached its CTF destination", () => {
     vi.spyOn(Date, "now").mockReturnValue(5000);
 
-    const { meshRef } = mountHook({
+    const meshRef = makeMesh();
+    meshRef.current.position.set(...TEAM_A_BASE); // Start at base
+
+    const { meshRef: returnedMeshRef } = mountHook({
       isIt: false,
       targetIsIt: false,
       team: "a",
       isCarryingFlag: false,
+      config: { ...baseConfig, role: "defender" },
       gameState: ctfState([
-        { team: "a", position: [0, 0, 0], basePosition: [0, 0, 0] },
+        { team: "a", position: TEAM_A_BASE, basePosition: TEAM_A_BASE }, // Own flag at base
         {
           team: "b",
-          position: TEAM_B_BASE,
+          position: TEAM_B_BASE, // Enemy flag at its base (unguarded)
           basePosition: TEAM_B_BASE,
-          carrierId: "enemy-1",
+          carrierId: "enemy-1", // But it's "guarded" - has carrier
         },
       ]),
+      meshRef,
     });
 
     // Enemy flag is guarded, and the bot is already sitting on its own
-    // base (also at the origin) - it should stay put.
+    // base - it should stay put.
     frameCallback!(null, 1);
 
-    expect(meshRef.current.position.x).toBe(0);
-    expect(meshRef.current.position.z).toBe(0);
+    expect(returnedMeshRef.current.position.x).toBeCloseTo(TEAM_A_BASE[0]);
+    expect(returnedMeshRef.current.position.z).toBeCloseTo(TEAM_A_BASE[2]);
   });
 });
