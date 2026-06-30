@@ -20,10 +20,10 @@ vi.spyOn(Date, "now").mockImplementation(() => mockNow);
 describe("useBotAI", () => {
   let mockMeshRef: React.RefObject<THREE.Group>;
   let mockTargetPositionRef: React.RefObject<[number, number, number]>;
-  let mockOnTagTarget: ReturnType<typeof vi.fn>;
-  let mockOnFireAtTarget: ReturnType<typeof vi.fn>;
-  let mockOnPositionUpdate: ReturnType<typeof vi.fn>;
-  let mockCollisionSystem: React.RefObject<CollisionSystem | null>;
+  let mockOnTagTarget: () => void;
+  let mockOnFireAtTarget: () => void;
+  let mockOnPositionUpdate: (position: [number, number, number]) => void;
+  let mockCollisionSystem: { current: { checkCollision: (currentPosition: THREE.Vector3, newPosition: THREE.Vector3) => THREE.Vector3 } | null };
   let mockGameState: GameManager["gameState"];
   let defaultBotConfig: BotConfig;
   let randomSpy: ReturnType<typeof vi.spyOn>;
@@ -33,24 +33,21 @@ describe("useBotAI", () => {
     mockMeshRef = { current: new THREE.Group() };
     mockMeshRef.current.position.set(0, 0, 0); // Default bot position
     mockTargetPositionRef = { current: [0, 0, 0] }; // Default target position
-    mockOnTagTarget = vi.fn();
-    mockOnFireAtTarget = vi.fn();
-    mockOnPositionUpdate = vi.fn();
+    mockOnTagTarget = vi.fn(() => undefined);
+    mockOnFireAtTarget = vi.fn(() => undefined);
+    mockOnPositionUpdate = vi.fn((_position: [number, number, number]) => undefined);
     mockCollisionSystem = {
       current: {
-        checkCollision: vi.fn((_curr, next) => next),
+        checkCollision: vi.fn((_curr: THREE.Vector3, next: THREE.Vector3) => next),
       },
     };
     mockGameState = {
       mode: "tag",
       isActive: true,
-      players: {},
       timeRemaining: 60000,
-      roundTime: 60000,
-      maxRounds: 3,
-      currentRound: 1,
       scores: {},
       flags: [],
+      killFeed: [],
     };
     defaultBotConfig = {
       botSpeed: 1,
