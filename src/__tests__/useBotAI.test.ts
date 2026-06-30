@@ -1,5 +1,6 @@
 import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import React from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import CollisionSystem from "../components/CollisionSystem";
@@ -35,7 +36,7 @@ describe("useBotAI", () => {
     mockTargetPositionRef = { current: [0, 0, 0] }; // Default target position
     mockOnTagTarget = vi.fn(() => undefined);
     mockOnFireAtTarget = vi.fn(() => undefined);
-    mockOnPositionUpdate = vi.fn((_position: [number, number, number]) => undefined);
+    mockOnPositionUpdate = vi.fn(() => undefined);
     mockCollisionSystem = {
       current: {
         checkCollision: vi.fn((_curr: THREE.Vector3, next: THREE.Vector3) => next),
@@ -244,7 +245,7 @@ describe("useBotAI", () => {
       mockGameState.mode = "tag";
       mockGameState.isActive = true;
 
-      const { rerender } = renderHook(
+      const { rerender: rerenderHook } = renderHook(
         (props) => useBotAI(props),
         {
           initialProps: {
@@ -271,21 +272,8 @@ describe("useBotAI", () => {
       // Advance time by pauseAfterTag duration
       advanceTime(defaultBotConfig.pauseAfterTag + 10); // +10 to ensure it's past the pauseEndTime
 
-      rerender({
-            targetPositionRef: mockTargetPositionRef,
-            isPaused: false,
-            isIt: false,
-            targetIsIt: true,
-            onTagTarget: mockOnTagTarget,
-            onFireAtTarget: mockOnFireAtTarget,
-            onPositionUpdate: mockOnPositionUpdate,
-            gameState: mockGameState,
-            collisionSystem: mockCollisionSystem,
-            config: defaultBotConfig,
-            meshRef: mockMeshRef,
-            gotTaggedTimestamp: mockNow,
-          });
-      rerender({
+      // Re-render with updated timestamp and unpaused
+      rerenderHook({
             targetPositionRef: mockTargetPositionRef,
             isPaused: false,
             isIt: false,
@@ -410,7 +398,7 @@ describe("useBotAI", () => {
       randomSpy.mockReturnValueOnce(0.1) // for steerSign if it gets stuck, which it won't here
                  .mockReturnValueOnce(0.1); // for nextJumpTime calc
 
-      const { rerender } = renderHook(
+      renderHook(
         (props) => useBotAI(props),
         {
           initialProps: {
@@ -439,7 +427,7 @@ describe("useBotAI", () => {
     it("should be downed and respawn at a random spawn point", () => {
       mockMeshRef.current!.position.set(1, 1, 1); // Start at a custom position
 
-      const { rerender } = renderHook(
+      const { rerender: rerenderHook } = renderHook(
         (props) => useBotAI(props),
         {
           initialProps: {
@@ -464,7 +452,7 @@ describe("useBotAI", () => {
       expect(mockMeshRef.current!.scale.x).not.toBeCloseTo(1);
 
       // Simulate respawn (isDowned becomes false)
-      rerender({
+      rerenderHook({
             targetPositionRef: mockTargetPositionRef,
             isPaused: false,
             isIt: false,
