@@ -101,15 +101,13 @@ const baseConfig: BotConfig = {
 };
 
 function mountHook(overrides?: Partial<HarnessProps>) {
-  const localMeshRef = makeMesh();
+  const meshRef = makeMesh();
   const capturedRef = React.createRef<ReturnType<typeof useBotAI> | null>();
   const onTagTarget = vi.fn();
   const onFireAtTarget = vi.fn();
   const onPositionUpdate = vi.fn();
-  // Use the overridden meshRef if provided, otherwise the local one
-  const effectiveMeshRef = overrides?.meshRef ?? localMeshRef;
 
-  const baseProps: HarnessProps = {
+  const merged: HarnessProps = {
     targetPositionRef: { current: [1, 0, 0] as [number, number, number] },
     isPaused: false,
     isIt: true,
@@ -126,8 +124,9 @@ function mountHook(overrides?: Partial<HarnessProps>) {
     collisionSystem: fakeCollision,
     gotTaggedTimestamp: undefined as number | undefined,
     config: baseConfig,
-    meshRef: effectiveMeshRef as unknown as React.RefObject<THREE.Group | null>,
+    meshRef: meshRef as unknown as React.RefObject<THREE.Group | null>,
   };
+  Object.assign(merged, overrides);
 
   function HookHarness(props: HarnessProps) {
     const refs = useBotAI(props);
@@ -137,10 +136,10 @@ function mountHook(overrides?: Partial<HarnessProps>) {
     return null;
   }
 
-  render(<HookHarness {...baseProps} {...overrides} />);
+  render(<HookHarness {...merged} />);
   return {
     refs: capturedRef.current as ReturnType<typeof useBotAI>,
-    meshRef: effectiveMeshRef,
+    meshRef: merged.meshRef as React.RefObject<THREE.Group>,
     onTagTarget,
     onFireAtTarget,
     onPositionUpdate,

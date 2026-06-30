@@ -276,7 +276,7 @@ describe("useBotAI", () => {
       // Advance time by pauseAfterTag duration
       advanceTime(defaultBotConfig.pauseAfterTag + 10); // +10 to ensure it's past the pauseEndTime
 
-      // Re-render with updated timestamp and unpaused
+      // Re-render with original timestamp so pause doesn't re-trigger
       rerenderHook({
         targetPositionRef: mockTargetPositionRef,
         isPaused: false,
@@ -289,7 +289,7 @@ describe("useBotAI", () => {
         collisionSystem: mockCollisionSystem,
         config: defaultBotConfig,
         meshRef: mockMeshRef,
-        gotTaggedTimestamp: mockNow,
+        gotTaggedTimestamp: MOCK_START_TIME,
       });
       simulateFrame(0.1);
       // After pause, if target is IT and within chaseRadius, bot should flee
@@ -850,12 +850,12 @@ describe("useBotAI", () => {
       expect(result.current.isSprinting.current).toBe(false);
 
       // Advance time less than sprint cooldown
-      advanceTime(defaultBotConfig.sprintCooldown / 2);
+      advanceTime(400);
       simulateFrame(0.016);
       expect(result.current.isSprinting.current).toBe(false);
 
       // Advance time past sprint cooldown — sprint starts again
-      advanceTime(defaultBotConfig.sprintCooldown / 2 + 1);
+      advanceTime(601);
       simulateFrame(0.016);
       expect(result.current.isSprinting.current).toBe(true);
     });
