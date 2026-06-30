@@ -162,25 +162,17 @@ export function useBotAI({
 
     const now = Date.now();
 
-    // Check if bot is paused after tagging
+    // Handle pausing after being tagged
     if (isPausedAfterTag.current) {
       if (now >= pauseEndTime.current) {
         isPausedAfterTag.current = false;
         tagDebug(`[${config.label}] Freeze ended at ${now}, isIt: ${isIt}`);
-        // After pause, check if bot is now IT and should chase
-        if (isIt) {
-          tagDebug(
-            `[${config.label}] Bot is now IT after pause, will chase player.`,
-          );
-        }
       } else {
-        // Bot is frozen, show visual indicator by slightly pulsing scale
+        // Bot is frozen - show pulse and return
         const pulse = 1 + Math.sin(now * 0.01) * 0.1;
         meshRef.current.scale.set(pulse, pulse, pulse);
-        return; // Skip all movement logic while frozen
+        return;
       }
-    } else {
-      meshRef.current.scale.set(1, 1, 1);
     }
 
     const botPos = meshRef.current.position;
@@ -361,7 +353,7 @@ export function useBotAI({
         }
       }
 
-            const fireRange = config.fireRange ?? 10;
+      const fireRange = config.fireRange ?? 10;
       if (distance > fireRange) {
         // Apply obstacle-avoidance steering if needed.
         if (steerFramesLeft.current > 0) {
@@ -433,10 +425,13 @@ export function useBotAI({
           const newPos = new THREE.Vector3(
             botPos.x + diff.x * backAwaySpeed * delta,
             botPos.y,
-            botPos.z + diff.z * backAwaySpeed * delta
+            botPos.z + diff.z * backAwaySpeed * delta,
           );
           if (collisionSystem.current) {
-            const resolved = collisionSystem.current.checkCollision(botPos, newPos);
+            const resolved = collisionSystem.current.checkCollision(
+              botPos,
+              newPos,
+            );
             botPos.x = resolved.x;
             botPos.z = resolved.z;
           } else {
@@ -449,7 +444,11 @@ export function useBotAI({
             strafeSign.current = Math.random() < 0.5 ? 1 : -1;
             nextStrafeChangeTime.current = now + 1200 + Math.random() * 600;
           }
-          const lateral = new THREE.Vector3(-direction.z * strafeSign.current, 0, direction.x * strafeSign.current);
+          const lateral = new THREE.Vector3(
+            -direction.z * strafeSign.current,
+            0,
+            direction.x * strafeSign.current,
+          );
           const STRAFE_SPEED = config.botSpeed * 0.55;
           const currentPos = new THREE.Vector3(botPos.x, botPos.y, botPos.z);
           const newPos = new THREE.Vector3(
@@ -508,18 +507,33 @@ export function useBotAI({
         } else if (myFlag && enemyFlag) {
           // Patrol between flags
           const t = (now / 10000) % 1; // Cycle every 10 seconds
-          const patrolPoint = new THREE.Vector3().lerpVectors(new THREE.Vector3(...myFlag.basePosition), new THREE.Vector3(...enemyFlag.basePosition), t);
+          const patrolPoint = new THREE.Vector3().lerpVectors(
+            new THREE.Vector3(...myFlag.basePosition),
+            new THREE.Vector3(...enemyFlag.basePosition),
+            t,
+          );
           destination = [patrolPoint.x, patrolPoint.y, patrolPoint.z];
         }
-      } else { // defender
+      } else {
+        // defender
         const enemyPlayerId = myFlag?.carrierId;
         const players = gameState.players;
-        const enemyPlayer = enemyPlayerId && players ? (players instanceof Map ? players.get(enemyPlayerId) : players[enemyPlayerId]) : undefined;
+        const enemyPlayer =
+          enemyPlayerId && players
+            ? players instanceof Map
+              ? players.get(enemyPlayerId)
+              : players[enemyPlayerId]
+            : undefined;
 
         if (myFlag && enemyPlayer) {
           // If our flag is taken by an enemy, hunt them down
           destination = enemyPlayer.position;
-        } else if (myFlag && (myFlag.position[0] !== myFlag.basePosition[0] || myFlag.position[1] !== myFlag.basePosition[1] || myFlag.position[2] !== myFlag.basePosition[2])) {
+        } else if (
+          myFlag &&
+          (myFlag.position[0] !== myFlag.basePosition[0] ||
+            myFlag.position[1] !== myFlag.basePosition[1] ||
+            myFlag.position[2] !== myFlag.basePosition[2])
+        ) {
           // If our flag is dropped (position differs from basePosition), go return it
           destination = myFlag.position;
         } else if (myFlag) {

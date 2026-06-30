@@ -35,10 +35,14 @@ describe("useBotAI", () => {
     mockTargetPositionRef = { current: [0, 0, 0] }; // Default target position
     mockOnTagTarget = vi.fn(() => undefined) as () => void;
     mockOnFireAtTarget = vi.fn(() => undefined) as () => void;
-    mockOnPositionUpdate = vi.fn(() => undefined) as (position: [number, number, number]) => void;
+    mockOnPositionUpdate = vi.fn(() => undefined) as (
+      position: [number, number, number],
+    ) => void;
     mockCollisionSystem = {
       current: {
-        checkCollision: vi.fn((_curr: THREE.Vector3, next: THREE.Vector3) => next),
+        checkCollision: vi.fn(
+          (_curr: THREE.Vector3, next: THREE.Vector3) => next,
+        ),
         checkPlayerCollision: vi.fn(() => false),
         checkProjectileHit: vi.fn(() => null),
         hasLineOfSight: vi.fn(() => true),
@@ -78,7 +82,7 @@ describe("useBotAI", () => {
     // Reset useFrame mock before each test
     (useFrame as ReturnType<typeof vi.fn>).mockClear();
     vi.clearAllMocks(); // Clear mocks for consistency
-    randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5); // Default mock for Math.random
+    randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.5); // Default mock for Math.random
   });
 
   afterEach(() => {
@@ -169,8 +173,9 @@ describe("useBotAI", () => {
       simulateFrame(1); // Simulate 1 second
 
       // Bot should have moved 5 units towards the target (speed 5 * delta 1)
-      expect(mockMeshRef.current!.position.x).toBeCloseTo(5);
-      expect(mockOnPositionUpdate).toHaveBeenCalledWith([5, 0, 0]);
+      // Bot should have moved 2 units towards target (sprintSpeed 2 * delta 1)
+      expect(mockMeshRef.current!.position.x).toBeCloseTo(2);
+      expect(mockOnPositionUpdate).toHaveBeenCalledWith([2, 0, 0]);
     });
 
     it("should attempt to tag target if bot is IT and within tagDistance", () => {
@@ -260,8 +265,8 @@ describe("useBotAI", () => {
             config: defaultBotConfig,
             meshRef: mockMeshRef,
             gotTaggedTimestamp: mockNow, // Bot just got tagged
-          }
-        }
+          },
+        },
       );
 
       // Bot should be paused and not move
@@ -273,19 +278,19 @@ describe("useBotAI", () => {
 
       // Re-render with updated timestamp and unpaused
       rerenderHook({
-            targetPositionRef: mockTargetPositionRef,
-            isPaused: false,
-            isIt: false,
-            targetIsIt: true,
-            onTagTarget: mockOnTagTarget,
-            onFireAtTarget: mockOnFireAtTarget,
-            onPositionUpdate: mockOnPositionUpdate,
-            gameState: mockGameState,
-            collisionSystem: mockCollisionSystem,
-            config: defaultBotConfig,
-            meshRef: mockMeshRef,
-            gotTaggedTimestamp: mockNow,
-          });
+        targetPositionRef: mockTargetPositionRef,
+        isPaused: false,
+        isIt: false,
+        targetIsIt: true,
+        onTagTarget: mockOnTagTarget,
+        onFireAtTarget: mockOnFireAtTarget,
+        onPositionUpdate: mockOnPositionUpdate,
+        gameState: mockGameState,
+        collisionSystem: mockCollisionSystem,
+        config: defaultBotConfig,
+        meshRef: mockMeshRef,
+        gotTaggedTimestamp: mockNow,
+      });
       simulateFrame(0.1);
       // After pause, if target is IT and within range, bot should flee
       // Target is at [10,0,0], bot at [0,0,0], target is IT -> bot flees
@@ -394,27 +399,25 @@ describe("useBotAI", () => {
       mockTargetPositionRef.current = [10, 0, 0]; // Far away to focus on jumping
 
       // Mock Math.random to always trigger jump direction and timing
-      randomSpy.mockReturnValueOnce(0.1) // for steerSign if it gets stuck, which it won't here
-                 .mockReturnValueOnce(0.1); // for nextJumpTime calc
+      randomSpy
+        .mockReturnValueOnce(0.1) // for steerSign if it gets stuck, which it won't here
+        .mockReturnValueOnce(0.1); // for nextJumpTime calc
 
-      renderHook(
-        (props) => useBotAI(props),
-        {
-          initialProps: {
-            targetPositionRef: mockTargetPositionRef,
-            isPaused: false,
-            isIt: false,
-            targetIsIt: false,
-            onTagTarget: mockOnTagTarget,
-            onFireAtTarget: mockOnFireAtTarget,
-            onPositionUpdate: mockOnPositionUpdate,
-            gameState: mockGameState,
-            collisionSystem: mockCollisionSystem,
-            config: defaultBotConfig,
-            meshRef: mockMeshRef,
-          }
-        }
-      );
+      renderHook((props) => useBotAI(props), {
+        initialProps: {
+          targetPositionRef: mockTargetPositionRef,
+          isPaused: false,
+          isIt: false,
+          targetIsIt: false,
+          onTagTarget: mockOnTagTarget,
+          onFireAtTarget: mockOnFireAtTarget,
+          onPositionUpdate: mockOnPositionUpdate,
+          gameState: mockGameState,
+          collisionSystem: mockCollisionSystem,
+          config: defaultBotConfig,
+          meshRef: mockMeshRef,
+        },
+      });
 
       // Advance time past initial jump cooldown
       advanceTime(2600); // nextJumpTime is 2500 + Math.random()*2000, which with 0.1 is 2500 + 200 = 2700
@@ -442,8 +445,8 @@ describe("useBotAI", () => {
             config: defaultBotConfig,
             meshRef: mockMeshRef,
             isDowned: true, // Bot is downed
-          }
-        }
+          },
+        },
       );
 
       // Bot should be pulsing when downed (visual indicator, not physical movement)
@@ -452,19 +455,19 @@ describe("useBotAI", () => {
 
       // Simulate respawn (isDowned becomes false)
       rerenderHook({
-            targetPositionRef: mockTargetPositionRef,
-            isPaused: false,
-            isIt: false,
-            targetIsIt: false,
-            onTagTarget: mockOnTagTarget,
-            onFireAtTarget: mockOnFireAtTarget,
-            onPositionUpdate: mockOnPositionUpdate,
-            gameState: mockGameState,
-            collisionSystem: mockCollisionSystem,
-            config: defaultBotConfig,
-            meshRef: mockMeshRef,
-            isDowned: false,
-          });
+        targetPositionRef: mockTargetPositionRef,
+        isPaused: false,
+        isIt: false,
+        targetIsIt: false,
+        onTagTarget: mockOnTagTarget,
+        onFireAtTarget: mockOnFireAtTarget,
+        onPositionUpdate: mockOnPositionUpdate,
+        gameState: mockGameState,
+        collisionSystem: mockCollisionSystem,
+        config: defaultBotConfig,
+        meshRef: mockMeshRef,
+        isDowned: false,
+      });
       simulateFrame(0.1);
 
       // Bot should have teleported to a spawn point
@@ -472,9 +475,15 @@ describe("useBotAI", () => {
       expect(currentPos.x).not.toBeCloseTo(1);
       expect(currentPos.y).not.toBeCloseTo(1);
       expect(currentPos.z).not.toBeCloseTo(1);
-      expect(currentPos.equals(new THREE.Vector3(...defaultBotConfig.initialPosition))).toBe(false); // Should not be initial position either
-      const spawnPointsVecs = SPAWN_POINTS.map(p => new THREE.Vector3(...p));
-      const isAtSpawnPoint = spawnPointsVecs.some(sp => sp.distanceTo(currentPos) < 0.01);
+      expect(
+        currentPos.equals(
+          new THREE.Vector3(...defaultBotConfig.initialPosition),
+        ),
+      ).toBe(false); // Should not be initial position either
+      const spawnPointsVecs = SPAWN_POINTS.map((p) => new THREE.Vector3(...p));
+      const isAtSpawnPoint = spawnPointsVecs.some(
+        (sp) => sp.distanceTo(currentPos) < 0.01,
+      );
       expect(isAtSpawnPoint).toBe(true);
     });
   });
@@ -484,8 +493,18 @@ describe("useBotAI", () => {
       mockGameState.mode = "ctf";
       mockGameState.isActive = true;
       mockGameState.flags = [
-        { team: "a", position: [10, 0, 10], basePosition: [10, 0, 10], carrierId: undefined },
-        { team: "b", position: [-10, 0, -10], basePosition: [-10, 0, -10], carrierId: undefined },
+        {
+          team: "a",
+          position: [10, 0, 10],
+          basePosition: [10, 0, 10],
+          carrierId: undefined,
+        },
+        {
+          team: "b",
+          position: [-10, 0, -10],
+          basePosition: [-10, 0, -10],
+          carrierId: undefined,
+        },
       ];
       mockTargetPositionRef.current = [0, 0, 0]; // Default target for firing
     });
@@ -589,7 +608,15 @@ describe("useBotAI", () => {
       // Start bot at an asymmetric position
       mockMeshRef.current!.position.set(-3, 0, 1);
       mockGameState.players = new Map([
-        ["enemy1", { id: "enemy1", name: "Enemy", position: [15, 0, 15], rotation: [0, 0, 0] }]
+        [
+          "enemy1",
+          {
+            id: "enemy1",
+            name: "Enemy",
+            position: [15, 0, 15],
+            rotation: [0, 0, 0],
+          },
+        ],
       ]);
       mockGameState.flags![0].carrierId = "enemy1"; // Enemy is carrying our flag
 
@@ -745,9 +772,9 @@ describe("useBotAI", () => {
       mockGameState.isActive = true;
 
       // Mock checkCollision to always return the current position, simulating being stuck
-      (mockCollisionSystem.current!.checkCollision as ReturnType<typeof vi.fn>).mockImplementation(
-        (current) => current,
-      );
+      (
+        mockCollisionSystem.current!.checkCollision as ReturnType<typeof vi.fn>
+      ).mockImplementation((current) => current);
 
       renderHook(() =>
         useBotAI({
@@ -775,7 +802,9 @@ describe("useBotAI", () => {
       expect(mockMeshRef.current!.rotation.y).not.toBeCloseTo(initialRotationY);
 
       // After steering, movement should attempt to resolve
-      (mockCollisionSystem.current!.checkCollision as ReturnType<typeof vi.fn>).mockImplementation(
+      (
+        mockCollisionSystem.current!.checkCollision as ReturnType<typeof vi.fn>
+      ).mockImplementation(
         (_curr, next) => next, // Allow movement again
       );
       simulateFrame(0.1);
@@ -800,7 +829,13 @@ describe("useBotAI", () => {
           onPositionUpdate: mockOnPositionUpdate,
           gameState: mockGameState,
           collisionSystem: mockCollisionSystem,
-          config: { ...defaultBotConfig, botSpeed: 1, sprintSpeed: 5, sprintDuration: 500, sprintCooldown: 1000 },
+          config: {
+            ...defaultBotConfig,
+            botSpeed: 1,
+            sprintSpeed: 5,
+            sprintDuration: 500,
+            sprintCooldown: 1000,
+          },
           meshRef: mockMeshRef,
         }),
       );
