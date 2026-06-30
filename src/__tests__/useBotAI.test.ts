@@ -1,10 +1,9 @@
 import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import React from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import CollisionSystem from "../components/CollisionSystem";
-import { GameManager } from "../components/GameManager";
+import { GameState } from "../components/GameManager";
 import { useBotAI, BotConfig } from "../components/characters/useBotAI";
 import { SPAWN_POINTS } from "../lib/constants/spawnPoints";
 
@@ -19,13 +18,13 @@ let mockNow = MOCK_START_TIME;
 vi.spyOn(Date, "now").mockImplementation(() => mockNow);
 
 describe("useBotAI", () => {
-  let mockMeshRef: React.RefObject<THREE.Group>;
-  let mockTargetPositionRef: React.RefObject<[number, number, number]>;
+  let mockMeshRef: { current: THREE.Group };
+  let mockTargetPositionRef: { current: [number, number, number] };
   let mockOnTagTarget: () => void;
   let mockOnFireAtTarget: () => void;
   let mockOnPositionUpdate: (position: [number, number, number]) => void;
-  let mockCollisionSystem: React.RefObject<CollisionSystem | null>;
-  let mockGameState: GameManager["gameState"];
+  let mockCollisionSystem: { current: CollisionSystem | null };
+  let mockGameState: GameState;
   let defaultBotConfig: BotConfig;
   let randomSpy: ReturnType<typeof vi.spyOn>;
 
@@ -34,9 +33,9 @@ describe("useBotAI", () => {
     mockMeshRef = { current: new THREE.Group() };
     mockMeshRef.current.position.set(0, 0, 0); // Default bot position
     mockTargetPositionRef = { current: [0, 0, 0] }; // Default target position
-    mockOnTagTarget = vi.fn(() => undefined);
-    mockOnFireAtTarget = vi.fn(() => undefined);
-    mockOnPositionUpdate = vi.fn(() => undefined);
+    mockOnTagTarget = vi.fn(() => undefined) as () => void;
+    mockOnFireAtTarget = vi.fn(() => undefined) as () => void;
+    mockOnPositionUpdate = vi.fn(() => undefined) as (position: [number, number, number]) => void;
     mockCollisionSystem = {
       current: {
         checkCollision: vi.fn((_curr: THREE.Vector3, next: THREE.Vector3) => next),
