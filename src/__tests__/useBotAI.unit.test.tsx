@@ -101,11 +101,13 @@ const baseConfig: BotConfig = {
 };
 
 function mountHook(overrides?: Partial<HarnessProps>) {
-  const meshRef = makeMesh();
+  const localMeshRef = makeMesh();
   const capturedRef = React.createRef<ReturnType<typeof useBotAI> | null>();
   const onTagTarget = vi.fn();
   const onFireAtTarget = vi.fn();
   const onPositionUpdate = vi.fn();
+  // Use the overridden meshRef if provided, otherwise the local one
+  const effectiveMeshRef = overrides?.meshRef ?? localMeshRef;
 
   const baseProps: HarnessProps = {
     targetPositionRef: { current: [1, 0, 0] as [number, number, number] },
@@ -124,7 +126,7 @@ function mountHook(overrides?: Partial<HarnessProps>) {
     collisionSystem: fakeCollision,
     gotTaggedTimestamp: undefined as number | undefined,
     config: baseConfig,
-    meshRef: meshRef as unknown as React.RefObject<THREE.Group | null>,
+    meshRef: effectiveMeshRef as unknown as React.RefObject<THREE.Group | null>,
   };
 
   function HookHarness(props: HarnessProps) {
@@ -138,7 +140,7 @@ function mountHook(overrides?: Partial<HarnessProps>) {
   render(<HookHarness {...baseProps} {...overrides} />);
   return {
     refs: capturedRef.current as ReturnType<typeof useBotAI>,
-    meshRef,
+    meshRef: effectiveMeshRef,
     onTagTarget,
     onFireAtTarget,
     onPositionUpdate,

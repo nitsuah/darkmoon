@@ -245,7 +245,7 @@ describe("useBotAI", () => {
 
     it("should pause after being tagged", () => {
       mockMeshRef.current!.position.set(0, 0, 0);
-      mockTargetPositionRef.current = [10, 0, 0];
+      mockTargetPositionRef.current = [4, 0, 0]; // Within chaseRadius (5)
       mockGameState.mode = "tag";
       mockGameState.isActive = true;
 
@@ -292,8 +292,8 @@ describe("useBotAI", () => {
         gotTaggedTimestamp: mockNow,
       });
       simulateFrame(0.1);
-      // After pause, if target is IT and within range, bot should flee
-      // Target is at [10,0,0], bot at [0,0,0], target is IT -> bot flees
+      // After pause, if target is IT and within chaseRadius, bot should flee
+      // Target is at [4,0,0], bot at [0,0,0], target is IT -> bot flees
       expect(mockMeshRef.current!.position.x).toBeLessThan(0); // Should have moved away
     });
   });
@@ -307,6 +307,7 @@ describe("useBotAI", () => {
 
     it("should advance towards target if outside fire range", () => {
       mockMeshRef.current!.position.set(0, 0, 0);
+      mockTargetPositionRef.current = [15, 0, 0]; // Distance 15 > fireRange (10)
 
       renderHook(() =>
         useBotAI({
@@ -468,21 +469,20 @@ describe("useBotAI", () => {
         meshRef: mockMeshRef,
         isDowned: false,
       });
-      simulateFrame(0.1);
 
-      // Bot should have teleported to a spawn point
-      const currentPos = mockMeshRef.current!.position;
-      expect(currentPos.x).not.toBeCloseTo(1);
-      expect(currentPos.y).not.toBeCloseTo(1);
-      expect(currentPos.z).not.toBeCloseTo(1);
+      // Bot should have teleported to a spawn point (check before movement frame)
+      const respawnPos = mockMeshRef.current!.position;
+      expect(respawnPos.x).not.toBeCloseTo(1);
+      expect(respawnPos.y).not.toBeCloseTo(1);
+      expect(respawnPos.z).not.toBeCloseTo(1);
       expect(
-        currentPos.equals(
+        respawnPos.equals(
           new THREE.Vector3(...defaultBotConfig.initialPosition),
         ),
       ).toBe(false); // Should not be initial position either
       const spawnPointsVecs = SPAWN_POINTS.map((p) => new THREE.Vector3(...p));
       const isAtSpawnPoint = spawnPointsVecs.some(
-        (sp) => sp.distanceTo(currentPos) < 0.01,
+        (sp) => sp.distanceTo(respawnPos) < 0.01,
       );
       expect(isAtSpawnPoint).toBe(true);
     });
@@ -840,17 +840,12 @@ describe("useBotAI", () => {
         }),
       );
 
-      // Initially not sprinting
-      simulateFrame(0.016);
-      expect(result.current.isSprinting.current).toBe(false);
-
-      // Advance time to trigger sprint
-      advanceTime(defaultBotConfig.sprintCooldown + 1); // Enough time for sprint cooldown to pass
+      // Sprint starts immediately (nextSprintTime=0)
       simulateFrame(0.016);
       expect(result.current.isSprinting.current).toBe(true);
 
-      // Advance time through sprint duration
-      advanceTime(defaultBotConfig.sprintDuration);
+      // Advance time past sprint duration (500ms) — sprint ends
+      advanceTime(defaultBotConfig.sprintDuration + 1);
       simulateFrame(0.016);
       expect(result.current.isSprinting.current).toBe(false);
 
@@ -859,7 +854,7 @@ describe("useBotAI", () => {
       simulateFrame(0.016);
       expect(result.current.isSprinting.current).toBe(false);
 
-      // Advance time past sprint cooldown again
+      // Advance time past sprint cooldown — sprint starts again
       advanceTime(defaultBotConfig.sprintCooldown / 2 + 1);
       simulateFrame(0.016);
       expect(result.current.isSprinting.current).toBe(true);
