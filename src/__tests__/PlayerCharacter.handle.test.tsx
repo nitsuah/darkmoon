@@ -73,6 +73,72 @@ vi.mock("../../lib/hooks/usePlayerCamera", () => ({
   }),
 }));
 
+// Mock the modular components that PlayerCharacter imports
+vi.mock("../components/characters/player/PlayerMovement", () => ({
+  PlayerMovement: () => null,
+}));
+
+vi.mock("../components/characters/player/PlayerCamera", () => ({
+  PlayerCamera: () => null,
+}));
+
+vi.mock("../components/characters/player/PlayerWeapon", () => ({
+  PlayerWeapon: () => null,
+}));
+
+vi.mock("../components/characters/player/PlayerHealth", () => ({
+  PlayerHealth: () => null,
+}));
+
+vi.mock("../components/characters/player/PlayerRespawner", () => ({
+  PlayerRespawner: () => null,
+}));
+
+vi.mock("../components/characters/player/PlayerInput", () => ({
+  PlayerInput: () => null,
+}));
+
+vi.mock("../components/characters/player/PlayerJetpack", () => ({
+  PlayerJetpack: () => null,
+}));
+
+vi.mock("../components/characters/player/PlayerJetpackV2", () => ({
+  PlayerJetpackV2: () => null,
+}));
+
+// Mock the modular components that PlayerCharacter imports
+vi.mock("../components/characters/player/PlayerMovement", () => ({
+  PlayerMovement: () => null,
+}));
+
+vi.mock("../components/characters/player/PlayerCamera", () => ({
+  PlayerCamera: () => null,
+}));
+
+vi.mock("../components/characters/player/PlayerWeapon", () => ({
+  PlayerWeapon: () => null,
+}));
+
+vi.mock("../components/characters/player/PlayerHealth", () => ({
+  PlayerHealth: () => null,
+}));
+
+vi.mock("../components/characters/player/PlayerRespawner", () => ({
+  PlayerRespawner: () => null,
+}));
+
+vi.mock("../components/characters/player/PlayerInput", () => ({
+  PlayerInput: () => null,
+}));
+
+vi.mock("../components/characters/player/PlayerJetpack", () => ({
+  PlayerJetpack: () => null,
+}));
+
+vi.mock("../components/characters/player/PlayerJetpackV2", () => ({
+  PlayerJetpackV2: () => null,
+}));
+
 vi.mock("../../lib/hooks/usePlayerPhysics", () => ({
   usePlayerPhysics: () => ({
     velocityRef: {

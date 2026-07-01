@@ -39,6 +39,9 @@ vi.mock("@react-three/fiber", () => ({
   ) => {
     frameCallback = cb;
   },
+  Canvas: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 
 vi.mock("../components/SpacemanModel", () => ({
