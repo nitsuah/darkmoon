@@ -22,6 +22,8 @@ export const BOT1_CONFIG: BotConfig = {
   chaseRadius: 15,
   initialPosition: [-5, 0.5, -5],
   missChance: 0.22,
+  fireRange: 12, // Closer range for SMG
+  role: "attacker",
   label: "Bot1",
 };
 
@@ -41,6 +43,8 @@ export const BOT2_CONFIG: BotConfig = {
   chaseRadius: 15,
   initialPosition: [8, 0.5, -8],
   missChance: 0.28,
+  fireRange: 15,
+  role: "attacker",
   label: "Bot2",
 };
 
@@ -60,6 +64,8 @@ export const BOT3_CONFIG: BotConfig = {
   chaseRadius: 15,
   initialPosition: [-8, 0.5, 8],
   missChance: 0.33,
+  fireRange: 18, // Longer range for grenades
+  role: "defender",
   label: "Bot3",
 };
 
@@ -79,6 +85,8 @@ export const BOT4_CONFIG: BotConfig = {
   chaseRadius: 25,
   initialPosition: [8, 0.5, 8],
   missChance: 0.12,
+  fireRange: 25, // Longest range for sniper
+  role: "defender",
   label: "Bot4",
 };
 

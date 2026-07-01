@@ -51,6 +51,8 @@ export interface GameState {
   galleryShots?: number;
   /** Shooting gallery: total targets hit this round. */
   galleryHits?: number;
+  /** Players map for CTF defender logic. */
+  players?: Map<string, Player>;
 }
 
 export interface TagGameState extends GameState {
