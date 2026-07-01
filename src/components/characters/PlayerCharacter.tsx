@@ -22,11 +22,30 @@ import {
 } from "../utils";
 import SpacemanModel from "../SpacemanModel";
 import { getSoundManager } from "../SoundManager";
-import { WeaponManager } from "../combat/WeaponManager";
+import { processFiring } from "../../lib/hooks/usePlayerWeapon";
 import { processTagging } from "../../lib/hooks/usePlayerTagging";
 import { createTagLogger } from "../../lib/utils/logger";
 import { pickSafeSpawn } from "../../lib/constants/spawnPoints";
 import { TrajectoryArc } from "../world/vfx/TrajectoryArc";
+import {
+  usePlayerPhysics,
+  PHYSICS_CONSTANTS,
+} from "../../lib/hooks/usePlayerPhysics";
+import { usePlayerCamera } from "../../lib/hooks/usePlayerCamera";
+import { usePlayerState } from "../../lib/hooks/usePlayerState";
+import {
+  resolveMovement,
+  detectPlayerCollision,
+} from "../../lib/hooks/usePlayerCollision";
+import {
+  computeDirection,
+  computeSpeed,
+  computeFacingYaw,
+} from "../../lib/hooks/usePlayerMovement";
+import {
+  computeJetpackThrust,
+  shouldActivateJetpackFromMobile,
+} from "../../lib/hooks/useJetpack";
 
 import {
   PlayerMovement,
@@ -35,9 +54,9 @@ import {
   PlayerHealth,
   PlayerRespawner,
   PlayerInput,
+  PlayerJetpack,
 } from "./player/index";
 import type { WeaponManager as WeaponManagerType } from "../combat/WeaponManager";
-import type { CollisionSystem } from "../../lib/hooks/usePlayerCollision";
 
 const tagDebug = createTagLogger("PlayerCharacter");
 
@@ -153,6 +172,44 @@ export const PlayerCharacter = React.forwardRef<
     idealCameraPositionRef,
     skyTargetRef,
   } = camera;
+
+  // Weapon manager ref (initialized lazily, used in effects/useFrame)
+  const weaponManagerRef = React.useRef<WeaponManagerType>(
+    null as unknown as WeaponManagerType,
+  );
+
+  // Rising-edge detection for weapon switch keys
+  const prevKey1Ref = React.useRef(false);
+  const prevKey2Ref = React.useRef(false);
+  const prevKey3Ref = React.useRef(false);
+  const prevKey4Ref = React.useRef(false);
+  const prevKey5Ref = React.useRef(false);
+  const prevKeyRRef = React.useRef(false);
+
+  // Laser beam visual effect refs
+  const laserBeamRef = React.useRef<THREE.Group>(
+    null as unknown as THREE.Group,
+  );
+  const laserBeamHideAtRef = React.useRef(0);
+  const beamMeshRef = React.useRef<THREE.Mesh>(null as unknown as THREE.Mesh);
+  const beamGlowRef = React.useRef<THREE.Mesh>(null as unknown as THREE.Mesh);
+  const muzzleFlashRef = React.useRef<THREE.PointLight>(
+    null as unknown as THREE.PointLight,
+  );
+  const muzzleFlashHideAtRef = React.useRef(0);
+  const cameraShakeRef = React.useRef(new THREE.Vector3());
+
+  // Look indicator (aim preview)
+  const lookIndicatorRef = React.useRef<THREE.Mesh>(
+    null as unknown as THREE.Mesh,
+  );
+
+  // Jetpack flame and landing dust visibility state
+  const [showJetpackFlame, setShowJetpackFlame] = React.useState(false);
+  const [showDustEffect, setShowDustEffect] = React.useState(false);
+
+  // Stable refs for optional props
+  const mobileJetpackTriggerRef = mobileJetpackTriggerRef;
 
   // Equip the laser blaster by default and surface the equipped weapon to the HUD.
   React.useEffect(() => {
@@ -1242,6 +1299,148 @@ export const PlayerCharacter = React.forwardRef<
         ref={muzzleFlashRef}
         args={["#ffeecc", 5, 5]}
         visible={false}
+      />
+
+      {/* Modular sub-components — each contains its own useFrame hook */}
+      <PlayerMovement
+        meshRef={meshRef}
+        cameraHorizontal={cameraRotationRef.current.horizontal}
+        bothMouseButtons={mouseControls.leftClick && mouseControls.rightClick}
+        joystickMove={joystickMove}
+        keysPressedRef={keysPressedRef}
+        isPlayerFrozenRef={isPlayerFrozenRef}
+        playerFreezeEndTimeRef={playerFreezeEndTimeRef}
+        mobileJetpackTriggerRef={mobileJetpackTriggerRef}
+        onPositionUpdate={onPositionUpdate}
+        socketClient={socketClient}
+        currentPlayerId={currentPlayerId}
+        isPaused={isPaused}
+        lastWalkSoundTimeRef={lastWalkSoundTimeRef}
+        gameManager={
+          gameManager as unknown as {
+            getPlayers: () => Map<
+              string,
+              {
+                isIt: boolean;
+                position: [number, number, number];
+                respawnAt?: number;
+              }
+            >;
+            getGameState: () => { mode: string; isActive: boolean };
+          }
+        }
+        clients={
+          clients as unknown as Record<
+            string,
+            { position: [number, number, number] }
+          >
+        }
+        collisionSystemRef={
+          collisionSystemRef as React.RefObject<{
+            checkCollision: (
+              a: THREE.Vector3,
+              b: THREE.Vector3,
+            ) => THREE.Vector3;
+            checkPlayerCollision: (
+              a: THREE.Vector3,
+              b: THREE.Vector3,
+            ) => boolean;
+          }>
+        }
+        setShowJetpackFlame={setShowJetpackFlame}
+        lookIndicatorRef={lookIndicatorRef}
+        delta={0.016}
+      />
+      <PlayerCamera
+        meshRef={meshRef}
+        cameraRotationRef={cameraRotationRef}
+        skycamRef={skycamRef}
+        previousMouseRef={previousMouseRef}
+        isFirstMouseRef={isFirstMouseRef}
+        cameraOffsetRef={cameraOffsetRef}
+        idealCameraPositionRef={idealCameraPositionRef}
+        skyTargetRef={skyTargetRef}
+        mouseControls={mouseControls}
+        joystickCamera={joystickCamera}
+        keysPressedRef={keysPressedRef}
+        isPaused={isPaused}
+        size={{ width: 0, height: 0 }}
+        isPlayerFrozenRef={isPlayerFrozenRef}
+        playerFreezeEndTimeRef={playerFreezeEndTimeRef}
+        cameraShakeRef={cameraShakeRef}
+      />
+      <PlayerWeapon
+        meshRef={meshRef}
+        cameraHorizontal={cameraRotationRef.current.horizontal}
+        mouseControls={mouseControls}
+        keysPressedRef={keysPressedRef}
+        socketClient={socketClient}
+        currentPlayerId={currentPlayerId}
+        gameManager={gameManager}
+        size={{ width: 0, height: 0 }}
+        isPaused={isPaused}
+        weaponManagerRef={weaponManagerRef}
+        laserBeamRef={laserBeamRef}
+        laserBeamHideAtRef={laserBeamHideAtRef}
+        beamMeshRef={beamMeshRef}
+        beamGlowRef={beamGlowRef}
+        muzzleFlashRef={muzzleFlashRef}
+        muzzleFlashHideAtRef={muzzleFlashHideAtRef}
+        cameraShakeRef={cameraShakeRef}
+        prevKey1Ref={prevKey1Ref}
+        prevKey2Ref={prevKey2Ref}
+        prevKey3Ref={prevKey3Ref}
+        prevKey4Ref={prevKey4Ref}
+        prevKey5Ref={prevKey5Ref}
+        prevKeyRRef={prevKeyRRef}
+        canAct={false}
+      />
+      <PlayerHealth
+        meshRef={meshRef}
+        gameManager={gameManager}
+        currentPlayerId={currentPlayerId}
+        isPaused={isPaused}
+      />
+      <PlayerRespawner
+        meshRef={meshRef}
+        gameManager={gameManager}
+        currentPlayerId={currentPlayerId}
+        isPaused={isPaused}
+        weaponManagerRef={weaponManagerRef}
+      />
+      <PlayerInput
+        gameManager={gameManager}
+        currentPlayerId={currentPlayerId}
+        socketClient={socketClient}
+        keysPressedRef={keysPressedRef}
+        mobileJetpackTriggerRef={mobileJetpackTriggerRef}
+        isPaused={isPaused}
+        weaponManagerRef={weaponManagerRef}
+        onPlayerFrozen={(duration: number) => {
+          isPlayerFrozenRef.current = true;
+          playerFreezeEndTimeRef.current = Date.now() + duration;
+        }}
+      />
+      <PlayerJetpack
+        showJetpackFlame={showJetpackFlame}
+        setShowJetpackFlame={setShowJetpackFlame}
+        jetpackActiveRef={jetpackActiveRef}
+        isJumpingRef={isJumpingRef}
+        verticalVelocityRef={verticalVelocityRef}
+        jumpHoldTimeRef={jumpHoldTimeRef}
+        jetpackThrustSoundRef={jetpackThrustSoundRef}
+        keysPressedRef={keysPressedRef}
+        cameraRotationRef={
+          cameraRotationRef as React.RefObject<{
+            horizontal: number;
+            vertical: number;
+          }>
+        }
+        gameState={PHYSICS_CONSTANTS}
+        isPaused={isPaused}
+        socketClient={socketClient}
+        currentPlayerId={currentPlayerId}
+        gameManager={gameManager}
       />
     </>
   );

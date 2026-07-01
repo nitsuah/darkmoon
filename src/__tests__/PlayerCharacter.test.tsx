@@ -1,8 +1,9 @@
 import React from "react";
+import { describe, it, expect, vi } from "vitest";
 import { render } from "@testing-library/react";
-import { vi, describe, it, expect } from "vitest";
-import type { PlayerCharacterHandle } from "../components/characters/PlayerCharacter";
+import * as THREE from "three";
 import { PlayerCharacter } from "../components/characters/PlayerCharacter";
+import type { PlayerCharacterHandle } from "../components/characters/PlayerCharacter";
 import type { Clients } from "../types/socket";
 
 // Mock R3F Canvas/useFrame at top-level so PlayerCharacter's useFrame doesn't throw
@@ -13,71 +14,7 @@ vi.mock("@react-three/fiber", () => ({
   useFrame: () => undefined,
 }));
 
-// Mock all modular components that PlayerCharacter orchestrator imports
-vi.mock("../components/characters/player/PlayerMovement", () => ({
-  PlayerMovement: () => null,
-}));
-
-vi.mock("../components/characters/player/PlayerCamera", () => ({
-  PlayerCamera: () => null,
-}));
-
-vi.mock("../components/characters/player/PlayerWeapon", () => ({
-  PlayerWeapon: () => null,
-}));
-
-vi.mock("../components/characters/player/PlayerHealth", () => ({
-  PlayerHealth: () => null,
-}));
-
-vi.mock("../components/characters/player/PlayerRespawner", () => ({
-  PlayerRespawner: () => null,
-}));
-
-vi.mock("../components/characters/player/PlayerInput", () => ({
-  PlayerInput: () => null,
-}));
-
-vi.mock("../components/characters/player/PlayerJetpack", () => ({
-  PlayerJetpack: () => null,
-}));
-
-vi.mock("../components/characters/player/PlayerJetpackV2", () => ({
-  PlayerJetpackV2: () => null,
-}));
-
-vi.mock("../components/SpacemanModel", () => ({
-  default: () => <div data-testid="spaceman" />,
-}));
-
-vi.mock("../world/vfx/TrajectoryArc", () => ({
-  default: () => null,
-}));
-
-vi.mock("../components/SoundManager", () => ({
-  getSoundManager: () => ({
-    playWalkSound: vi.fn(),
-    playSprintSound: vi.fn(),
-    playJumpSound: vi.fn(),
-    playLandingSoundScaled: vi.fn(),
-    playJetpackActivateSound: vi.fn(),
-    playJetpackThrustSound: vi.fn(() => null),
-    stopJetpackThrustSound: vi.fn(),
-    playRCSSound: vi.fn(),
-  }),
-}));
-
-import * as THREE from "three";
-
-vi.mock("../../lib/hooks/usePlayerCollision", () => ({
-  resolveMovement: (
-    _collisionSystem: unknown,
-    _current: THREE.Vector3,
-    next: THREE.Vector3,
-  ) => next,
-  detectPlayerCollision: () => false,
-}));
-
+// Minimal mocks for internal hooks so the imperative handle is available.
 vi.mock("../../lib/hooks/usePlayerState", () => ({
   usePlayerState: () => ({
     meshRef: {
@@ -137,8 +74,75 @@ vi.mock("../../lib/hooks/usePlayerCamera", () => ({
   }),
 }));
 
-// Minimal dependencies for PlayerCharacter
+// Mock all modular components that PlayerCharacter orchestrator imports
+vi.mock("../components/characters/player/PlayerMovement", () => ({
+  PlayerMovement: () => null,
+}));
+
+vi.mock("../components/characters/player/PlayerCamera", () => ({
+  PlayerCamera: () => null,
+}));
+
+vi.mock("../components/characters/player/PlayerWeapon", () => ({
+  PlayerWeapon: () => null,
+}));
+
+vi.mock("../components/characters/player/PlayerHealth", () => ({
+  PlayerHealth: () => null,
+}));
+
+vi.mock("../components/characters/player/PlayerRespawner", () => ({
+  PlayerRespawner: () => null,
+}));
+
+vi.mock("../components/characters/player/PlayerInput", () => ({
+  PlayerInput: () => null,
+}));
+
+vi.mock("../components/characters/player/PlayerJetpack", () => ({
+  PlayerJetpack: () => null,
+}));
+
+vi.mock("../components/characters/player/PlayerJetpackV2", () => ({
+  PlayerJetpackV2: () => null,
+}));
+
+// Mock spaceman model
+vi.mock("../components/SpacemanModel", () => ({
+  default: () => <div data-testid="spaceman" />,
+}));
+
+// Mock sound manager
+vi.mock("../components/SoundManager", () => ({
+  getSoundManager: () => ({
+    playWalkSound: vi.fn(),
+    playSprintSound: vi.fn(),
+    playJumpSound: vi.fn(),
+    playLandingSoundScaled: vi.fn(),
+    playJetpackActivateSound: vi.fn(),
+    playJetpackThrustSound: vi.fn(() => null),
+    stopJetpackThrustSound: vi.fn(),
+    playRCSSound: vi.fn(),
+  }),
+}));
+
+// Mock trajectory arc
+vi.mock("../world/vfx/TrajectoryArc", () => ({
+  default: () => null,
+}));
+
+// Mock collision system
+vi.mock("../../lib/hooks/usePlayerCollision", () => ({
+  resolveMovement: (
+    _collisionSystem: unknown,
+    _current: THREE.Vector3,
+    next: THREE.Vector3,
+  ) => next,
+  detectPlayerCollision: () => false,
+}));
+
 const emptyClients: Clients = {} as unknown as Clients;
+
 type FakeGameManager = {
   getPlayers: () => Map<unknown, unknown>;
   getGameState: () => { mode: string; isActive: boolean };
@@ -151,7 +155,7 @@ const fakeGameManager: FakeGameManagerWithUpdate = {
   updatePlayer: vi.fn(),
 };
 
-describe("PlayerCharacter imperative handle", () => {
+describe("PlayerCharacter - Modular Architecture Tests", () => {
   it("equips a picked-up weapon via the weapon-pickup window event", () => {
     const updatePlayer = vi.fn();
     const gm = {

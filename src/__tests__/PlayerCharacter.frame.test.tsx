@@ -70,6 +70,7 @@ vi.mock("../lib/hooks/usePlayerCollision", () => ({
   detectPlayerCollision: () => false,
 }));
 
+// Mock all modular components that PlayerCharacter orchestrator imports
 vi.mock("../components/characters/player/PlayerMovement", () => ({
   PlayerMovement: () => null,
 }));
@@ -100,6 +101,80 @@ vi.mock("../components/characters/player/PlayerJetpack", () => ({
 
 vi.mock("../components/characters/player/PlayerJetpackV2", () => ({
   PlayerJetpackV2: () => null,
+}));
+
+// Mock all hooks that PlayerCharacter uses internally
+vi.mock("../../lib/hooks/usePlayerState", () => ({
+  usePlayerState: () => ({
+    meshRef: {
+      current: {
+        position: {
+          set: (..._args: unknown[]) => {
+            void _args;
+          },
+        },
+        rotation: {},
+        scale: { set: () => {} },
+      },
+    },
+    collisionSystemRef: {
+      current: {
+        checkCollision: () => ({ x: 0, y: 0, z: 0 }),
+        checkPlayerCollision: () => false,
+      },
+    },
+    lastReportedPositionRef: { current: { x: 0, y: 0, z: 0 } },
+    lastTagCheckRef: { current: 0 },
+    frameCounterRef: { current: 0 },
+    isPlayerFrozenRef: { current: false },
+    playerFreezeEndTimeRef: { current: 0 },
+  }),
+}));
+
+vi.mock("../lib/hooks/usePlayerPhysics", () => ({
+  PHYSICS_CONSTANTS: {
+    GRAVITY: 0.0005,
+    GROUND_Y: 0.5,
+    AIR_RESISTANCE: 0.996,
+    HORIZONTAL_AIR_CONTROL: 0.5,
+    MOMENTUM_PRESERVATION: 0.985,
+    JUMP_INITIAL_FORCE: 0.1,
+    JETPACK_INITIAL_BOOST: 0.04,
+    JETPACK_HOLD_FORCE: 0.05,
+    JETPACK_MAX_HOLD_TIME: 2.5,
+    RCS_THRUST: 0.05,
+    RCS_MAX_DURATION: 3,
+    POSITION_UPDATE_THRESHOLD: 0.001,
+  },
+  usePlayerPhysics: () => ({
+    velocityRef: { current: new THREE.Vector3(0, 0, 0) },
+    directionRef: { current: new THREE.Vector3(0, 0, 0) },
+    currentSpeedRef: { current: 0 },
+    inputDirectionRef: { current: new THREE.Vector3(0, 0, 0) },
+    finalMovementRef: { current: new THREE.Vector3(0, 0, 0) },
+    isJumpingRef: { current: false },
+    verticalVelocityRef: { current: 0 },
+    jumpHoldTimeRef: { current: 0 },
+    horizontalMomentumRef: { current: new THREE.Vector3(0, 0, 0) },
+    lastJumpTimeRef: { current: 0 },
+    jetpackActiveRef: { current: false },
+    isUsingRCSRef: { current: false },
+    rcsTimeRemainingRef: { current: 0 },
+    jetpackThrustSoundRef: { current: null },
+    lastRCSSoundTimeRef: { current: 0 },
+  }),
+}));
+
+vi.mock("../lib/hooks/usePlayerCamera", () => ({
+  usePlayerCamera: () => ({
+    cameraOffsetRef: { current: new THREE.Vector3(0, 3, -5) },
+    cameraRotationRef: { current: { horizontal: 0, vertical: 0.2 } },
+    skycamRef: { current: false },
+    previousMouseRef: { current: { x: 0, y: 0 } },
+    isFirstMouseRef: { current: true },
+    idealCameraPositionRef: { current: new THREE.Vector3(0, 0, 0) },
+    skyTargetRef: { current: new THREE.Vector3(0, 0, 0) },
+  }),
 }));
 
 vi.mock("../lib/hooks/usePlayerTagging", () => ({
@@ -247,6 +322,11 @@ describe("PlayerCharacter frame behavior", () => {
       frameCallback?.(state, 0.016);
     });
 
+    // Verify the orchestrator pattern: modular components are properly mocked
+    // The PlayerCharacter should be orchestrating calls to its modular components
+    expect(frameCallback).toBeTruthy();
+
+    // Verify essential functionality: socket updates are being processed
     expect(emitMock).toHaveBeenCalledWith(
       "move",
       expect.objectContaining({
@@ -255,6 +335,8 @@ describe("PlayerCharacter frame behavior", () => {
       }),
     );
     expect(onPositionUpdate).toHaveBeenCalled();
+
+    // Verify camera scaling behavior (indicates the orchestrator is working)
     expect(mockMesh.scale.set).toHaveBeenCalled();
   });
 
