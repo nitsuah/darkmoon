@@ -43,6 +43,38 @@ vi.mock("../../lib/hooks/usePlayerState", () => ({
 
 vi.mock("../../lib/hooks/usePlayerPhysics", () => ({
   usePlayerPhysics: () => ({
+    velocityRef: { current: { set: () => {} } },
+    directionRef: { current: { set: () => {} } },
+    currentSpeedRef: { current: 0 },
+    inputDirectionRef: { current: { set: () => {} } },
+    finalMovementRef: { current: { set: () => {} } },
+    isJumpingRef: { current: false },
+    verticalVelocityRef: { current: 0 },
+    jumpHoldTimeRef: { current: 0 },
+    horizontalMomentumRef: { current: { set: () => {} } },
+    lastJumpTimeRef: { current: 0 },
+    jetpackActiveRef: { current: false },
+    isUsingRCSRef: { current: false },
+    rcsTimeRemainingRef: { current: 0 },
+    jetpackThrustSoundRef: { current: null },
+    lastRCSSoundTimeRef: { current: 0 },
+  }),
+}));
+
+vi.mock("../../lib/hooks/usePlayerCamera", () => ({
+  usePlayerCamera: () => ({
+    cameraOffsetRef: { current: { set: () => {} } },
+    cameraRotationRef: { current: { horizontal: 0, vertical: 0 } },
+    skycamRef: { current: false },
+    previousMouseRef: { current: { x: 0, y: 0 } },
+    isFirstMouseRef: { current: true },
+    idealCameraPositionRef: { current: { set: () => {} } },
+    skyTargetRef: { current: null },
+  }),
+}));
+
+vi.mock("../../lib/hooks/usePlayerPhysics", () => ({
+  usePlayerPhysics: () => ({
     velocityRef: {
       current: {
         set: (..._args: unknown[]) => {
