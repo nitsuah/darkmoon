@@ -23,3 +23,4 @@ coverage
 *.next
 *.vercel
 *.netlify
+.claude
