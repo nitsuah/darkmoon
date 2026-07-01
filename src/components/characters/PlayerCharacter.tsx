@@ -1280,21 +1280,23 @@ export const PlayerCharacter = React.forwardRef<
         </mesh>
       </group>
 
-      <TrajectoryArc
-        origin={
-          meshRef.current?.position.clone().add(new THREE.Vector3(0, 1, 0)) ??
-          new THREE.Vector3()
-        }
-        direction={
-          new THREE.Vector3(
-            -Math.sin(cameraRotationRef.current.horizontal),
-            0,
-            -Math.cos(cameraRotationRef.current.horizontal),
-          )
-        }
-        chargeProgress={weaponManagerRef.current.getChargeProgress("grenade")}
-        isVisible={weaponManagerRef.current.isCharging("grenade")}
-      />
+      {weaponManagerRef.current && (
+        <TrajectoryArc
+          origin={
+            meshRef.current?.position.clone().add(new THREE.Vector3(0, 1, 0)) ??
+            new THREE.Vector3()
+          }
+          direction={
+            new THREE.Vector3(
+              -Math.sin(cameraRotationRef.current.horizontal),
+              0,
+              -Math.cos(cameraRotationRef.current.horizontal),
+            )
+          }
+          chargeProgress={weaponManagerRef.current.getChargeProgress("grenade")}
+          isVisible={weaponManagerRef.current.isCharging("grenade")}
+        />
+      )}
 
       {/* Muzzle flash: brief warm point light burst at gun origin on fire. */}
       <pointLight
