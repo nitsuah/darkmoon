@@ -209,7 +209,9 @@ export const PlayerCharacter = React.forwardRef<
   const [showDustEffect, setShowDustEffect] = React.useState(false);
 
   // Stable refs for optional props
-  const mobileJetpackTriggerRef = mobileJetpackTriggerRef;
+  const fallbackMobileJetpackRef = React.useRef(false);
+  const mobileJetpackTriggerRef =
+    mobileJetpackTrigger ?? fallbackMobileJetpackRef;
 
   // Equip the laser blaster by default and surface the equipped weapon to the HUD.
   React.useEffect(() => {
