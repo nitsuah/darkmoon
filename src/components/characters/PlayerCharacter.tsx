@@ -1,8 +1,7 @@
 import * as React from "react";
-import { useState } from "react";
-import { useFrame } from "@react-three/fiber";
-import { Socket } from "socket.io-client";
 import * as THREE from "three";
+import { Socket } from "socket.io-client";
+import { useFrame } from "@react-three/fiber";
 import type { Clients } from "../../types/socket";
 import GameManager, { GameState } from "../GameManager";
 import {
@@ -24,30 +23,21 @@ import {
 import SpacemanModel from "../SpacemanModel";
 import { getSoundManager } from "../SoundManager";
 import { WeaponManager } from "../combat/WeaponManager";
-import { processFiring } from "../../lib/hooks/usePlayerWeapon";
+import { processTagging } from "../../lib/hooks/usePlayerTagging";
 import { createTagLogger } from "../../lib/utils/logger";
 import { pickSafeSpawn } from "../../lib/constants/spawnPoints";
-import {
-  usePlayerPhysics,
-  PHYSICS_CONSTANTS,
-} from "../../lib/hooks/usePlayerPhysics";
-import { usePlayerCamera } from "../../lib/hooks/usePlayerCamera";
-import { usePlayerState } from "../../lib/hooks/usePlayerState";
-import {
-  resolveMovement,
-  detectPlayerCollision,
-} from "../../lib/hooks/usePlayerCollision";
-import { processTagging } from "../../lib/hooks/usePlayerTagging";
-import {
-  computeDirection,
-  computeSpeed,
-  computeFacingYaw,
-} from "../../lib/hooks/usePlayerMovement";
-import {
-  computeJetpackThrust,
-  shouldActivateJetpackFromMobile,
-} from "../../lib/hooks/useJetpack";
 import { TrajectoryArc } from "../world/vfx/TrajectoryArc";
+
+import {
+  PlayerMovement,
+  PlayerCamera,
+  PlayerWeapon,
+  PlayerHealth,
+  PlayerRespawner,
+  PlayerInput,
+} from "./player/index";
+import type { WeaponManager as WeaponManagerType } from "../combat/WeaponManager";
+import type { CollisionSystem } from "../../lib/hooks/usePlayerCollision";
 
 const tagDebug = createTagLogger("PlayerCharacter");
 
@@ -163,27 +153,6 @@ export const PlayerCharacter = React.forwardRef<
     idealCameraPositionRef,
     skyTargetRef,
   } = camera;
-
-  // Dust effect state for landing
-  const [showDustEffect, setShowDustEffect] = useState(false);
-  const [showJetpackFlame, setShowJetpackFlame] = useState(false);
-  const lookIndicatorRef = React.useRef<THREE.Group>(null);
-  const laserBeamRef = React.useRef<THREE.Group>(null);
-  const beamMeshRef = React.useRef<THREE.Mesh>(null);
-  const beamGlowRef = React.useRef<THREE.Mesh>(null);
-  const laserBeamHideAtRef = React.useRef(0);
-  const weaponManagerRef = React.useRef(new WeaponManager());
-  const prevKey1Ref = React.useRef(false);
-  const prevKey2Ref = React.useRef(false);
-  const prevKey3Ref = React.useRef(false);
-  const prevKey4Ref = React.useRef(false);
-  const prevKey5Ref = React.useRef(false);
-  const prevKeyRRef = React.useRef(false);
-  // Camera shake impulse vector — decays each frame after weapon fire.
-  const cameraShakeRef = React.useRef(new THREE.Vector3());
-  // Muzzle flash point light — toggled visible for ~55ms per shot.
-  const muzzleFlashRef = React.useRef<THREE.PointLight | null>(null);
-  const muzzleFlashHideAtRef = React.useRef(0);
 
   // Equip the laser blaster by default and surface the equipped weapon to the HUD.
   React.useEffect(() => {
