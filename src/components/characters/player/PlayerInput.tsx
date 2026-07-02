@@ -56,7 +56,9 @@ export const PlayerInput = React.memo(
         const weaponId = event.detail?.weaponId;
         if (!weaponId) return;
 
+        weaponManagerRef.current.unequip();
         weaponManagerRef.current.equip(weaponId);
+        weaponManagerRef.current.refill(weaponId);
         const myId = socketClient?.id || currentPlayerId;
         gameManager.updatePlayer(myId, {
           equippedWeaponId: weaponId,

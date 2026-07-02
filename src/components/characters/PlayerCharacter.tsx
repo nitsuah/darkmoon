@@ -4,28 +4,9 @@ import { Socket } from "socket.io-client";
 import { useFrame } from "@react-three/fiber";
 import type { Clients } from "../../types/socket";
 import GameManager, { GameState } from "../GameManager";
-import {
-  W,
-  A,
-  S,
-  D,
-  Q,
-  E,
-  SHIFT,
-  SPACE,
-  KEY_1,
-  KEY_2,
-  KEY_3,
-  KEY_4,
-  KEY_5,
-  KEY_R,
-} from "../utils";
+import { SHIFT } from "../utils";
 import SpacemanModel from "../SpacemanModel";
-import { getSoundManager } from "../SoundManager";
-import { processFiring } from "../../lib/hooks/usePlayerWeapon";
-import { processTagging } from "../../lib/hooks/usePlayerTagging";
 import { createTagLogger } from "../../lib/utils/logger";
-import { pickSafeSpawn } from "../../lib/constants/spawnPoints";
 import { TrajectoryArc } from "../world/vfx/TrajectoryArc";
 import {
   usePlayerPhysics,
@@ -33,19 +14,6 @@ import {
 } from "../../lib/hooks/usePlayerPhysics";
 import { usePlayerCamera } from "../../lib/hooks/usePlayerCamera";
 import { usePlayerState } from "../../lib/hooks/usePlayerState";
-import {
-  resolveMovement,
-  detectPlayerCollision,
-} from "../../lib/hooks/usePlayerCollision";
-import {
-  computeDirection,
-  computeSpeed,
-  computeFacingYaw,
-} from "../../lib/hooks/usePlayerMovement";
-import {
-  computeJetpackThrust,
-  shouldActivateJetpackFromMobile,
-} from "../../lib/hooks/useJetpack";
 
 import {
   PlayerMovement,
@@ -132,33 +100,23 @@ export const PlayerCharacter = React.forwardRef<
   const {
     meshRef,
     collisionSystemRef,
-    lastReportedPositionRef,
-    lastTagCheckRef,
-    frameCounterRef,
     isPlayerFrozenRef,
     playerFreezeEndTimeRef,
+    frameCounterRef,
+    lastTagCheckRef,
+    lastReportedPositionRef,
   } = playerState;
-
-  // Lower the position update threshold for real-time bot tracking
-  const POSITION_UPDATE_THRESHOLD = 0.001;
 
   const physics = usePlayerPhysics();
   const {
     velocityRef,
     directionRef,
     currentSpeedRef,
-    inputDirectionRef,
-    finalMovementRef,
+    jetpackActiveRef,
     isJumpingRef,
     verticalVelocityRef,
     jumpHoldTimeRef,
-    horizontalMomentumRef,
-    lastJumpTimeRef,
-    jetpackActiveRef,
-    isUsingRCSRef,
-    rcsTimeRemainingRef,
     jetpackThrustSoundRef,
-    lastRCSSoundTimeRef,
   } = physics;
 
   const camera = usePlayerCamera();
@@ -175,34 +133,29 @@ export const PlayerCharacter = React.forwardRef<
   // Weapon manager ref (from usePlayerState hook, initialized lazily)
   const { weaponManagerRef } = playerState;
 
-  // Rising-edge detection for weapon switch keys
+  const canActRef = React.useRef(true);
+
+  // Laser beam visual effect refs (passed to PlayerWeapon sub-component)
+  const laserBeamRef = React.useRef<THREE.Group>(null as unknown as THREE.Group);
+  const laserBeamHideAtRef = React.useRef(0);
+  const beamMeshRef = React.useRef<THREE.Mesh>(null as unknown as THREE.Mesh);
+  const beamGlowRef = React.useRef<THREE.Mesh>(null as unknown as THREE.Mesh);
+  const muzzleFlashRef = React.useRef<THREE.PointLight>(null as unknown as THREE.PointLight);
+  const muzzleFlashHideAtRef = React.useRef(0);
+  const cameraShakeRef = React.useRef(new THREE.Vector3());
+
+  // Rising-edge detection keys (passed to PlayerWeapon)
   const prevKey1Ref = React.useRef(false);
   const prevKey2Ref = React.useRef(false);
   const prevKey3Ref = React.useRef(false);
   const prevKey4Ref = React.useRef(false);
   const prevKey5Ref = React.useRef(false);
   const prevKeyRRef = React.useRef(false);
-  const canActRef = React.useRef(true);
-
-  // Laser beam visual effect refs
-  const laserBeamRef = React.useRef<THREE.Group>(
-    null as unknown as THREE.Group,
-  );
-  const laserBeamHideAtRef = React.useRef(0);
-  const beamMeshRef = React.useRef<THREE.Mesh>(null as unknown as THREE.Mesh);
-  const beamGlowRef = React.useRef<THREE.Mesh>(null as unknown as THREE.Mesh);
-  const muzzleFlashRef = React.useRef<THREE.PointLight>(
-    null as unknown as THREE.PointLight,
-  );
-  const muzzleFlashHideAtRef = React.useRef(0);
-  const cameraShakeRef = React.useRef(new THREE.Vector3());
 
   // Look indicator (aim preview)
-  const lookIndicatorRef = React.useRef<THREE.Mesh>(
-    null as unknown as THREE.Mesh,
-  );
+  const lookIndicatorRef = React.useRef<THREE.Mesh>(null as unknown as THREE.Mesh);
 
-  // Jetpack flame and landing dust visibility state
+  // Jetpack flame visibility state
   const [showJetpackFlame, setShowJetpackFlame] = React.useState(false);
   const [showDustEffect, setShowDustEffect] = React.useState(false);
 
@@ -242,86 +195,10 @@ export const PlayerCharacter = React.forwardRef<
     },
   }));
 
-  // Listen for bot tag event and freeze player, and set global freeze timestamp for bot logic
-  React.useEffect(() => {
-    function handleFreezePlayer() {
-      // Use the same freeze duration as bot cooldown (1500ms)
-      isPlayerFrozenRef.current = true;
-      const freezeUntil = Date.now() + 1500;
-      playerFreezeEndTimeRef.current = freezeUntil;
-      if (typeof window !== "undefined") {
-        (window as WindowWithPlayerFreeze).__playerFreezeUntil = freezeUntil;
-      }
-      tagDebug("👤 Player frozen for 1500ms after being tagged by bot");
-    }
-    window.addEventListener("player-tagged-by-bot", handleFreezePlayer);
-    return () => {
-      window.removeEventListener("player-tagged-by-bot", handleFreezePlayer);
-    };
-  }, [isPlayerFrozenRef, playerFreezeEndTimeRef]);
-
-  // Equip a weapon picked up from a world pickup item (WeaponPickups fires this event).
-  React.useEffect(() => {
-    function handleWeaponPickup(e: unknown) {
-      const { weaponId } = (e as { detail: { weaponId: string } }).detail;
-      weaponManagerRef.current.unequip();
-      weaponManagerRef.current.equip(weaponId);
-      weaponManagerRef.current.refill(weaponId);
-      const newAmmo = weaponManagerRef.current.getAmmo(weaponId);
-      gameManager?.updatePlayer(currentPlayerId, {
-        equippedWeaponId: weaponId,
-        currentAmmo: newAmmo,
-      });
-    }
-    window.addEventListener("weapon-pickup", handleWeaponPickup);
-    return () =>
-      window.removeEventListener("weapon-pickup", handleWeaponPickup);
-  }, [gameManager, currentPlayerId, weaponManagerRef]);
-
-  // Restore health when the player walks over a HealthPickups crate.
-  React.useEffect(() => {
-    function handleHealthPickup(e: unknown) {
-      const { amount } = (e as { detail: { amount: number } }).detail;
-      const players = gameManager?.getPlayers();
-      const me = players?.get(currentPlayerId);
-      if (!me) return;
-      const maxHp = me.maxHealth ?? 100;
-      const newHp = Math.min(maxHp, (me.health ?? maxHp) + amount);
-      gameManager?.updatePlayer(currentPlayerId, { health: newHp });
-    }
-    window.addEventListener("health-pickup", handleHealthPickup);
-    return () =>
-      window.removeEventListener("health-pickup", handleHealthPickup);
-  }, [gameManager, currentPlayerId, weaponManagerRef]);
-
-  // Teleport player back to spawn when respawn timer clears (deathmatch/CTF).
-  // Picks the spawn point farthest from all alive enemies (anti-camping).
-  const mePlayer = gameManager?.getPlayers().get(currentPlayerId);
-  const respawnAt = mePlayer?.respawnAt;
-  const prevRespawnAtRef = React.useRef<number | undefined>(undefined);
-  React.useEffect(() => {
-    const wasDown = prevRespawnAtRef.current !== undefined;
-    const isUp = respawnAt === undefined;
-    if (wasDown && isUp && meshRef.current) {
-      const enemyPositions: [number, number, number][] = [];
-      gameManager?.getPlayers().forEach((p, id) => {
-        if (id !== currentPlayerId && p.respawnAt === undefined) {
-          enemyPositions.push(p.position as [number, number, number]);
-        }
-      });
-      const [sx, sy, sz] = pickSafeSpawn(enemyPositions);
-      meshRef.current.position.set(sx, sy, sz);
-      // Refill ammo on respawn so the player doesn't come back empty-handed.
-      const equipped = weaponManagerRef.current.getEquipped();
-      if (equipped) {
-        weaponManagerRef.current.refill(equipped.id);
-        gameManager?.updatePlayer(currentPlayerId, {
-          currentAmmo: weaponManagerRef.current.getAmmo(equipped.id),
-        });
-      }
-    }
-    prevRespawnAtRef.current = respawnAt;
-  }, [respawnAt, meshRef, gameManager, currentPlayerId, weaponManagerRef]);
+  // player-tagged-by-bot → handled by PlayerInput component
+  // weapon-pickup → handled by PlayerInput component
+  // health-pickup → handled by PlayerHealth component
+  // respawn teleport → handled by PlayerRespawner component
 
   // gated debug logger - only logs in dev
   const debug = (...args: unknown[]) => {
@@ -371,811 +248,25 @@ export const PlayerCharacter = React.forwardRef<
       return;
     }
 
-    // Store mobile jetpack trigger locally to satisfy linter
-    const mobileJetpackTriggerRef = mobileJetpackTrigger;
-
-    // Check if player is frozen after being tagged
+    // Freeze visual + window timestamp bots. Movement/Camera/Weapons → sub-components.
     if (isPlayerFrozenRef.current) {
       if (now >= playerFreezeEndTimeRef.current) {
         isPlayerFrozenRef.current = false;
-        tagDebug(`👤 Player unfrozen - can move again`);
+        tagDebug(`👤 Player unfrozen`);
       } else {
-        // Player is frozen - show visual indicator and prevent movement
         const pulse = 1 + Math.sin(now * 0.01) * 0.1;
         meshRef.current.scale.set(pulse, pulse, pulse);
-        // Still allow camera controls but no movement - return early after camera updates
-        // We'll add a flag to allow camera controls below
+        if (typeof window !== "undefined") {
+          (window as WindowWithPlayerFreeze).__playerFreezeUntil =
+            playerFreezeEndTimeRef.current;
+        }
       }
     } else {
       meshRef.current.scale.set(1, 1, 1);
     }
 
-    // WoW-style camera controls
-    const bothMouseButtons =
-      mouseControls.leftClick && mouseControls.rightClick;
-
-    // Handle mouse camera rotation
-    if (
-      mouseControls.leftClick ||
-      mouseControls.rightClick ||
-      mouseControls.middleClick
-    ) {
-      if (isFirstMouseRef.current) {
-        previousMouseRef.current.x = mouseControls.mouseX;
-        previousMouseRef.current.y = mouseControls.mouseY;
-        isFirstMouseRef.current = false;
-      }
-
-      const deltaX = mouseControls.mouseX - previousMouseRef.current.x;
-      const deltaY = mouseControls.mouseY - previousMouseRef.current.y;
-
-      const sensitivity = 0.002;
-
-      if (bothMouseButtons) {
-        // Both buttons: Rotate camera AND player (for movement control)
-        cameraRotationRef.current.horizontal -= deltaX * sensitivity;
-        cameraRotationRef.current.vertical += deltaY * sensitivity;
-        skycamRef.current = false;
-      } else if (mouseControls.rightClick) {
-        // Right-click only: Rotate camera AND player facing (WoW style)
-        cameraRotationRef.current.horizontal -= deltaX * sensitivity;
-        cameraRotationRef.current.vertical += deltaY * sensitivity;
-        skycamRef.current = false;
-      } else if (mouseControls.middleClick) {
-        // Middle-click: Rotate camera WITHOUT rotating player (peek mode)
-        skycamRef.current = true;
-        cameraRotationRef.current.horizontal -= deltaX * sensitivity;
-        cameraRotationRef.current.vertical += deltaY * sensitivity;
-      }
-      // Left-click is now free for interactions (no camera control)
-
-      // Clamp vertical rotation
-      cameraRotationRef.current.vertical = Math.max(
-        -Math.PI / 3,
-        Math.min(Math.PI / 3, cameraRotationRef.current.vertical),
-      );
-
-      previousMouseRef.current.x = mouseControls.mouseX;
-      previousMouseRef.current.y = mouseControls.mouseY;
-    } else {
-      isFirstMouseRef.current = true;
-      skycamRef.current = false;
-    }
-
-    // Joystick camera rotation
-    if (joystickCamera.x !== 0 || joystickCamera.y !== 0) {
-      const joystickSensitivity = 0.03;
-      cameraRotationRef.current.horizontal -=
-        joystickCamera.x * joystickSensitivity * delta;
-      cameraRotationRef.current.vertical +=
-        joystickCamera.y * joystickSensitivity * delta;
-    }
-
-    // Keyboard camera rotation (A/D keys) - Also rotates character
-    if (keysPressedRef.current[A]) {
-      cameraRotationRef.current.horizontal += 2 * delta; // Rotate left
-    }
-    if (keysPressedRef.current[D]) {
-      cameraRotationRef.current.horizontal -= 2 * delta; // Rotate right
-    }
-
-    // Always clamp vertical rotation (from joystick too)
-    cameraRotationRef.current.vertical = Math.max(
-      -Math.PI / 3,
-      Math.min(Math.PI / 3, cameraRotationRef.current.vertical),
-    );
-
-    // Calculate camera offset based on rotation
-    const distance = 5;
-    const offsetX =
-      Math.sin(cameraRotationRef.current.horizontal) *
-      Math.cos(cameraRotationRef.current.vertical) *
-      distance;
-    const offsetY = Math.sin(cameraRotationRef.current.vertical) * distance + 3;
-    const offsetZ =
-      Math.cos(cameraRotationRef.current.horizontal) *
-      Math.cos(cameraRotationRef.current.vertical) *
-      distance;
-
-    cameraOffsetRef.current.set(offsetX, offsetY, offsetZ);
-
-    // If player is frozen, skip movement but allow camera controls
-    if (isPlayerFrozenRef.current) {
-      // Update camera position but don't process movement
-      state.camera.position
-        .copy(meshRef.current.position)
-        .add(cameraOffsetRef.current);
-      state.camera.lookAt(meshRef.current.position);
-      return;
-    }
-
-    // Calculate direction based on keys pressed and camera rotation
-    directionRef.current.set(0, 0, 0);
-
-    const hasKeyboardInput =
-      keysPressedRef.current[W] ||
-      keysPressedRef.current[S] ||
-      keysPressedRef.current[Q] ||
-      keysPressedRef.current[E];
-    const hasJoystickInput = joystickMove.x !== 0 || joystickMove.y !== 0;
-
-    // Calculate speed using helper
-    const isAiming = mouseControls.rightClick;
-    const speed = computeSpeed(
-      jetpackActiveRef.current,
-      keysPressedRef.current[SHIFT] && !mouseControls.rightClick,
-    );
-
-    // Middle-click look indicator: preview where ADS/right-click aim will face.
-    if (lookIndicatorRef.current) {
-      if (mouseControls.leftClick) {
-        const lookForward = new THREE.Vector3(
-          -Math.sin(cameraRotationRef.current.horizontal),
-          0,
-          -Math.cos(cameraRotationRef.current.horizontal),
-        );
-        const lookDistance = 6;
-        const lookPos = meshRef.current.position
-          .clone()
-          .add(lookForward.multiplyScalar(lookDistance));
-
-        lookIndicatorRef.current.visible = true;
-        lookIndicatorRef.current.position.set(lookPos.x, 0.03, lookPos.z);
-        lookIndicatorRef.current.rotation.set(
-          -Math.PI / 2,
-          0,
-          -cameraRotationRef.current.horizontal,
-        );
-      } else {
-        lookIndicatorRef.current.visible = false;
-      }
-    }
-
-    // Weapon switching: rising-edge detection for 1 (laser), 2 (shotgun), 3 (rocket), 4 (grenade), 5 (smg).
-    const key1 = keysPressedRef.current[KEY_1] ?? false;
-    const key2 = keysPressedRef.current[KEY_2] ?? false;
-    const key3 = keysPressedRef.current[KEY_3] ?? false;
-    const key4 = keysPressedRef.current[KEY_4] ?? false;
-    const key5 = keysPressedRef.current[KEY_5] ?? false;
-    const keyR = keysPressedRef.current[KEY_R] ?? false;
-    const myId = socketClient?.id || currentPlayerId;
-    if (key1 && !prevKey1Ref.current) {
-      weaponManagerRef.current.equip("laser");
-      gameManager?.updatePlayer(myId, {
-        equippedWeaponId: "laser",
-        currentAmmo: weaponManagerRef.current.getAmmo("laser"),
-      });
-    }
-    if (key2 && !prevKey2Ref.current) {
-      weaponManagerRef.current.equip("shotgun");
-      gameManager?.updatePlayer(myId, {
-        equippedWeaponId: "shotgun",
-        currentAmmo: weaponManagerRef.current.getAmmo("shotgun"),
-      });
-    }
-    if (key3 && !prevKey3Ref.current) {
-      weaponManagerRef.current.equip("rocket");
-      gameManager?.updatePlayer(myId, {
-        equippedWeaponId: "rocket",
-        currentAmmo: weaponManagerRef.current.getAmmo("rocket"),
-      });
-    }
-    if (key4 && !prevKey4Ref.current) {
-      weaponManagerRef.current.equip("grenade");
-      gameManager?.updatePlayer(myId, {
-        equippedWeaponId: "grenade",
-        currentAmmo: weaponManagerRef.current.getAmmo("grenade"),
-      });
-    }
-    if (key5 && !prevKey5Ref.current) {
-      weaponManagerRef.current.equip("smg");
-      gameManager?.updatePlayer(myId, {
-        equippedWeaponId: "smg",
-        currentAmmo: weaponManagerRef.current.getAmmo("smg"),
-      });
-    }
-    // R key: reload the current weapon (rising-edge).
-    if (keyR && !prevKeyRRef.current) {
-      const equipped = weaponManagerRef.current.getEquipped();
-      if (equipped) {
-        weaponManagerRef.current.startReload(equipped.id);
-      }
-    }
-    prevKey1Ref.current = key1;
-    prevKey2Ref.current = key2;
-    prevKey3Ref.current = key3;
-    prevKey4Ref.current = key4;
-    prevKey5Ref.current = key5;
-    prevKeyRRef.current = keyR;
-
-    // Fire the equipped weapon while left-click is held (rate-limited by
-    // WeaponManager's per-shooter cooldown).
-    if (mouseControls.leftClick && gameManager) {
-      const fireOrigin = meshRef.current.position
-        .clone()
-        .add(new THREE.Vector3(0, 1, 0));
-
-      // Raycast mouse position onto the ground plane to find the aim target.
-      const ndcX = (mouseControls.mouseX / state.size.width) * 2 - 1;
-      const ndcY = -(mouseControls.mouseY / state.size.height) * 2 + 1;
-      const raycaster = new THREE.Raycaster();
-      raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), state.camera);
-      const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-      const aimTarget = new THREE.Vector3();
-      const hasAimTarget =
-        raycaster.ray.intersectPlane(groundPlane, aimTarget) !== null;
-      const fireDirection = hasAimTarget
-        ? aimTarget.clone().sub(fireOrigin).normalize()
-        : new THREE.Vector3(
-            -Math.sin(cameraRotationRef.current.horizontal),
-            0,
-            -Math.cos(cameraRotationRef.current.horizontal),
-          );
-
-      const fireResult = processFiring({
-        origin: fireOrigin,
-        direction: fireDirection,
-        shooterId: socketClient?.id || currentPlayerId,
-        gameManager,
-        weaponManager: weaponManagerRef.current,
-        collisionSystem: collisionSystemRef.current,
-        now,
-      });
-
-      if (fireResult && typeof window !== "undefined") {
-        window.dispatchEvent(
-          new window.CustomEvent("weapon-fired", {
-            detail: { weaponId: fireResult.weapon.id },
-          }),
-        );
-        // In shooting-gallery mode, broadcast the raw camera ray so the gallery
-        // scene can hit targets above the ground plane. The ground-plane-reflected
-        // fireDirection misses elevated targets; the camera ray direction is exact.
-        if (gameManager?.getGameState().mode === "shooting_gallery") {
-          const galleryRaycaster = new THREE.Raycaster();
-          galleryRaycaster.setFromCamera(
-            new THREE.Vector2(
-              (mouseControls.mouseX / state.size.width) * 2 - 1,
-              -(mouseControls.mouseY / state.size.height) * 2 + 1,
-            ),
-            state.camera,
-          );
-          const galleryRayDir = galleryRaycaster.ray.direction;
-          const galleryOrigin = galleryRaycaster.ray.origin;
-          window.dispatchEvent(
-            new window.CustomEvent("gallery-fire", {
-              detail: {
-                originX: galleryOrigin.x,
-                originY: galleryOrigin.y,
-                originZ: galleryOrigin.z,
-                dirX: galleryRayDir.x,
-                dirY: galleryRayDir.y,
-                dirZ: galleryRayDir.z,
-                range: 80,
-              },
-            }),
-          );
-        }
-      }
-      if (fireResult && laserBeamRef.current) {
-        const beamLength = fireResult.hit?.distance ?? fireResult.weapon.range;
-        const wid = fireResult.weapon.id;
-        const beamHalfWidth =
-          wid === "rocket" || wid === "grenade"
-            ? 0.2
-            : wid === "shotgun"
-              ? 0.1
-              : 0.04;
-        const beamColor =
-          wid === "rocket"
-            ? "#ff1100"
-            : wid === "grenade"
-              ? "#44ff00"
-              : wid === "shotgun"
-                ? "#ff7700"
-                : wid === "smg"
-                  ? "#ff44cc"
-                  : "#33ffe6";
-        laserBeamRef.current.visible = true;
-        laserBeamRef.current.position
-          .copy(fireOrigin)
-          .add(fireDirection.clone().multiplyScalar(beamLength / 2));
-        laserBeamRef.current.rotation.y = Math.atan2(
-          fireDirection.x,
-          fireDirection.z,
-        );
-        laserBeamRef.current.scale.set(
-          beamHalfWidth / 0.04,
-          beamHalfWidth / 0.04,
-          beamLength,
-        );
-        laserBeamHideAtRef.current = now + LASER_BEAM_VISIBLE_MS;
-        if (beamMeshRef.current) {
-          (beamMeshRef.current.material as THREE.MeshBasicMaterial).color.set(
-            beamColor,
-          );
-        }
-        if (beamGlowRef.current) {
-          (beamGlowRef.current.material as THREE.MeshBasicMaterial).color.set(
-            beamColor,
-          );
-        }
-        // Camera shake per weapon — decays in useFrame via exponential falloff.
-        const shakeAmt =
-          wid === "shotgun"
-            ? 0.11
-            : wid === "rocket"
-              ? 0.09
-              : wid === "grenade"
-                ? 0.07
-                : wid === "smg"
-                  ? 0.03
-                  : 0.04;
-        cameraShakeRef.current.set(
-          (Math.random() - 0.5) * shakeAmt,
-          (0.3 + Math.random() * 0.5) * shakeAmt,
-          (Math.random() - 0.5) * shakeAmt * 0.3,
-        );
-        // Muzzle flash: show a warm point light at gun origin for ~55ms.
-        if (muzzleFlashRef.current) {
-          muzzleFlashRef.current.position.copy(fireOrigin);
-          muzzleFlashRef.current.visible = true;
-          muzzleFlashHideAtRef.current = now + 55;
-        }
-        // Sync ammo + reload progress to HUD after each shot.
-        const remainingAmmo = weaponManagerRef.current.getAmmo(wid);
-        const reloadProgress = weaponManagerRef.current.getReloadProgress(wid);
-        gameManager?.updatePlayer(myId, {
-          currentAmmo: remainingAmmo,
-          reloadProgress,
-        });
-      }
-      if (fireResult && fireResult.hit && typeof window !== "undefined") {
-        // Notify HUD to flash hit marker.
-        window.dispatchEvent(new window.Event("player-hit-landed"));
-        // Compute hit position for VFX/damage numbers.
-        const hitPos = fireOrigin
-          .clone()
-          .add(fireDirection.clone().multiplyScalar(fireResult.hit.distance));
-        // Floating damage number at hit point.
-        window.dispatchEvent(
-          new window.CustomEvent("damage-number", {
-            detail: {
-              x: hitPos.x,
-              y: hitPos.y + 1.0,
-              z: hitPos.z,
-              damage: fireResult.weapon.damage,
-            },
-          }),
-        );
-        // Trigger explosion VFX for splash weapons (rocket, grenade).
-        if (fireResult.weapon.splashRadius) {
-          window.dispatchEvent(
-            new window.CustomEvent("weapon-explosion", {
-              detail: {
-                x: hitPos.x,
-                y: hitPos.y,
-                z: hitPos.z,
-                radius: fireResult.weapon.splashRadius,
-              },
-            }),
-          );
-        }
-      }
-    }
-
-    if (laserBeamRef.current && now >= laserBeamHideAtRef.current) {
-      laserBeamRef.current.visible = false;
-    }
-    if (
-      muzzleFlashRef.current &&
-      muzzleFlashHideAtRef.current > 0 &&
-      now >= muzzleFlashHideAtRef.current
-    ) {
-      muzzleFlashRef.current.visible = false;
-    }
-
-    // WoW-style auto-run: both mouse buttons held = move forward
-    if (bothMouseButtons || hasKeyboardInput || hasJoystickInput) {
-      // Compute direction via helper
-      const dir = computeDirection(
-        cameraRotationRef.current.horizontal,
-        joystickMove,
-        {
-          W: keysPressedRef.current[W],
-          S: keysPressedRef.current[S],
-          Q: keysPressedRef.current[Q],
-          E: keysPressedRef.current[E],
-        },
-        bothMouseButtons,
-      );
-
-      if (dir && dir.length() > 0) {
-        directionRef.current.copy(dir);
-        // Smoothly accelerate toward target speed (10× per second ramp-up).
-        currentSpeedRef.current = THREE.MathUtils.lerp(
-          currentSpeedRef.current,
-          speed,
-          Math.min(1, 10 * delta),
-        );
-        velocityRef.current
-          .copy(directionRef.current)
-          .multiplyScalar(currentSpeedRef.current * delta);
-
-        // Calculate new position with collision detection
-        const currentPosition = meshRef.current.position.clone();
-        const newPosition = currentPosition.clone().add(velocityRef.current);
-
-        // Check for collisions and get resolved position
-        const resolvedPosition = resolveMovement(
-          collisionSystemRef.current,
-          currentPosition,
-          newPosition,
-        );
-
-        // Player collision + tagging logic handled by helper
-        const myId = socketClient?.id || currentPlayerId;
-        if (myId && gameManager) {
-          // Simple push-back collision resolution for players
-          for (const [clientId, clientData] of Object.entries(clients)) {
-            if (clientId !== myId) {
-              const otherPlayerPos = new THREE.Vector3(...clientData.position);
-
-              if (
-                detectPlayerCollision(
-                  collisionSystemRef.current,
-                  resolvedPosition,
-                  otherPlayerPos,
-                )
-              ) {
-                const pushDirection = resolvedPosition
-                  .clone()
-                  .sub(otherPlayerPos)
-                  .normalize();
-                resolvedPosition.add(pushDirection.multiplyScalar(0.1));
-              }
-            }
-          }
-
-          // Delegate tagging to helper to keep PlayerCharacter smaller
-          try {
-            processTagging({
-              resolvedPosition,
-              clients,
-              myId,
-              gameManager,
-              lastTagCheckRef,
-              playerIsIt,
-              setPlayerIsIt,
-              setBotIsIt,
-              setBot1GotTagged,
-              setBot2GotTagged,
-              setGameState,
-              onTagSuccess,
-              socketClient,
-            });
-          } catch (e) {
-            // best-effort; keep original behavior if helper throws
-            void e;
-          }
-        }
-
-        // Move the character to resolved position
-        meshRef.current.position.copy(resolvedPosition);
-
-        // Play footstep sounds (throttled to avoid spam) - different for walk vs sprint
-        const now = Date.now();
-        const footstepInterval = isSprinting ? 250 : 400; // Faster sounds when running
-        if (now - lastWalkSoundTimeRef.current > footstepInterval) {
-          const soundMgr = getSoundManager();
-          if (isSprinting) {
-            soundMgr.playSprintSound();
-          } else {
-            soundMgr.playWalkSound();
-          }
-          lastWalkSoundTimeRef.current = now;
-        }
-
-        const targetYaw = computeFacingYaw(
-          directionRef.current,
-          cameraRotationRef.current.horizontal,
-          isAiming,
-          meshRef.current.rotation.y,
-        );
-        meshRef.current.rotation.y = THREE.MathUtils.lerp(
-          meshRef.current.rotation.y,
-          targetYaw,
-          0.2,
-        );
-
-        // Emit position to server
-        if (socketClient) {
-          socketClient.emit("move", {
-            position: meshRef.current.position.toArray(),
-            rotation: meshRef.current.rotation.toArray(),
-          });
-        }
-      }
-    } else {
-      // No movement input — smoothly decelerate to zero (15× per second ramp-down).
-      currentSpeedRef.current = THREE.MathUtils.lerp(
-        currentSpeedRef.current,
-        0,
-        Math.min(1, 15 * delta),
-      );
-    }
-
-    // Jump mechanics - Single jump only, no jetpack from jump
-    // Jetpack only activates from mobile double-tap button
-    const isOnGround =
-      meshRef.current.position.y <= PHYSICS_CONSTANTS.GROUND_Y + 0.01;
-    const currentTime = Date.now();
-
-    if (keysPressedRef.current[SPACE] && isOnGround && !isJumpingRef.current) {
-      // Check for mobile jetpack trigger only
-      const mobileDoubleTap = mobileJetpackTriggerRef?.current || false;
-
-      if (shouldActivateJetpackFromMobile(mobileDoubleTap)) {
-        // Mobile double-tap - activate jetpack mode
-        jetpackActiveRef.current = true;
-        setShowJetpackFlame(true);
-        isJumpingRef.current = true;
-        verticalVelocityRef.current = PHYSICS_CONSTANTS.JETPACK_INITIAL_BOOST;
-        jumpHoldTimeRef.current = 0;
-        tagDebug(`🚀 Jetpack activated (mobile double-tap)!`);
-
-        // Reset mobile trigger
-        if (mobileJetpackTriggerRef) {
-          mobileJetpackTriggerRef.current = false;
-        }
-
-        // Play jetpack activation sound
-        try {
-          const soundMgr = getSoundManager();
-          if (soundMgr) {
-            soundMgr.playJetpackActivateSound();
-          }
-        } catch (e) {
-          void e;
-        }
-      } else {
-        // Single jump - normal jump only (no jetpack from space bar)
-        jetpackActiveRef.current = false;
-        isJumpingRef.current = true;
-        verticalVelocityRef.current = PHYSICS_CONSTANTS.JUMP_INITIAL_FORCE;
-        jumpHoldTimeRef.current = 0;
-        lastJumpTimeRef.current = currentTime;
-      }
-
-      // Capture horizontal momentum at jump start
-      horizontalMomentumRef.current
-        .copy(directionRef.current)
-        .multiplyScalar(speed);
-
-      // Play jump sound with error handling
-      try {
-        const soundMgr = getSoundManager();
-        if (soundMgr) {
-          soundMgr.playJumpSound();
-        }
-      } catch {
-        // Sound manager not ready - silently continue
-      }
-    }
-
-    // Apply jetpack thrust while space is held (only if jetpack active)
-    if (jetpackActiveRef.current && isJumpingRef.current && isSprinting) {
-      if (jumpHoldTimeRef.current < PHYSICS_CONSTANTS.JETPACK_MAX_HOLD_TIME) {
-        jumpHoldTimeRef.current += delta;
-        // Compute thrust using helper
-        const thrust = computeJetpackThrust(jumpHoldTimeRef.current, delta, {
-          JETPACK_MAX_HOLD_TIME: PHYSICS_CONSTANTS.JETPACK_MAX_HOLD_TIME,
-          JETPACK_HOLD_FORCE: PHYSICS_CONSTANTS.JETPACK_HOLD_FORCE,
-        });
-        verticalVelocityRef.current += thrust;
-
-        // Start thrust sound if not already playing
-        if (!jetpackThrustSoundRef.current) {
-          try {
-            const soundMgr = getSoundManager();
-            if (soundMgr) {
-              jetpackThrustSoundRef.current = soundMgr.playJetpackThrustSound();
-            }
-          } catch (e) {
-            void e;
-          }
-        }
-      }
-    } else if (jetpackThrustSoundRef.current) {
-      // Stop thrust sound when space is released or jetpack ends
-      try {
-        const soundMgr = getSoundManager();
-        if (soundMgr) {
-          soundMgr.stopJetpackThrustSound(jetpackThrustSoundRef.current);
-          jetpackThrustSoundRef.current = null;
-        }
-      } catch {
-        // Sound manager not ready - silently continue
-      }
-    }
-
-    // RCS jets (SHIFT in air) - directional thrust from QWEASD
-    if (!isOnGround && keysPressedRef.current[SHIFT]) {
-      if (!isUsingRCSRef.current) {
-        isUsingRCSRef.current = true;
-        rcsTimeRemainingRef.current = PHYSICS_CONSTANTS.RCS_MAX_DURATION;
-        tagDebug("🎯 RCS jets activated!");
-      }
-
-      if (rcsTimeRemainingRef.current > 0) {
-        rcsTimeRemainingRef.current -= delta;
-
-        // Apply directional RCS thrust based on QWEASD input
-        const rcsDirection = new THREE.Vector3();
-        const hasRCSInput =
-          keysPressedRef.current[W] ||
-          keysPressedRef.current[S] ||
-          keysPressedRef.current[A] ||
-          keysPressedRef.current[D] ||
-          keysPressedRef.current[Q] ||
-          keysPressedRef.current[E];
-
-        if (keysPressedRef.current[W]) rcsDirection.z += 1;
-        if (keysPressedRef.current[S]) rcsDirection.z -= 1;
-        if (keysPressedRef.current[A]) rcsDirection.x += 1;
-        if (keysPressedRef.current[D]) rcsDirection.x -= 1;
-        if (keysPressedRef.current[Q]) {
-          verticalVelocityRef.current +=
-            PHYSICS_CONSTANTS.RCS_THRUST * delta * 2;
-        }
-        if (keysPressedRef.current[E]) {
-          verticalVelocityRef.current -=
-            PHYSICS_CONSTANTS.RCS_THRUST * delta * 2;
-        }
-
-        // Play RCS sound when input is active (throttle to ~10 times per second)
-        if (hasRCSInput && currentTime - lastRCSSoundTimeRef.current > 100) {
-          lastRCSSoundTimeRef.current = currentTime;
-          try {
-            const soundMgr = getSoundManager();
-            if (soundMgr) {
-              soundMgr.playRCSSound();
-            }
-          } catch {
-            // Sound manager not ready - silently continue
-          }
-        }
-
-        // Rotate direction by camera angle
-        if (rcsDirection.length() > 0) {
-          rcsDirection.normalize();
-          rcsDirection.applyAxisAngle(
-            new THREE.Vector3(0, 1, 0),
-            -cameraRotationRef.current.horizontal,
-          );
-          horizontalMomentumRef.current.add(
-            rcsDirection.multiplyScalar(
-              PHYSICS_CONSTANTS.RCS_THRUST * delta * 10,
-            ),
-          );
-        }
-      }
-    } else if (isOnGround) {
-      // Reset RCS when landing
-      isUsingRCSRef.current = false;
-      rcsTimeRemainingRef.current = PHYSICS_CONSTANTS.RCS_MAX_DURATION;
-    }
-
-    // Apply moon PHYSICS_CONSTANTS.GRAVITY and physics while in air
-    if (isJumpingRef.current || !isOnGround) {
-      // Very slow fall due to moon's low PHYSICS_CONSTANTS.GRAVITY
-      verticalVelocityRef.current -= PHYSICS_CONSTANTS.GRAVITY;
-      verticalVelocityRef.current *= PHYSICS_CONSTANTS.AIR_RESISTANCE;
-      meshRef.current.position.y += verticalVelocityRef.current;
-
-      // Preserve horizontal momentum with slight decay
-      horizontalMomentumRef.current.multiplyScalar(
-        PHYSICS_CONSTANTS.MOMENTUM_PRESERVATION,
-      );
-
-      // Allow some air control - blend player input with momentum
-      inputDirectionRef.current
-        .copy(directionRef.current)
-        .multiplyScalar(speed * PHYSICS_CONSTANTS.HORIZONTAL_AIR_CONTROL);
-      finalMovementRef.current
-        .copy(horizontalMomentumRef.current)
-        .add(inputDirectionRef.current);
-
-      meshRef.current.position.x += finalMovementRef.current.x * delta * 10;
-      meshRef.current.position.z += finalMovementRef.current.z * delta * 10;
-
-      // Check if landed
-      if (meshRef.current.position.y <= PHYSICS_CONSTANTS.GROUND_Y) {
-        meshRef.current.position.y = PHYSICS_CONSTANTS.GROUND_Y;
-
-        // Capture landing velocity before resetting
-        const landingVelocity = Math.abs(verticalVelocityRef.current);
-
-        isJumpingRef.current = false;
-        jetpackActiveRef.current = false;
-        setShowJetpackFlame(false);
-        isUsingRCSRef.current = false;
-        verticalVelocityRef.current = 0;
-        jumpHoldTimeRef.current = 0;
-        horizontalMomentumRef.current.set(0, 0, 0);
-
-        // Play landing sound scaled by impact velocity
-        try {
-          const soundMgr = getSoundManager();
-          if (soundMgr) {
-            soundMgr.playLandingSoundScaled(landingVelocity);
-          }
-        } catch {
-          // Sound manager not ready - silently continue
-        }
-
-        // Trigger dust effect on hard landing (velocity > 0.02)
-        if (landingVelocity > 0.02) {
-          setShowDustEffect(true);
-          setTimeout(() => setShowDustEffect(false), 300);
-        }
-      }
-    }
-
-    // Notify parent of position changes (only when position actually changes)
-    // Continuously sync reload progress so HUD bar updates smoothly.
-    {
-      const equipped = weaponManagerRef.current.getEquipped();
-      if (equipped) {
-        const rp = weaponManagerRef.current.getReloadProgress(equipped.id);
-        const ammo = weaponManagerRef.current.getAmmo(equipped.id);
-        const myId2 = socketClient?.id || currentPlayerId;
-        gameManager?.updatePlayer(myId2, {
-          currentAmmo: ammo,
-          reloadProgress: rp,
-        });
-      }
-    }
-
-    if (onPositionUpdate && meshRef.current) {
-      const currentPos = meshRef.current.position;
-      const distanceMoved = currentPos.distanceTo(
-        lastReportedPositionRef.current,
-      );
-
-      if (distanceMoved > POSITION_UPDATE_THRESHOLD) {
-        onPositionUpdate(currentPos.toArray() as [number, number, number]);
-        lastReportedPositionRef.current.copy(currentPos);
-      }
-    }
-
-    // Smooth third-person camera follow with rotation
-    idealCameraPositionRef.current.set(
-      meshRef.current.position.x + cameraOffsetRef.current.x,
-      meshRef.current.position.y + cameraOffsetRef.current.y,
-      meshRef.current.position.z + cameraOffsetRef.current.z,
-    );
-
-    // Lerp camera position for smooth following
-    // If skycam is active, raise the camera and lerp more slowly for a floating feel
-    if (skycamRef.current) {
-      skyTargetRef.current.copy(idealCameraPositionRef.current);
-      skyTargetRef.current.y += 12; // raise camera when in skycam
-      state.camera.position.lerp(skyTargetRef.current, 0.06);
-    } else {
-      state.camera.position.lerp(idealCameraPositionRef.current, 0.1);
-    }
-
-    // Make camera look at the character
-    state.camera.lookAt(
-      meshRef.current.position.x,
-      meshRef.current.position.y + 0.5,
-      meshRef.current.position.z,
-    );
-
-    // Apply camera shake from weapon recoil and decay exponentially.
+    // Camera shake decay (generated by PlayerWeapon sub-component)
     if (cameraShakeRef.current.lengthSq() > 0.00001) {
-      state.camera.position.add(cameraShakeRef.current);
       cameraShakeRef.current.multiplyScalar(Math.max(0, 1 - delta * 18));
     }
   });
