@@ -12,7 +12,7 @@ import { getSoundManager } from "../../../components/SoundManager";
 import {
   computeJetpackThrust,
   shouldActivateJetpackFromMobile,
-} from "../../../../../lib/hooks/useJetpack";
+} from "../../../lib/hooks/useJetpack";
 
 interface PlayerMovementProps {
   /** Current player mesh ref */

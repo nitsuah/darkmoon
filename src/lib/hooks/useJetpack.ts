@@ -1,8 +1,3 @@
-/**
- * Small pure helper utilities for jetpack behavior.
- * This keeps calculations testable and lets PlayerCharacter migrate logic
- * incrementally without changing large files immediately.
- */
 export interface JetpackConstants {
   JETPACK_MAX_HOLD_TIME: number;
   JETPACK_HOLD_FORCE: number;
@@ -43,8 +38,14 @@ export function useJetpack() {
 }
 
 /**
- * Export jetpack utilities as named exports for backward compatibility.
+ * Export jetpack utilities as named exports for backward compatibility
  * This allows direct imports from modules like PlayerMovement.tsx while
  * maintaining the useJetpack() wrapper pattern.
  */
 export { computeJetpackThrust, shouldActivateJetpackFromMobile };
+
+/**
+ * Export the useJetpack function for backward compatibility
+ * to support existing code that imports it.
+ */
+export { useJetpack };
