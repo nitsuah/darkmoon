@@ -41,3 +41,10 @@ export function shouldActivateJetpackFromMobile(
 export function useJetpack() {
   return { computeJetpackThrust, shouldActivateJetpackFromMobile };
 }
+
+/**
+ * Export jetpack utilities as named exports for backward compatibility.
+ * This allows direct imports from modules like PlayerMovement.tsx while
+ * maintaining the useJetpack() wrapper pattern.
+ */
+export { computeJetpackThrust, shouldActivateJetpackFromMobile };
