@@ -35,6 +35,9 @@ export function shouldActivateJetpackFromMobile(
   return !!mobileDoubleTap;
 }
 
-export default function useJetpack() {
+/**
+ * Create a jetpack hook interface for backward compatibility
+ */
+export function useJetpack() {
   return { computeJetpackThrust, shouldActivateJetpackFromMobile };
 }

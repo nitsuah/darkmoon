@@ -1397,13 +1397,11 @@ export const PlayerCharacter = React.forwardRef<
         canAct={false}
       />
       <PlayerHealth
-        meshRef={meshRef}
         gameManager={gameManager}
         currentPlayerId={currentPlayerId}
         isPaused={isPaused}
       />
       <PlayerRespawner
-        meshRef={meshRef}
         gameManager={gameManager}
         currentPlayerId={currentPlayerId}
         isPaused={isPaused}

@@ -7,12 +7,12 @@ import {
   PHYSICS_CONSTANTS,
 } from "../../../lib/hooks/usePlayerPhysics";
 import { usePlayerState } from "../../../lib/hooks/usePlayerState";
-import { usePlayerMovement } from "../../../lib/hooks/usePlayerMovement";
+import usePlayerMovement from "../../../lib/hooks/usePlayerMovement";
+import { getSoundManager } from "../../../components/SoundManager";
 import {
   computeJetpackThrust,
   shouldActivateJetpackFromMobile,
-} from "../../../lib/hooks/useJetpack";
-import { getSoundManager } from "../../../components/SoundManager";
+} from "../../../../../lib/hooks/useJetpack";
 
 interface PlayerMovementProps {
   /** Current player mesh ref */
