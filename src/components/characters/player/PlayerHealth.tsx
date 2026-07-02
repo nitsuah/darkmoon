@@ -1,6 +1,11 @@
 import * as React from "react";
-import { useFrame } from "@react-three/fiber";
 import type { GameManager } from "../../../components/GameManager";
+
+declare global {
+  interface WindowEventMap {
+    "health-pickup": CustomEvent<{ amount: number }>;
+  }
+}
 
 interface PlayerHealthProps {
   /** Game manager for player state */
@@ -13,12 +18,6 @@ interface PlayerHealthProps {
 
 export const PlayerHealth = React.memo(
   ({ gameManager, currentPlayerId, isPaused }: PlayerHealthProps) => {
-    useFrame(() => {
-      // Handle health pickups via window events
-      // This is handled via useEffect in the main component
-    });
-
-    // Use effect for health pickup events
     React.useEffect(() => {
       function handleHealthPickup(event: CustomEvent) {
         if (!gameManager || isPaused) return;

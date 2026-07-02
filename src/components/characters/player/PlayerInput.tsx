@@ -2,6 +2,14 @@ import * as React from "react";
 import type { GameManager } from "../../../components/GameManager";
 import type { WeaponManager } from "../../../components/combat/WeaponManager";
 
+declare global {
+  interface WindowEventMap {
+    "weapon-pickup": CustomEvent<{ weaponId: string }>;
+    "health-pickup": CustomEvent<{ amount: number }>;
+    "player-tagged-by-bot": Event;
+  }
+}
+
 interface PlayerInputProps {
   /** Game manager for player state */
   gameManager: GameManager | null;

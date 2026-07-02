@@ -1,5 +1,11 @@
 import * as React from "react";
 
+declare global {
+  interface WindowEventMap {
+    "player-tagged-by-bot": Event;
+  }
+}
+
 interface PlayerJetpackProps {
   /** Whether jetpack flame should be visible */
   showJetpackFlame: boolean;
