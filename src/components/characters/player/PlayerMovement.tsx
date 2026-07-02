@@ -72,6 +72,7 @@ interface PlayerMovementProps {
 
 export const PlayerMovement = React.memo(
   ({
+    meshRef,
     cameraHorizontal,
     bothMouseButtons,
     joystickMove,
@@ -90,9 +91,9 @@ export const PlayerMovement = React.memo(
     setShowJetpackFlame,
     lookIndicatorRef,
   }: PlayerMovementProps) => {
-    const playerState = usePlayerState();
     const physics = usePlayerPhysics();
     const movement = usePlayerMovement();
+    const playerState = usePlayerState();
 
     const {
       velocityRef,
@@ -112,13 +113,12 @@ export const PlayerMovement = React.memo(
       lastRCSSoundTimeRef,
     } = physics;
 
-    const { meshRef: stateMeshRef } = playerState;
     const POSITION_UPDATE_THRESHOLD = 0.001;
 
     useFrame((state, delta) => {
       const now = Date.now();
 
-      if (isPaused || !stateMeshRef.current) return;
+      if (isPaused || !meshRef.current) return;
 
       // Check freeze state
       if (isPlayerFrozenRef.current) {
@@ -127,11 +127,11 @@ export const PlayerMovement = React.memo(
         } else {
           // Show visual indicator while frozen
           const pulse = 1 + Math.sin(now * 0.01) * 0.1;
-          stateMeshRef.current.scale.set(pulse, pulse, pulse);
+          meshRef.current.scale.set(pulse, pulse, pulse);
           return; // Skip movement while frozen
         }
       } else {
-        stateMeshRef.current.scale.set(1, 1, 1);
+        meshRef.current.scale.set(1, 1, 1);
       }
 
       // Compute movement direction
@@ -173,7 +173,7 @@ export const PlayerMovement = React.memo(
           .multiplyScalar(currentSpeedRef.current * delta);
 
         // Calculate new position with collision detection
-        const currentPosition = stateMeshRef.current.position.clone();
+        const currentPosition = meshRef.current.position.clone();
         const newPosition = currentPosition.clone().add(velocityRef.current);
 
         const resolvedPosition = collisionSystemRef.current.checkCollision(
@@ -203,7 +203,7 @@ export const PlayerMovement = React.memo(
           }
         }
 
-        stateMeshRef.current.position.copy(resolvedPosition);
+        meshRef.current.position.copy(resolvedPosition);
 
         // Walking/sprinting sounds
         const isSprinting = keysPressedRef.current[SHIFT] ?? false;
@@ -229,10 +229,10 @@ export const PlayerMovement = React.memo(
           directionRef.current,
           cameraHorizontal,
           isAiming,
-          stateMeshRef.current.rotation.y,
+          meshRef.current.rotation.y,
         );
-        stateMeshRef.current.rotation.y = THREE.MathUtils.lerp(
-          stateMeshRef.current.rotation.y,
+        meshRef.current.rotation.y = THREE.MathUtils.lerp(
+          meshRef.current.rotation.y,
           targetYaw,
           0.2,
         );
@@ -247,7 +247,7 @@ export const PlayerMovement = React.memo(
 
       // Jump mechanics
       const isOnGround =
-        stateMeshRef.current.position.y <= PHYSICS_CONSTANTS.GROUND_Y + 0.01;
+        meshRef.current.position.y <= PHYSICS_CONSTANTS.GROUND_Y + 0.01;
       const currentTime = Date.now();
 
       if (
@@ -374,7 +374,7 @@ export const PlayerMovement = React.memo(
       if (isJumpingRef.current || !isOnGround) {
         verticalVelocityRef.current -= PHYSICS_CONSTANTS.GRAVITY;
         verticalVelocityRef.current *= PHYSICS_CONSTANTS.AIR_RESISTANCE;
-        stateMeshRef.current.position.y += verticalVelocityRef.current;
+        meshRef.current.position.y += verticalVelocityRef.current;
 
         // Preserve horizontal momentum with decay
         horizontalMomentumRef.current.multiplyScalar(
@@ -394,17 +394,12 @@ export const PlayerMovement = React.memo(
           .copy(horizontalMomentumRef.current)
           .add(inputDirectionRef.current);
 
-        stateMeshRef.current.position.x +=
-          finalMovementRef.current.x * delta * 10;
-        stateMeshRef.current.position.z +=
-          finalMovementRef.current.z * delta * 10;
+        meshRef.current.position.x += finalMovementRef.current.x * delta * 10;
+        meshRef.current.position.z += finalMovementRef.current.z * delta * 10;
 
         // Check landing
-        if (
-          stateMeshRef.current.position.y <=
-          PHYSICS_CONSTANTS.GROUND_Y + 0.01
-        ) {
-          stateMeshRef.current.position.y = PHYSICS_CONSTANTS.GROUND_Y;
+        if (meshRef.current.position.y <= PHYSICS_CONSTANTS.GROUND_Y + 0.01) {
+          meshRef.current.position.y = PHYSICS_CONSTANTS.GROUND_Y;
           if (isJumpingRef.current) {
             isJumpingRef.current = false;
             jetpackActiveRef.current = false;
@@ -427,14 +422,14 @@ export const PlayerMovement = React.memo(
       // Emit position to server
       if (socketClient) {
         socketClient.emit("move", {
-          position: stateMeshRef.current.position.toArray(),
-          rotation: stateMeshRef.current.rotation.toArray(),
+          position: meshRef.current.position.toArray(),
+          rotation: meshRef.current.rotation.toArray(),
         });
       }
 
       // Position update callback
-      if (onPositionUpdate && stateMeshRef.current) {
-        const currentPos = stateMeshRef.current.position;
+      if (onPositionUpdate && meshRef.current) {
+        const currentPos = meshRef.current.position;
         const distanceMoved = currentPos.distanceTo(
           playerState.lastReportedPositionRef.current,
         );
@@ -452,7 +447,7 @@ export const PlayerMovement = React.memo(
           -Math.cos(cameraHorizontal),
         );
         const lookDistance = 6;
-        const lookPos = stateMeshRef.current.position
+        const lookPos = meshRef.current.position
           .clone()
           .add(lookForward.multiplyScalar(lookDistance));
         lookIndicatorRef.current.visible = true;
