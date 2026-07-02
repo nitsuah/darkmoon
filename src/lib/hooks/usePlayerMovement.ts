@@ -90,6 +90,9 @@ export function computeFacingYaw(
   return currentYaw;
 }
 
+/**
+ * Default hook export (can be removed if not needed)
+ */
 export default function usePlayerMovement() {
   // This module currently exports pure helpers; the default export is a small
   // object to make imports ergonomic if a hook shape is preferred later.
