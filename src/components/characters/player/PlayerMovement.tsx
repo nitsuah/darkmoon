@@ -250,19 +250,20 @@ export const PlayerMovement = React.memo(
         meshRef.current.position.y <= PHYSICS_CONSTANTS.GROUND_Y + 0.01;
       const currentTime = Date.now();
 
-      if (
-        keysPressedRef.current[SPACE] &&
-        isOnGround &&
-        !isJumpingRef.current
-      ) {
-        const mobileDoubleTap = mobileJetpackTriggerRef.current || false;
+      const mobileDoubleTap = mobileJetpackTriggerRef.current || false;
+      const canMobileJump =
+        mobileDoubleTap && isOnGround && !isJumpingRef.current;
+      const canKeyboardJump =
+        keysPressedRef.current[SPACE] && isOnGround && !isJumpingRef.current;
 
+      if (canKeyboardJump || canMobileJump) {
         if (shouldActivateJetpackFromMobile(mobileDoubleTap)) {
           jetpackActiveRef.current = true;
           setShowJetpackFlame(true);
           isJumpingRef.current = true;
           verticalVelocityRef.current = PHYSICS_CONSTANTS.JETPACK_INITIAL_BOOST;
           jumpHoldTimeRef.current = 0;
+          mobileJetpackTriggerRef.current = false; // Reset to prevent re-activation
         } else {
           // Regular jump
           isJumpingRef.current = true;
@@ -401,6 +402,8 @@ export const PlayerMovement = React.memo(
         if (meshRef.current.position.y <= PHYSICS_CONSTANTS.GROUND_Y + 0.01) {
           meshRef.current.position.y = PHYSICS_CONSTANTS.GROUND_Y;
           if (isJumpingRef.current) {
+            // Capture landing velocity before zeroing
+            const landingVelocity = verticalVelocityRef.current;
             isJumpingRef.current = false;
             jetpackActiveRef.current = false;
             setShowJetpackFlame(false);
@@ -410,7 +413,7 @@ export const PlayerMovement = React.memo(
               const soundMgr = getSoundManager();
               if (soundMgr)
                 soundMgr.playLandingSoundScaled(
-                  Math.abs(verticalVelocityRef.current) * 100,
+                  Math.abs(landingVelocity) * 100,
                 );
             } catch {
               /* Sound manager not ready */
