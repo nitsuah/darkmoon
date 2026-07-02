@@ -8,7 +8,6 @@ import {
 } from "../../../lib/hooks/usePlayerPhysics";
 import { usePlayerState } from "../../../lib/hooks/usePlayerState";
 import { usePlayerMovement } from "../../../lib/hooks/usePlayerMovement";
-import { useJetpack } from "../../../lib/hooks/useJetpack";
 import {
   computeJetpackThrust,
   shouldActivateJetpackFromMobile,
@@ -73,7 +72,6 @@ interface PlayerMovementProps {
 
 export const PlayerMovement = React.memo(
   ({
-    meshRef,
     cameraHorizontal,
     bothMouseButtons,
     joystickMove,
@@ -95,7 +93,6 @@ export const PlayerMovement = React.memo(
     const playerState = usePlayerState();
     const physics = usePlayerPhysics();
     const movement = usePlayerMovement();
-    const jetpack = useJetpack();
 
     const {
       velocityRef,

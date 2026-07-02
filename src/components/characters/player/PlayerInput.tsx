@@ -1,18 +1,6 @@
 import * as React from "react";
-import { useFrame } from "@react-three/fiber";
 import type { GameManager } from "../../../components/GameManager";
 import type { WeaponManager } from "../../../components/combat/WeaponManager";
-import { getSoundManager } from "../../../components/SoundManager";
-import {
-  KEY_1,
-  KEY_2,
-  KEY_3,
-  KEY_4,
-  KEY_5,
-  KEY_R,
-  SPACE,
-  SHIFT,
-} from "../../utils";
 
 interface PlayerInputProps {
   /** Game manager for player state */
@@ -24,10 +12,6 @@ interface PlayerInputProps {
     emit: (event: string, data: unknown) => void;
     id?: string;
   } | null;
-  /** Key press state ref */
-  keysPressedRef: React.RefObject<Record<string, boolean>>;
-  /** Mobile jetpack trigger ref */
-  mobileJetpackTriggerRef: React.RefObject<boolean>;
   /** Whether game is paused */
   isPaused: boolean;
   /** Weapon manager ref */
@@ -41,8 +25,6 @@ export const PlayerInput = React.memo(
     gameManager,
     currentPlayerId,
     socketClient,
-    keysPressedRef,
-    mobileJetpackTriggerRef,
     isPaused,
     weaponManagerRef,
     onPlayerFrozen,
@@ -73,15 +55,9 @@ export const PlayerInput = React.memo(
           currentAmmo: weaponManagerRef.current.getAmmo(weaponId),
         });
       }
-      window.addEventListener(
-        "weapon-pickup",
-        handleWeaponPickup as EventListener,
-      );
+      window.addEventListener("weapon-pickup", handleWeaponPickup);
       return () =>
-        window.removeEventListener(
-          "weapon-pickup",
-          handleWeaponPickup as EventListener,
-        );
+        window.removeEventListener("weapon-pickup", handleWeaponPickup);
     }, [
       gameManager,
       currentPlayerId,

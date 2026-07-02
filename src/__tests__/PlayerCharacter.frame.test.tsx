@@ -37,26 +37,43 @@ vi.mock("../world/vfx/TrajectoryArc", () => ({
 
 // Mock internal hooks
 vi.mock("../lib/hooks/usePlayerState", () => ({
-  usePlayerState: () => ({
-    meshRef: {
-      current: {
-        position: new THREE.Vector3(0, 0.5, 0),
-        rotation: new THREE.Euler(0, 0, 0),
-        scale: { set: vi.fn() },
+  usePlayerState: () => {
+    const mockWeaponManager = {
+      equip: vi.fn(),
+      unequip: vi.fn(),
+      refill: vi.fn(),
+      getAmmo: vi.fn(() => 6),
+      getEquipped: vi.fn(() => ({ id: "laser" })),
+      isCharging: vi.fn(() => false),
+      startCharge: vi.fn(),
+      stopCharge: vi.fn(),
+      getChargeProgress: vi.fn(() => 0),
+      startReload: vi.fn(),
+      getReloadProgress: vi.fn(() => 0),
+    };
+    return {
+      meshRef: {
+        current: {
+          position: new THREE.Vector3(0, 0.5, 0),
+          rotation: new THREE.Euler(0, 0, 0),
+          scale: { set: vi.fn() },
+          clone: vi.fn(() => new THREE.Vector3(0, 0.5, 0)),
+        },
       },
-    },
-    collisionSystemRef: {
-      current: {
-        checkCollision: (a: unknown, b: unknown) => b,
-        checkPlayerCollision: () => false,
+      collisionSystemRef: {
+        current: {
+          checkCollision: (a: unknown, b: unknown) => b,
+          checkPlayerCollision: () => false,
+        },
       },
-    },
-    lastReportedPositionRef: { current: new THREE.Vector3(0, 0.5, 0) },
-    lastTagCheckRef: { current: 0 },
-    frameCounterRef: { current: 0 },
-    isPlayerFrozenRef: { current: false },
-    playerFreezeEndTimeRef: { current: 0 },
-  }),
+      lastReportedPositionRef: { current: new THREE.Vector3(0, 0.5, 0) },
+      lastTagCheckRef: { current: 0 },
+      frameCounterRef: { current: 0 },
+      isPlayerFrozenRef: { current: false },
+      playerFreezeEndTimeRef: { current: 0 },
+      weaponManagerRef: { current: mockWeaponManager },
+    };
+  },
 }));
 
 vi.mock("../lib/hooks/usePlayerPhysics", () => ({
@@ -126,9 +143,6 @@ vi.mock("../components/characters/player/PlayerInput", () => ({
 }));
 vi.mock("../components/characters/player/PlayerJetpack", () => ({
   PlayerJetpack: () => null,
-}));
-vi.mock("../components/characters/player/PlayerJetpackV2", () => ({
-  PlayerJetpackV2: () => null,
 }));
 
 vi.mock("../lib/hooks/usePlayerCollision", () => ({

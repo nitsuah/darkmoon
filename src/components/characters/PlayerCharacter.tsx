@@ -56,7 +56,6 @@ import {
   PlayerInput,
   PlayerJetpack,
 } from "./player/index";
-import type { WeaponManager as WeaponManagerType } from "../combat/WeaponManager";
 
 const tagDebug = createTagLogger("PlayerCharacter");
 
@@ -173,10 +172,8 @@ export const PlayerCharacter = React.forwardRef<
     skyTargetRef,
   } = camera;
 
-  // Weapon manager ref (initialized lazily, used in effects/useFrame)
-  const weaponManagerRef = React.useRef<WeaponManagerType>(
-    null as unknown as WeaponManagerType,
-  );
+  // Weapon manager ref (from usePlayerState hook, initialized lazily)
+  const { weaponManagerRef } = playerState;
 
   // Rising-edge detection for weapon switch keys
   const prevKey1Ref = React.useRef(false);
@@ -222,7 +219,7 @@ export const PlayerCharacter = React.forwardRef<
         currentAmmo: null,
       });
     }
-  }, [gameManager, currentPlayerId]);
+  }, [gameManager, currentPlayerId, weaponManagerRef]);
 
   // Expose reset and freeze functions to parent via ref
   React.useImperativeHandle(ref, () => ({
@@ -278,7 +275,7 @@ export const PlayerCharacter = React.forwardRef<
     window.addEventListener("weapon-pickup", handleWeaponPickup);
     return () =>
       window.removeEventListener("weapon-pickup", handleWeaponPickup);
-  }, [gameManager, currentPlayerId]);
+  }, [gameManager, currentPlayerId, weaponManagerRef]);
 
   // Restore health when the player walks over a HealthPickups crate.
   React.useEffect(() => {
@@ -294,7 +291,7 @@ export const PlayerCharacter = React.forwardRef<
     window.addEventListener("health-pickup", handleHealthPickup);
     return () =>
       window.removeEventListener("health-pickup", handleHealthPickup);
-  }, [gameManager, currentPlayerId]);
+  }, [gameManager, currentPlayerId, weaponManagerRef]);
 
   // Teleport player back to spawn when respawn timer clears (deathmatch/CTF).
   // Picks the spawn point farthest from all alive enemies (anti-camping).
@@ -323,7 +320,7 @@ export const PlayerCharacter = React.forwardRef<
       }
     }
     prevRespawnAtRef.current = respawnAt;
-  }, [respawnAt, meshRef, gameManager, currentPlayerId]);
+  }, [respawnAt, meshRef, gameManager, currentPlayerId, weaponManagerRef]);
 
   // gated debug logger - only logs in dev
   const debug = (...args: unknown[]) => {

@@ -2,17 +2,10 @@ import * as React from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import type { GameManager } from "../../../components/GameManager";
-import type {
-  WeaponManager,
-  WeaponConfig,
-} from "../../../components/combat/WeaponManager";
-import type {
-  CollisionSystem,
-  ProjectileHit,
-} from "../../../components/CollisionSystem";
+import type { WeaponManager } from "../../../components/combat/WeaponManager";
+import type { CollisionSystem } from "../../../components/CollisionSystem";
 import { KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_R } from "../../utils";
 import { processFiring } from "../../../lib/hooks/usePlayerWeapon";
-import { getSoundManager } from "../../../components/SoundManager";
 
 interface PlayerWeaponProps {
   /** Player mesh ref */
@@ -100,7 +93,7 @@ export const PlayerWeapon = React.memo(
   }: PlayerWeaponProps) => {
     const myId = socketClient?.id || currentPlayerId;
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
       const now = Date.now();
 
       if (isPaused || !meshRef.current || !gameManager) return;

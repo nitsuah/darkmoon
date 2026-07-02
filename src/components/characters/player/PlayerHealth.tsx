@@ -29,15 +29,9 @@ export const PlayerHealth = React.memo(
         const newHp = Math.min(maxHp, (me.health ?? maxHp) + amount);
         gameManager.updatePlayer(currentPlayerId, { health: newHp });
       }
-      window.addEventListener(
-        "health-pickup",
-        handleHealthPickup as EventListener,
-      );
+      window.addEventListener("health-pickup", handleHealthPickup);
       return () =>
-        window.removeEventListener(
-          "health-pickup",
-          handleHealthPickup as EventListener,
-        );
+        window.removeEventListener("health-pickup", handleHealthPickup);
     }, [gameManager, currentPlayerId, isPaused]);
 
     return null;

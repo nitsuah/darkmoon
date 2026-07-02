@@ -31,13 +31,10 @@ interface PlayerCameraProps {
 
 export const PlayerCamera = React.memo(
   ({
-    camera,
     meshRef,
     mouseControls,
     joystickCamera,
     keysPressedRef,
-    size,
-    isPlayerFrozenRef,
   }: PlayerCameraProps) => {
     const cameraState = usePlayerCamera();
 
@@ -53,10 +50,6 @@ export const PlayerCamera = React.memo(
 
     useFrame((state, delta) => {
       if (!meshRef.current) return;
-
-      // WoW-style camera controls
-      const bothMouseButtons =
-        mouseControls.leftClick && mouseControls.rightClick;
 
       // Handle mouse camera rotation
       if (

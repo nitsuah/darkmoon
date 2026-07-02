@@ -1,11 +1,4 @@
 import * as React from "react";
-import * as THREE from "three";
-import { useFrame } from "@react-three/fiber";
-import { getSoundManager } from "../../../components/SoundManager";
-import {
-  computeJetpackThrust,
-  shouldActivateJetpackFromMobile,
-} from "../../../lib/hooks/useJetpack";
 
 interface PlayerJetpackProps {
   /** Whether jetpack flame should be visible */
@@ -21,7 +14,7 @@ interface PlayerJetpackProps {
   /** Jump hold time ref */
   jumpHoldTimeRef: React.RefObject<number>;
   /** Jetpack sound reference */
-  jetpackThrustSoundRef: React.RefObject<any>;
+  jetpackThrustSoundRef: React.RefObject<unknown>;
   /** Sound manager reference */
   lastRCSSoundTimeRef: React.RefObject<number>;
   /** Keys pressed state */
@@ -47,7 +40,7 @@ interface PlayerJetpackProps {
   /** Trigger for player tagged events */
   setPlayerTaggedRef: React.RefObject<() => void>;
   /** Game manager for state updates */
-  gameManager: any;
+  gameManager: unknown;
 }
 
 export const PlayerJetpack = React.memo((props: PlayerJetpackProps) => {
@@ -55,18 +48,9 @@ export const PlayerJetpack = React.memo((props: PlayerJetpackProps) => {
     showJetpackFlame,
     setShowJetpackFlame,
     jetpackActiveRef,
-    isJumpingRef,
-    verticalVelocityRef,
     jumpHoldTimeRef,
-    jetpackThrustSoundRef,
-    keysPressedRef,
-    cameraRotationRef,
     jetpackConstants,
-    isPaused,
-    socketClient,
-    currentPlayerId,
     setPlayerTaggedRef,
-    gameManager,
   } = props;
 
   // Track jetpack thrust time
@@ -100,10 +84,11 @@ export const PlayerJetpack = React.memo((props: PlayerJetpackProps) => {
 
     return () => clearInterval(interval);
   }, [
-    jetpackActiveRef.current,
+    jetpackActiveRef,
     showJetpackFlame,
     jumpHoldTimeRef,
     jetpackConstants.JETPACK_MAX_HOLD_TIME,
+    setShowJetpackFlame,
   ]);
 
   // Listen for player-tagged events to handle player behavior
@@ -116,7 +101,7 @@ export const PlayerJetpack = React.memo((props: PlayerJetpackProps) => {
     window.addEventListener("player-tagged-by-bot", handlePlayerTagged);
     return () =>
       window.removeEventListener("player-tagged-by-bot", handlePlayerTagged);
-  }, [setPlayerTaggedRef]);
+  }, [setPlayerTaggedRef, setShowJetpackFlame]);
 
   return null;
 });
