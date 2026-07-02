@@ -182,6 +182,7 @@ export const PlayerCharacter = React.forwardRef<
   const prevKey4Ref = React.useRef(false);
   const prevKey5Ref = React.useRef(false);
   const prevKeyRRef = React.useRef(false);
+  const canActRef = React.useRef(true);
 
   // Laser beam visual effect refs
   const laserBeamRef = React.useRef<THREE.Group>(
@@ -350,6 +351,7 @@ export const PlayerCharacter = React.forwardRef<
     const isGrenade = equipped?.id === "grenade";
     const canAct =
       mePlayer?.respawnAt === undefined && !isPlayerFrozenRef.current;
+    canActRef.current = canAct;
 
     if (isGrenade && canAct) {
       if (mouseControls.rightClick) {
@@ -1365,7 +1367,7 @@ export const PlayerCharacter = React.forwardRef<
         joystickCamera={joystickCamera}
         keysPressedRef={keysPressedRef}
         isPaused={isPaused}
-        size={{ width: 0, height: 0 }}
+        size={{ width: window.innerWidth, height: window.innerHeight }}
         isPlayerFrozenRef={isPlayerFrozenRef}
         playerFreezeEndTimeRef={playerFreezeEndTimeRef}
         cameraShakeRef={cameraShakeRef}
@@ -1394,7 +1396,9 @@ export const PlayerCharacter = React.forwardRef<
         prevKey4Ref={prevKey4Ref}
         prevKey5Ref={prevKey5Ref}
         prevKeyRRef={prevKeyRRef}
-        canAct={false}
+        canAct={canActRef.current}
+        collisionSystemRef={collisionSystemRef}
+        isPlayerFrozenRef={isPlayerFrozenRef}
       />
       <PlayerHealth
         gameManager={gameManager}
@@ -1402,6 +1406,7 @@ export const PlayerCharacter = React.forwardRef<
         isPaused={isPaused}
       />
       <PlayerRespawner
+        meshRef={meshRef}
         gameManager={gameManager}
         currentPlayerId={currentPlayerId}
         isPaused={isPaused}
@@ -1435,7 +1440,7 @@ export const PlayerCharacter = React.forwardRef<
             vertical: number;
           }>
         }
-        gameState={PHYSICS_CONSTANTS}
+        jetpackConstants={PHYSICS_CONSTANTS}
         isPaused={isPaused}
         socketClient={socketClient}
         currentPlayerId={currentPlayerId}

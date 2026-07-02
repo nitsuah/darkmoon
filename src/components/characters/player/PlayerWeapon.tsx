@@ -3,7 +3,6 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import type { GameManager } from "../../../components/GameManager";
 import type { WeaponManager } from "../../../components/combat/WeaponManager";
-import type { CollisionSystem } from "../../../components/CollisionSystem";
 import { KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_R } from "../../utils";
 import { processFiring } from "../../../lib/hooks/usePlayerWeapon";
 
@@ -60,6 +59,16 @@ interface PlayerWeaponProps {
   prevKeyRRef: React.RefObject<boolean>;
   /** Whether player can act (not respawning, not frozen) */
   canAct: boolean;
+  /** Collision system ref for hit detection */
+  collisionSystemRef: React.RefObject<{
+    checkProjectileHit: (
+      origin: THREE.Vector3,
+      direction: THREE.Vector3,
+      range: number,
+    ) => { hit: boolean; point: THREE.Vector3; distance: number } | null;
+  }>;
+  /** Player frozen ref */
+  isPlayerFrozenRef: React.RefObject<boolean>;
 }
 
 const LASER_BEAM_VISIBLE_MS = 160;
@@ -73,7 +82,6 @@ export const PlayerWeapon = React.memo(
     socketClient,
     currentPlayerId,
     gameManager,
-    size,
     isPaused,
     weaponManagerRef,
     laserBeamRef,
@@ -90,6 +98,8 @@ export const PlayerWeapon = React.memo(
     prevKey5Ref,
     prevKeyRRef,
     canAct,
+    collisionSystemRef,
+    isPlayerFrozenRef,
   }: PlayerWeaponProps) => {
     const myId = socketClient?.id || currentPlayerId;
 
@@ -97,6 +107,13 @@ export const PlayerWeapon = React.memo(
       const now = Date.now();
 
       if (isPaused || !meshRef.current || !gameManager) return;
+
+      // Recompute canAct from live refs in case React.memo skipped prop update
+      const mePlayer = gameManager.getPlayers().get(myId);
+      const canActNow =
+        canAct &&
+        mePlayer?.respawnAt === undefined &&
+        !isPlayerFrozenRef.current;
 
       // Weapon switching: rising-edge detection
       const key1 = keysPressedRef.current[KEY_1] ?? false;
@@ -156,14 +173,16 @@ export const PlayerWeapon = React.memo(
       prevKeyRRef.current = keyR;
 
       // Fire the equipped weapon while left-click is held
-      if (mouseControls.leftClick && canAct) {
+      if (mouseControls.leftClick && canActNow) {
         const fireOrigin = meshRef.current.position
           .clone()
           .add(new THREE.Vector3(0, 1, 0));
 
-        // Raycast mouse position onto ground plane
-        const ndcX = (mouseControls.mouseX / size.width) * 2 - 1;
-        const ndcY = -(mouseControls.mouseY / size.height) * 2 + 1;
+        // Use R3F state size to avoid division-by-zero from hardcoded size prop
+        const w = state.size.width || 1;
+        const h = state.size.height || 1;
+        const ndcX = (mouseControls.mouseX / w) * 2 - 1;
+        const ndcY = -(mouseControls.mouseY / h) * 2 + 1;
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), state.camera);
         const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -184,7 +203,7 @@ export const PlayerWeapon = React.memo(
           shooterId: myId,
           gameManager,
           weaponManager: weaponManagerRef.current,
-          collisionSystem: null as unknown as CollisionSystem, // We'll need to pass this
+          collisionSystem: collisionSystemRef.current,
           now,
         });
 
