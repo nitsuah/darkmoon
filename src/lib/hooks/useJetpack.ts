@@ -1,8 +1,3 @@
-/**
- * Small pure helper utilities for jetpack behavior.
- * This keeps calculations testable and lets PlayerCharacter migrate logic
- * incrementally without changing large files immediately.
- */
 export interface JetpackConstants {
   JETPACK_MAX_HOLD_TIME: number;
   JETPACK_HOLD_FORCE: number;
@@ -35,6 +30,9 @@ export function shouldActivateJetpackFromMobile(
   return !!mobileDoubleTap;
 }
 
-export default function useJetpack() {
+/**
+ * Create a jetpack hook interface for backward compatibility
+ */
+export function useJetpack() {
   return { computeJetpackThrust, shouldActivateJetpackFromMobile };
 }

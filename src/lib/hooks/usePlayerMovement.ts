@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { W, S, Q, E } from "../../components/utils";
 
 export interface KeysMap {
   [key: string]: boolean;
@@ -37,10 +38,10 @@ export function computeDirection(
     direction.add(forward);
   }
 
-  if (keysPressed["W"]) direction.add(forward);
-  if (keysPressed["S"]) direction.sub(forward);
-  if (keysPressed["Q"]) direction.sub(right);
-  if (keysPressed["E"]) direction.add(right);
+  if (keysPressed[W]) direction.add(forward);
+  if (keysPressed[S]) direction.sub(forward);
+  if (keysPressed[Q]) direction.sub(right);
+  if (keysPressed[E]) direction.add(right);
 
   const hasJoystickInput = joystick.x !== 0 || joystick.y !== 0;
   if (hasJoystickInput) {
@@ -90,6 +91,9 @@ export function computeFacingYaw(
   return currentYaw;
 }
 
+/**
+ * Default hook export (can be removed if not needed)
+ */
 export default function usePlayerMovement() {
   // This module currently exports pure helpers; the default export is a small
   // object to make imports ergonomic if a hook shape is preferred later.

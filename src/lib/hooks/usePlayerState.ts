@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import * as THREE from "three";
 import CollisionSystem from "../../components/CollisionSystem";
+import { WeaponManager } from "../../components/combat/WeaponManager";
 
 /**
  * Hook to manage player state (position, freeze, collision, tagging)
@@ -26,6 +27,9 @@ export function usePlayerState() {
   const isPlayerFrozenRef = useRef(false);
   const playerFreezeEndTimeRef = useRef(0);
 
+  // Weapon manager ref (initialized here to avoid null checks everywhere)
+  const weaponManagerRef = useRef(new WeaponManager());
+
   return {
     meshRef,
     collisionSystemRef,
@@ -34,5 +38,6 @@ export function usePlayerState() {
     frameCounterRef,
     isPlayerFrozenRef,
     playerFreezeEndTimeRef,
+    weaponManagerRef,
   };
 }

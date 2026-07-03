@@ -30,7 +30,13 @@ export default defineConfig({
                 'src/lib/hooks/useQualitySettings.ts',
             ],
         },
-        exclude: ['e2e/**', 'e2e/**/*', 'node_modules/**', 'node_modules/**/*'],
+        exclude: [
+            'e2e/**',
+            'e2e/**/*',
+            'node_modules/**',
+            'node_modules/**/*',
+            '.claude/**',
+        ],
         // Use default pool (let Vitest pick the best runner for the environment)
     },
 })
