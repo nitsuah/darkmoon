@@ -6,7 +6,7 @@ import { pickSafeSpawn } from "../../../lib/constants/spawnPoints";
 
 interface PlayerRespawnerProps {
   /** Player mesh ref */
-  meshRef: React.RefObject<THREE.Group>;
+  meshRef: React.RefObject<THREE.Group | null>;
   /** Game manager for player state */
   gameManager: GameManager | null;
   /** Current player ID */

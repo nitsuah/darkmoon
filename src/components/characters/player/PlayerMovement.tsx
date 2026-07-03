@@ -16,7 +16,7 @@ import {
 
 interface PlayerMovementProps {
   /** Current player mesh ref */
-  meshRef: React.RefObject<THREE.Group>;
+  meshRef: React.RefObject<THREE.Group | null>;
   /** Camera horizontal rotation (yaw) */
   cameraHorizontal: number;
   /** Whether both mouse buttons are pressed (auto-run) */

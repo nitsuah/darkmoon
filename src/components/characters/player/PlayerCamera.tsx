@@ -5,10 +5,8 @@ import { usePlayerCamera } from "../../../lib/hooks/usePlayerCamera";
 import { A, D } from "../../utils";
 
 interface PlayerCameraProps {
-  /** Camera ref from R3F */
-  camera: THREE.Camera;
   /** Player mesh ref */
-  meshRef: React.RefObject<THREE.Group>;
+  meshRef: React.RefObject<THREE.Group | null>;
   /** Mouse controls state */
   mouseControls: {
     leftClick: boolean;
@@ -27,6 +25,26 @@ interface PlayerCameraProps {
   isPlayerFrozenRef: React.RefObject<boolean>;
   /** Delta time */
   delta?: number;
+  /** Camera rotation ref */
+  cameraRotationRef: React.RefObject<{ horizontal: number; vertical: number }>;
+  /** Skycam ref */
+  skycamRef: React.RefObject<boolean>;
+  /** Previous mouse ref */
+  previousMouseRef: React.RefObject<{ x: number; y: number }>;
+  /** First mouse ref */
+  isFirstMouseRef: React.RefObject<boolean>;
+  /** Camera offset ref */
+  cameraOffsetRef: React.RefObject<THREE.Vector3>;
+  /** Ideal camera position ref */
+  idealCameraPositionRef: React.RefObject<THREE.Vector3>;
+  /** Sky target ref */
+  skyTargetRef: React.RefObject<THREE.Vector3 | null>;
+  /** Player freeze end time ref */
+  playerFreezeEndTimeRef: React.RefObject<number>;
+  /** Camera shake ref */
+  cameraShakeRef: React.RefObject<THREE.Vector3>;
+  /** Whether game is paused */
+  isPaused: boolean;
 }
 
 export const PlayerCamera = React.memo(

@@ -26,6 +26,10 @@ interface PlayerInputProps {
   weaponManagerRef: React.RefObject<WeaponManager>;
   /** Callback for freeze player event */
   onPlayerFrozen?: (duration: number) => void;
+  /** Key press state ref */
+  keysPressedRef: React.RefObject<Record<string, boolean>>;
+  /** Mobile jetpack trigger ref */
+  mobileJetpackTriggerRef: React.RefObject<boolean>;
 }
 
 export const PlayerInput = React.memo(

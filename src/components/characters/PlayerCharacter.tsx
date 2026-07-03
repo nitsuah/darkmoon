@@ -27,9 +27,6 @@ import {
 
 const tagDebug = createTagLogger("PlayerCharacter");
 
-// How long a fired laser beam stays visible before fading out.
-const LASER_BEAM_VISIBLE_MS = 160;
-
 type WindowWithPlayerFreeze = typeof globalThis & {
   __playerFreezeUntil?: number;
 };
@@ -85,14 +82,7 @@ export const PlayerCharacter = React.forwardRef<
     lastWalkSoundTimeRef,
     isPaused,
     onPositionUpdate,
-    playerIsIt,
-    setPlayerIsIt,
-    setBotIsIt,
-    setBot1GotTagged,
-    setBot2GotTagged,
-    setGameState,
     mobileJetpackTrigger,
-    onTagSuccess,
   } = props;
 
   // Use custom hooks for organized state management
@@ -103,8 +93,6 @@ export const PlayerCharacter = React.forwardRef<
     isPlayerFrozenRef,
     playerFreezeEndTimeRef,
     frameCounterRef,
-    lastTagCheckRef,
-    lastReportedPositionRef,
   } = playerState;
 
   const physics = usePlayerPhysics();
@@ -117,6 +105,7 @@ export const PlayerCharacter = React.forwardRef<
     verticalVelocityRef,
     jumpHoldTimeRef,
     jetpackThrustSoundRef,
+    lastRCSSoundTimeRef,
   } = physics;
 
   const camera = usePlayerCamera();
@@ -136,11 +125,15 @@ export const PlayerCharacter = React.forwardRef<
   const canActRef = React.useRef(true);
 
   // Laser beam visual effect refs (passed to PlayerWeapon sub-component)
-  const laserBeamRef = React.useRef<THREE.Group>(null as unknown as THREE.Group);
+  const laserBeamRef = React.useRef<THREE.Group>(
+    null as unknown as THREE.Group,
+  );
   const laserBeamHideAtRef = React.useRef(0);
   const beamMeshRef = React.useRef<THREE.Mesh>(null as unknown as THREE.Mesh);
   const beamGlowRef = React.useRef<THREE.Mesh>(null as unknown as THREE.Mesh);
-  const muzzleFlashRef = React.useRef<THREE.PointLight>(null as unknown as THREE.PointLight);
+  const muzzleFlashRef = React.useRef<THREE.PointLight>(
+    null as unknown as THREE.PointLight,
+  );
   const muzzleFlashHideAtRef = React.useRef(0);
   const cameraShakeRef = React.useRef(new THREE.Vector3());
 
@@ -153,11 +146,13 @@ export const PlayerCharacter = React.forwardRef<
   const prevKeyRRef = React.useRef(false);
 
   // Look indicator (aim preview)
-  const lookIndicatorRef = React.useRef<THREE.Mesh>(null as unknown as THREE.Mesh);
+  const lookIndicatorRef = React.useRef<THREE.Mesh>(
+    null as unknown as THREE.Mesh,
+  );
 
   // Jetpack flame visibility state
   const [showJetpackFlame, setShowJetpackFlame] = React.useState(false);
-  const [showDustEffect, setShowDustEffect] = React.useState(false);
+  const [showDustEffect] = React.useState(false);
 
   // Stable refs for optional props
   const fallbackMobileJetpackRef = React.useRef(false);
@@ -429,18 +424,7 @@ export const PlayerCharacter = React.forwardRef<
             { position: [number, number, number] }
           >
         }
-        collisionSystemRef={
-          collisionSystemRef as React.RefObject<{
-            checkCollision: (
-              a: THREE.Vector3,
-              b: THREE.Vector3,
-            ) => THREE.Vector3;
-            checkPlayerCollision: (
-              a: THREE.Vector3,
-              b: THREE.Vector3,
-            ) => boolean;
-          }>
-        }
+        collisionSystemRef={collisionSystemRef}
         setShowJetpackFlame={setShowJetpackFlame}
         lookIndicatorRef={lookIndicatorRef}
         delta={0.016}
@@ -524,6 +508,7 @@ export const PlayerCharacter = React.forwardRef<
         verticalVelocityRef={verticalVelocityRef}
         jumpHoldTimeRef={jumpHoldTimeRef}
         jetpackThrustSoundRef={jetpackThrustSoundRef}
+        lastRCSSoundTimeRef={lastRCSSoundTimeRef}
         keysPressedRef={keysPressedRef}
         cameraRotationRef={
           cameraRotationRef as React.RefObject<{
@@ -536,6 +521,7 @@ export const PlayerCharacter = React.forwardRef<
         socketClient={socketClient}
         currentPlayerId={currentPlayerId}
         gameManager={gameManager}
+        setPlayerTaggedRef={React.useRef(() => {})}
       />
     </>
   );

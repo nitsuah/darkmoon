@@ -3,12 +3,13 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import type { GameManager } from "../../../components/GameManager";
 import type { WeaponManager } from "../../../components/combat/WeaponManager";
+import { CollisionSystem } from "../../../components/CollisionSystem";
 import { KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_R } from "../../utils";
 import { processFiring } from "../../../lib/hooks/usePlayerWeapon";
 
 interface PlayerWeaponProps {
   /** Player mesh ref */
-  meshRef: React.RefObject<THREE.Group>;
+  meshRef: React.RefObject<THREE.Group | null>;
   /** Camera horizontal rotation (yaw) */
   cameraHorizontal: number;
   /** Mouse controls state */
@@ -60,13 +61,7 @@ interface PlayerWeaponProps {
   /** Whether player can act (not respawning, not frozen) */
   canAct: boolean;
   /** Collision system ref for hit detection */
-  collisionSystemRef: React.RefObject<{
-    checkProjectileHit: (
-      origin: THREE.Vector3,
-      direction: THREE.Vector3,
-      range: number,
-    ) => { hit: boolean; point: THREE.Vector3; distance: number } | null;
-  }>;
+  collisionSystemRef: React.RefObject<CollisionSystem>;
   /** Player frozen ref */
   isPlayerFrozenRef: React.RefObject<boolean>;
 }
