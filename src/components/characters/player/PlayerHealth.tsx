@@ -1,12 +1,6 @@
 import * as React from "react";
 import type { GameManager } from "../../../components/GameManager";
 
-declare global {
-  interface WindowEventMap {
-    "health-pickup": CustomEvent<{ amount: number }>;
-  }
-}
-
 interface PlayerHealthProps {
   /** Game manager for player state */
   gameManager: GameManager | null;
@@ -19,7 +13,7 @@ interface PlayerHealthProps {
 export const PlayerHealth = React.memo(
   ({ gameManager, currentPlayerId, isPaused }: PlayerHealthProps) => {
     React.useEffect(() => {
-      function handleHealthPickup(event: CustomEvent) {
+      function handleHealthPickup(event: WindowEventMap["health-pickup"]) {
         if (!gameManager || isPaused) return;
         const amount = event.detail?.amount ?? 0;
         const me = gameManager.getPlayers().get(currentPlayerId);

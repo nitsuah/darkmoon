@@ -2,14 +2,6 @@ import * as React from "react";
 import type { GameManager } from "../../../components/GameManager";
 import type { WeaponManager } from "../../../components/combat/WeaponManager";
 
-declare global {
-  interface WindowEventMap {
-    "weapon-pickup": CustomEvent<{ weaponId: string }>;
-    "health-pickup": CustomEvent<{ amount: number }>;
-    "player-tagged-by-bot": Event;
-  }
-}
-
 interface PlayerInputProps {
   /** Game manager for player state */
   gameManager: GameManager | null;
@@ -55,7 +47,7 @@ export const PlayerInput = React.memo(
 
     // Handle weapon pickup events
     React.useEffect(() => {
-      function handleWeaponPickup(event: CustomEvent) {
+      function handleWeaponPickup(event: WindowEventMap["weapon-pickup"]) {
         if (!gameManager || isPaused) return;
         const weaponId = event.detail?.weaponId;
         if (!weaponId) return;

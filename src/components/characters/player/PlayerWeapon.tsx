@@ -110,7 +110,7 @@ export const PlayerWeapon = React.memo(
         mePlayer?.respawnAt === undefined &&
         !isPlayerFrozenRef.current;
 
-      // Weapon switching: rising-edge detection
+      // Weapon switching: rising-edge detection, gated by canActNow
       const key1 = keysPressedRef.current[KEY_1] ?? false;
       const key2 = keysPressedRef.current[KEY_2] ?? false;
       const key3 = keysPressedRef.current[KEY_3] ?? false;
@@ -118,46 +118,48 @@ export const PlayerWeapon = React.memo(
       const key5 = keysPressedRef.current[KEY_5] ?? false;
       const keyR = keysPressedRef.current[KEY_R] ?? false;
 
-      if (key1 && !prevKey1Ref.current) {
-        weaponManagerRef.current.equip("laser");
-        gameManager?.updatePlayer(myId, {
-          equippedWeaponId: "laser",
-          currentAmmo: weaponManagerRef.current.getAmmo("laser"),
-        });
-      }
-      if (key2 && !prevKey2Ref.current) {
-        weaponManagerRef.current.equip("shotgun");
-        gameManager?.updatePlayer(myId, {
-          equippedWeaponId: "shotgun",
-          currentAmmo: weaponManagerRef.current.getAmmo("shotgun"),
-        });
-      }
-      if (key3 && !prevKey3Ref.current) {
-        weaponManagerRef.current.equip("rocket");
-        gameManager?.updatePlayer(myId, {
-          equippedWeaponId: "rocket",
-          currentAmmo: weaponManagerRef.current.getAmmo("rocket"),
-        });
-      }
-      if (key4 && !prevKey4Ref.current) {
-        weaponManagerRef.current.equip("grenade");
-        gameManager?.updatePlayer(myId, {
-          equippedWeaponId: "grenade",
-          currentAmmo: weaponManagerRef.current.getAmmo("grenade"),
-        });
-      }
-      if (key5 && !prevKey5Ref.current) {
-        weaponManagerRef.current.equip("smg");
-        gameManager?.updatePlayer(myId, {
-          equippedWeaponId: "smg",
-          currentAmmo: weaponManagerRef.current.getAmmo("smg"),
-        });
-      }
-      // R key: reload
-      if (keyR && !prevKeyRRef.current) {
-        const equipped = weaponManagerRef.current.getEquipped();
-        if (equipped) {
-          weaponManagerRef.current.startReload(equipped.id);
+      if (canActNow) {
+        if (key1 && !prevKey1Ref.current) {
+          weaponManagerRef.current.equip("laser");
+          gameManager?.updatePlayer(myId, {
+            equippedWeaponId: "laser",
+            currentAmmo: weaponManagerRef.current.getAmmo("laser"),
+          });
+        }
+        if (key2 && !prevKey2Ref.current) {
+          weaponManagerRef.current.equip("shotgun");
+          gameManager?.updatePlayer(myId, {
+            equippedWeaponId: "shotgun",
+            currentAmmo: weaponManagerRef.current.getAmmo("shotgun"),
+          });
+        }
+        if (key3 && !prevKey3Ref.current) {
+          weaponManagerRef.current.equip("rocket");
+          gameManager?.updatePlayer(myId, {
+            equippedWeaponId: "rocket",
+            currentAmmo: weaponManagerRef.current.getAmmo("rocket"),
+          });
+        }
+        if (key4 && !prevKey4Ref.current) {
+          weaponManagerRef.current.equip("grenade");
+          gameManager?.updatePlayer(myId, {
+            equippedWeaponId: "grenade",
+            currentAmmo: weaponManagerRef.current.getAmmo("grenade"),
+          });
+        }
+        if (key5 && !prevKey5Ref.current) {
+          weaponManagerRef.current.equip("smg");
+          gameManager?.updatePlayer(myId, {
+            equippedWeaponId: "smg",
+            currentAmmo: weaponManagerRef.current.getAmmo("smg"),
+          });
+        }
+        // R key: reload
+        if (keyR && !prevKeyRRef.current) {
+          const equipped = weaponManagerRef.current.getEquipped();
+          if (equipped) {
+            weaponManagerRef.current.startReload(equipped.id);
+          }
         }
       }
       prevKey1Ref.current = key1;

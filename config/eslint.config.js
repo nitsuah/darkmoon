@@ -70,6 +70,7 @@ export default [
                 AudioContext: 'readonly',
                 EventTarget: 'readonly',
                 NodeJS: 'readonly',
+                WindowEventMap: 'readonly',
             },
         },
         plugins: {

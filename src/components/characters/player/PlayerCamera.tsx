@@ -101,13 +101,14 @@ export const PlayerCamera = React.memo(
         skycamRef.current = false;
       }
 
-      // Joystick camera rotation
+      // Joystick camera rotation — expressed in rad/s so it's frame-rate independent
       if (joystickCamera.x !== 0 || joystickCamera.y !== 0) {
-        const joystickSensitivity = 0.03;
+        const joystickTurnSpeed = 1.5; // rad/s
+        const clampedDelta = Math.min(delta, 0.05);
         cameraRotationRef.current.horizontal -=
-          joystickCamera.x * joystickSensitivity * delta;
+          joystickCamera.x * joystickTurnSpeed * clampedDelta;
         cameraRotationRef.current.vertical +=
-          joystickCamera.y * joystickSensitivity * delta;
+          joystickCamera.y * joystickTurnSpeed * clampedDelta;
       }
 
       // Keyboard camera rotation (A/D keys) - Also rotates character

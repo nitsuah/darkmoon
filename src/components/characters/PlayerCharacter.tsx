@@ -104,8 +104,6 @@ export const PlayerCharacter = React.forwardRef<
     isJumpingRef,
     verticalVelocityRef,
     jumpHoldTimeRef,
-    jetpackThrustSoundRef,
-    lastRCSSoundTimeRef,
   } = physics;
 
   const camera = usePlayerCamera();
@@ -504,23 +502,8 @@ export const PlayerCharacter = React.forwardRef<
         showJetpackFlame={showJetpackFlame}
         setShowJetpackFlame={setShowJetpackFlame}
         jetpackActiveRef={jetpackActiveRef}
-        isJumpingRef={isJumpingRef}
-        verticalVelocityRef={verticalVelocityRef}
         jumpHoldTimeRef={jumpHoldTimeRef}
-        jetpackThrustSoundRef={jetpackThrustSoundRef}
-        lastRCSSoundTimeRef={lastRCSSoundTimeRef}
-        keysPressedRef={keysPressedRef}
-        cameraRotationRef={
-          cameraRotationRef as React.RefObject<{
-            horizontal: number;
-            vertical: number;
-          }>
-        }
         jetpackConstants={PHYSICS_CONSTANTS}
-        isPaused={isPaused}
-        socketClient={socketClient}
-        currentPlayerId={currentPlayerId}
-        gameManager={gameManager}
         setPlayerTaggedRef={React.useRef(() => {})}
       />
     </>

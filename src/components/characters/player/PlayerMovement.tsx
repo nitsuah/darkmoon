@@ -256,8 +256,8 @@ export const PlayerMovement = React.memo(
       const canKeyboardJump =
         keysPressedRef.current[SPACE] && isOnGround && !isJumpingRef.current;
 
-      if (canKeyboardJump || canMobileJump) {
-        if (shouldActivateJetpackFromMobile(mobileDoubleTap)) {
+      if (canMobileJump || canKeyboardJump) {
+        if (canMobileJump && shouldActivateJetpackFromMobile(mobileDoubleTap)) {
           jetpackActiveRef.current = true;
           setShowJetpackFlame(true);
           isJumpingRef.current = true;
@@ -424,9 +424,11 @@ export const PlayerMovement = React.memo(
 
       // Emit position to server
       if (socketClient) {
+        const rotation = meshRef.current.rotation;
         socketClient.emit("move", {
+          id: currentPlayerId,
           position: meshRef.current.position.toArray(),
-          rotation: meshRef.current.rotation.toArray(),
+          rotation: [rotation.x, rotation.y, rotation.z],
         });
       }
 
