@@ -33,6 +33,9 @@ export function shouldActivateJetpackFromMobile(
 /**
  * Create a jetpack hook interface for backward compatibility
  */
-export function useJetpack() {
+export function useJetpack(): {
+  computeJetpackThrust: typeof computeJetpackThrust;
+  shouldActivateJetpackFromMobile: typeof shouldActivateJetpackFromMobile;
+} {
   return { computeJetpackThrust, shouldActivateJetpackFromMobile };
 }

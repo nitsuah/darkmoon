@@ -68,6 +68,16 @@ interface PlayerWeaponProps {
 
 const LASER_BEAM_VISIBLE_MS = 160;
 
+// Scratch objects reused per frame to avoid GC churn in fire/aim loop
+const _fireOrigin = new THREE.Vector3();
+const _raycaster = new THREE.Raycaster();
+const _ndc = new THREE.Vector2();
+const _groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+const _aimTarget = new THREE.Vector3();
+const _fireDir = new THREE.Vector3();
+const _tempVec = new THREE.Vector3();
+const _tempVec2 = new THREE.Vector3();
+
 export const PlayerWeapon = React.memo(
   ({
     meshRef,
@@ -171,32 +181,27 @@ export const PlayerWeapon = React.memo(
 
       // Fire the equipped weapon while left-click is held
       if (mouseControls.leftClick && canActNow) {
-        const fireOrigin = meshRef.current.position
-          .clone()
-          .add(new THREE.Vector3(0, 1, 0));
+        // Reuse scratch objects to avoid per-frame GC churn
+        _fireOrigin.copy(meshRef.current.position);
+        _fireOrigin.y += 1;
 
         // Use R3F state size to avoid division-by-zero from hardcoded size prop
         const w = state.size.width || 1;
         const h = state.size.height || 1;
         const ndcX = (mouseControls.mouseX / w) * 2 - 1;
         const ndcY = -(mouseControls.mouseY / h) * 2 + 1;
-        const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), state.camera);
-        const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-        const aimTarget = new THREE.Vector3();
+        _raycaster.setFromCamera(_ndc.set(ndcX, ndcY), state.camera);
         const hasAimTarget =
-          raycaster.ray.intersectPlane(groundPlane, aimTarget) !== null;
-        const fireDirection = hasAimTarget
-          ? aimTarget.clone().sub(fireOrigin).normalize()
-          : new THREE.Vector3(
-              -Math.sin(cameraHorizontal),
-              0,
-              -Math.cos(cameraHorizontal),
-            );
+          _raycaster.ray.intersectPlane(_groundPlane, _aimTarget) !== null;
+        if (hasAimTarget) {
+          _fireDir.copy(_aimTarget).sub(_fireOrigin).normalize();
+        } else {
+          _fireDir.set(-Math.sin(cameraHorizontal), 0, -Math.cos(cameraHorizontal));
+        }
 
         const fireResult = processFiring({
-          origin: fireOrigin,
-          direction: fireDirection,
+          origin: _fireOrigin,
+          direction: _fireDir,
           shooterId: myId,
           gameManager,
           weaponManager: weaponManagerRef.current,
@@ -236,11 +241,11 @@ export const PlayerWeapon = React.memo(
                     : "#33ffe6";
           laserBeamRef.current.visible = true;
           laserBeamRef.current.position
-            .copy(fireOrigin)
-            .add(fireDirection.clone().multiplyScalar(beamLength / 2));
+            .copy(_fireOrigin)
+            .add(_tempVec.copy(_fireDir).multiplyScalar(beamLength / 2));
           laserBeamRef.current.rotation.y = Math.atan2(
-            fireDirection.x,
-            fireDirection.z,
+            _fireDir.x,
+            _fireDir.z,
           );
           laserBeamRef.current.scale.set(
             beamHalfWidth / 0.04,
@@ -276,7 +281,7 @@ export const PlayerWeapon = React.memo(
           );
           // Muzzle flash
           if (muzzleFlashRef.current) {
-            muzzleFlashRef.current.position.copy(fireOrigin);
+            muzzleFlashRef.current.position.copy(_fireOrigin);
             muzzleFlashRef.current.visible = true;
             muzzleFlashHideAtRef.current = now + 55;
           }
@@ -291,9 +296,9 @@ export const PlayerWeapon = React.memo(
         }
         if (fireResult && fireResult.hit && typeof window !== "undefined") {
           window.dispatchEvent(new window.Event("player-hit-landed"));
-          const hitPos = fireOrigin
-            .clone()
-            .add(fireDirection.clone().multiplyScalar(fireResult.hit.distance));
+          const hitPos = _tempVec
+            .copy(_fireOrigin)
+            .add(_tempVec2.copy(_fireDir).multiplyScalar(fireResult.hit.distance));
           window.dispatchEvent(
             new window.CustomEvent("damage-number", {
               detail: {
