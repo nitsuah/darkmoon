@@ -99,14 +99,14 @@ export const PlayerWeapon = React.memo(
     const myId = socketClient?.id || currentPlayerId;
 
     // Per-instance scratch objects reused per frame to avoid GC churn
-    const _fireOrigin = React.useRef(new THREE.Vector3());
-    const _raycaster = React.useRef(new THREE.Raycaster());
-    const _ndc = React.useRef(new THREE.Vector2());
-    const _groundPlane = React.useRef(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0));
-    const _aimTarget = React.useRef(new THREE.Vector3());
-    const _fireDir = React.useRef(new THREE.Vector3());
-    const _tempVec = React.useRef(new THREE.Vector3());
-    const _tempVec2 = React.useRef(new THREE.Vector3());
+    const _fireOrigin = React.useRef<THREE.Vector3>(new THREE.Vector3());
+    const _raycaster = React.useRef<THREE.Raycaster>(new THREE.Raycaster());
+    const _ndc = React.useRef<THREE.Vector2>(new THREE.Vector2());
+    const _groundPlane = React.useRef<THREE.Plane>(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0));
+    const _aimTarget = React.useRef<THREE.Vector3>(new THREE.Vector3());
+    const _fireDir = React.useRef<THREE.Vector3>(new THREE.Vector3());
+    const _tempVec = React.useRef<THREE.Vector3>(new THREE.Vector3());
+    const _tempVec2 = React.useRef<THREE.Vector3>(new THREE.Vector3());
 
     useFrame((state) => {
       const now = Date.now();
