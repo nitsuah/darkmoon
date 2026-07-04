@@ -98,6 +98,16 @@ export const PlayerWeapon = React.memo(
   }: PlayerWeaponProps) => {
     const myId = socketClient?.id || currentPlayerId;
 
+    // Per-instance scratch objects reused per frame to avoid GC churn
+    const _fireOrigin = React.useRef<THREE.Vector3>(new THREE.Vector3());
+    const _raycaster = React.useRef<THREE.Raycaster>(new THREE.Raycaster());
+    const _ndc = React.useRef<THREE.Vector2>(new THREE.Vector2());
+    const _groundPlane = React.useRef<THREE.Plane>(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0));
+    const _aimTarget = React.useRef<THREE.Vector3>(new THREE.Vector3());
+    const _fireDir = React.useRef<THREE.Vector3>(new THREE.Vector3());
+    const _tempVec = React.useRef<THREE.Vector3>(new THREE.Vector3());
+    const _tempVec2 = React.useRef<THREE.Vector3>(new THREE.Vector3());
+
     useFrame((state) => {
       const now = Date.now();
 
@@ -171,32 +181,27 @@ export const PlayerWeapon = React.memo(
 
       // Fire the equipped weapon while left-click is held
       if (mouseControls.leftClick && canActNow) {
-        const fireOrigin = meshRef.current.position
-          .clone()
-          .add(new THREE.Vector3(0, 1, 0));
+        // Reuse scratch objects to avoid per-frame GC churn
+        _fireOrigin.current.copy(meshRef.current.position);
+        _fireOrigin.current.y += 1;
 
         // Use R3F state size to avoid division-by-zero from hardcoded size prop
         const w = state.size.width || 1;
         const h = state.size.height || 1;
         const ndcX = (mouseControls.mouseX / w) * 2 - 1;
         const ndcY = -(mouseControls.mouseY / h) * 2 + 1;
-        const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), state.camera);
-        const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-        const aimTarget = new THREE.Vector3();
+        _raycaster.current.setFromCamera(_ndc.current.set(ndcX, ndcY), state.camera);
         const hasAimTarget =
-          raycaster.ray.intersectPlane(groundPlane, aimTarget) !== null;
-        const fireDirection = hasAimTarget
-          ? aimTarget.clone().sub(fireOrigin).normalize()
-          : new THREE.Vector3(
-              -Math.sin(cameraHorizontal),
-              0,
-              -Math.cos(cameraHorizontal),
-            );
+          _raycaster.current.ray.intersectPlane(_groundPlane.current, _aimTarget.current) !== null;
+        if (hasAimTarget) {
+          _fireDir.current.copy(_aimTarget.current).sub(_fireOrigin.current).normalize();
+        } else {
+          _fireDir.current.set(-Math.sin(cameraHorizontal), 0, -Math.cos(cameraHorizontal));
+        }
 
         const fireResult = processFiring({
-          origin: fireOrigin,
-          direction: fireDirection,
+          origin: _fireOrigin.current,
+          direction: _fireDir.current,
           shooterId: myId,
           gameManager,
           weaponManager: weaponManagerRef.current,
@@ -236,11 +241,11 @@ export const PlayerWeapon = React.memo(
                     : "#33ffe6";
           laserBeamRef.current.visible = true;
           laserBeamRef.current.position
-            .copy(fireOrigin)
-            .add(fireDirection.clone().multiplyScalar(beamLength / 2));
+            .copy(_fireOrigin.current)
+            .add(_tempVec.current.copy(_fireDir.current).multiplyScalar(beamLength / 2));
           laserBeamRef.current.rotation.y = Math.atan2(
-            fireDirection.x,
-            fireDirection.z,
+            _fireDir.current.x,
+            _fireDir.current.z,
           );
           laserBeamRef.current.scale.set(
             beamHalfWidth / 0.04,
@@ -276,7 +281,7 @@ export const PlayerWeapon = React.memo(
           );
           // Muzzle flash
           if (muzzleFlashRef.current) {
-            muzzleFlashRef.current.position.copy(fireOrigin);
+            muzzleFlashRef.current.position.copy(_fireOrigin.current);
             muzzleFlashRef.current.visible = true;
             muzzleFlashHideAtRef.current = now + 55;
           }
@@ -291,9 +296,9 @@ export const PlayerWeapon = React.memo(
         }
         if (fireResult && fireResult.hit && typeof window !== "undefined") {
           window.dispatchEvent(new window.Event("player-hit-landed"));
-          const hitPos = fireOrigin
-            .clone()
-            .add(fireDirection.clone().multiplyScalar(fireResult.hit.distance));
+          const hitPos = _tempVec.current
+            .copy(_fireOrigin.current)
+            .add(_tempVec2.current.copy(_fireDir.current).multiplyScalar(fireResult.hit.distance));
           window.dispatchEvent(
             new window.CustomEvent("damage-number", {
               detail: {
