@@ -165,7 +165,7 @@ describe("ErrorBoundary Component", () => {
       );
 
       const container = screen.getByText("Something went wrong").parentElement;
-      expect(container).toHaveStyle({ height: "100vh" });
+      expect(container?.style.height).toBe("100vh");
     });
 
     it("should center error content", () => {

@@ -83,11 +83,9 @@ describe("PauseMenu Component", () => {
       );
 
       const overlay = container.firstChild as HTMLElement;
-      expect(overlay).toHaveStyle({
-        position: "fixed",
-        width: "100vw",
-        height: "100vh",
-      });
+      expect(overlay.style.position).toBe("fixed");
+      expect(overlay.style.width).toBe("100vw");
+      expect(overlay.style.height).toBe("100vh");
     });
   });
 
