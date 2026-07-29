@@ -394,8 +394,8 @@ const Bots: React.FC<
         const deviatedDirZ = dirX * sin + dirZ * cos;
 
         // Aim tracer at the deviated point at the same distance.
-        tracerToX = botPos[0] + deviatedDirX;
-        tracerToZ = botPos[2] + deviatedDirZ;
+        tracerToX = botPos[0] + deviatedDirX; // codeql-ignore[js/insecure-randomness] - game simulation, not security-sensitive
+        tracerToZ = botPos[2] + deviatedDirZ; // codeql-ignore[js/insecure-randomness] - game simulation, not security-sensitive
 
         // A shot hits only if the deviation stays within ≈ half a player width (0.5 world units).
         const deviationAtTarget = Math.abs(Math.sin(spreadAngle)) * dist;
