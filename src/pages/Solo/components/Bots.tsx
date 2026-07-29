@@ -384,6 +384,7 @@ const Bots: React.FC<
         // Convert miss probability to a max angular deviation (radians).
         // A miss chance of 0 → 0 rad spread, 1 → ~25° spread.
         const maxSpreadRad = effectiveMiss * 0.44; // 0.44 rad ≈ 25°
+        // codeql[js/insecure-randomness] - gameplay spread angle, not security-sensitive
         const spreadAngle = (Math.random() - 0.5) * 2 * maxSpreadRad;
 
         const dirX = targetPos2[0] - botPos[0];
@@ -394,8 +395,8 @@ const Bots: React.FC<
         const deviatedDirZ = dirX * sin + dirZ * cos;
 
         // Aim tracer at the deviated point at the same distance.
-        tracerToX = botPos[0] + deviatedDirX; // codeql-ignore[js/insecure-randomness] - game simulation, not security-sensitive
-        tracerToZ = botPos[2] + deviatedDirZ; // codeql-ignore[js/insecure-randomness] - game simulation, not security-sensitive
+        tracerToX = botPos[0] + deviatedDirX;
+        tracerToZ = botPos[2] + deviatedDirZ;
 
         // A shot hits only if the deviation stays within ≈ half a player width (0.5 world units).
         const deviationAtTarget = Math.abs(Math.sin(spreadAngle)) * dist;
