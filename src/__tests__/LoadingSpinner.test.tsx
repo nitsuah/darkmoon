@@ -37,7 +37,7 @@ describe("LoadingSpinner Component", () => {
     it("should take full viewport height", () => {
       render(<LoadingSpinner />);
       const wrapper = screen.getByText("Loading DARKMOON...").parentElement;
-      expect(wrapper).toHaveStyle({ height: "100vh" });
+      expect(wrapper?.style.height).toBe("100vh");
     });
 
     it("should take full width", () => {
