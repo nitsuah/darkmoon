@@ -384,8 +384,10 @@ const Bots: React.FC<
         // Convert miss probability to a max angular deviation (radians).
         // A miss chance of 0 → 0 rad spread, 1 → ~25° spread.
         const maxSpreadRad = effectiveMiss * 0.44; // 0.44 rad ≈ 25°
-        // codeql[js/insecure-randomness] - gameplay spread angle, not security-sensitive
-        const spreadAngle = (Math.random() - 0.5) * 2 * maxSpreadRad;
+        const spreadAngle =
+          (crypto.getRandomValues(new Uint32Array(1))[0] / 0x100000000 - 0.5) *
+          2 *
+          maxSpreadRad;
 
         const dirX = targetPos2[0] - botPos[0];
         const dirZ = targetPos2[2] - botPos[2];

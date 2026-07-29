@@ -68,6 +68,7 @@ export default [
                 OscillatorNode: 'readonly',
                 GainNode: 'readonly',
                 AudioContext: 'readonly',
+                crypto: 'readonly',
                 EventTarget: 'readonly',
                 NodeJS: 'readonly',
                 WindowEventMap: 'readonly',
