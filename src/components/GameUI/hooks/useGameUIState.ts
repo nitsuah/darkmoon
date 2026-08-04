@@ -107,15 +107,20 @@ export function useDamageFlash(health: number | undefined) {
 export function useHitMarker() {
   const [hitMarker, setHitMarker] = React.useState(false);
   const [hitRingKey, setHitRingKey] = React.useState(0);
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   React.useEffect(() => {
     const handle = () => {
       setHitMarker(true);
       setHitRingKey((k) => k + 1);
-      setTimeout(() => setHitMarker(false), 300);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => setHitMarker(false), 300);
     };
     window.addEventListener("player-hit-landed", handle);
-    return () => window.removeEventListener("player-hit-landed", handle);
+    return () => {
+      window.removeEventListener("player-hit-landed", handle);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
 
   return { hitMarker, hitRingKey };
@@ -143,7 +148,8 @@ export function useGalleryHighScore(
   const [galleryHighScore, setGalleryHighScore] = React.useState<number>(() => {
     try {
       return parseInt(localStorage.getItem(GALLERY_HS_KEY) ?? "0", 10) || 0;
-    } catch {
+    } catch (err) {
+      console.warn("[darkmoon] Failed to read gallery high score:", err);
       return 0;
     }
   });
@@ -168,8 +174,8 @@ export function useGalleryHighScore(
           setGalleryHighScore(score);
           setIsNewRecord(true);
         }
-      } catch {
-        // localStorage unavailable
+      } catch (err) {
+        console.warn("[darkmoon] Failed to write gallery high score:", err);
       }
     }
   }, [gameState.isActive, gameState.mode, gameState.gameResults]);
@@ -179,14 +185,19 @@ export function useGalleryHighScore(
 
 export function useBonusRound() {
   const [bonusRoundVisible, setBonusRoundVisible] = React.useState(false);
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   React.useEffect(() => {
     const onBonus = () => {
       setBonusRoundVisible(true);
-      setTimeout(() => setBonusRoundVisible(false), 3000);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => setBonusRoundVisible(false), 3000);
     };
     window.addEventListener("gallery-bonus-round", onBonus);
-    return () => window.removeEventListener("gallery-bonus-round", onBonus);
+    return () => {
+      window.removeEventListener("gallery-bonus-round", onBonus);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
 
   return bonusRoundVisible;
@@ -230,7 +241,13 @@ export function useCrosshairSpread() {
       }, 50);
     };
     window.addEventListener("weapon-fired", onFired);
-    return () => window.removeEventListener("weapon-fired", onFired);
+    return () => {
+      window.removeEventListener("weapon-fired", onFired);
+      if (decayRef.current) {
+        clearInterval(decayRef.current);
+        decayRef.current = null;
+      }
+    };
   }, []);
 
   return crosshairSpread;
@@ -267,6 +284,11 @@ export function usePickupToast() {
     let timer: ReturnType<typeof setTimeout>;
     const onWeapon = (e: unknown) => {
       const { weaponId } = (e as { detail: { weaponId: string } }).detail;
+      if (!WEAPONS[weaponId]) {
+        console.warn(
+          `[darkmoon] Unknown weapon ID in pickup event: "${weaponId}"`,
+        );
+      }
       const name = WEAPONS[weaponId]?.name ?? weaponId;
       setPickupToast(`PICKED UP ${name.toUpperCase()}`);
       clearTimeout(timer);
@@ -307,6 +329,11 @@ export function useKillAnnouncement(
     if (key === lastKeyRef.current) return undefined;
     lastKeyRef.current = key;
     if (latest.killerId !== currentPlayerId) return undefined;
+    if (!WEAPONS[latest.weaponId]) {
+      console.warn(
+        `[darkmoon] Unknown weapon ID in kill feed: "${latest.weaponId}"`,
+      );
+    }
     const weaponLabel = WEAPONS[latest.weaponId]?.name ?? latest.weaponId;
     setKillAnnouncement(`${latest.targetName} [${weaponLabel}]`);
     const t = setTimeout(() => setKillAnnouncement(null), 2000);

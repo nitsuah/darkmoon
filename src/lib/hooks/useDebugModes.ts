@@ -1,4 +1,4 @@
-import { useEffect, MutableRefObject } from "react";
+import { useEffect, useRef, MutableRefObject } from "react";
 import GameManager, { GameState, Player } from "../../components/GameManager";
 import { createTagLogger } from "../utils/logger";
 import type { Notification } from "./useNotifications";
@@ -33,6 +33,8 @@ export function useBotDebugMode({
   addNotification,
   debugRestartTimeoutRef,
 }: BotDebugDeps) {
+  const initTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Auto-restart when game ends in debug mode
   useEffect(() => {
     if (botDebugMode && !gameState.isActive && gameState.mode !== "none") {
@@ -74,7 +76,7 @@ export function useBotDebugMode({
       tagDebug("🤖 Bot2 added to game (debug mode)");
 
       if (!gameState.isActive) {
-        setTimeout(() => {
+        initTimerRef.current = setTimeout(() => {
           if (!gameManagerRef.current) return;
           gameManagerRef.current.startTagGame();
           const state = gameManagerRef.current.getGameState();
@@ -99,11 +101,21 @@ export function useBotDebugMode({
         }, 500);
       }
     } else {
+      if (initTimerRef.current) {
+        clearTimeout(initTimerRef.current);
+        initTimerRef.current = null;
+      }
       mgr.removePlayer("bot-2");
       tagDebug("🤖 Bot2 removed from game");
     }
+    return () => {
+      if (initTimerRef.current) {
+        clearTimeout(initTimerRef.current);
+        initTimerRef.current = null;
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [botDebugMode]);
+  }, [botDebugMode, gameState.isActive]);
 }
 
 interface GalleryDebugDeps {
