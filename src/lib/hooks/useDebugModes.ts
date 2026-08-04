@@ -2,11 +2,11 @@ import { useEffect, useRef, MutableRefObject } from "react";
 import GameManager, { GameState, Player } from "../../components/GameManager";
 import { createTagLogger } from "../utils/logger";
 import type { Notification } from "./useNotifications";
+import { ZERO_ROTATION } from "../constants/botConfigs";
 
 type AddNotification = (msg: string, type?: Notification["type"]) => void;
 
-const tagDebug = createTagLogger("Solo");
-const ZERO_ROTATION: [number, number, number] = [0, 0, 0];
+const tagDebug = createTagLogger("DebugModes");
 
 interface BotDebugDeps {
   botDebugMode: boolean;
@@ -181,6 +181,11 @@ export function useAutoRestart({
   setAutoRestartSecondsLeft,
   onRestart,
 }: AutoRestartDeps) {
+  const onRestartRef = useRef(onRestart);
+  useEffect(() => {
+    onRestartRef.current = onRestart;
+  }, [onRestart]);
+
   useEffect(() => {
     const isCombat =
       gameState.mode === "deathmatch" || gameState.mode === "ctf";
@@ -200,7 +205,7 @@ export function useAutoRestart({
           clearInterval(autoRestartIntervalRef.current!);
           autoRestartIntervalRef.current = null;
           setAutoRestartSecondsLeft(null);
-          onRestart(gameState.mode);
+          onRestartRef.current(gameState.mode);
         }
       }, 1000);
     } else {

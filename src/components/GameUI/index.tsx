@@ -79,13 +79,11 @@ const GameUI: React.FC<GameUIProps> = ({
   const showScoreboard = useScoreboard();
   const pickupToast = usePickupToast();
   const killAnnouncement = useKillAnnouncement(
-    gameState.killFeed as KillEvent[] | undefined,
+    gameState.killFeed,
     currentPlayerId,
   );
 
-  const recentKills: KillEvent[] = (
-    (gameState.killFeed as KillEvent[] | undefined) ?? []
-  ).slice(-5);
+  const recentKills: KillEvent[] = (gameState.killFeed ?? []).slice(-5);
 
   const tensionWarning: string | null = (() => {
     if (
@@ -115,18 +113,13 @@ const GameUI: React.FC<GameUIProps> = ({
 
   const isSpawnProtected = currentPlayer?.spawnProtectedUntil !== undefined;
 
-  const criticalHealth =
-    currentPlayer !== undefined &&
-    currentPlayer.health !== undefined &&
-    currentPlayer.health < 30 &&
-    currentPlayer.respawnAt === undefined &&
-    (gameState.mode === "deathmatch" || gameState.mode === "ctf") &&
-    gameState.isActive;
-
   const isCombat = COMBAT_MODES.has(gameState.mode);
   const showCrosshair = isCombat && respawnSecondsLeft === null && !isMinimal;
   const showBottomHUD =
-    isCombat && !isMinimal && currentPlayer && respawnSecondsLeft === null;
+    isCombat &&
+    !isMinimal &&
+    Boolean(currentPlayer) &&
+    respawnSecondsLeft === null;
   const showMinimap =
     (gameState.mode === "deathmatch" ||
       gameState.mode === "ctf" ||
@@ -138,10 +131,8 @@ const GameUI: React.FC<GameUIProps> = ({
     return (
       <>
         <style>{`
-          @keyframes darkmoon-damage-flash { from { opacity: 1; } to { opacity: 0; } }
           @keyframes criticalPulse { from { opacity: 0.5; } to { opacity: 1; } }
           @keyframes hitRingExpand { from { width: 4px; height: 4px; opacity: 1; } to { width: 44px; height: 44px; opacity: 0; } }
-          @keyframes bonusRoundPop { from { transform: translateX(-50%) scale(0.4); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
         `}</style>
 
         <DamageFlash active={damageFlash} />
@@ -151,7 +142,6 @@ const GameUI: React.FC<GameUIProps> = ({
 
         {showScoreboard && !isMinimal && (
           <ScoreBoard
-            show={showScoreboard}
             gameState={gameState}
             players={players}
             currentPlayerId={currentPlayerId}
@@ -196,14 +186,14 @@ const GameUI: React.FC<GameUIProps> = ({
           />
         )}
 
-        {showBottomHUD && currentPlayer && (
-          <BottomHUD currentPlayer={currentPlayer} mode={gameState.mode} />
+        {showBottomHUD && (
+          <BottomHUD currentPlayer={currentPlayer!} mode={gameState.mode} />
         )}
 
         <DeathScreen
           respawnSecondsLeft={respawnSecondsLeft}
           isMinimal={isMinimal}
-          killFeed={gameState.killFeed as KillEvent[] | undefined}
+          killFeed={gameState.killFeed}
           currentPlayerId={currentPlayerId}
           mode={gameState.mode}
         />
@@ -289,57 +279,18 @@ const GameUI: React.FC<GameUIProps> = ({
     );
   }
 
-  // Lobby / critical health vignette
+  // Lobby
   return (
-    <>
-      <style>{`
-        @keyframes criticalPulse { from { opacity: 0.5; } to { opacity: 1; } }
-        @keyframes hitRingExpand { from { width: 4px; height: 4px; opacity: 1; } to { width: 44px; height: 44px; opacity: 0; } }
-        .reticle::before, .reticle::after { content: ""; position: absolute; background: rgba(255,255,255,0.85); }
-        .reticle::before { width: 14px; height: 2px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        .reticle::after { width: 2px; height: 14px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-      `}</style>
-
-      {criticalHealth && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            pointerEvents: "none",
-            zIndex: 999,
-            boxShadow: "inset 0 0 120px 40px rgba(220,0,0,0.55)",
-            animation: "criticalPulse 0.8s ease-in-out infinite alternate",
-          }}
-        />
-      )}
-
-      {gameState.isActive && !isMobile && (
-        <div
-          className="reticle"
-          style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            width: "20px",
-            height: "20px",
-            transform: "translate(-50%, -50%)",
-            pointerEvents: "none",
-            zIndex: 1001,
-          }}
-        />
-      )}
-
-      <GameLobbyPanel
-        players={players}
-        isMinimal={isMinimal}
-        isMobile={isMobile}
-        botDebugMode={botDebugMode}
-        galleryDebugMode={galleryDebugMode}
-        onStartGame={onStartGame}
-        onToggleDebug={onToggleDebug}
-        onToggleGalleryDebug={onToggleGalleryDebug}
-      />
-    </>
+    <GameLobbyPanel
+      players={players}
+      isMinimal={isMinimal}
+      isMobile={isMobile}
+      botDebugMode={botDebugMode}
+      galleryDebugMode={galleryDebugMode}
+      onStartGame={onStartGame}
+      onToggleDebug={onToggleDebug}
+      onToggleGalleryDebug={onToggleGalleryDebug}
+    />
   );
 };
 

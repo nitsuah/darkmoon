@@ -2,10 +2,9 @@ import { useCallback, MutableRefObject } from "react";
 import GameManager from "../../components/GameManager";
 import type { Clients } from "../../types/socket";
 import type { Notification } from "./useNotifications";
+import { ZERO_ROTATION } from "../constants/botConfigs";
 
 type AddNotification = (msg: string, type?: Notification["type"]) => void;
-
-const ZERO_ROTATION: [number, number, number] = [0, 0, 0];
 
 interface Deps {
   gameManagerRef: MutableRefObject<GameManager | null>;

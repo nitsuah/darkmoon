@@ -6,6 +6,8 @@
 
 import type { BotConfig } from "../../components/characters/useBotAI";
 
+export const ZERO_ROTATION: [number, number, number] = [0, 0, 0];
+
 /**
  * Bot 1 Configuration - Aggressive SMG rusher
  * Fast bot that gets in close and sprays the SMG

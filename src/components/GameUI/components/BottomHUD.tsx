@@ -95,7 +95,7 @@ const BottomHUD: React.FC<Props> = ({ currentPlayer, mode }) => {
 
       {wId && wDef && (
         <>
-          <span style={{ color: wColor }}>{wDef.name ?? wId}</span>
+          <span style={{ color: wColor }}>{wDef.name}</span>
           {isReloading ? (
             <span style={{ color: "#ffcc00", letterSpacing: "1px" }}>
               {" RELOADING "}

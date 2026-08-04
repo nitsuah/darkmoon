@@ -2,20 +2,16 @@ import * as React from "react";
 import { GameState, Player } from "../../GameManager";
 
 interface Props {
-  show: boolean;
   gameState: GameState;
   players: Map<string, Player>;
   currentPlayerId: string;
 }
 
 const ScoreBoard: React.FC<Props> = ({
-  show,
   gameState,
   players,
   currentPlayerId,
 }) => {
-  if (!show) return null;
-
   const scoreLabel =
     gameState.mode === "ctf"
       ? "caps"
