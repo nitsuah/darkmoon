@@ -1,8 +1,8 @@
 import { useEffect, useRef, MutableRefObject } from "react";
 import GameManager, {
-  GameMode,
   GameState,
   Player,
+  StartableMode,
 } from "../../components/GameManager";
 import { createTagLogger } from "../utils/logger";
 import type { AddNotification } from "./useNotifications";
@@ -34,7 +34,7 @@ export function useBotDebugMode({
   syncGameState,
   addNotification,
   debugRestartTimeoutRef,
-}: BotDebugDeps) {
+}: BotDebugDeps): void {
   const initTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Auto-restart when game ends in debug mode
@@ -167,7 +167,7 @@ interface AutoRestartDeps {
     typeof setInterval
   > | null>;
   setAutoRestartSecondsLeft: (n: number | null) => void;
-  onRestart: (mode: GameMode) => void;
+  onRestart: (mode: StartableMode) => void;
 }
 
 export function useAutoRestart({
@@ -175,7 +175,7 @@ export function useAutoRestart({
   autoRestartIntervalRef,
   setAutoRestartSecondsLeft,
   onRestart,
-}: AutoRestartDeps) {
+}: AutoRestartDeps): void {
   const onRestartRef = useRef(onRestart);
   useEffect(() => {
     onRestartRef.current = onRestart;
@@ -200,7 +200,7 @@ export function useAutoRestart({
           clearInterval(autoRestartIntervalRef.current!);
           autoRestartIntervalRef.current = null;
           setAutoRestartSecondsLeft(null);
-          onRestartRef.current(gameState.mode);
+          onRestartRef.current(gameState.mode as StartableMode);
         }
       }, 1000);
     } else {

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { GameMode, GameState, KillEvent, Player } from "../GameManager";
+import { GameState, KillEvent, Player, StartableMode } from "../GameManager";
 
 import {
   useViewport,
@@ -38,7 +38,7 @@ interface GameUIProps {
   gameState: GameState;
   players: Map<string, Player>;
   currentPlayerId: string;
-  onStartGame: (mode: GameMode) => void;
+  onStartGame: (mode: StartableMode) => void;
   onEndGame: () => void;
   botDebugMode?: boolean;
   onToggleDebug?: () => void;
@@ -294,7 +294,7 @@ const GameUI: React.FC<GameUIProps> = ({
         autoRestartSecondsLeft={autoRestartSecondsLeft}
         galleryHighScore={galleryHighScore}
         isNewRecord={isNewRecord}
-        onPlayAgain={() => onStartGame(gameState.mode)}
+        onPlayAgain={() => onStartGame(gameState.mode as StartableMode)}
         onMainMenu={onEndGame}
       />
     );

@@ -1,8 +1,8 @@
 import { useCallback, MutableRefObject } from "react";
 import GameManager, {
-  GameMode,
   GameState,
   Player,
+  StartableMode,
 } from "../../components/GameManager";
 import type { BotConfig } from "../../components/characters/useBotAI";
 import type { AddNotification } from "./useNotifications";
@@ -43,7 +43,7 @@ export function useGameStart({
   BOT4_CONFIG,
 }: Deps) {
   return useCallback(
-    (mode: GameMode) => {
+    (mode: StartableMode) => {
       const mgr = gameManagerRef.current;
       if (!mgr) return;
 

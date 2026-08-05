@@ -10,7 +10,7 @@ import ChatBox from "../../../components/ChatBox";
 import { Notification } from "../../../components/21st.dev/Notification";
 import type { ChatMessage } from "../../../lib/hooks/useChatMessages";
 import type {
-  GameMode,
+  StartableMode,
   GameState,
   Player,
 } from "../../../components/GameManager";
@@ -28,7 +28,7 @@ interface SoloHUDProps {
   gameState: GameState;
   players: Map<string, Player>;
   currentPlayerId: string;
-  onStartGame: (mode: GameMode) => void;
+  onStartGame: (mode: StartableMode) => void;
   onEndGame: () => void;
   botDebugMode: boolean;
   onToggleDebug: () => void;

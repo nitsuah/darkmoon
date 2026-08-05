@@ -341,7 +341,7 @@ export function useKillAnnouncement(
     const feed = killFeed ?? [];
     if (feed.length === 0) return;
     const latest = feed[feed.length - 1];
-    const key = `${latest.killerId}-${latest.timestamp}`;
+    const key = `${latest.killerId}-${latest.targetId}-${latest.timestamp}`;
     if (key === lastKeyRef.current) return;
     lastKeyRef.current = key;
     if (latest.killerId !== currentPlayerId) return;

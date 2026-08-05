@@ -1,5 +1,5 @@
 import * as React from "react";
-import { GameMode, Player } from "../../GameManager";
+import { Player, StartableMode } from "../../GameManager";
 
 interface Props {
   players: Map<string, Player>;
@@ -7,7 +7,7 @@ interface Props {
   isMobile: boolean;
   botDebugMode: boolean;
   galleryDebugMode: boolean;
-  onStartGame: (mode: GameMode) => void;
+  onStartGame: (mode: StartableMode) => void;
   onToggleDebug?: () => void;
   onToggleGalleryDebug?: () => void;
 }
@@ -100,7 +100,7 @@ const GameLobbyPanel: React.FC<Props> = ({
           </button>
 
           <button
-            onClick={() => onStartGame(players.size <= 1 ? "solo" : "tag")}
+            onClick={() => onStartGame("tag")}
             style={{
               ...btnBase,
               backgroundColor: "rgba(74, 144, 226, 0.8)",

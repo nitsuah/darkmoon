@@ -30,6 +30,8 @@ export type GameMode =
   | "solo"
   | "shooting_gallery";
 
+export type StartableMode = "tag" | "deathmatch" | "ctf" | "shooting_gallery";
+
 export interface GameState {
   mode: GameMode;
   isActive: boolean;
@@ -158,14 +160,15 @@ export class GameManager {
 
   setItPlayer(playerId: string): void {
     if (this.gameState.mode !== "tag") return;
+    const newIt = this.players.get(playerId);
+    if (!newIt) return;
     const prevItId = this.gameState.itPlayerId;
     if (prevItId) {
       const prev = this.players.get(prevItId);
       if (prev) prev.isIt = false;
     }
     this.gameState.itPlayerId = playerId;
-    const newIt = this.players.get(playerId);
-    if (newIt) newIt.isIt = true;
+    newIt.isIt = true;
     this.callbacks.onPlayerUpdate?.(this.players);
     this.callbacks.onGameStateUpdate?.(this.gameState);
   }
