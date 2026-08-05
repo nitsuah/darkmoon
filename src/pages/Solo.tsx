@@ -434,6 +434,7 @@ const Solo: React.FC = () => {
       }
       if (wasMode === "deathmatch" || wasMode === "ctf") {
         gameManager.current.removePlayer("bot-3");
+        gameManager.current.removePlayer("bot-4");
       }
     }
     syncGameState();
@@ -528,7 +529,11 @@ const Solo: React.FC = () => {
         setQuality={setQuality}
         isPaused={isPaused}
         onResume={() => setIsPaused(false)}
-        onRestart={() => window.location.reload()}
+        onRestart={() => {
+          const mode = gameManager.current?.getGameState().mode;
+          handleEndGame();
+          if (mode && mode !== "none") handleStartGame(mode);
+        }}
         onQuit={() => navigate("/")}
         chatVisible={chatVisible}
         setChatVisible={setChatVisible}

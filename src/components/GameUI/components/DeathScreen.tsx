@@ -1,12 +1,12 @@
 import * as React from "react";
-import { KillEvent } from "../../GameManager";
+import { GameMode, KillEvent } from "../../GameManager";
 
 interface Props {
   respawnSecondsLeft: number | null;
   isMinimal: boolean;
   killFeed: KillEvent[] | undefined;
   currentPlayerId: string;
-  mode: string;
+  mode: GameMode;
 }
 
 const DeathScreen: React.FC<Props> = ({

@@ -156,6 +156,20 @@ export class GameManager {
     }
   }
 
+  setItPlayer(playerId: string): void {
+    if (this.gameState.mode !== "tag") return;
+    const prevItId = this.gameState.itPlayerId;
+    if (prevItId) {
+      const prev = this.players.get(prevItId);
+      if (prev) prev.isIt = false;
+    }
+    this.gameState.itPlayerId = playerId;
+    const newIt = this.players.get(playerId);
+    if (newIt) newIt.isIt = true;
+    this.callbacks.onPlayerUpdate?.(this.players);
+    this.callbacks.onGameStateUpdate?.(this.gameState);
+  }
+
   /**
    * Per-frame position sync that skips update callbacks so 60fps movement
    * doesn't re-render React consumers. Positions are read on demand

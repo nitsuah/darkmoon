@@ -15,7 +15,7 @@ const ScoreBoard: React.FC<Props> = ({
   const scoreLabel =
     gameState.mode === "ctf"
       ? "caps"
-      : gameState.mode === "tag"
+      : gameState.mode === "tag" || gameState.mode === "shooting_gallery"
         ? "pts"
         : "kills";
 

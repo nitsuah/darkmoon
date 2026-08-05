@@ -1,10 +1,12 @@
 import { useEffect, useRef, MutableRefObject } from "react";
-import GameManager, { GameState, Player } from "../../components/GameManager";
+import GameManager, {
+  GameMode,
+  GameState,
+  Player,
+} from "../../components/GameManager";
 import { createTagLogger } from "../utils/logger";
-import type { Notification } from "./useNotifications";
+import type { AddNotification } from "./useNotifications";
 import { ZERO_ROTATION } from "../constants/botConfigs";
-
-type AddNotification = (msg: string, type?: Notification["type"]) => void;
 
 const tagDebug = createTagLogger("DebugModes");
 
@@ -83,19 +85,12 @@ export function useBotDebugMode({
 
           // Force a bot to be IT in debug mode (never the player)
           if (state.itPlayerId === currentPlayerId) {
-            state.itPlayerId = "bot-1";
-            (gameManagerRef.current as unknown as Record<string, unknown>)[
-              "gameState"
-            ] = state;
-            gameManagerRef.current.updatePlayer(currentPlayerId, {
-              isIt: false,
-            });
-            gameManagerRef.current.updatePlayer("bot-1", { isIt: true });
+            gameManagerRef.current.setItPlayer("bot-1");
             setPlayerIsIt(false);
             tagDebug("🎮 Forced bot-1 to be IT (debug mode)");
           }
 
-          setGameState(state);
+          setGameState(gameManagerRef.current.getGameState());
           addNotification("Debug mode: Bot tag game started!", "info");
           tagDebug("🎮 Auto-started tag game for debug mode");
         }, 500);
@@ -172,7 +167,7 @@ interface AutoRestartDeps {
     typeof setInterval
   > | null>;
   setAutoRestartSecondsLeft: (n: number | null) => void;
-  onRestart: (mode: string) => void;
+  onRestart: (mode: GameMode) => void;
 }
 
 export function useAutoRestart({

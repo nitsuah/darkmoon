@@ -4,7 +4,11 @@ import { WEAPONS } from "../../combat/WeaponManager";
 
 const GALLERY_HS_KEY = "darkmoon_gallery_highscore";
 
-export function useViewport() {
+export function useViewport(): {
+  isMobile: boolean;
+  isLandscape: boolean;
+  isMinimal: boolean;
+} {
   const [isMobile, setIsMobile] = React.useState(window.innerWidth <= 768);
   const [isLandscape, setIsLandscape] = React.useState(
     window.innerWidth > window.innerHeight,
@@ -85,7 +89,7 @@ export function useHitDirection() {
   return hitAngle;
 }
 
-export function useDamageFlash(health: number | undefined) {
+export function useDamageFlash(health: number | undefined): boolean {
   const prevRef = React.useRef<number | null>(null);
   const [damageFlash, setDamageFlash] = React.useState(false);
 
@@ -97,6 +101,7 @@ export function useDamageFlash(health: number | undefined) {
       prevRef.current = hp;
       return () => clearTimeout(t);
     }
+    setDamageFlash(false);
     prevRef.current = hp;
     return undefined;
   }, [health]);
@@ -104,7 +109,7 @@ export function useDamageFlash(health: number | undefined) {
   return damageFlash;
 }
 
-export function useHitMarker() {
+export function useHitMarker(): { hitMarker: boolean; hitRingKey: number } {
   const [hitMarker, setHitMarker] = React.useState(false);
   const [hitRingKey, setHitRingKey] = React.useState(0);
   const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -126,7 +131,7 @@ export function useHitMarker() {
   return { hitMarker, hitRingKey };
 }
 
-export function useMousePosition() {
+export function useMousePosition(): { x: number; y: number } {
   const [mousePos, setMousePos] = React.useState({
     x: typeof window !== "undefined" ? window.innerWidth / 2 : 0,
     y: typeof window !== "undefined" ? window.innerHeight / 2 : 0,
@@ -144,7 +149,7 @@ export function useMousePosition() {
 
 export function useGalleryHighScore(
   gameState: Pick<GameState, "isActive" | "mode" | "gameResults">,
-) {
+): { galleryHighScore: number; isNewRecord: boolean } {
   const [galleryHighScore, setGalleryHighScore] = React.useState<number>(() => {
     try {
       return parseInt(localStorage.getItem(GALLERY_HS_KEY) ?? "0", 10) || 0;
@@ -203,7 +208,10 @@ export function useBonusRound() {
   return bonusRoundVisible;
 }
 
-export function useGalleryCombo() {
+export function useGalleryCombo(): {
+  galleryCombo: number;
+  galleryMultiplier: number;
+} {
   const [galleryCombo, setGalleryCombo] = React.useState(0);
   const [galleryMultiplier, setGalleryMultiplier] = React.useState(1);
 
@@ -220,7 +228,7 @@ export function useGalleryCombo() {
   return { galleryCombo, galleryMultiplier };
 }
 
-export function useCrosshairSpread() {
+export function useCrosshairSpread(): number {
   const [crosshairSpread, setCrosshairSpread] = React.useState(0);
   const decayRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -231,13 +239,7 @@ export function useCrosshairSpread() {
       setCrosshairSpread((prev) => Math.min(prev + addSpread, 24));
       if (decayRef.current) clearInterval(decayRef.current);
       decayRef.current = setInterval(() => {
-        setCrosshairSpread((prev) => {
-          if (prev <= 0) {
-            if (decayRef.current) clearInterval(decayRef.current);
-            return 0;
-          }
-          return prev - 2;
-        });
+        setCrosshairSpread((prev) => Math.max(0, prev - 2));
       }, 50);
     };
     window.addEventListener("weapon-fired", onFired);
@@ -250,13 +252,24 @@ export function useCrosshairSpread() {
     };
   }, []);
 
+  React.useEffect(() => {
+    if (crosshairSpread <= 0 && decayRef.current) {
+      clearInterval(decayRef.current);
+      decayRef.current = null;
+    }
+  }, [crosshairSpread]);
+
   return crosshairSpread;
 }
 
-export function useScoreboard() {
+export function useScoreboard(enabled: boolean): boolean {
   const [showScoreboard, setShowScoreboard] = React.useState(false);
 
   React.useEffect(() => {
+    if (!enabled) {
+      setShowScoreboard(false);
+      return;
+    }
     const down = (e: KeyboardEvent) => {
       if (e.code === "Tab") {
         e.preventDefault();
@@ -272,7 +285,7 @@ export function useScoreboard() {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
     };
-  }, []);
+  }, [enabled]);
 
   return showScoreboard;
 }
@@ -315,8 +328,11 @@ export function usePickupToast() {
 export function useKillAnnouncement(
   killFeed: GameState["killFeed"],
   currentPlayerId: string,
-) {
+): string | null {
   const lastKeyRef = React.useRef<string | null>(null);
+  const announcementTimerRef = React.useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
   const [killAnnouncement, setKillAnnouncement] = React.useState<string | null>(
     null,
   );
@@ -326,19 +342,31 @@ export function useKillAnnouncement(
     if (feed.length === 0) return;
     const latest = feed[feed.length - 1];
     const key = `${latest.killerId}-${latest.timestamp}`;
-    if (key === lastKeyRef.current) return undefined;
+    if (key === lastKeyRef.current) return;
     lastKeyRef.current = key;
-    if (latest.killerId !== currentPlayerId) return undefined;
+    if (latest.killerId !== currentPlayerId) return;
     if (!WEAPONS[latest.weaponId]) {
       console.warn(
         `[darkmoon] Unknown weapon ID in kill feed: "${latest.weaponId}"`,
       );
     }
     const weaponLabel = WEAPONS[latest.weaponId]?.name ?? latest.weaponId;
+    if (announcementTimerRef.current)
+      clearTimeout(announcementTimerRef.current);
     setKillAnnouncement(`${latest.targetName} [${weaponLabel}]`);
-    const t = setTimeout(() => setKillAnnouncement(null), 2000);
-    return () => clearTimeout(t);
+    announcementTimerRef.current = setTimeout(() => {
+      setKillAnnouncement(null);
+      announcementTimerRef.current = null;
+    }, 2000);
   }, [killFeed, currentPlayerId]);
+
+  React.useEffect(
+    () => () => {
+      if (announcementTimerRef.current)
+        clearTimeout(announcementTimerRef.current);
+    },
+    [],
+  );
 
   return killAnnouncement;
 }

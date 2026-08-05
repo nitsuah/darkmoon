@@ -7,6 +7,11 @@ export interface Notification {
   timestamp: number;
 }
 
+export type AddNotification = (
+  msg: string,
+  type?: Notification["type"],
+) => void;
+
 /**
  * Hook for managing in-game notifications
  * Auto-removes notifications after 4 seconds

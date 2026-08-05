@@ -1,5 +1,5 @@
 import * as React from "react";
-import { GameState, KillEvent, Player } from "../GameManager";
+import { GameMode, GameState, KillEvent, Player } from "../GameManager";
 
 import {
   useViewport,
@@ -38,7 +38,7 @@ interface GameUIProps {
   gameState: GameState;
   players: Map<string, Player>;
   currentPlayerId: string;
-  onStartGame: (mode: string) => void;
+  onStartGame: (mode: GameMode) => void;
   onEndGame: () => void;
   botDebugMode?: boolean;
   onToggleDebug?: () => void;
@@ -76,7 +76,7 @@ const GameUI: React.FC<GameUIProps> = ({
   const bonusRoundVisible = useBonusRound();
   const { galleryCombo, galleryMultiplier } = useGalleryCombo();
   const crosshairSpread = useCrosshairSpread();
-  const showScoreboard = useScoreboard();
+  const showScoreboard = useScoreboard(gameState.isActive);
   const pickupToast = usePickupToast();
   const killAnnouncement = useKillAnnouncement(
     gameState.killFeed,
@@ -113,6 +113,13 @@ const GameUI: React.FC<GameUIProps> = ({
 
   const isSpawnProtected = currentPlayer?.spawnProtectedUntil !== undefined;
 
+  const criticalHealth =
+    currentPlayer !== undefined &&
+    currentPlayer.health !== undefined &&
+    currentPlayer.health < 30 &&
+    currentPlayer.respawnAt === undefined &&
+    (gameState.mode === "deathmatch" || gameState.mode === "ctf");
+
   const isCombat = COMBAT_MODES.has(gameState.mode);
   const showCrosshair = isCombat && respawnSecondsLeft === null && !isMinimal;
   const showBottomHUD =
@@ -136,6 +143,20 @@ const GameUI: React.FC<GameUIProps> = ({
         `}</style>
 
         <DamageFlash active={damageFlash} />
+
+        {criticalHealth && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              pointerEvents: "none",
+              zIndex: 999,
+              boxShadow: "inset 0 0 120px 40px rgba(220,0,0,0.55)",
+              animation: "criticalPulse 0.8s ease-in-out infinite alternate",
+            }}
+          />
+        )}
+
         <HitDirectionIndicator hitAngle={hitAngle} />
         <KillAnnouncement announcement={killAnnouncement} />
         <PickupToast toast={pickupToast} />

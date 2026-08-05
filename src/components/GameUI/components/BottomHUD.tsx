@@ -1,10 +1,10 @@
 import * as React from "react";
-import { Player } from "../../GameManager";
+import { GameMode, Player } from "../../GameManager";
 import { WEAPONS } from "../../combat/WeaponManager";
 
 interface Props {
   currentPlayer: Player;
-  mode: string;
+  mode: GameMode;
 }
 
 const WEAPON_COLORS: Record<string, string> = {

@@ -22,7 +22,7 @@ const KillFeed: React.FC<Props> = ({ kills }) => {
     >
       {kills.map((k) => (
         <div
-          key={`${k.killerId}-${k.timestamp}`}
+          key={`${k.killerId}-${k.targetId}-${k.timestamp}`}
           style={{
             backgroundColor: "rgba(0,0,0,0.7)",
             border: "1px solid rgba(255,255,255,0.15)",

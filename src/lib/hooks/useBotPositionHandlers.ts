@@ -1,15 +1,20 @@
-import { useCallback, MutableRefObject } from "react";
+import { useCallback, useMemo, MutableRefObject } from "react";
 import GameManager from "../../components/GameManager";
 import type { Clients } from "../../types/socket";
-import type { Notification } from "./useNotifications";
+import type { AddNotification } from "./useNotifications";
 import { ZERO_ROTATION } from "../constants/botConfigs";
-
-type AddNotification = (msg: string, type?: Notification["type"]) => void;
 
 interface Deps {
   gameManagerRef: MutableRefObject<GameManager | null>;
   clientsRef: MutableRefObject<Clients>;
   addNotification: AddNotification;
+}
+
+export interface BotPositionHandlers {
+  handleBot1PositionUpdate: (position: [number, number, number]) => void;
+  handleBot2PositionUpdate: (position: [number, number, number]) => void;
+  handleBot3PositionUpdate: (position: [number, number, number]) => void;
+  handleBot4PositionUpdate: (position: [number, number, number]) => void;
 }
 
 export function useBotPositionHandlers(
@@ -18,81 +23,50 @@ export function useBotPositionHandlers(
   bot2PositionRef: MutableRefObject<[number, number, number]>,
   bot3PositionRef: MutableRefObject<[number, number, number]>,
   bot4PositionRef: MutableRefObject<[number, number, number]>,
-) {
+): BotPositionHandlers {
   const { gameManagerRef, clientsRef, addNotification } = deps;
 
-  const handleBot1PositionUpdate = useCallback(
-    (position: [number, number, number]) => {
-      bot1PositionRef.current = position;
-      clientsRef.current["bot-1"] = { position, rotation: ZERO_ROTATION };
-      const mgr = gameManagerRef.current;
-      if (!mgr) return;
-      mgr.updatePlayerPosition("bot-1", position);
-      if (mgr.pickupFlag("bot-1")) {
-        addNotification("Bot1 grabbed a flag!", "warning");
-      } else if (mgr.captureFlag("bot-1")) {
-        addNotification("Bot1 captured a flag for their team!", "warning");
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- gameManagerRef/clientsRef/bot1PositionRef are stable MutableRefObjects; only addNotification is reactive
+  const makeHandler = useCallback(
+    (
+      botId: string,
+      label: string,
+      positionRef: MutableRefObject<[number, number, number]>,
+    ) =>
+      (position: [number, number, number]) => {
+        positionRef.current = position;
+        clientsRef.current[botId] = { position, rotation: ZERO_ROTATION };
+        const mgr = gameManagerRef.current;
+        if (!mgr) return;
+        mgr.updatePlayerPosition(botId, position);
+        const state = mgr.getGameState();
+        if (state.mode === "ctf" && state.isActive) {
+          if (mgr.pickupFlag(botId)) {
+            addNotification(`${label} grabbed a flag!`, "warning");
+          } else if (mgr.captureFlag(botId)) {
+            addNotification(
+              `${label} captured a flag for their team!`,
+              "warning",
+            );
+          }
+        }
+      },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- gameManagerRef/clientsRef are stable MutableRefObjects; only addNotification is reactive
     [addNotification],
   );
 
-  const handleBot2PositionUpdate = useCallback(
-    (position: [number, number, number]) => {
-      bot2PositionRef.current = position;
-      clientsRef.current["bot-2"] = { position, rotation: ZERO_ROTATION };
-      const mgr = gameManagerRef.current;
-      if (!mgr) return;
-      mgr.updatePlayerPosition("bot-2", position);
-      if (mgr.pickupFlag("bot-2")) {
-        addNotification("Bot2 grabbed a flag!", "warning");
-      } else if (mgr.captureFlag("bot-2")) {
-        addNotification("Bot2 captured a flag for their team!", "warning");
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- gameManagerRef/clientsRef/bot2PositionRef are stable MutableRefObjects; only addNotification is reactive
-    [addNotification],
+  return useMemo(
+    () => ({
+      handleBot1PositionUpdate: makeHandler("bot-1", "Bot1", bot1PositionRef),
+      handleBot2PositionUpdate: makeHandler("bot-2", "Bot2", bot2PositionRef),
+      handleBot3PositionUpdate: makeHandler("bot-3", "Bot3", bot3PositionRef),
+      handleBot4PositionUpdate: makeHandler("bot-4", "Bot4", bot4PositionRef),
+    }),
+    [
+      makeHandler,
+      bot1PositionRef,
+      bot2PositionRef,
+      bot3PositionRef,
+      bot4PositionRef,
+    ],
   );
-
-  const handleBot3PositionUpdate = useCallback(
-    (position: [number, number, number]) => {
-      bot3PositionRef.current = position;
-      clientsRef.current["bot-3"] = { position, rotation: ZERO_ROTATION };
-      const mgr = gameManagerRef.current;
-      if (!mgr) return;
-      mgr.updatePlayerPosition("bot-3", position);
-      if (mgr.pickupFlag("bot-3")) {
-        addNotification("Bot3 grabbed a flag!", "warning");
-      } else if (mgr.captureFlag("bot-3")) {
-        addNotification("Bot3 captured a flag for their team!", "warning");
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- gameManagerRef/clientsRef/bot3PositionRef are stable MutableRefObjects; only addNotification is reactive
-    [addNotification],
-  );
-
-  const handleBot4PositionUpdate = useCallback(
-    (position: [number, number, number]) => {
-      bot4PositionRef.current = position;
-      clientsRef.current["bot-4"] = { position, rotation: ZERO_ROTATION };
-      const mgr = gameManagerRef.current;
-      if (!mgr) return;
-      mgr.updatePlayerPosition("bot-4", position);
-      if (mgr.pickupFlag("bot-4")) {
-        addNotification("Bot4 grabbed a flag!", "warning");
-      } else if (mgr.captureFlag("bot-4")) {
-        addNotification("Bot4 captured a flag for their team!", "warning");
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- gameManagerRef/clientsRef/bot4PositionRef are stable MutableRefObjects; only addNotification is reactive
-    [addNotification],
-  );
-
-  return {
-    handleBot1PositionUpdate,
-    handleBot2PositionUpdate,
-    handleBot3PositionUpdate,
-    handleBot4PositionUpdate,
-  };
 }

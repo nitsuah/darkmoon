@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Player } from "../../GameManager";
+import { GameMode, Player } from "../../GameManager";
 
 interface Props {
   players: Map<string, Player>;
@@ -7,16 +7,16 @@ interface Props {
   isMobile: boolean;
   botDebugMode: boolean;
   galleryDebugMode: boolean;
-  onStartGame: (mode: string) => void;
+  onStartGame: (mode: GameMode) => void;
   onToggleDebug?: () => void;
   onToggleGalleryDebug?: () => void;
 }
 
-function btnPad(isMinimal: boolean, isMobile: boolean) {
+function btnPad(isMinimal: boolean, isMobile: boolean): string {
   return isMinimal ? "3px 5px" : isMobile ? "6px 8px" : "6px 10px";
 }
 
-function btnFontSize(isMinimal: boolean, isMobile: boolean) {
+function btnFontSize(isMinimal: boolean, isMobile: boolean): string {
   return isMinimal ? "14px" : isMobile ? "14px" : "11px";
 }
 
@@ -138,22 +138,26 @@ const GameLobbyPanel: React.FC<Props> = ({
             </button>
           )}
 
-          <button
-            onClick={() => onToggleDebug && onToggleDebug()}
-            style={{
-              ...btnBase,
-              backgroundColor: botDebugMode
-                ? "rgba(220, 53, 69, 0.8)"
-                : "rgba(255, 140, 0, 0.8)",
-              border: botDebugMode ? "1px solid #dc3545" : "1px solid #ff8c00",
-            }}
-          >
-            {isMinimal || isMobile
-              ? "🔧"
-              : botDebugMode
-                ? "⏹️ Stop Debug"
-                : "🔧 Start Debug"}
-          </button>
+          {onToggleDebug && (
+            <button
+              onClick={onToggleDebug}
+              style={{
+                ...btnBase,
+                backgroundColor: botDebugMode
+                  ? "rgba(220, 53, 69, 0.8)"
+                  : "rgba(255, 140, 0, 0.8)",
+                border: botDebugMode
+                  ? "1px solid #dc3545"
+                  : "1px solid #ff8c00",
+              }}
+            >
+              {isMinimal || isMobile
+                ? "🔧"
+                : botDebugMode
+                  ? "⏹️ Stop Debug"
+                  : "🔧 Start Debug"}
+            </button>
+          )}
 
           {onToggleGalleryDebug && (
             <button

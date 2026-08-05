@@ -1,10 +1,11 @@
 import * as React from "react";
 import { STREAK_LABELS } from "../../gameModes/DeathmatchMode";
 import { TAG_STREAK_LABELS } from "../../gameModes/TagMode";
+import type { GameMode } from "../../GameManager";
 
 interface Props {
   visibleStreak: { killerName: string; count: number } | null;
-  mode: string;
+  mode: GameMode;
   isMinimal: boolean;
 }
 

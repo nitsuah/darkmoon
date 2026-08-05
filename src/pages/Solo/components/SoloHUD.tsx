@@ -9,7 +9,11 @@ import PauseMenu from "../../../components/PauseMenu";
 import ChatBox from "../../../components/ChatBox";
 import { Notification } from "../../../components/21st.dev/Notification";
 import type { ChatMessage } from "../../../lib/hooks/useChatMessages";
-import type { GameState, Player } from "../../../components/GameManager";
+import type {
+  GameMode,
+  GameState,
+  Player,
+} from "../../../components/GameManager";
 import type { QualityLevel } from "../../../components/QualitySettings";
 import "../../../styles/Notification.css";
 
@@ -24,7 +28,7 @@ interface SoloHUDProps {
   gameState: GameState;
   players: Map<string, Player>;
   currentPlayerId: string;
-  onStartGame: (mode: string) => void;
+  onStartGame: (mode: GameMode) => void;
   onEndGame: () => void;
   botDebugMode: boolean;
   onToggleDebug: () => void;

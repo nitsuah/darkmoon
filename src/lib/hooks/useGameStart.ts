@@ -1,10 +1,12 @@
 import { useCallback, MutableRefObject } from "react";
-import GameManager, { GameState, Player } from "../../components/GameManager";
+import GameManager, {
+  GameMode,
+  GameState,
+  Player,
+} from "../../components/GameManager";
 import type { BotConfig } from "../../components/characters/useBotAI";
-import type { Notification } from "./useNotifications";
+import type { AddNotification } from "./useNotifications";
 import { ZERO_ROTATION } from "../constants/botConfigs";
-
-type AddNotification = (msg: string, type?: Notification["type"]) => void;
 
 interface Deps {
   gameManagerRef: MutableRefObject<GameManager | null>;
@@ -41,7 +43,7 @@ export function useGameStart({
   BOT4_CONFIG,
 }: Deps) {
   return useCallback(
-    (mode: string) => {
+    (mode: GameMode) => {
       const mgr = gameManagerRef.current;
       if (!mgr) return;
 
