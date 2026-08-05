@@ -4,11 +4,7 @@ import { type Socket } from "socket.io-client";
 import type { Clients } from "../types/socket";
 import CollisionSystem from "../components/CollisionSystem";
 import SoloHUD from "./Solo/components/SoloHUD";
-import GameManager, {
-  GameState,
-  Player,
-  StartableMode,
-} from "../components/GameManager";
+import GameManager, { GameState, Player } from "../components/GameManager";
 import type { PlayerCharacterHandle } from "../components/characters/PlayerCharacter";
 import "../styles/App.css";
 import { useNavigate } from "react-router-dom";
@@ -535,11 +531,16 @@ const Solo: React.FC = () => {
         onResume={() => setIsPaused(false)}
         onRestart={() => {
           const mode = gameManager.current?.getGameState().mode;
-          handleEndGame();
-          if (mode && mode !== "none") {
-            handleStartGame(mode as StartableMode);
-            setIsPaused(false);
+          if (
+            mode === "tag" ||
+            mode === "deathmatch" ||
+            mode === "ctf" ||
+            mode === "shooting_gallery"
+          ) {
+            handleEndGame();
+            handleStartGame(mode);
           }
+          setIsPaused(false);
         }}
         onQuit={() => navigate("/")}
         chatVisible={chatVisible}

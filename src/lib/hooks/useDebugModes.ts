@@ -61,21 +61,23 @@ export function useBotDebugMode({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [botDebugMode, gameState.isActive, gameState.mode]);
 
-  // Add/remove Bot2 when debug mode toggles
+  // Add/remove Bot2 when debug mode toggles (restarts are handled by the 3s effect above)
   useEffect(() => {
     const mgr = gameManagerRef.current;
     if (!mgr) return;
 
     if (botDebugMode) {
-      const bot2: Player = {
-        id: "bot-2",
-        name: "Bot2",
-        position: [8, 0.5, -8],
-        rotation: ZERO_ROTATION,
-        isIt: false,
-      };
-      mgr.addPlayer(bot2);
-      tagDebug("🤖 Bot2 added to game (debug mode)");
+      if (!mgr.getPlayers().has("bot-2")) {
+        const bot2: Player = {
+          id: "bot-2",
+          name: "Bot2",
+          position: [8, 0.5, -8],
+          rotation: ZERO_ROTATION,
+          isIt: false,
+        };
+        mgr.addPlayer(bot2);
+        tagDebug("🤖 Bot2 added to game (debug mode)");
+      }
 
       if (!gameState.isActive) {
         initTimerRef.current = setTimeout(() => {
@@ -110,7 +112,7 @@ export function useBotDebugMode({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [botDebugMode, gameState.isActive]);
+  }, [botDebugMode]);
 }
 
 interface GalleryDebugDeps {

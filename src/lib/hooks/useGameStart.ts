@@ -41,7 +41,7 @@ export function useGameStart({
   BOT2_CONFIG,
   BOT3_CONFIG,
   BOT4_CONFIG,
-}: Deps) {
+}: Deps): (mode: StartableMode) => void {
   return useCallback(
     (mode: StartableMode) => {
       const mgr = gameManagerRef.current;
