@@ -3,14 +3,11 @@ import { useNavigate } from "react-router-dom";
 import Footer from "../components/Footer";
 import ErrorBoundary from "../components/ErrorBoundary";
 import UtilityMenu from "../components/UtilityMenu";
-import { Card } from "../components/21st.dev/Card";
 import "../styles/App.css";
 import "../styles/Home.css";
-import "../styles/Card.css";
 
 const Home = () => {
   const navigate = useNavigate();
-  const [flippedCard, setFlippedCard] = React.useState<string | null>(null);
 
   // Fix mobile browser address bar on home page
   React.useEffect(() => {
@@ -41,25 +38,6 @@ const Home = () => {
     };
   }, []);
 
-  // Handle card flip on mobile (tap to flip, tap again to navigate)
-  const handleCardInteraction = (cardId: string, navigateTo?: string) => {
-    // On mobile, first tap flips, second tap navigates
-    if (window.innerWidth <= 1024) {
-      if (flippedCard === cardId && navigateTo) {
-        navigate(navigateTo);
-      } else {
-        setFlippedCard(cardId);
-        // Auto-flip back after 4 seconds on mobile
-        setTimeout(() => {
-          setFlippedCard(null);
-        }, 4000);
-      }
-    } else if (navigateTo) {
-      // On desktop, click navigates immediately
-      navigate(navigateTo);
-    }
-  };
-
   const renderHome = () => (
     <div className="home-container">
       {/* Hero Section */}
@@ -79,92 +57,86 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Game Modes Grid */}
+      {/* Game Modes Grid — redesigned cards */}
       <div className="game-modes-grid">
-        <Card
-          title="Solo Practice"
-          description="Hone your skills against AI opponents"
-          icon="🎯"
-          status="● LIVE NOW"
-          statusType="live"
-          onClick={() => handleCardInteraction("solo", "/solo")}
+        {/* Solo Practice */}
+        <div
+          className="game-card game-card--solo"
+          role="button"
+          tabIndex={0}
+          onClick={() => navigate("/solo")}
           onKeyDown={(e) => e.key === "Enter" && navigate("/solo")}
-          isFlipped={flippedCard === "solo"}
         >
-          <h3>Game Features</h3>
-          <ul className="flip-features-list">
-            <li>🤖 Smart AI opponents</li>
-            <li>🏃 Tag game mechanics</li>
-            <li>🚀 Jetpack movement</li>
-            <li>🎮 WASD controls</li>
-            <li>💬 Live chat</li>
-            <li>🎨 Theme support</li>
-          </ul>
-        </Card>
+          <div className="game-card__accent" />
+          <div className="game-card__icon">🎯</div>
+          <div className="game-card__content">
+            <span className="game-card__badge game-card__badge--live">
+              ● LIVE NOW
+            </span>
+            <h3 className="game-card__title">Solo Practice</h3>
+            <p className="game-card__desc">
+              Hone your aim against smart AI opponents across multiple game
+              modes.
+            </p>
+            <ul className="game-card__features">
+              <li>🤖 Smart AI opponents</li>
+              <li>🏃 Tag, Deathmatch & CTF</li>
+              <li>🚀 Jetpack movement</li>
+              <li>🔫 5 unique weapons</li>
+            </ul>
+          </div>
+          <button className="game-card__cta" onClick={() => navigate("/solo")}>
+            Play Now →
+          </button>
+        </div>
 
-        <Card
-          title="Multiplayer Tag"
-          description="Compete with players worldwide"
-          icon="👥"
-          status="⏳ Coming Soon"
-          statusType="coming-soon"
-          className="mode-card-disabled"
-          onClick={() => {
-            if (window.innerWidth <= 1024) {
-              handleCardInteraction("multiplayer", "/multiplayer");
-            } else {
-              setFlippedCard(
-                flippedCard === "multiplayer" ? null : "multiplayer",
-              );
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              if (window.innerWidth <= 1024) {
-                handleCardInteraction("multiplayer", "/multiplayer");
-              } else {
-                setFlippedCard(
-                  flippedCard === "multiplayer" ? null : "multiplayer",
-                );
-              }
-            }
-          }}
-          isFlipped={flippedCard === "multiplayer"}
-        >
-          <h3>Planned Features</h3>
-          <ul className="flip-features-list">
-            <li>🌐 Global matchmaking</li>
-            <li>🏃 Real-time multiplayer</li>
-            <li>💬 Voice chat support</li>
-            <li>📱 Cross-platform play</li>
-            <li>🎮 Custom lobbies</li>
-            <li>📊 Stats tracking</li>
-          </ul>
-        </Card>
+        {/* Multiplayer Tag */}
+        <div className="game-card game-card--multi game-card--disabled">
+          <div className="game-card__accent" />
+          <div className="game-card__icon">👥</div>
+          <div className="game-card__content">
+            <span className="game-card__badge game-card__badge--soon">
+              ⏳ Coming Soon
+            </span>
+            <h3 className="game-card__title">Multiplayer Tag</h3>
+            <p className="game-card__desc">
+              Compete with players around the world in real-time matches.
+            </p>
+            <ul className="game-card__features">
+              <li>🌐 Global matchmaking</li>
+              <li>🏃 Real-time multiplayer</li>
+              <li>💬 Voice chat</li>
+              <li>📊 Stats & rankings</li>
+            </ul>
+          </div>
+          <button className="game-card__cta game-card__cta--disabled" disabled>
+            Coming Soon
+          </button>
+        </div>
 
-        <Card
-          title="Tournament"
-          description="Ranked competitive matches"
-          icon="🏆"
-          status="⏳ Coming Soon"
-          statusType="coming-soon"
-          className="mode-card-disabled"
-          onClick={() => handleCardInteraction("tournament")}
-          onKeyDown={(e) =>
-            e.key === "Enter" && handleCardInteraction("tournament")
-          }
-          isFlipped={flippedCard === "tournament"}
-        >
-          <h3>Future Modes</h3>
-          <ul className="flip-features-list">
-            <li>🏁 Race mode</li>
-            <li>💎 Collectible hunt</li>
-            <li>🎭 Emotes & actions</li>
-            <li>👤 Custom avatars</li>
-            <li>🏅 Leaderboards</li>
-            <li>🎁 Rewards system</li>
-          </ul>
-        </Card>
+        {/* Tournament */}
+        <div className="game-card game-card--tournament game-card--disabled">
+          <div className="game-card__accent" />
+          <div className="game-card__icon">🏆</div>
+          <div className="game-card__content">
+            <span className="game-card__badge game-card__badge--soon">
+              ⏳ Coming Soon
+            </span>
+            <h3 className="game-card__title">Tournament</h3>
+            <p className="game-card__desc">
+              Ranked competitive matches with leaderboards and rewards.
+            </p>
+            <ul className="game-card__features">
+              <li>🏅 Leaderboards</li>
+              <li>🎁 Reward system</li>
+              <li>🏁 Special modes</li>
+              <li>👤 Custom avatars</li>
+            </ul>
+          </div>
+          <button className="game-card__cta game-card__cta--disabled" disabled>
+            Coming Soon
+          </button>
+        </div>
       </div>
     </div>
   );

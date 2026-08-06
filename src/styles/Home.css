@@ -112,189 +112,172 @@
 /* Game Modes Grid */
 .game-modes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
   padding: 0 1rem;
-  max-width: 1200px;
-  margin: -2rem auto 0 auto; /* Bring cards up closer to badges */
+  max-width: 1100px;
+  margin: -1rem auto 0 auto;
 }
 
-.mode-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  padding: 2rem;
-  text-align: center;
-  transition: all 0.3s ease;
-  cursor: pointer;
+/* ── New game cards ─────────────────────────────────────── */
+.game-card {
   position: relative;
-  overflow: hidden;
-}
-
-/* Flip card container */
-.mode-card-flip-container {
-  perspective: 1000px;
-  padding: 0;
-  min-height: 420px; /* Increased from 320px for 30% larger cards */
-  display: flex;
-  align-items: stretch;
-  -webkit-tap-highlight-color: transparent;
-  transition: all 0.4s ease;
-}
-
-.mode-card-flip-inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  min-height: 420px; /* Increased from 320px */
-  text-align: center;
-  transition:
-    transform 0.6s,
-    scale 0.4s ease;
-  transform-style: preserve-3d;
-}
-
-/* Hover for desktop, active for mobile touch */
-.mode-card-flip-container:hover .mode-card-flip-inner,
-.mode-card-flip-container:active .mode-card-flip-inner,
-.mode-card-flip-container.flipped .mode-card-flip-inner {
-  transform: rotateY(180deg) scale(1.08); /* Add slight scale up on flip */
-}
-
-/* Prevent hover flip on mobile, use flipped class instead */
-@media (max-width: 1024px) {
-  .mode-card-flip-container:hover .mode-card-flip-inner {
-    transform: none;
-  }
-
-  .mode-card-flip-container.flipped .mode-card-flip-inner {
-    transform: rotateY(180deg) scale(1.08);
-  }
-}
-
-.mode-card-front,
-.mode-card-back {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  min-height: 420px; /* Increased from 320px for 30% larger cards */
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-  padding: 3rem 2.5rem; /* Increased padding for larger cards */
+  background: rgba(20, 18, 32, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  box-sizing: border-box;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+  min-height: 360px;
 }
 
-.mode-card-front {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
+.game-card:focus-visible {
+  outline: 2px solid rgba(102, 126, 234, 0.8);
+  outline-offset: 2px;
+}
+
+/* Coloured top accent bar */
+.game-card__accent {
+  height: 4px;
+  flex-shrink: 0;
+  border-radius: 18px 18px 0 0;
+}
+
+.game-card--solo .game-card__accent {
+  background: linear-gradient(90deg, #667eea, #764ba2);
+}
+.game-card--multi .game-card__accent {
+  background: linear-gradient(90deg, #4a90e2, #357abd);
+}
+.game-card--tournament .game-card__accent {
+  background: linear-gradient(90deg, #ffd700, #ff8c00);
+}
+
+/* Hover glow */
+.game-card--solo:not(.game-card--disabled):hover {
+  transform: translateY(-6px);
+  border-color: rgba(102, 126, 234, 0.45);
+  box-shadow: 0 14px 36px rgba(102, 126, 234, 0.3);
+}
+
+/* Large icon */
+.game-card__icon {
+  font-size: 2.6rem;
+  padding: 1.25rem 1.5rem 0.25rem;
+  line-height: 1;
+}
+
+/* Body text area */
+.game-card__content {
+  flex: 1;
+  padding: 0.5rem 1.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+/* Status badge */
+.game-card__badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 0.2rem 0.6rem;
   border-radius: 20px;
+  width: fit-content;
 }
 
-.mode-card-back {
-  background: rgba(102, 126, 234, 0.15);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  transform: rotateY(180deg);
+.game-card__badge--live {
+  background: rgba(46, 213, 115, 0.18);
+  color: #2ed573;
+  border: 1px solid rgba(46, 213, 115, 0.35);
 }
 
-.flip-features-list {
+.game-card__badge--soon {
+  background: rgba(255, 168, 1, 0.15);
+  color: #ffa801;
+  border: 1px solid rgba(255, 168, 1, 0.3);
+}
+
+.game-card__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0.1rem 0 0;
+  color: var(--text-color);
+}
+
+.game-card__desc {
+  font-size: 0.88rem;
+  color: var(--text-color);
+  opacity: 0.65;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Mini feature list */
+.game-card__features {
   list-style: none;
   padding: 0;
-  margin: 1rem 0 0 0;
-  text-align: left;
-  width: 100%;
-  max-width: 220px;
+  margin: 0.5rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
-.flip-features-list li {
-  padding: 0.4rem 0;
+.game-card__features li {
+  font-size: 0.82rem;
   color: var(--text-color);
+  opacity: 0.75;
+}
+
+/* CTA button pinned to bottom */
+.game-card__cta {
+  margin: 0 1.5rem 1.25rem;
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  border: none;
   font-size: 0.9rem;
-  line-height: 1.4;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    opacity 0.2s,
+    transform 0.15s;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
 }
 
-.mode-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(102, 126, 234, 0.1) 0%,
-    rgba(118, 75, 162, 0.1) 100%
-  );
-  opacity: 0;
-  transition: opacity 0.3s ease;
+.game-card__cta:hover {
+  transform: translateY(-2px);
+  opacity: 0.92;
 }
 
-.mode-card:hover::before {
+.game-card__cta--disabled {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.35);
+  cursor: not-allowed;
+}
+
+.game-card__cta--disabled:hover {
+  transform: none;
   opacity: 1;
 }
 
-.mode-card-solo:hover {
-  transform: translateY(-8px);
-  border-color: rgba(102, 126, 234, 0.5);
-  box-shadow: 0 15px 40px rgba(102, 126, 234, 0.3);
+/* Disabled card tint */
+.game-card--disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
+/* Legacy classes kept for safety (not rendered but harmless) */
 .mode-card-disabled {
   cursor: not-allowed;
   opacity: 0.6;
-}
-
-.mode-card-disabled:hover {
-  transform: none;
-}
-
-.mode-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-.mode-card h3 {
-  font-size: 1.5rem;
-  margin: 0.5rem 0;
-  color: var(--text-color);
-  position: relative;
-  z-index: 1;
-}
-
-.mode-card p {
-  color: var(--text-color);
-  opacity: 0.7;
-  margin: 0.5rem 0 1rem 0;
-  position: relative;
-  z-index: 1;
-}
-
-.mode-status {
-  display: inline-block;
-  padding: 0.5rem 1rem;
-  border-radius: 15px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  position: relative;
-  z-index: 1;
-}
-
-.status-live {
-  background: rgba(46, 213, 115, 0.2);
-  color: #2ed573;
-  border: 1px solid rgba(46, 213, 115, 0.3);
-}
-
-.status-coming-soon {
-  background: rgba(255, 168, 1, 0.2);
-  color: #ffa801;
-  border: 1px solid rgba(255, 168, 1, 0.3);
 }
 
 /* Features Section */
@@ -439,40 +422,12 @@
 @media (max-width: 1024px) {
   .game-modes-grid {
     grid-template-columns: 1fr;
-    max-width: 550px;
-    gap: 2rem;
-  }
-
-  .mode-card-flip-container {
-    min-height: 380px;
-  }
-
-  .mode-card-flip-inner,
-  .mode-card-front,
-  .mode-card-back {
-    min-height: 380px;
-  }
-
-  /* Convert feature list to grid for better mobile layout */
-  .flip-features-list {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem 1rem;
-    max-width: 100%;
-    padding: 0;
-  }
-
-  .flip-features-list li {
-    font-size: 0.85rem;
-    padding: 0.5rem;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    text-align: center;
+    max-width: 480px;
+    gap: 1.25rem;
   }
 }
 
 @media (max-width: 768px) {
-  /* Make home page fullscreen on mobile */
   .home-container {
     min-height: 100vh;
     min-height: calc(var(--vh, 1vh) * 100);
@@ -490,24 +445,23 @@
 
   .hero-title {
     font-size: 2.5rem;
-    text-align: left; /* QA request: left align on mobile */
+    text-align: left;
   }
 
   .hero-subtitle {
     font-size: 1.2rem;
-    text-align: left; /* QA request: left align on mobile */
+    text-align: left;
   }
 
   .cta-play-button {
     padding: 1rem 2rem;
     font-size: 1.1rem;
-    margin: 0; /* QA request: no auto-centering on mobile */
+    margin: 0;
   }
 
-  /* QA request: vertically stack badges on mobile */
   .hero-badges {
     flex-direction: column;
-    align-items: flex-start; /* Left align badges */
+    align-items: flex-start;
     gap: 0.75rem;
     margin-top: 1.5rem;
   }
@@ -516,94 +470,41 @@
     width: fit-content;
   }
 
-  /* Ensure cards are visible and properly positioned */
+  /* Horizontal scroll strip on mobile */
   .game-modes-grid {
     display: flex;
+    grid-template-columns: unset;
     overflow-x: auto;
-    overflow-y: visible;
     scroll-snap-type: x mandatory;
-    gap: 1.5rem;
-    padding: 1rem 1rem 2rem 1rem;
+    gap: 1rem;
+    padding: 0.5rem 1rem 1.5rem;
     max-width: 100%;
-    margin: auto 0 2rem 0; /* Push to bottom with margin */
+    margin: 0 0 1rem 0;
     scrollbar-width: thin;
     scrollbar-color: rgba(102, 126, 234, 0.5) rgba(255, 255, 255, 0.1);
-    flex-shrink: 0;
   }
 
   .game-modes-grid::-webkit-scrollbar {
-    height: 8px;
+    height: 6px;
   }
-
   .game-modes-grid::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
     border-radius: 10px;
   }
-
   .game-modes-grid::-webkit-scrollbar-thumb {
     background: rgba(102, 126, 234, 0.5);
     border-radius: 10px;
   }
 
-  .mode-card-flip-container {
-    flex: 0 0 85%;
-    max-width: 400px;
+  .game-card {
+    flex: 0 0 80%;
+    max-width: 320px;
     scroll-snap-align: center;
-    min-height: 380px; /* Reduced to fit better on mobile screens */
-  }
-
-  .mode-card-flip-inner,
-  .mode-card-front,
-  .mode-card-back {
-    min-height: 380px;
-    padding: 2rem 1.5rem;
-  }
-
-  /* QA request: minimal cards on mobile - hide descriptions */
-  .mode-card-front p {
-    display: none;
-  }
-
-  .mode-card-front h3 {
-    font-size: 1.15rem;
-    margin: 0.75rem 0;
-  }
-
-  .mode-icon {
-    font-size: 3.5rem; /* Larger emoji since we're hiding text */
-  }
-
-  .flip-features-list {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
-    max-width: 100%;
-  }
-
-  .flip-features-list li {
-    font-size: 0.8rem;
-    padding: 0.5rem 0.25rem;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 6px;
-    text-align: center;
-    line-height: 1.3;
-  }
-
-  .mode-card-back h3 {
-    margin-bottom: 1.25rem;
+    min-height: 320px;
   }
 
   .section-title {
     font-size: 2rem;
-  }
-
-  .home-container {
-    gap: 1.5rem;
-    padding: 1rem 0.5rem;
-  }
-
-  .hero-section {
-    padding: 1.5rem 1rem;
   }
 }
 
@@ -611,7 +512,6 @@
   .hero-title {
     font-size: 2rem;
   }
-
   .hero-subtitle {
     font-size: 1rem;
   }
@@ -626,67 +526,28 @@
   .hero-badges {
     gap: 0.5rem;
   }
-
   .badge {
     font-size: 0.8rem;
     padding: 0.4rem 0.8rem;
   }
 
-  .game-modes-grid {
-    padding: 0 0.5rem 1.5rem 0.5rem;
-    gap: 1rem;
-    margin-bottom: 1.5rem; /* Ensure it's visible above footer */
+  .game-card {
+    flex: 0 0 88%;
+    max-width: 280px;
+    min-height: 300px;
   }
 
-  .mode-card-flip-container {
-    flex: 0 0 90%;
-    max-width: 350px;
-    min-height: 340px; /* Smaller for very small screens */
+  .game-card__icon {
+    font-size: 2.2rem;
   }
-
-  .mode-card-flip-inner,
-  .mode-card-front,
-  .mode-card-back {
-    min-height: 340px;
-    padding: 1.75rem 1.25rem;
+  .game-card__title {
+    font-size: 1.1rem;
   }
-
-  .mode-icon {
-    font-size: 2.5rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .mode-card h3 {
-    font-size: 1.25rem;
-    margin: 0.5rem 0;
-  }
-
-  .mode-card p {
-    font-size: 0.9rem;
-    margin: 0.5rem 0 1rem 0;
-  }
-
-  .mode-card-back h3 {
-    margin-bottom: 1rem;
-  }
-
-  .flip-features-list {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.4rem;
-    margin-top: 0.75rem;
-  }
-
-  .flip-features-list li {
-    font-size: 0.75rem;
-    padding: 0.5rem 0.25rem;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
-    text-align: center;
-    line-height: 1.2;
+  .game-card__desc {
+    font-size: 0.82rem;
   }
 
   .home-container {
-    gap: 2rem;
+    gap: 1.5rem;
   }
 }

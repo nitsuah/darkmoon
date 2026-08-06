@@ -93,6 +93,8 @@ export interface Player {
   lastDamageAt?: number;
   /** 0–1 reload progress for the currently equipped weapon; null/undefined = not reloading. */
   reloadProgress?: number | null;
+  /** Reserve ammo pool for the equipped weapon. null = not tracked (infinite). */
+  reserveAmmo?: number | null;
 }
 
 export class GameManager {

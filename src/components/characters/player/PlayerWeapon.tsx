@@ -4,7 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import type { GameManager } from "../../../components/GameManager";
 import type { WeaponManager } from "../../../components/combat/WeaponManager";
 import { CollisionSystem } from "../../../components/CollisionSystem";
-import { KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_R } from "../../utils";
+import { KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_R, KEY_TAB } from "../../utils";
 import { processFiring } from "../../../lib/hooks/usePlayerWeapon";
 
 interface PlayerWeaponProps {
@@ -58,6 +58,7 @@ interface PlayerWeaponProps {
   prevKey4Ref: React.RefObject<boolean>;
   prevKey5Ref: React.RefObject<boolean>;
   prevKeyRRef: React.RefObject<boolean>;
+  prevKeyTabRef: React.RefObject<boolean>;
   /** Whether player can act (not respawning, not frozen) */
   canAct: boolean;
   /** Collision system ref for hit detection */
@@ -66,7 +67,14 @@ interface PlayerWeaponProps {
   isPlayerFrozenRef: React.RefObject<boolean>;
 }
 
-const LASER_BEAM_VISIBLE_MS = 160;
+const LASER_BEAM_VISIBLE_MS = 250;
+const WEAPON_CYCLE_ORDER = [
+  "laser",
+  "shotgun",
+  "smg",
+  "rocket",
+  "grenade",
+] as const;
 
 export const PlayerWeapon = React.memo(
   ({
@@ -92,6 +100,7 @@ export const PlayerWeapon = React.memo(
     prevKey4Ref,
     prevKey5Ref,
     prevKeyRRef,
+    prevKeyTabRef,
     canAct,
     collisionSystemRef,
     isPlayerFrozenRef,
@@ -102,7 +111,9 @@ export const PlayerWeapon = React.memo(
     const _fireOrigin = React.useRef<THREE.Vector3>(new THREE.Vector3());
     const _raycaster = React.useRef<THREE.Raycaster>(new THREE.Raycaster());
     const _ndc = React.useRef<THREE.Vector2>(new THREE.Vector2());
-    const _groundPlane = React.useRef<THREE.Plane>(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0));
+    const _groundPlane = React.useRef<THREE.Plane>(
+      new THREE.Plane(new THREE.Vector3(0, 1, 0), 0),
+    );
     const _aimTarget = React.useRef<THREE.Vector3>(new THREE.Vector3());
     const _fireDir = React.useRef<THREE.Vector3>(new THREE.Vector3());
     const _tempVec = React.useRef<THREE.Vector3>(new THREE.Vector3());
@@ -127,6 +138,7 @@ export const PlayerWeapon = React.memo(
       const key4 = keysPressedRef.current[KEY_4] ?? false;
       const key5 = keysPressedRef.current[KEY_5] ?? false;
       const keyR = keysPressedRef.current[KEY_R] ?? false;
+      const keyTab = keysPressedRef.current[KEY_TAB] ?? false;
 
       if (canActNow) {
         if (key1 && !prevKey1Ref.current) {
@@ -171,6 +183,22 @@ export const PlayerWeapon = React.memo(
             weaponManagerRef.current.startReload(equipped.id);
           }
         }
+        // Tab key: cycle to next weapon
+        if (keyTab && !prevKeyTabRef.current) {
+          const currentId = weaponManagerRef.current.getEquipped()?.id;
+          const idx = currentId
+            ? WEAPON_CYCLE_ORDER.indexOf(
+                currentId as (typeof WEAPON_CYCLE_ORDER)[number],
+              )
+            : -1;
+          const nextId =
+            WEAPON_CYCLE_ORDER[(idx + 1) % WEAPON_CYCLE_ORDER.length];
+          weaponManagerRef.current.equip(nextId);
+          gameManager?.updatePlayer(myId, {
+            equippedWeaponId: nextId,
+            currentAmmo: weaponManagerRef.current.getAmmo(nextId),
+          });
+        }
       }
       prevKey1Ref.current = key1;
       prevKey2Ref.current = key2;
@@ -178,6 +206,7 @@ export const PlayerWeapon = React.memo(
       prevKey4Ref.current = key4;
       prevKey5Ref.current = key5;
       prevKeyRRef.current = keyR;
+      prevKeyTabRef.current = keyTab;
 
       // Fire the equipped weapon while left-click is held
       if (mouseControls.leftClick && canActNow) {
@@ -190,13 +219,26 @@ export const PlayerWeapon = React.memo(
         const h = state.size.height || 1;
         const ndcX = (mouseControls.mouseX / w) * 2 - 1;
         const ndcY = -(mouseControls.mouseY / h) * 2 + 1;
-        _raycaster.current.setFromCamera(_ndc.current.set(ndcX, ndcY), state.camera);
+        _raycaster.current.setFromCamera(
+          _ndc.current.set(ndcX, ndcY),
+          state.camera,
+        );
         const hasAimTarget =
-          _raycaster.current.ray.intersectPlane(_groundPlane.current, _aimTarget.current) !== null;
+          _raycaster.current.ray.intersectPlane(
+            _groundPlane.current,
+            _aimTarget.current,
+          ) !== null;
         if (hasAimTarget) {
-          _fireDir.current.copy(_aimTarget.current).sub(_fireOrigin.current).normalize();
+          _fireDir.current
+            .copy(_aimTarget.current)
+            .sub(_fireOrigin.current)
+            .normalize();
         } else {
-          _fireDir.current.set(-Math.sin(cameraHorizontal), 0, -Math.cos(cameraHorizontal));
+          _fireDir.current.set(
+            -Math.sin(cameraHorizontal),
+            0,
+            -Math.cos(cameraHorizontal),
+          );
         }
 
         const fireResult = processFiring({
@@ -221,48 +263,69 @@ export const PlayerWeapon = React.memo(
           const beamLength =
             fireResult.hit?.distance ?? fireResult.weapon.range;
           const wid = fireResult.weapon.id;
-          const beamHalfWidth =
-            wid === "rocket" || wid === "grenade"
-              ? 0.2
-              : wid === "shotgun"
-                ? 0.1
+
+          // Shotgun: dispatch cone event, skip single beam
+          if (wid === "shotgun") {
+            window.dispatchEvent(
+              new window.CustomEvent("shotgun-pellets-fired", {
+                detail: {
+                  origin: _fireOrigin.current.clone(),
+                  direction: _fireDir.current.clone(),
+                  range: fireResult.weapon.range,
+                  spreadAngle: fireResult.weapon.spreadAngle ?? 0.28,
+                  pelletCount: fireResult.weapon.pelletCount ?? 6,
+                },
+              }),
+            );
+          }
+
+          if (wid === "shotgun") {
+            // Suppress single-beam for shotgun (cone VFX handles visuals)
+          } else {
+            const beamHalfWidth =
+              wid === "rocket" || wid === "grenade"
+                ? 0.2
                 : wid === "smg"
                   ? 0.04
                   : 0.04;
-          const beamColor =
-            wid === "rocket"
-              ? "#ff1100"
-              : wid === "grenade"
-                ? "#44ff00"
-                : wid === "shotgun"
-                  ? "#ff7700"
+            const beamColor =
+              wid === "rocket"
+                ? "#ff1100"
+                : wid === "grenade"
+                  ? "#44ff00"
                   : wid === "smg"
                     ? "#ff44cc"
                     : "#33ffe6";
-          laserBeamRef.current.visible = true;
-          laserBeamRef.current.position
-            .copy(_fireOrigin.current)
-            .add(_tempVec.current.copy(_fireDir.current).multiplyScalar(beamLength / 2));
-          laserBeamRef.current.rotation.y = Math.atan2(
-            _fireDir.current.x,
-            _fireDir.current.z,
-          );
-          laserBeamRef.current.scale.set(
-            beamHalfWidth / 0.04,
-            beamHalfWidth / 0.04,
-            beamLength,
-          );
-          laserBeamHideAtRef.current = now + LASER_BEAM_VISIBLE_MS;
-          if (beamMeshRef.current) {
-            (beamMeshRef.current.material as THREE.MeshBasicMaterial).color.set(
-              beamColor,
+            laserBeamRef.current.visible = true;
+            laserBeamRef.current.position
+              .copy(_fireOrigin.current)
+              .add(
+                _tempVec.current
+                  .copy(_fireDir.current)
+                  .multiplyScalar(beamLength / 2),
+              );
+            laserBeamRef.current.rotation.y = Math.atan2(
+              _fireDir.current.x,
+              _fireDir.current.z,
             );
-          }
-          if (beamGlowRef.current) {
-            (beamGlowRef.current.material as THREE.MeshBasicMaterial).color.set(
-              beamColor,
+            laserBeamRef.current.scale.set(
+              beamHalfWidth / 0.04,
+              beamHalfWidth / 0.04,
+              beamLength,
             );
-          }
+            laserBeamHideAtRef.current = now + LASER_BEAM_VISIBLE_MS;
+            if (beamMeshRef.current) {
+              (
+                beamMeshRef.current.material as THREE.MeshBasicMaterial
+              ).color.set(beamColor);
+            }
+            if (beamGlowRef.current) {
+              (
+                beamGlowRef.current.material as THREE.MeshBasicMaterial
+              ).color.set(beamColor);
+            }
+          } // end else (non-shotgun beam)
+
           // Camera shake per weapon
           const shakeAmt =
             wid === "shotgun"
@@ -298,7 +361,11 @@ export const PlayerWeapon = React.memo(
           window.dispatchEvent(new window.Event("player-hit-landed"));
           const hitPos = _tempVec.current
             .copy(_fireOrigin.current)
-            .add(_tempVec2.current.copy(_fireDir.current).multiplyScalar(fireResult.hit.distance));
+            .add(
+              _tempVec2.current
+                .copy(_fireDir.current)
+                .multiplyScalar(fireResult.hit.distance),
+            );
           window.dispatchEvent(
             new window.CustomEvent("damage-number", {
               detail: {
@@ -338,14 +405,16 @@ export const PlayerWeapon = React.memo(
         muzzleFlashRef.current.visible = false;
       }
 
-      // Continuously sync reload progress
+      // Continuously sync reload progress + reserve ammo
       const equipped = weaponManagerRef.current.getEquipped();
       if (equipped) {
         const rp = weaponManagerRef.current.getReloadProgress(equipped.id);
         const ammo = weaponManagerRef.current.getAmmo(equipped.id);
+        const reserve = weaponManagerRef.current.getReserveAmmo(equipped.id);
         gameManager?.updatePlayer(myId, {
           currentAmmo: ammo,
           reloadProgress: rp,
+          reserveAmmo: reserve,
         });
       }
     });

@@ -10,6 +10,7 @@ import DamageNumbers from "../../../components/world/DamageNumbers";
 import CTFBases from "../../../components/world/CTFBases";
 import BotTracers from "../../../components/world/BotTracers";
 import GrenadeProjectiles from "../../../components/world/GrenadeProjectiles";
+import { ShotgunVFX } from "./ShotgunVFX";
 import ShootingGallery from "./ShootingGallery";
 import type { SoloSceneProps } from "./SoloScene.types";
 
@@ -92,6 +93,7 @@ export const SoloScene: React.FC<Props> = ({
         setBot1GotTagged={setBot1GotTagged}
         setBot2GotTagged={setBot2GotTagged}
         setGameState={setGameState}
+        botDebugMode={botDebugMode}
       />
 
       <Bots
@@ -133,6 +135,7 @@ export const SoloScene: React.FC<Props> = ({
       <DamageNumbers />
       <BotTracers />
       <GrenadeProjectiles />
+      <ShotgunVFX />
       {gameState.mode === "ctf" && <CTFBases />}
       <ShootingGallery
         gameManager={gameManager}

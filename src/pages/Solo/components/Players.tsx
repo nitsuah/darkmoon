@@ -23,6 +23,7 @@ type PlayersProps = Pick<
   | "setBot1GotTagged"
   | "setBot2GotTagged"
   | "setGameState"
+  | "botDebugMode"
 >;
 
 const Players = React.forwardRef<PlayerCharacterHandle | null, PlayersProps>(
@@ -60,7 +61,7 @@ const Players = React.forwardRef<PlayerCharacterHandle | null, PlayersProps>(
           setBot1GotTagged={props.setBot1GotTagged}
           setBot2GotTagged={props.setBot2GotTagged}
           setGameState={props.setGameState}
-          showHitboxes={false}
+          showHitboxes={props.botDebugMode}
           mobileJetpackTrigger={mobileJetpackTriggerRef}
           onTagSuccess={() => {}}
         />

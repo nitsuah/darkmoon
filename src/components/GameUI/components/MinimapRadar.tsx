@@ -1,7 +1,7 @@
 import * as React from "react";
 import { GameState, Player } from "../../GameManager";
 
-const MAP_PX = 90;
+const MAP_PX = 180;
 const ARENA = 50;
 const CRATE_POSITIONS: [number, number][] = [
   [0, -8],
@@ -31,7 +31,7 @@ const MinimapRadar: React.FC<Props> = ({
     <div
       style={{
         position: "fixed",
-        top: "52px",
+        top: "10px",
         right: "10px",
         width: MAP_PX,
         height: MAP_PX,

@@ -30,6 +30,7 @@ interface SoloHUDProps {
   currentPlayerId: string;
   onStartGame: (mode: StartableMode) => void;
   onEndGame: () => void;
+  onMainMenu: () => void;
   botDebugMode: boolean;
   onToggleDebug: () => void;
   galleryDebugMode?: boolean;
@@ -70,6 +71,7 @@ const SoloHUD: React.FC<SoloHUDProps> = ({
   currentPlayerId,
   onStartGame,
   onEndGame,
+  onMainMenu,
   botDebugMode,
   onToggleDebug,
   galleryDebugMode,
@@ -112,6 +114,7 @@ const SoloHUD: React.FC<SoloHUDProps> = ({
         currentPlayerId={currentPlayerId}
         onStartGame={onStartGame}
         onEndGame={onEndGame}
+        onMainMenu={onMainMenu}
         botDebugMode={botDebugMode}
         onToggleDebug={onToggleDebug}
         galleryDebugMode={galleryDebugMode}

@@ -40,6 +40,7 @@ interface GameUIProps {
   currentPlayerId: string;
   onStartGame: (mode: StartableMode) => void;
   onEndGame: () => void;
+  onMainMenu: () => void;
   botDebugMode?: boolean;
   onToggleDebug?: () => void;
   galleryDebugMode?: boolean;
@@ -55,6 +56,7 @@ const GameUI: React.FC<GameUIProps> = ({
   currentPlayerId,
   onStartGame,
   onEndGame,
+  onMainMenu,
   botDebugMode = false,
   onToggleDebug,
   galleryDebugMode = false,
@@ -177,6 +179,7 @@ const GameUI: React.FC<GameUIProps> = ({
           isMinimal={isMinimal}
           isMobile={isMobile}
           onEndGame={onEndGame}
+          onMainMenu={onMainMenu}
           botDebugMode={botDebugMode}
           onToggleDebug={onToggleDebug}
           galleryDebugMode={galleryDebugMode}
@@ -294,7 +297,7 @@ const GameUI: React.FC<GameUIProps> = ({
         galleryHighScore={galleryHighScore}
         isNewRecord={isNewRecord}
         onPlayAgain={() => onStartGame(gameState.mode as StartableMode)}
-        onMainMenu={onEndGame}
+        onMainMenu={onMainMenu}
       />
     );
   }
@@ -310,6 +313,7 @@ const GameUI: React.FC<GameUIProps> = ({
       onStartGame={onStartGame}
       onToggleDebug={onToggleDebug}
       onToggleGalleryDebug={onToggleGalleryDebug}
+      onMainMenu={onMainMenu}
     />
   );
 };

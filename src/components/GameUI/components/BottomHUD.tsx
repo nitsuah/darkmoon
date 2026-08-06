@@ -24,6 +24,7 @@ const BottomHUD: React.FC<Props> = ({ currentPlayer, mode }) => {
   const wDef = wId ? WEAPONS[wId] : undefined;
   const ammo = currentPlayer.currentAmmo;
   const maxAmmo = wDef?.maxAmmo;
+  const reserveAmmo = currentPlayer.reserveAmmo;
   const reloadPct = currentPlayer.reloadProgress;
   const isReloading =
     reloadPct !== null && reloadPct !== undefined && reloadPct < 1;
@@ -136,12 +137,18 @@ const BottomHUD: React.FC<Props> = ({ currentPlayer, mode }) => {
                       </span>
                     ))
                   : `${ammo}`}
+              {reserveAmmo !== null && reserveAmmo !== undefined && (
+                <span style={{ color: "#666", fontSize: "10px" }}>
+                  {" "}
+                  / {reserveAmmo}
+                </span>
+              )}
             </span>
           )}
           <span style={{ color: "#555", fontSize: "10px" }}>
-            {isReloading ? "" : " [R]=reload"}
+            {isReloading ? "" : " [R]"}
           </span>
-          <span style={{ color: "#555", fontSize: "10px" }}>[1-5]</span>
+          <span style={{ color: "#555", fontSize: "10px" }}>[Tab]swap</span>
         </>
       )}
     </div>

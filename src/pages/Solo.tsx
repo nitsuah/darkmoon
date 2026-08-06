@@ -19,7 +19,23 @@ import {
   BOT4_CONFIG,
 } from "../lib/constants/botConfigs";
 import SoloScene from "./Solo/components/SoloScene";
-import { W, A, S, D, Q, E, SHIFT, SPACE } from "../components/utils";
+import {
+  W,
+  A,
+  S,
+  D,
+  Q,
+  E,
+  SHIFT,
+  SPACE,
+  KEY_1,
+  KEY_2,
+  KEY_3,
+  KEY_4,
+  KEY_5,
+  KEY_R,
+  KEY_TAB,
+} from "../components/utils";
 import { useNotifications } from "../lib/hooks/useNotifications";
 import { useMobileDetection } from "../lib/hooks/useMobileDetection";
 import { useRockPositions } from "../lib/hooks/useRockPositions";
@@ -56,6 +72,13 @@ const Solo: React.FC = () => {
     [E]: false,
     [SHIFT]: false,
     [SPACE]: false,
+    [KEY_1]: false,
+    [KEY_2]: false,
+    [KEY_3]: false,
+    [KEY_4]: false,
+    [KEY_5]: false,
+    [KEY_R]: false,
+    [KEY_TAB]: false,
   });
   const { chatMessages, chatVisible, setChatVisible, addChatMessage } =
     useChatMessages();
@@ -217,7 +240,25 @@ const Solo: React.FC = () => {
       }
 
       const key = e.key.toLowerCase();
-      if ([W, A, S, D, Q, E, SHIFT, SPACE, " "].includes(key)) {
+      const trackedKeys = [
+        W,
+        A,
+        S,
+        D,
+        Q,
+        E,
+        SHIFT,
+        SPACE,
+        " ",
+        KEY_1,
+        KEY_2,
+        KEY_3,
+        KEY_4,
+        KEY_5,
+        KEY_R,
+        KEY_TAB,
+      ];
+      if (trackedKeys.includes(key)) {
         e.preventDefault();
         setKeyState(key, true);
       }
@@ -225,7 +266,25 @@ const Solo: React.FC = () => {
 
     const handleKeyUp = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
-      if ([W, A, S, D, Q, E, SHIFT, SPACE, " "].includes(key)) {
+      const trackedKeys = [
+        W,
+        A,
+        S,
+        D,
+        Q,
+        E,
+        SHIFT,
+        SPACE,
+        " ",
+        KEY_1,
+        KEY_2,
+        KEY_3,
+        KEY_4,
+        KEY_5,
+        KEY_R,
+        KEY_TAB,
+      ];
+      if (trackedKeys.includes(key)) {
         e.preventDefault();
         setKeyState(key, false);
       }
@@ -519,6 +578,7 @@ const Solo: React.FC = () => {
         currentPlayerId={currentPlayerId}
         onStartGame={handleStartGame}
         onEndGame={handleEndGame}
+        onMainMenu={() => navigate("/")}
         botDebugMode={botDebugMode}
         onToggleDebug={() => setBotDebugMode((prev) => !prev)}
         galleryDebugMode={galleryDebugMode}

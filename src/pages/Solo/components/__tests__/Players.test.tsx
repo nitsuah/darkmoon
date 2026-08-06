@@ -67,6 +67,7 @@ describe("Players", () => {
             >
           >
         }
+        botDebugMode={false}
       />,
     );
 
@@ -113,6 +114,7 @@ describe("Players", () => {
             >
           >
         }
+        botDebugMode={false}
       />,
     );
 

@@ -45,6 +45,7 @@ describe("GameUI", () => {
         currentPlayerId="p1"
         onStartGame={vi.fn()}
         onEndGame={onEndGame}
+        onMainMenu={vi.fn()}
         botDebugMode={false}
         onToggleDebug={onToggleDebug}
       />,
@@ -78,6 +79,7 @@ describe("GameUI", () => {
         currentPlayerId="p1"
         onStartGame={onStartGame}
         onEndGame={vi.fn()}
+        onMainMenu={vi.fn()}
         botDebugMode={true}
         onToggleDebug={onToggleDebug}
       />,
@@ -119,6 +121,7 @@ describe("GameUI", () => {
         currentPlayerId="p1"
         onStartGame={vi.fn()}
         onEndGame={vi.fn()}
+        onMainMenu={vi.fn()}
       />,
     );
 
@@ -150,6 +153,7 @@ describe("GameUI", () => {
         currentPlayerId="p1"
         onStartGame={vi.fn()}
         onEndGame={vi.fn()}
+        onMainMenu={vi.fn()}
       />,
     );
 
@@ -178,6 +182,7 @@ describe("GameUI", () => {
         currentPlayerId="p1"
         onStartGame={vi.fn()}
         onEndGame={vi.fn()}
+        onMainMenu={vi.fn()}
       />,
     );
 
@@ -217,6 +222,7 @@ describe("GameUI", () => {
         currentPlayerId="p1"
         onStartGame={vi.fn()}
         onEndGame={vi.fn()}
+        onMainMenu={vi.fn()}
       />,
     );
 
@@ -231,6 +237,7 @@ describe("GameUI", () => {
   it("shows results screen after deathmatch ends, with Play Again and Main Menu buttons", () => {
     const onStartGame = vi.fn();
     const onEndGame = vi.fn();
+    const onMainMenu = vi.fn();
 
     const gameState: GameState = {
       mode: "deathmatch",
@@ -250,6 +257,7 @@ describe("GameUI", () => {
         currentPlayerId="p1"
         onStartGame={onStartGame}
         onEndGame={onEndGame}
+        onMainMenu={onMainMenu}
       />,
     );
 
@@ -263,7 +271,7 @@ describe("GameUI", () => {
     expect(onStartGame).toHaveBeenCalledWith("deathmatch");
 
     fireEvent.click(screen.getByText("Main Menu"));
-    expect(onEndGame).toHaveBeenCalled();
+    expect(onMainMenu).toHaveBeenCalled();
   });
 
   it("shows DEFEATED when the current player loses", () => {
@@ -285,6 +293,7 @@ describe("GameUI", () => {
         currentPlayerId="p1"
         onStartGame={vi.fn()}
         onEndGame={vi.fn()}
+        onMainMenu={vi.fn()}
       />,
     );
 

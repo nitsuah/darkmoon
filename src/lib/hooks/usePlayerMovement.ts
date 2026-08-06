@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { W, S, Q, E } from "../../components/utils";
+import { W, A, S, D, Q, E } from "../../components/utils";
 
 export interface KeysMap {
   [key: string]: boolean;
@@ -40,6 +40,8 @@ export function computeDirection(
 
   if (keysPressed[W]) direction.add(forward);
   if (keysPressed[S]) direction.sub(forward);
+  if (keysPressed[A]) direction.sub(right);
+  if (keysPressed[D]) direction.add(right);
   if (keysPressed[Q]) direction.sub(right);
   if (keysPressed[E]) direction.add(right);
 
@@ -66,29 +68,14 @@ export function computeSpeed(jetpackActive: boolean, shiftPressed: boolean) {
 
 /**
  * Determine the desired character facing yaw.
- * - While aiming (right click), the character should face camera yaw.
- * - Otherwise, face movement direction when moving.
+ * Always face the camera/aim direction so the crosshair is independent
+ * of movement (strafing with A/D doesn't rotate the character).
  */
 export function computeFacingYaw(
-  movementDirection: THREE.Vector3,
+  _movementDirection: THREE.Vector3,
   cameraHorizontal: number,
-  isAiming: boolean,
-  currentYaw: number,
 ): number {
-  if (isAiming) {
-    return cameraHorizontal;
-  }
-
-  if (movementDirection.lengthSq() > 0.0001) {
-    // Negate both components so the result matches the `isAiming` branch's
-    // convention: the model's front (chest) faces `movementDirection`, and
-    // the jetpack on its back ends up on the opposite side. Without the
-    // negation this yaw is offset by PI from the aiming branch, which makes
-    // the character appear to walk backwards with the jetpack facing front.
-    return Math.atan2(-movementDirection.x, -movementDirection.z);
-  }
-
-  return currentYaw;
+  return cameraHorizontal;
 }
 
 /**

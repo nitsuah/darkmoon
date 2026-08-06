@@ -1,8 +1,6 @@
 import * as React from "react";
 import { GameState, Player } from "../../GameManager";
 import { WEAPONS } from "../../combat/WeaponManager";
-import { Button } from "../../21st.dev/Button";
-import "../../../styles/Button.css";
 
 interface Props {
   gameState: GameState;
@@ -13,6 +11,7 @@ interface Props {
   isMinimal: boolean;
   isMobile: boolean;
   onEndGame: () => void;
+  onMainMenu: () => void;
   botDebugMode: boolean;
   onToggleDebug?: () => void;
   galleryDebugMode: boolean;
@@ -28,6 +27,21 @@ function formatTime(seconds: number): string {
   return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 }
 
+const btnStyle = (color: string, border: string): React.CSSProperties => ({
+  width: "100%",
+  padding: "5px 8px",
+  marginTop: "4px",
+  background: color,
+  border: `1px solid ${border}`,
+  borderRadius: "3px",
+  color: "white",
+  fontFamily: "monospace",
+  fontSize: "11px",
+  cursor: "pointer",
+  textAlign: "center",
+  userSelect: "none",
+});
+
 const GameStatusPanel: React.FC<Props> = ({
   gameState,
   players,
@@ -37,6 +51,7 @@ const GameStatusPanel: React.FC<Props> = ({
   isMinimal,
   isMobile,
   onEndGame,
+  onMainMenu,
   botDebugMode,
   onToggleDebug,
   galleryDebugMode,
@@ -46,7 +61,8 @@ const GameStatusPanel: React.FC<Props> = ({
   galleryMultiplier,
 }) => {
   const t = gameState.timeRemaining;
-  const isLow = t <= 15 && gameState.mode === "shooting_gallery";
+  const isGallery = gameState.mode === "shooting_gallery";
+  const isLow = t <= 15 && isGallery;
   const [pulseTick, setPulseTick] = React.useState(false);
   React.useEffect(() => {
     if (!isLow) {
@@ -58,118 +74,167 @@ const GameStatusPanel: React.FC<Props> = ({
   }, [isLow]);
   const pulse = isLow && pulseTick;
 
+  const panelWidth = isMinimal ? 70 : isMobile ? 120 : 170;
+
   return (
     <div
       style={{
         position: "fixed",
         top: isMinimal ? "8px" : "10px",
-        right: isMinimal ? "8px" : isMobile ? "10px" : "120px",
-        padding: isMinimal ? "3px 5px" : isMobile ? "6px 8px" : "8px 12px",
-        backgroundColor: "rgba(0, 0, 0, 0.9)",
-        border: "1px solid rgba(255, 255, 255, 0.3)",
+        left: isMinimal ? "8px" : "10px",
+        width: panelWidth,
+        padding: isMinimal ? "3px 5px" : "7px 10px",
+        backgroundColor: "rgba(0, 0, 0, 0.88)",
+        border: "1px solid rgba(255, 255, 255, 0.25)",
         borderRadius: isMinimal ? "3px" : "6px",
         color: "white",
         fontFamily: "monospace",
-        fontSize: isMinimal ? "8px" : isMobile ? "10px" : "12px",
+        fontSize: isMinimal ? "8px" : "11px",
         zIndex: 1000,
-        minWidth: isMinimal ? "auto" : isMobile ? "auto" : "180px",
-        maxWidth: isMinimal ? "80px" : "auto",
-        textAlign: "center",
+        boxSizing: "border-box",
       }}
     >
       {!isMinimal && (
         <div
           style={{
-            marginBottom: "6px",
-            fontSize: isMobile ? "11px" : "13px",
+            marginBottom: "4px",
+            fontSize: "12px",
             fontWeight: "bold",
+            textAlign: "center",
           }}
         >
-          {isMobile
-            ? gameState.mode.toUpperCase().substring(0, 3)
-            : `${gameState.mode.toUpperCase()} GAME`}
+          {gameState.mode === "tag"
+            ? "🏃 TAG"
+            : gameState.mode === "deathmatch"
+              ? "💀 DEATHMATCH"
+              : gameState.mode === "ctf"
+                ? "🚩 CTF"
+                : gameState.mode === "shooting_gallery"
+                  ? "🎯 GALLERY"
+                  : gameState.mode.toUpperCase()}
         </div>
       )}
 
       <div
         style={{
-          marginBottom: isMinimal ? "2px" : "6px",
-          fontSize: isMinimal
-            ? "13px"
-            : isLow
-              ? "14px"
-              : isMobile
-                ? "10px"
-                : "11px",
-          fontWeight: isLow ? "bold" : isMinimal ? "bold" : "normal",
+          marginBottom: isMinimal ? "2px" : "5px",
+          fontSize: isMinimal ? "13px" : isLow ? "14px" : "12px",
+          fontWeight: isLow || isMinimal ? "bold" : "normal",
           color: isLow ? (pulse ? "#ff3333" : "#ff8888") : undefined,
           textShadow: isLow ? "0 0 8px #ff0000" : undefined,
+          textAlign: "center",
           transition: "color 0.25s",
         }}
       >
         ⏱️ {formatTime(t)}
       </div>
 
-      {gameState.mode === "tag" && (
+      {/* TAG MODE INFO */}
+      {gameState.mode === "tag" && !isMinimal && (
         <>
           <div
             style={{
-              marginBottom: isMinimal ? "2px" : "6px",
-              padding: isMinimal ? "2px 3px" : "4px 8px",
+              marginBottom: "4px",
+              padding: "3px 5px",
               backgroundColor: currentPlayer?.isIt
-                ? "rgba(255, 100, 100, 0.3)"
-                : "rgba(100, 255, 100, 0.3)",
+                ? "rgba(255,100,100,0.3)"
+                : "rgba(100,255,100,0.3)",
               borderRadius: "3px",
               border: currentPlayer?.isIt
                 ? "1px solid #ff6464"
                 : "1px solid #64ff64",
-              fontSize: isMinimal ? "8px" : isMobile ? "10px" : "11px",
+              fontSize: "10px",
+              textAlign: "center",
             }}
           >
-            {isMinimal || isMobile
-              ? currentPlayer?.isIt
-                ? "🏃 IT!"
-                : `${itPlayer?.name?.substring(0, 6) || "?"}`
-              : currentPlayer?.isIt
-                ? "🏃 YOU ARE IT!"
-                : `${itPlayer?.name || "Someone"} is IT`}
+            {currentPlayer?.isIt
+              ? "🏃 YOU ARE IT!"
+              : `${itPlayer?.name || "Someone"} is IT`}
           </div>
-          {currentPlayer?.isIt && !isMobile && !isMinimal && (
+          {currentPlayer?.isIt && (
             <div
               style={{
-                fontSize: "10px",
+                fontSize: "9px",
                 color: "#ffff64",
-                marginBottom: "4px",
+                marginBottom: "3px",
+                textAlign: "center",
               }}
             >
               Click to fire laser tag!
             </div>
           )}
+          {currentPlayer?.health !== undefined && (
+            <div style={{ marginBottom: "3px" }}>
+              <div
+                style={{ fontSize: "9px", color: "#aaa", marginBottom: "1px" }}
+              >
+                ❤️ {currentPlayer.health ?? currentPlayer.maxHealth ?? 100} /{" "}
+                {currentPlayer.maxHealth ?? 100}
+              </div>
+              <div
+                style={{
+                  height: "5px",
+                  background: "#222",
+                  borderRadius: "2px",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    width: `${Math.max(0, Math.min(1, (currentPlayer.health ?? 100) / (currentPlayer.maxHealth ?? 100))) * 100}%`,
+                    height: "100%",
+                    background:
+                      (currentPlayer.health ?? 100) /
+                        (currentPlayer.maxHealth ?? 100) >
+                      0.5
+                        ? "#44ff44"
+                        : (currentPlayer.health ?? 100) /
+                              (currentPlayer.maxHealth ?? 100) >
+                            0.25
+                          ? "#ffaa00"
+                          : "#ff3333",
+                    transition: "width 0.15s",
+                  }}
+                />
+              </div>
+            </div>
+          )}
+          {/* Tag scores */}
+          <div style={{ fontSize: "9px", color: "#aaa", marginBottom: "3px" }}>
+            {Array.from(players.values())
+              .map((p) => ({
+                name: p.name,
+                score: gameState.scores[p.id] || 0,
+              }))
+              .sort((a, b) => b.score - a.score)
+              .map((e) => (
+                <div key={e.name}>
+                  🏷️ {e.name}: {Math.floor(e.score)}
+                </div>
+              ))}
+          </div>
         </>
       )}
 
-      {gameState.mode === "deathmatch" && (
+      {/* DEATHMATCH INFO */}
+      {gameState.mode === "deathmatch" && !isMinimal && (
         <>
           <div
             style={{
-              marginBottom: isMinimal ? "2px" : "6px",
-              padding: isMinimal ? "2px 3px" : "4px 8px",
-              backgroundColor: "rgba(100, 255, 100, 0.2)",
+              marginBottom: "4px",
+              padding: "3px 5px",
+              backgroundColor: "rgba(100,255,100,0.15)",
               borderRadius: "3px",
               border: "1px solid #64ff64",
-              fontSize: isMinimal ? "8px" : isMobile ? "10px" : "11px",
+              fontSize: "10px",
             }}
           >
-            ❤️ {currentPlayer?.health ?? currentPlayer?.maxHealth ?? 100}
-            {!isMinimal && ` / ${currentPlayer?.maxHealth ?? 100}`}
+            ❤️ {currentPlayer?.health ?? 100} /{" "}
+            {currentPlayer?.maxHealth ?? 100}
           </div>
-          {!isMinimal && currentPlayer?.equippedWeaponId && (
+          {currentPlayer?.equippedWeaponId && (
             <div
-              style={{
-                marginBottom: "6px",
-                fontSize: isMobile ? "9px" : "10px",
-                color: "#aaddff",
-              }}
+              style={{ marginBottom: "3px", fontSize: "9px", color: "#aaddff" }}
             >
               🔫{" "}
               {WEAPONS[currentPlayer.equippedWeaponId]?.name ??
@@ -179,103 +244,68 @@ const GameStatusPanel: React.FC<Props> = ({
               currentPlayer.currentAmmo === undefined
                 ? "∞"
                 : currentPlayer.currentAmmo}
-              ] [1-5]
+              ]
             </div>
           )}
-          {!isMinimal && (
-            <div
-              style={{
-                marginBottom: "6px",
-                fontSize: isMobile ? "9px" : "10px",
-                textAlign: "left",
-              }}
-            >
-              {Array.from(players.values())
-                .map((p) => ({
-                  name: p.name,
-                  kills: gameState.scores[p.id] || 0,
-                }))
-                .sort((a, b) => b.kills - a.kills)
-                .map((entry) => (
-                  <div key={entry.name}>
-                    💀 {entry.name}: {entry.kills}
-                    {gameState.killLimit ? ` / ${gameState.killLimit}` : ""}
-                  </div>
-                ))}
-            </div>
-          )}
+          <div style={{ fontSize: "9px", color: "#aaa", marginBottom: "3px" }}>
+            {Array.from(players.values())
+              .map((p) => ({
+                name: p.name,
+                kills: gameState.scores[p.id] || 0,
+              }))
+              .sort((a, b) => b.kills - a.kills)
+              .map((e) => (
+                <div key={e.name}>
+                  💀 {e.name}: {e.kills}
+                  {gameState.killLimit ? ` / ${gameState.killLimit}` : ""}
+                </div>
+              ))}
+          </div>
         </>
       )}
 
-      {gameState.mode === "ctf" && (
+      {/* CTF INFO */}
+      {gameState.mode === "ctf" && !isMinimal && (
         <>
           <div
             style={{
-              marginBottom: isMinimal ? "2px" : "6px",
-              padding: isMinimal ? "2px 3px" : "4px 8px",
+              marginBottom: "4px",
+              padding: "3px 5px",
               backgroundColor:
                 currentPlayer?.team === "a"
-                  ? "rgba(74, 144, 226, 0.3)"
-                  : "rgba(220, 53, 69, 0.3)",
+                  ? "rgba(74,144,226,0.3)"
+                  : "rgba(220,53,69,0.3)",
               borderRadius: "3px",
               border:
                 currentPlayer?.team === "a"
                   ? "1px solid #4a90e2"
                   : "1px solid #dc3545",
-              fontSize: isMinimal ? "8px" : isMobile ? "10px" : "11px",
+              fontSize: "10px",
             }}
           >
             {currentPlayer?.team === "a" ? "🔵 Team A" : "🔴 Team B"}
           </div>
+          <div style={{ marginBottom: "3px", fontSize: "9px" }}>
+            🔵 {gameState.scores["a"] ?? 0} - {gameState.scores["b"] ?? 0} 🔴
+          </div>
           <div
             style={{
-              marginBottom: isMinimal ? "2px" : "6px",
-              padding: isMinimal ? "2px 3px" : "4px 8px",
-              backgroundColor: "rgba(100, 255, 100, 0.2)",
+              marginBottom: "3px",
+              padding: "3px 5px",
+              backgroundColor: "rgba(100,255,100,0.15)",
               borderRadius: "3px",
               border: "1px solid #64ff64",
-              fontSize: isMinimal ? "8px" : isMobile ? "10px" : "11px",
+              fontSize: "10px",
             }}
           >
-            ❤️ {currentPlayer?.health ?? currentPlayer?.maxHealth ?? 100}
-            {!isMinimal && ` / ${currentPlayer?.maxHealth ?? 100}`}
+            ❤️ {currentPlayer?.health ?? 100} /{" "}
+            {currentPlayer?.maxHealth ?? 100}
           </div>
-          {!isMinimal && currentPlayer?.equippedWeaponId && (
+          {gameState.flags?.some((f) => f.carrierId === currentPlayerId) && (
             <div
               style={{
-                marginBottom: "6px",
-                fontSize: isMobile ? "9px" : "10px",
-                color: "#aaddff",
-              }}
-            >
-              🔫{" "}
-              {WEAPONS[currentPlayer.equippedWeaponId]?.name ??
-                currentPlayer.equippedWeaponId}{" "}
-              [
-              {currentPlayer.currentAmmo === null ||
-              currentPlayer.currentAmmo === undefined
-                ? "∞"
-                : currentPlayer.currentAmmo}
-              ] [1-5]
-            </div>
-          )}
-          {!isMinimal && (
-            <div
-              style={{
-                marginBottom: "6px",
-                fontSize: isMobile ? "9px" : "10px",
-              }}
-            >
-              🔵 {gameState.scores["a"] ?? 0} - {gameState.scores["b"] ?? 0} 🔴
-            </div>
-          )}
-          {gameState.flags?.some(
-            (flag) => flag.carrierId === currentPlayerId,
-          ) && (
-            <div
-              style={{
-                marginBottom: isMinimal ? "2px" : "6px",
-                fontSize: isMinimal ? "8px" : isMobile ? "9px" : "10px",
+                marginBottom: "3px",
+                fontSize: "9px",
                 color: "#ffff64",
                 fontWeight: "bold",
               }}
@@ -286,48 +316,49 @@ const GameStatusPanel: React.FC<Props> = ({
         </>
       )}
 
-      {gameState.mode === "shooting_gallery" && (
+      {/* GALLERY INFO */}
+      {gameState.mode === "shooting_gallery" && !isMinimal && (
         <>
           <div
             style={{
-              marginBottom: isMinimal ? "2px" : "6px",
-              padding: isMinimal ? "2px 3px" : "4px 8px",
+              marginBottom: "3px",
+              padding: "3px 5px",
               backgroundColor: "rgba(255,215,0,0.15)",
               borderRadius: "3px",
               border: "1px solid #ffd700",
-              fontSize: isMinimal ? "8px" : isMobile ? "10px" : "11px",
+              fontSize: "10px",
               color: "#ffd700",
               fontWeight: "bold",
+              textAlign: "center",
             }}
           >
             🎯 {gameState.scores[currentPlayerId] ?? 0} pts
           </div>
-          {!isMinimal && galleryHighScore > 0 && (
+          {galleryHighScore > 0 && (
             <div
               style={{
-                marginBottom: "3px",
                 fontSize: "9px",
                 color: "#888",
                 textAlign: "center",
+                marginBottom: "2px",
               }}
             >
-              Best: {galleryHighScore} pts
+              Best: {galleryHighScore}
             </div>
           )}
-          {!isMinimal && galleryCombo >= 3 && (
+          {galleryCombo >= 3 && (
             <div
               style={{
-                marginBottom: "4px",
-                padding: "2px 6px",
+                marginBottom: "3px",
+                padding: "2px 5px",
                 backgroundColor: "rgba(255,120,0,0.25)",
                 borderRadius: "3px",
                 border: "1px solid #ff8800",
-                fontSize: "11px",
+                fontSize: "10px",
                 color: "#ff8800",
                 fontWeight: "bold",
                 textAlign: "center",
                 textShadow: "0 0 8px #ff6600",
-                letterSpacing: "1px",
               }}
             >
               {galleryMultiplier >= 4
@@ -335,93 +366,79 @@ const GameStatusPanel: React.FC<Props> = ({
                 : galleryMultiplier >= 3
                   ? "RAMPAGE"
                   : "COMBO"}{" "}
-              x{galleryMultiplier} ({galleryCombo})
+              x{galleryMultiplier}
             </div>
           )}
-          {!isMinimal && (
-            <div
-              style={{
-                marginBottom: "6px",
-                fontSize: "10px",
-                color: "#aaaaaa",
-              }}
-            >
-              {(() => {
-                const shots = gameState.galleryShots ?? 0;
-                const hits = gameState.galleryHits ?? 0;
-                const acc = shots > 0 ? Math.round((hits / shots) * 100) : 0;
-                return `Hits: ${hits}/${shots} (${acc}% acc)`;
-              })()}
-            </div>
-          )}
-          {!isMinimal && (
-            <div
-              style={{ fontSize: "9px", color: "#888", marginBottom: "4px" }}
-            >
-              🔴=10 🟠=25 🟡=50 ⭐=100
-            </div>
-          )}
+          <div
+            style={{
+              fontSize: "9px",
+              color: "#888",
+              marginBottom: "3px",
+              textAlign: "center",
+            }}
+          >
+            {(() => {
+              const s = gameState.galleryShots ?? 0;
+              const h = gameState.galleryHits ?? 0;
+              return `${h}/${s} (${s > 0 ? Math.round((h / s) * 100) : 0}%)`;
+            })()}
+          </div>
         </>
       )}
 
-      <Button
-        onClick={onEndGame}
-        variant="danger"
-        size={isMinimal ? "small" : isMobile ? "small" : "medium"}
-        className="game-ui-button-container"
-        aria-label="End Game"
-        title={isMinimal || isMobile ? "End Game" : undefined}
+      {/* BUTTONS — always stacked, mode-aware */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "3px",
+          marginTop: "4px",
+        }}
       >
-        {isMinimal || isMobile ? "⏹️" : "End Game"}
-      </Button>
-
-      {onToggleDebug && (
-        <Button
-          onClick={onToggleDebug}
-          variant={botDebugMode ? "danger" : "warning"}
-          size={isMinimal ? "small" : isMobile ? "small" : "medium"}
-          className="game-ui-button-container"
-          aria-label={botDebugMode ? "Stop Debug Mode" : "Start Debug Mode"}
-          title={
-            isMinimal || isMobile
-              ? botDebugMode
-                ? "Stop Debug Mode"
-                : "Start Debug Mode"
-              : undefined
-          }
+        <button
+          onClick={onEndGame}
+          style={btnStyle("rgba(180,30,30,0.85)", "#dc3545")}
         >
-          {isMinimal || isMobile
-            ? "🔧"
-            : botDebugMode
-              ? "⏹️ Stop Debug"
-              : "🔧 Debug Mode"}
-        </Button>
-      )}
+          {isMinimal ? "⏹️" : "⏹ Stop Game"}
+        </button>
 
-      {onToggleGalleryDebug && (
-        <Button
-          onClick={onToggleGalleryDebug}
-          variant={galleryDebugMode ? "danger" : "success"}
-          size={isMinimal ? "small" : isMobile ? "small" : "medium"}
-          className="game-ui-button-container"
-          aria-label={
-            galleryDebugMode ? "Stop Gallery Debug" : "Start Gallery Debug"
-          }
-          title={
-            isMinimal || isMobile
-              ? galleryDebugMode
-                ? "Stop Gallery Debug"
-                : "Start Gallery Debug"
-              : undefined
-          }
+        <button
+          onClick={onMainMenu}
+          style={btnStyle("rgba(50,50,80,0.85)", "#666")}
         >
-          {isMinimal || isMobile
-            ? "🎯"
-            : galleryDebugMode
-              ? "⏹️ Stop Gallery"
-              : "🎯 Gallery Debug"}
-        </Button>
-      )}
+          {isMinimal ? "🏠" : "🏠 Main Menu"}
+        </button>
+
+        {/* Debug toggle — shown in all modes */}
+        {onToggleDebug && (
+          <button
+            onClick={onToggleDebug}
+            style={btnStyle(
+              botDebugMode ? "rgba(180,30,30,0.8)" : "rgba(200,120,0,0.8)",
+              botDebugMode ? "#dc3545" : "#ff8c00",
+            )}
+          >
+            {isMinimal ? "🔧" : botDebugMode ? "⏹ Debug OFF" : "🔧 Debug ON"}
+          </button>
+        )}
+
+        {/* Gallery debug only in gallery mode */}
+        {onToggleGalleryDebug && gameState.mode === "shooting_gallery" && (
+          <button
+            onClick={onToggleGalleryDebug}
+            style={btnStyle(
+              galleryDebugMode ? "rgba(180,30,30,0.8)" : "rgba(0,140,80,0.8)",
+              galleryDebugMode ? "#dc3545" : "#00aa64",
+            )}
+          >
+            {isMinimal
+              ? "🎯"
+              : galleryDebugMode
+                ? "⏹ Gallery OFF"
+                : "🎯 Gallery Debug"}
+          </button>
+        )}
+      </div>
     </div>
   );
 };
