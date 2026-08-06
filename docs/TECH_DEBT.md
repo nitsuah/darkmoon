@@ -1,6 +1,6 @@
 # Tech Debt Tracker
 
-**Last Updated:** November 25, 2025  
+**Last Updated:** August 4, 2026  
 **Status:** Actively tracked
 
 > **Note:** This document tracks actionable tech debt items. See QA issues in [TODO.md](./TODO.md)
@@ -27,24 +27,33 @@
 
 ---
 
-### 2. Solo.tsx Monolithic (1,002 lines)
+### 2. Solo.tsx Monolithic (1,002 lines) ✅ RESOLVED
 
-**Status:** 🔴 URGENT  
-**Impact:** Hard to maintain, test, and extend  
-**Files:** `src/pages/Solo.tsx`  
-**Details:** Game state, socket logic, bot AI, and rendering all in one file with 20+ useState hooks  
-**Owner:** [Assign]  
-**Due:** [Sprint 2]
+**Status:** ✅ COMPLETED — [PR #390](https://github.com/nitsuah/darkmoon/pull/390)  
+**Impact:** Hard to maintain, test, and extend (resolved)  
+**Files:** `src/pages/Solo.tsx` (956 → ~295 lines)  
+**Details:** Extracted three reusable hooks: `useGameStart` (mode-specific start logic + `ensureBot` helper), `useBotPositionHandlers` (position update + CTF flag pickup/capture), `useDebugModes` (`useBotDebugMode`, `useGalleryDebugMode`, `useAutoRestart`). `useSocketConnection`, `useSoloGame`, `SoloScene`, `SoloHUD`, and bot configs were already extracted in prior sprints.  
+**Completed:** August 4, 2026
 
-**Action Items:**
+**Completed:**
 
-- [ ] Extract `useSocketConnection` hook
-- [ ] Extract `useGameBots` hook
-- [ ] Extract `useSoloGame` hook
-- [ ] Create `SoloScene` and `SoloHUD` components
-- [ ] Move bot configs to separate file
+- [x] Extract `useSocketConnection` hook
+- [x] Extract `useSoloGame` hook
+- [x] Create `SoloScene` and `SoloHUD` components
+- [x] Move bot configs to `lib/constants/botConfigs.ts`
+- [x] Extract `useGameStart` hook
+- [x] Extract `useBotPositionHandlers` hook
+- [x] Extract `useDebugModes` hook (botDebugMode, galleryDebugMode, autoRestart)
 
-**Target:** Reduce to <200 lines
+---
+
+### 2b. GameUI.tsx Monolith (2,078 lines) ✅ RESOLVED
+
+**Status:** ✅ COMPLETED — [PR #390](https://github.com/nitsuah/darkmoon/pull/390)  
+**Impact:** Single file owned all HUD, overlays, lobby, results, and event-driven state (resolved)  
+**Files:** `src/components/GameUI.tsx` → barrel re-export; `src/components/GameUI/`  
+**Details:** Split into 15 focused sub-components under `src/components/GameUI/components/`: `DamageFlash`, `HitDirectionIndicator`, `KillAnnouncement`, `PickupToast`, `ScoreBoard`, `KillFeed`, `MinimapRadar`, `Crosshair`, `BottomHUD`, `DeathScreen`, `StreakAnnouncement`, `BonusRoundOverlay`, `GameStatusPanel`, `GameResultsScreen`, `GameLobbyPanel`. All event-driven state extracted into `GameUI/hooks/useGameUIState.ts`. Original `GameUI.tsx` kept as a barrel re-export so all consumer imports remain unchanged.  
+**Completed:** August 4, 2026
 
 ---
 
@@ -189,7 +198,7 @@
 
 - [ ] Migrate to CSS Modules
 - [ ] Create design token system
-- [ ] Extract inline styles from GameUI.tsx
+- [ ] Extract inline styles from GameUI sub-components (`src/components/GameUI/components/`)
 - [ ] Convert to mobile-first responsive design
 
 ---
@@ -250,10 +259,10 @@
 
 | Category                | Items  | Estimated Effort |
 | ----------------------- | ------ | ---------------- |
-| 🔴 Critical (P0)        | 3      | 4-6 weeks        |
+| 🔴 Critical (P0)        | 2      | 3-5 weeks        |
 | 🟡 High Priority (P1)   | 4      | 3-4 weeks        |
 | 🟢 Medium Priority (P2) | 6      | 4-6 weeks        |
-| **Total**               | **13** | **11-16 weeks**  |
+| **Total**               | **12** | **10-15 weeks**  |
 
 ---
 

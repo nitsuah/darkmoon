@@ -95,7 +95,7 @@ Q4 2026: Platform Expansion (v3.0)
 
 - `src/pages/Home.tsx` (215 lines)
 - `src/styles/Home.css`
-- `src/components/GameUI.tsx` (287 lines)
+- `src/components/GameUI/components/GameStatusPanel.tsx` (mode-specific HUD)
 
 **Acceptance Criteria:**
 
@@ -109,47 +109,38 @@ Q4 2026: Platform Expansion (v3.0)
 
 ### Week 3-4: Code Architecture Refactoring (P1)
 
-#### 🟡 Decompose Solo.tsx (1,002 lines → 4 files)
+#### ✅ Decompose Solo.tsx — COMPLETED ([PR #390](https://github.com/nitsuah/darkmoon/pull/390))
 
-**Current structure:**
+**Result:** `Solo.tsx` reduced from 956 lines to ~295 lines.
 
-```bash
-Solo.tsx (1,002 lines)
-├── State management (20+ useState)
-├── Socket connection logic
-├── Bot AI coordination
-├── Game loop orchestration
-└── UI rendering
-```
-
-**New structure:**
+**Actual structure (as of Aug 2026):**
 
 ```bash
-pages/Solo/
-├── index.tsx (150 lines) - Orchestration only
-├── hooks/
-│   ├── useSoloGame.ts (120 lines) - Game state
-│   ├── useGameBots.ts (80 lines) - Bot management
-│   └── useSocketConnection.ts (60 lines) - Socket logic
-├── components/
-│   ├── SoloScene.tsx (200 lines) - 3D scene
-│   └── SoloHUD.tsx (150 lines) - UI overlay
-└── config/
-    └── botConfigs.ts (50 lines) - Bot configurations
+pages/Solo.tsx (~295 lines) - Orchestration only
+lib/hooks/
+├── useGameStart.ts       - Mode-specific start logic + ensureBot helper
+├── useBotPositionHandlers.ts - Position update + CTF flag pickup/capture
+├── useDebugModes.ts      - useBotDebugMode, useGalleryDebugMode, useAutoRestart
+├── useSoloGame.ts        - Game state + socket initialization
+├── useSocketConnection.ts - Socket connection management
+└── ... (other existing hooks)
+pages/Solo/components/
+├── SoloScene.tsx         - 3D scene
+└── SoloHUD.tsx           - UI overlay
+lib/constants/botConfigs.ts - Bot configurations
 ```
 
-**Tasks:**
+**Completed:**
 
-- [ ] Extract socket connection to `useSocketConnection` hook
-- [ ] Extract bot coordination to `useGameBots` hook
-- [ ] Extract game state to `useSoloGame` hook
-- [ ] Create SoloScene component for 3D rendering
-- [ ] Create SoloHUD component for UI overlay
-- [ ] Move bot configs to separate file
-- [ ] Update tests to reflect new structure
-- [ ] Verify no regression in gameplay
-
-**Estimated Effort:** 5-7 days
+- [x] Extract socket connection to `useSocketConnection` hook
+- [x] Extract game state to `useSoloGame` hook
+- [x] Create SoloScene component for 3D rendering
+- [x] Create SoloHUD component for UI overlay
+- [x] Move bot configs to `lib/constants/botConfigs.ts`
+- [x] Extract `useGameStart` hook
+- [x] Extract `useBotPositionHandlers` hook
+- [x] Extract `useDebugModes` hook
+- [x] Verify no regression in gameplay (448 tests passing)
 
 ---
 
@@ -335,7 +326,7 @@ export const createLogger = (namespace: string) => {
 - [ ] Create design token system (`lib/design-tokens.ts`)
 - [ ] Centralize theme variables
 - [ ] Convert to mobile-first media queries
-- [ ] Extract inline styles from GameUI.tsx
+- [ ] Extract inline styles from GameUI sub-components (`src/components/GameUI/components/`)
 - [ ] Create reusable UI component library:
   - Button
   - Card
