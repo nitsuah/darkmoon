@@ -201,6 +201,17 @@ export class WeaponManager {
     }
   }
 
+  /** Force-completes a reload instantly (precision reload mechanic). */
+  completeReloadNow(weaponId: string): void {
+    if (!this.reloadStartAt.has(weaponId)) return;
+    const weapon = WEAPONS[weaponId];
+    if (!weapon) return;
+    this.reloadStartAt.set(
+      weaponId,
+      Date.now() - (weapon.reloadTimeMs ?? 0) - 100,
+    );
+  }
+
   unequip(): void {
     if (this.equippedWeaponId) {
       this.stopCharge(this.equippedWeaponId);

@@ -28,6 +28,7 @@ import KillFeed from "./components/KillFeed";
 import MinimapRadar from "./components/MinimapRadar";
 import Crosshair from "./components/Crosshair";
 import BottomHUD from "./components/BottomHUD";
+import ReloadMeter from "./components/ReloadMeter";
 import DeathScreen from "./components/DeathScreen";
 import StreakAnnouncement from "./components/StreakAnnouncement";
 import BonusRoundOverlay from "./components/BonusRoundOverlay";
@@ -127,6 +128,12 @@ const GameUI: React.FC<GameUIProps> = ({
       gameState.mode === "ctf" ||
       gameState.mode === "tag") &&
     !isMinimal;
+  const reloadPct = currentPlayer?.reloadProgress ?? null;
+  const showReloadMeter =
+    showBottomHUD &&
+    reloadPct !== null &&
+    reloadPct !== undefined &&
+    reloadPct < 1;
 
   // Active game overlay
   if (gameState.isActive) {
@@ -212,6 +219,8 @@ const GameUI: React.FC<GameUIProps> = ({
         {showBottomHUD && (
           <BottomHUD currentPlayer={currentPlayer!} mode={gameState.mode} />
         )}
+
+        {showReloadMeter && <ReloadMeter isReloading reloadPct={reloadPct!} />}
 
         <DeathScreen
           respawnSecondsLeft={respawnSecondsLeft}

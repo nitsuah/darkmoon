@@ -119,6 +119,16 @@ export const PlayerWeapon = React.memo(
     const _tempVec = React.useRef<THREE.Vector3>(new THREE.Vector3());
     const _tempVec2 = React.useRef<THREE.Vector3>(new THREE.Vector3());
 
+    // Listen for perfect-reload event dispatched by ReloadMeter
+    React.useEffect(() => {
+      const handler = () => {
+        const equipped = weaponManagerRef.current?.getEquipped();
+        if (equipped) weaponManagerRef.current.completeReloadNow(equipped.id);
+      };
+      window.addEventListener("weapon-reload-perfect", handler);
+      return () => window.removeEventListener("weapon-reload-perfect", handler);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
     useFrame((state) => {
       const now = Date.now();
 
@@ -176,11 +186,16 @@ export const PlayerWeapon = React.memo(
             currentAmmo: weaponManagerRef.current.getAmmo("smg"),
           });
         }
-        // R key: reload
+        // R key: reload or precision snap
         if (keyR && !prevKeyRRef.current) {
           const equipped = weaponManagerRef.current.getEquipped();
           if (equipped) {
-            weaponManagerRef.current.startReload(equipped.id);
+            if (weaponManagerRef.current.isReloading(equipped.id)) {
+              // Precision reload: snap attempt dispatched; ReloadMeter handles perfect check
+              window.dispatchEvent(new CustomEvent("weapon-reload-snap"));
+            } else {
+              weaponManagerRef.current.startReload(equipped.id);
+            }
           }
         }
         // Tab key: cycle to next weapon
