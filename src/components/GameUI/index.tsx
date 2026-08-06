@@ -113,13 +113,6 @@ const GameUI: React.FC<GameUIProps> = ({
 
   const isSpawnProtected = currentPlayer?.spawnProtectedUntil !== undefined;
 
-  const criticalHealth =
-    currentPlayer !== undefined &&
-    currentPlayer.health !== undefined &&
-    currentPlayer.health < 30 &&
-    currentPlayer.respawnAt === undefined &&
-    (gameState.mode === "deathmatch" || gameState.mode === "ctf");
-
   const isCombat = COMBAT_MODES.has(gameState.mode);
   const showCrosshair = isCombat && respawnSecondsLeft === null && !isMinimal;
   const showBottomHUD =
@@ -135,6 +128,12 @@ const GameUI: React.FC<GameUIProps> = ({
 
   // Active game overlay
   if (gameState.isActive) {
+    const criticalHealth =
+      currentPlayer !== undefined &&
+      currentPlayer.health !== undefined &&
+      currentPlayer.health < 30 &&
+      currentPlayer.respawnAt === undefined &&
+      (gameState.mode === "deathmatch" || gameState.mode === "ctf");
     return (
       <>
         <style>{`

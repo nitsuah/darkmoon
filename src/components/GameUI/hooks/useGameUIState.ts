@@ -230,33 +230,23 @@ export function useGalleryCombo(): {
 
 export function useCrosshairSpread(): number {
   const [crosshairSpread, setCrosshairSpread] = React.useState(0);
-  const decayRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
   React.useEffect(() => {
     const onFired = (e: unknown) => {
       const weaponId = (e as { detail: { weaponId: string } }).detail.weaponId;
       const addSpread = weaponId === "smg" ? 8 : weaponId === "shotgun" ? 6 : 3;
       setCrosshairSpread((prev) => Math.min(prev + addSpread, 24));
-      if (decayRef.current) clearInterval(decayRef.current);
-      decayRef.current = setInterval(() => {
-        setCrosshairSpread((prev) => Math.max(0, prev - 2));
-      }, 50);
     };
     window.addEventListener("weapon-fired", onFired);
-    return () => {
-      window.removeEventListener("weapon-fired", onFired);
-      if (decayRef.current) {
-        clearInterval(decayRef.current);
-        decayRef.current = null;
-      }
-    };
+    return () => window.removeEventListener("weapon-fired", onFired);
   }, []);
 
   React.useEffect(() => {
-    if (crosshairSpread <= 0 && decayRef.current) {
-      clearInterval(decayRef.current);
-      decayRef.current = null;
-    }
+    if (crosshairSpread <= 0) return;
+    const t = setTimeout(() => {
+      setCrosshairSpread((prev) => Math.max(0, prev - 2));
+    }, 50);
+    return () => clearTimeout(t);
   }, [crosshairSpread]);
 
   return crosshairSpread;
