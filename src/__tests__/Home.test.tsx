@@ -61,13 +61,7 @@ describe("Home Page", () => {
     expect(navigateMock).toHaveBeenCalledWith("/solo");
   });
 
-  it("navigates on mobile CTA button tap", () => {
-    Object.defineProperty(window, "innerWidth", {
-      configurable: true,
-      writable: true,
-      value: 768,
-    });
-
+  it("navigates on CTA button tap", () => {
     render(
       <ThemeProvider>
         <BrowserRouter>
@@ -76,7 +70,7 @@ describe("Home Page", () => {
       </ThemeProvider>,
     );
 
-    fireEvent.click(screen.getByText("Play Now →"));
+    fireEvent.click(screen.getByRole("button", { name: /play now/i }));
     expect(navigateMock).toHaveBeenCalledWith("/solo");
   });
 });

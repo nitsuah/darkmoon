@@ -120,7 +120,9 @@ const GameUI: React.FC<GameUIProps> = ({
     players,
   ]);
 
-  const isSpawnProtected = currentPlayer?.spawnProtectedUntil !== undefined;
+  const isSpawnProtected =
+    currentPlayer?.spawnProtectedUntil !== undefined &&
+    currentPlayer.spawnProtectedUntil > Date.now();
 
   const isCombat = COMBAT_MODES.has(gameState.mode);
   const showCrosshair = isCombat && respawnSecondsLeft === null && !isMinimal;

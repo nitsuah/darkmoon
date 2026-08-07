@@ -223,10 +223,7 @@ export class WeaponManager {
     if (!this.reloadStartAt.has(weaponId)) return;
     const weapon = WEAPONS[weaponId];
     if (!weapon) return;
-    this.reloadStartAt.set(
-      weaponId,
-      Date.now() - (weapon.reloadTimeMs ?? 0) - 100,
-    );
+    this.refill(weaponId);
   }
 
   unequip(): void {

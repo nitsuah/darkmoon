@@ -131,7 +131,7 @@ export function useGalleryDebugMode({
   gameManagerRef,
   syncGameState,
   galleryDebugRestartRef,
-}: GalleryDebugDeps) {
+}: GalleryDebugDeps): void {
   useEffect(() => {
     if (!galleryDebugMode) return;
 

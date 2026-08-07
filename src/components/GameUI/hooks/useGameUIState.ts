@@ -219,7 +219,10 @@ export function useGalleryCombo(): {
 
   React.useEffect(() => {
     const onCombo = (e: unknown) => {
-      const d = (e as { detail: { combo: number; multiplier: number } }).detail;
+      const d = (e as { detail: { combo: unknown; multiplier: unknown } })
+        .detail;
+      if (typeof d?.combo !== "number" || typeof d?.multiplier !== "number")
+        return;
       setGalleryCombo(d.combo);
       setGalleryMultiplier(d.multiplier);
     };
@@ -235,7 +238,8 @@ export function useCrosshairSpread(): number {
 
   React.useEffect(() => {
     const onFired = (e: unknown) => {
-      const weaponId = (e as { detail: { weaponId: string } }).detail.weaponId;
+      const weaponId = (e as { detail: { weaponId: unknown } }).detail.weaponId;
+      if (typeof weaponId !== "string") return;
       const addSpread = weaponId === "smg" ? 8 : weaponId === "shotgun" ? 6 : 3;
       setCrosshairSpread((prev) => Math.min(prev + addSpread, 24));
     };
@@ -290,7 +294,8 @@ export function usePickupToast() {
   React.useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     const onWeapon = (e: unknown) => {
-      const { weaponId } = (e as { detail: { weaponId: string } }).detail;
+      const { weaponId } = (e as { detail: { weaponId: unknown } }).detail;
+      if (typeof weaponId !== "string") return;
       if (!WEAPONS[weaponId]) {
         console.warn(
           `[darkmoon] Unknown weapon ID in pickup event: "${weaponId}"`,
@@ -302,7 +307,8 @@ export function usePickupToast() {
       timer = setTimeout(() => setPickupToast(null), 2200);
     };
     const onHealth = (e: unknown) => {
-      const { amount } = (e as { detail: { amount: number } }).detail;
+      const { amount } = (e as { detail: { amount: unknown } }).detail;
+      if (typeof amount !== "number") return;
       setPickupToast(`+${amount} HEALTH`);
       clearTimeout(timer);
       timer = setTimeout(() => setPickupToast(null), 2200);

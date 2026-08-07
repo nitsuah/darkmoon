@@ -87,6 +87,8 @@ export class TagMode implements GameModeHandler {
       const attacker = players.get(attackerId);
       const target = players.get(targetId);
       if (!attacker || !target) return false;
+      if (attackerId === targetId) return false;
+      if (attacker.respawnAt !== undefined) return false;
       if (target.respawnAt !== undefined) return false;
       // Ignore hits on spawn-protected players
       if (

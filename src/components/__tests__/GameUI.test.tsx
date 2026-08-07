@@ -272,6 +272,7 @@ describe("GameUI", () => {
 
     fireEvent.click(screen.getByText("Main Menu"));
     expect(onMainMenu).toHaveBeenCalled();
+    expect(onEndGame).not.toHaveBeenCalled();
   });
 
   it("shows DEFEATED when the current player loses", () => {

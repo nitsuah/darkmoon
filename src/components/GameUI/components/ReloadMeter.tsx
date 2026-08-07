@@ -18,6 +18,7 @@ export const ReloadMeter: React.FC<ReloadMeterProps> = ({
   const dirRef = React.useRef(1);
   const lastTimeRef = React.useRef<number | null>(null);
   const rafRef = React.useRef<number | null>(null);
+  const snapFiredRef = React.useRef(false);
   const [displayNeedle, setDisplayNeedle] = React.useState(0);
   const [flashPerfect, setFlashPerfect] = React.useState(false);
   const [flashMiss, setFlashMiss] = React.useState(false);
@@ -58,10 +59,15 @@ export const ReloadMeter: React.FC<ReloadMeterProps> = ({
   }, [isReloading]);
 
   React.useEffect(() => {
+    snapFiredRef.current = false;
+  }, [isReloading]);
+
+  React.useEffect(() => {
     const handler = () => {
-      if (!isReloading) return;
+      if (!isReloading || snapFiredRef.current) return;
       const n = needleRef.current;
       if (n >= PERFECT_MIN && n <= PERFECT_MAX) {
+        snapFiredRef.current = true;
         window.dispatchEvent(new CustomEvent("weapon-reload-perfect"));
         setFlashPerfect(true);
         setTimeout(() => setFlashPerfect(false), 700);
