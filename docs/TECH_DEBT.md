@@ -31,7 +31,7 @@
 
 **Status:** ✅ COMPLETED — [PR #390](https://github.com/nitsuah/darkmoon/pull/390)  
 **Impact:** Hard to maintain, test, and extend (resolved)  
-**Files:** `src/pages/Solo.tsx` (956 → ~295 lines)  
+**Files:** `src/pages/Solo.tsx` (1,002 → 603 lines)  
 **Details:** Extracted three reusable hooks: `useGameStart` (mode-specific start logic + `ensureBot` helper), `useBotPositionHandlers` (position update + CTF flag pickup/capture), `useDebugModes` (`useBotDebugMode`, `useGalleryDebugMode`, `useAutoRestart`). `useSocketConnection`, `useSoloGame`, `SoloScene`, `SoloHUD`, and bot configs were already extracted in prior sprints.  
 **Completed:** August 4, 2026
 
