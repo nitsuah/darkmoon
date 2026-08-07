@@ -44,6 +44,11 @@ vi.mock("../components/characters/PlayerCharacter", () => ({
   PlayerCharacter: vi.fn(() => null),
 }));
 
+// Mock ShotgunVFX — uses THREE.Group.add which isn't available in JSDOM
+vi.mock("../pages/Solo/components/ShotgunVFX", () => ({
+  ShotgunVFX: () => null,
+}));
+
 interface MockSocket {
   on: ReturnType<typeof vi.fn>;
   off: ReturnType<typeof vi.fn>;

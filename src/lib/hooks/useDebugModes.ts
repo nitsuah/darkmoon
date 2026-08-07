@@ -219,5 +219,5 @@ export function useAutoRestart({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameState.isActive, gameState.mode]);
+  }, [gameState.isActive, gameState.mode, gameState.gameResults]);
 }

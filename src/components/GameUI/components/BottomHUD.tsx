@@ -148,7 +148,9 @@ const BottomHUD: React.FC<Props> = ({ currentPlayer, mode }) => {
           <span style={{ color: "#555", fontSize: "10px" }}>
             {isReloading ? "" : " [R]"}
           </span>
-          <span style={{ color: "#555", fontSize: "10px" }}>[Tab]swap</span>
+          <span style={{ color: "#555", fontSize: "10px" }}>
+            [Tab]swap [I]scores
+          </span>
         </>
       )}
     </div>

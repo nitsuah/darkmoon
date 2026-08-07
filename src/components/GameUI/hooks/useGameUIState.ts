@@ -74,7 +74,9 @@ export function useHitDirection() {
 
   React.useEffect(() => {
     const onDamaged = (e: Event) => {
-      const angle = (e as CustomEvent<{ angle: number }>).detail.angle;
+      const detail = (e as CustomEvent<{ angle?: number }>).detail;
+      if (typeof detail?.angle !== "number") return;
+      const angle = detail.angle;
       if (timerRef.current) clearTimeout(timerRef.current);
       setHitAngle(angle);
       timerRef.current = setTimeout(() => setHitAngle(null), 900);
@@ -261,13 +263,13 @@ export function useScoreboard(enabled: boolean): boolean {
       return;
     }
     const down = (e: KeyboardEvent) => {
-      if (e.code === "Tab") {
+      if (e.code === "KeyI") {
         e.preventDefault();
         setShowScoreboard(true);
       }
     };
     const up = (e: KeyboardEvent) => {
-      if (e.code === "Tab") setShowScoreboard(false);
+      if (e.code === "KeyI") setShowScoreboard(false);
     };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
