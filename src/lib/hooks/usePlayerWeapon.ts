@@ -79,7 +79,8 @@ export function processFiring(params: FireParams): FireResult | null {
 
   // Cone shotgun: fire multiple pellets, each doing damage/pelletCount
   if (weapon.pelletCount && weapon.pelletCount > 1 && weapon.spreadAngle) {
-    const pelletDamage = Math.ceil(weapon.damage / weapon.pelletCount);
+    // Use floor so total damage never exceeds weapon.damage
+    const pelletDamage = Math.floor(weapon.damage / weapon.pelletCount);
     let bestHit: ProjectileHit | null = null;
     let hitLanded = false;
 

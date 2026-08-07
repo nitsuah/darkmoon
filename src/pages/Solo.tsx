@@ -55,6 +55,26 @@ import {
 
 const tagDebug = createTagLogger("Solo");
 
+// Keys captured for gameplay — defined once to avoid rebuilding per event.
+// Tab is in this list only when not paused (see handleKeyDown below).
+const GAMEPLAY_KEYS = Object.freeze([
+  W,
+  A,
+  S,
+  D,
+  Q,
+  E,
+  SHIFT,
+  SPACE,
+  KEY_1,
+  KEY_2,
+  KEY_3,
+  KEY_4,
+  KEY_5,
+  KEY_R,
+  KEY_TAB,
+]);
+
 const Solo: React.FC = () => {
   const navigate = useNavigate();
   const [socketClient, setSocketClient] = useState<Socket | null>(null);
@@ -240,25 +260,9 @@ const Solo: React.FC = () => {
       }
 
       const key = e.key.toLowerCase();
-      const trackedKeys = [
-        W,
-        A,
-        S,
-        D,
-        Q,
-        E,
-        SHIFT,
-        SPACE,
-        " ",
-        KEY_1,
-        KEY_2,
-        KEY_3,
-        KEY_4,
-        KEY_5,
-        KEY_R,
-        KEY_TAB,
-      ];
-      if (trackedKeys.includes(key)) {
+      // Don't capture Tab during pause so HUD controls remain keyboard-navigable
+      if (key === KEY_TAB && isPausedRef.current) return;
+      if (GAMEPLAY_KEYS.includes(key)) {
         e.preventDefault();
         setKeyState(key, true);
       }
@@ -266,25 +270,8 @@ const Solo: React.FC = () => {
 
     const handleKeyUp = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
-      const trackedKeys = [
-        W,
-        A,
-        S,
-        D,
-        Q,
-        E,
-        SHIFT,
-        SPACE,
-        " ",
-        KEY_1,
-        KEY_2,
-        KEY_3,
-        KEY_4,
-        KEY_5,
-        KEY_R,
-        KEY_TAB,
-      ];
-      if (trackedKeys.includes(key)) {
+      if (key === KEY_TAB && isPausedRef.current) return;
+      if (GAMEPLAY_KEYS.includes(key)) {
         e.preventDefault();
         setKeyState(key, false);
       }

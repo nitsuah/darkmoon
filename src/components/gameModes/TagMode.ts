@@ -47,6 +47,7 @@ export class TagMode implements GameModeHandler {
       player.health = TAG_PLAYER_MAX_HP;
       player.maxHealth = TAG_PLAYER_MAX_HP;
       player.respawnAt = undefined;
+      player.spawnProtectedUntil = undefined;
     });
   }
 
@@ -87,6 +88,12 @@ export class TagMode implements GameModeHandler {
       const target = players.get(targetId);
       if (!attacker || !target) return false;
       if (target.respawnAt !== undefined) return false;
+      // Ignore hits on spawn-protected players
+      if (
+        target.spawnProtectedUntil !== undefined &&
+        Date.now() < target.spawnProtectedUntil
+      )
+        return false;
 
       // IT player hitting non-IT: instant tag transfer (shot-as-tag preserved)
       if (attacker.isIt && !target.isIt) {
@@ -274,6 +281,7 @@ export class TagMode implements GameModeHandler {
       player.currentKillStreak = 0;
       player.health = TAG_PLAYER_MAX_HP;
       player.respawnAt = undefined;
+      player.spawnProtectedUntil = undefined;
     });
 
     gameState.killFeed = undefined;

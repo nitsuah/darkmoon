@@ -60,13 +60,7 @@ const Home = () => {
       {/* Game Modes Grid — redesigned cards */}
       <div className="game-modes-grid">
         {/* Solo Practice */}
-        <div
-          className="game-card game-card--solo"
-          role="button"
-          tabIndex={0}
-          onClick={() => navigate("/solo")}
-          onKeyDown={(e) => e.key === "Enter" && navigate("/solo")}
-        >
+        <div className="game-card game-card--solo">
           <div className="game-card__accent" />
           <div className="game-card__icon">🎯</div>
           <div className="game-card__content">
@@ -85,7 +79,11 @@ const Home = () => {
               <li>🔫 5 unique weapons</li>
             </ul>
           </div>
-          <button className="game-card__cta" onClick={() => navigate("/solo")}>
+          <button
+            type="button"
+            className="game-card__cta"
+            onClick={() => navigate("/solo")}
+          >
             Play Now →
           </button>
         </div>
@@ -109,7 +107,11 @@ const Home = () => {
               <li>📊 Stats & rankings</li>
             </ul>
           </div>
-          <button className="game-card__cta game-card__cta--disabled" disabled>
+          <button
+            type="button"
+            className="game-card__cta game-card__cta--disabled"
+            disabled
+          >
             Coming Soon
           </button>
         </div>
@@ -133,7 +135,11 @@ const Home = () => {
               <li>👤 Custom avatars</li>
             </ul>
           </div>
-          <button className="game-card__cta game-card__cta--disabled" disabled>
+          <button
+            type="button"
+            className="game-card__cta game-card__cta--disabled"
+            disabled
+          >
             Coming Soon
           </button>
         </div>

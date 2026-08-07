@@ -7,6 +7,12 @@ const BEAM_COLOR = new THREE.Color("#ff8833");
 const GLOW_COLOR = new THREE.Color("#ff5500");
 const MAX_PELLETS = 48; // max simultaneous pellet beams (8 shots × 6 pellets)
 
+// Shared geometry reused by every slot's core and glow mesh — never disposed.
+const UNIT_BOX = new THREE.BoxGeometry(1, 1, 1);
+
+// Scratch vector for lookAt-based orientation
+const _z = new THREE.Vector3(0, 0, 1);
+
 interface PelletSlot {
   group: THREE.Group;
   hideAt: number;
@@ -17,15 +23,18 @@ export const ShotgunVFX: React.FC = () => {
   const groupRef = React.useRef<THREE.Group>(null);
   const slotsRef = React.useRef<PelletSlot[]>([]);
 
-  // Build a pool of reusable mesh groups on mount
+  // Build a pool of reusable mesh groups on mount; dispose materials on unmount.
   React.useEffect(() => {
     const group = groupRef.current;
     if (!group) return;
 
+    // Clear in case Strict Mode re-runs the effect
+    slotsRef.current = [];
+
     for (let i = 0; i < MAX_PELLETS; i++) {
       const g = new THREE.Group();
       const core = new THREE.Mesh(
-        new THREE.BoxGeometry(1, 1, 1),
+        UNIT_BOX,
         new THREE.MeshBasicMaterial({
           color: BEAM_COLOR,
           transparent: true,
@@ -33,7 +42,7 @@ export const ShotgunVFX: React.FC = () => {
         }),
       );
       const glow = new THREE.Mesh(
-        new THREE.BoxGeometry(1, 1, 1),
+        UNIT_BOX,
         new THREE.MeshBasicMaterial({
           color: GLOW_COLOR,
           transparent: true,
@@ -45,6 +54,21 @@ export const ShotgunVFX: React.FC = () => {
       group.add(g);
       slotsRef.current.push({ group: g, hideAt: 0, active: false });
     }
+
+    return () => {
+      for (const slot of slotsRef.current) {
+        (
+          (slot.group.children[0] as THREE.Mesh)
+            .material as THREE.MeshBasicMaterial
+        ).dispose();
+        (
+          (slot.group.children[1] as THREE.Mesh)
+            .material as THREE.MeshBasicMaterial
+        ).dispose();
+        group.remove(slot.group);
+      }
+      slotsRef.current = [];
+    };
   }, []);
 
   // Event listener for shotgun fire
@@ -91,7 +115,8 @@ export const ShotgunVFX: React.FC = () => {
 
         const mid = origin.clone().addScaledVector(dir, len / 2);
         slot.group.position.copy(mid);
-        slot.group.rotation.y = Math.atan2(dir.x, dir.z);
+        // Align group's +Z axis with the pellet direction (handles vertical spread)
+        slot.group.quaternion.setFromUnitVectors(_z, dir);
         slot.group.scale.set(1, 1, 1);
 
         const core = slot.group.children[0] as THREE.Mesh;
@@ -114,7 +139,6 @@ export const ShotgunVFX: React.FC = () => {
    
   useFrame(() => {
     const now = Date.now();
-    // Directly mutating Three.js objects is intentional here — this is an imperative R3F pattern.
      
     for (const slot of slotsRef.current) {
       if (!slot.active) continue;

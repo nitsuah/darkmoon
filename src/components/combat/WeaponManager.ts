@@ -113,28 +113,45 @@ export class WeaponManager {
     return true;
   }
 
-  /** Refill a weapon's ammo to its maximum (call this when picking up a crate). */
+  /** Reload from reserves (called when a timed reload completes). */
   refill(weaponId: string): void {
     const weapon = WEAPONS[weaponId];
-    if (weapon?.maxAmmo !== undefined) {
-      // Use reserve ammo if available, otherwise full refill
-      const reserve = this.reserveAmmoMap.get(weaponId);
-      if (reserve !== undefined && weapon.reserveAmmo !== undefined) {
-        const needed = weapon.maxAmmo - (this.ammoMap.get(weaponId) ?? 0);
-        const toLoad = Math.min(needed, reserve);
-        this.ammoMap.set(weaponId, (this.ammoMap.get(weaponId) ?? 0) + toLoad);
-        this.reserveAmmoMap.set(weaponId, reserve - toLoad);
-      } else {
-        this.ammoMap.set(weaponId, weapon.maxAmmo);
-      }
-      this.reloadStartAt.delete(weaponId);
+    if (weapon?.maxAmmo === undefined) return;
+    // Lazily initialize reserveAmmo so refill works even if equip() was skipped
+    if (
+      !this.reserveAmmoMap.has(weaponId) &&
+      weapon.reserveAmmo !== undefined
+    ) {
+      this.reserveAmmoMap.set(weaponId, weapon.reserveAmmo);
     }
+    const reserve = this.reserveAmmoMap.get(weaponId);
+    if (reserve !== undefined && weapon.reserveAmmo !== undefined) {
+      const needed = weapon.maxAmmo - (this.ammoMap.get(weaponId) ?? 0);
+      const toLoad = Math.min(needed, reserve);
+      this.ammoMap.set(weaponId, (this.ammoMap.get(weaponId) ?? 0) + toLoad);
+      this.reserveAmmoMap.set(weaponId, reserve - toLoad);
+    } else {
+      this.ammoMap.set(weaponId, weapon.maxAmmo);
+    }
+    this.reloadStartAt.delete(weaponId);
   }
 
-  /** Returns current reserve ammo for a weapon, or null if unlimited. */
-  getReserveAmmo(weaponId: string): number | null {
+  /** Restore full magazine and full reserves (weapon pickup / respawn). */
+  restock(weaponId: string): void {
     const weapon = WEAPONS[weaponId];
-    if (!weapon || weapon.reserveAmmo === undefined) return null;
+    if (!weapon) return;
+    if (weapon.maxAmmo !== undefined)
+      this.ammoMap.set(weaponId, weapon.maxAmmo);
+    if (weapon.reserveAmmo !== undefined)
+      this.reserveAmmoMap.set(weaponId, weapon.reserveAmmo);
+    this.reloadStartAt.delete(weaponId);
+  }
+
+  /** Returns current reserve ammo, null if weapon has unlimited reserves, or undefined if weaponId is unknown. */
+  getReserveAmmo(weaponId: string): number | null | undefined {
+    const weapon = WEAPONS[weaponId];
+    if (!weapon) return undefined;
+    if (weapon.reserveAmmo === undefined) return null;
     return this.reserveAmmoMap.get(weaponId) ?? weapon.reserveAmmo;
   }
 

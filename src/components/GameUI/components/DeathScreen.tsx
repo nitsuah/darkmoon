@@ -18,7 +18,7 @@ const DeathScreen: React.FC<Props> = ({
 }) => {
   if (
     respawnSecondsLeft === null ||
-    (mode !== "deathmatch" && mode !== "ctf")
+    (mode !== "deathmatch" && mode !== "ctf" && mode !== "tag")
   ) {
     return null;
   }

@@ -346,7 +346,7 @@ const Bots: React.FC<
         if (equipped) {
           const ammo = weaponRef.current.getAmmo(equipped.id);
           if (ammo !== null && ammo <= 0) {
-            weaponRef.current.refill(equipped.id);
+            weaponRef.current.restock(equipped.id);
           }
         }
         return;
