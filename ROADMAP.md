@@ -1,6 +1,6 @@
 # Roadmap
 
-Last Updated: 2026-06-25
+Last Updated: 2026-08-07
 
 ## 2025 Q4 ✅
 
@@ -8,7 +8,7 @@ Last Updated: 2026-06-25
 
 ## Beyond Original Scope — Combat Gameplay (Phases BC–BM) ✅
 
-> Significant combat gameplay shipped beyond the original roadmap scope. Phases BC–BM delivered: auto-restart after results screen, hit direction indicator, bot jumping in deathmatch, score tension warning, bot tracer beams, weapon reload system (R key, ammo limits, HUD bar), bot LOS wall checks, bot angular spread/miss physics, smooth velocity-based player movement, mouse-aimed firing with player reticle, and shooting gallery mode with crosshair improvements. Deathmatch (Phase C) and CTF (Phase D) modes also shipped.
+> Significant combat gameplay shipped beyond the original roadmap scope. Phases BC–BM delivered: auto-restart after results screen, hit direction indicator, bot jumping in deathmatch, score tension warning, bot tracer beams, weapon reload system (R key, ammo limits, HUD bar, timing-based precision snap mechanic), bot LOS wall checks, bot angular spread/miss physics, smooth velocity-based player movement, mouse-aimed firing with player reticle, shooting gallery mode with crosshair improvements, ShotgunVFX cone particle effects, reserve ammo system, tag-mode health/damage support, and camera-relative A/D strafing. Deathmatch (Phase C) and CTF (Phase D) modes also shipped. GameUI and Solo.tsx fully componentized (Phase E partial).
 
 ## 2026 Q1 (In Progress)
 

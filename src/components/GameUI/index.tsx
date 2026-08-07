@@ -88,7 +88,7 @@ const GameUI: React.FC<GameUIProps> = ({
 
   const recentKills: KillEvent[] = (gameState.killFeed ?? []).slice(-5);
 
-  const tensionWarning: string | null = (() => {
+  const tensionWarning = React.useMemo((): string | null => {
     if (
       gameState.mode !== "deathmatch" ||
       !gameState.isActive ||
@@ -112,7 +112,13 @@ const GameUI: React.FC<GameUIProps> = ({
     if (needed === 2)
       return `${leaderName.toUpperCase()} NEEDS 2 MORE KILLS TO WIN`;
     return null;
-  })();
+  }, [
+    gameState.mode,
+    gameState.isActive,
+    gameState.killLimit,
+    gameState.scores,
+    players,
+  ]);
 
   const isSpawnProtected = currentPlayer?.spawnProtectedUntil !== undefined;
 
@@ -216,8 +222,8 @@ const GameUI: React.FC<GameUIProps> = ({
           />
         )}
 
-        {showBottomHUD && (
-          <BottomHUD currentPlayer={currentPlayer!} mode={gameState.mode} />
+        {showBottomHUD && currentPlayer && (
+          <BottomHUD currentPlayer={currentPlayer} mode={gameState.mode} />
         )}
 
         {showReloadMeter && <ReloadMeter isReloading reloadPct={reloadPct!} />}
@@ -305,7 +311,11 @@ const GameUI: React.FC<GameUIProps> = ({
         autoRestartSecondsLeft={autoRestartSecondsLeft}
         galleryHighScore={galleryHighScore}
         isNewRecord={isNewRecord}
-        onPlayAgain={() => onStartGame(gameState.mode as StartableMode)}
+        onPlayAgain={() => {
+          if (gameState.mode !== "none" && gameState.mode !== "solo") {
+            onStartGame(gameState.mode as StartableMode);
+          }
+        }}
         onMainMenu={onMainMenu}
       />
     );

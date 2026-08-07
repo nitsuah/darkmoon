@@ -24,9 +24,9 @@ const Crosshair: React.FC<Props> = ({
     <div
       style={{
         position: "fixed",
-        top: mousePos.y,
-        left: mousePos.x,
-        transform: "translate(-50%, -50%)",
+        top: 0,
+        left: 0,
+        transform: `translate(${mousePos.x}px, ${mousePos.y}px) translate(-50%, -50%)`,
         pointerEvents: "none",
         zIndex: 997,
         width: `${size}px`,

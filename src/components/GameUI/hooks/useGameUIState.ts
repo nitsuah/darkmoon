@@ -244,12 +244,11 @@ export function useCrosshairSpread(): number {
   }, []);
 
   React.useEffect(() => {
-    if (crosshairSpread <= 0) return;
-    const t = setTimeout(() => {
+    const t = setInterval(() => {
       setCrosshairSpread((prev) => Math.max(0, prev - 2));
     }, 50);
-    return () => clearTimeout(t);
-  }, [crosshairSpread]);
+    return () => clearInterval(t);
+  }, []);
 
   return crosshairSpread;
 }
@@ -271,11 +270,14 @@ export function useScoreboard(enabled: boolean): boolean {
     const up = (e: KeyboardEvent) => {
       if (e.code === "KeyI") setShowScoreboard(false);
     };
+    const blur = () => setShowScoreboard(false);
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
+    window.addEventListener("blur", blur);
     return () => {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", blur);
     };
   }, [enabled]);
 
