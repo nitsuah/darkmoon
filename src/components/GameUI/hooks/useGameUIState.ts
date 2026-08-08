@@ -1,6 +1,9 @@
 import * as React from "react";
 import { GameState } from "../../GameManager";
 import { WEAPONS } from "../../combat/WeaponManager";
+import { createLogger } from "../../../lib/utils/logger";
+
+const log = createLogger("GameUI");
 
 const GALLERY_HS_KEY = "darkmoon_gallery_highscore";
 
@@ -9,9 +12,13 @@ export function useViewport(): {
   isLandscape: boolean;
   isMinimal: boolean;
 } {
-  const [isMobile, setIsMobile] = React.useState(window.innerWidth <= 768);
+  const [isMobile, setIsMobile] = React.useState(
+    typeof window !== "undefined" ? window.innerWidth <= 768 : false,
+  );
   const [isLandscape, setIsLandscape] = React.useState(
-    window.innerWidth > window.innerHeight,
+    typeof window !== "undefined"
+      ? window.innerWidth > window.innerHeight
+      : false,
   );
 
   React.useEffect(() => {
@@ -28,7 +35,7 @@ export function useViewport(): {
 
 export function useStreakAnnouncement(
   streakAnnouncement: GameState["streakAnnouncement"],
-) {
+): { killerName: string; count: number } | null {
   const [visibleStreak, setVisibleStreak] = React.useState<{
     killerName: string;
     count: number;
@@ -48,7 +55,9 @@ export function useStreakAnnouncement(
   return visibleStreak;
 }
 
-export function useRespawnCountdown(respawnAt: number | undefined) {
+export function useRespawnCountdown(
+  respawnAt: number | undefined,
+): number | null {
   const [respawnSecondsLeft, setRespawnSecondsLeft] = React.useState<
     number | null
   >(null);
@@ -156,7 +165,7 @@ export function useGalleryHighScore(
     try {
       return parseInt(localStorage.getItem(GALLERY_HS_KEY) ?? "0", 10) || 0;
     } catch (err) {
-      console.warn("[darkmoon] Failed to read gallery high score:", err);
+      log.warn("Failed to read gallery high score:", err);
       return 0;
     }
   });
@@ -182,7 +191,7 @@ export function useGalleryHighScore(
           setIsNewRecord(true);
         }
       } catch (err) {
-        console.warn("[darkmoon] Failed to write gallery high score:", err);
+        log.warn("Failed to write gallery high score:", err);
       }
     }
   }, [gameState.isActive, gameState.mode, gameState.gameResults]);
@@ -190,7 +199,7 @@ export function useGalleryHighScore(
   return { galleryHighScore, isNewRecord };
 }
 
-export function useBonusRound() {
+export function useBonusRound(): boolean {
   const [bonusRoundVisible, setBonusRoundVisible] = React.useState(false);
   const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -288,7 +297,7 @@ export function useScoreboard(enabled: boolean): boolean {
   return showScoreboard;
 }
 
-export function usePickupToast() {
+export function usePickupToast(): string | null {
   const [pickupToast, setPickupToast] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -297,9 +306,7 @@ export function usePickupToast() {
       const { weaponId } = (e as { detail: { weaponId: unknown } }).detail;
       if (typeof weaponId !== "string") return;
       if (!WEAPONS[weaponId]) {
-        console.warn(
-          `[darkmoon] Unknown weapon ID in pickup event: "${weaponId}"`,
-        );
+        log.warn(`Unknown weapon ID in pickup event: "${weaponId}"`);
       }
       const name = WEAPONS[weaponId]?.name ?? weaponId;
       setPickupToast(`PICKED UP ${name.toUpperCase()}`);
@@ -346,9 +353,7 @@ export function useKillAnnouncement(
     lastKeyRef.current = key;
     if (latest.killerId !== currentPlayerId) return;
     if (!WEAPONS[latest.weaponId]) {
-      console.warn(
-        `[darkmoon] Unknown weapon ID in kill feed: "${latest.weaponId}"`,
-      );
+      log.warn(`Unknown weapon ID in kill feed: "${latest.weaponId}"`);
     }
     const weaponLabel = WEAPONS[latest.weaponId]?.name ?? latest.weaponId;
     if (announcementTimerRef.current)

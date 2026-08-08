@@ -7,6 +7,9 @@ import { CollisionSystem } from "../../../components/CollisionSystem";
 import { KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_R, KEY_TAB } from "../../utils";
 import { processFiring } from "../../../lib/hooks/usePlayerWeapon";
 
+// Shared read-only ground plane — never mutated, safe to reuse across instances.
+const GROUND_PLANE = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
 interface PlayerWeaponProps {
   /** Player mesh ref */
   meshRef: React.RefObject<THREE.Group | null>;
@@ -111,9 +114,7 @@ export const PlayerWeapon = React.memo(
     const _fireOrigin = React.useRef<THREE.Vector3>(new THREE.Vector3());
     const _raycaster = React.useRef<THREE.Raycaster>(new THREE.Raycaster());
     const _ndc = React.useRef<THREE.Vector2>(new THREE.Vector2());
-    const _groundPlane = React.useRef<THREE.Plane>(
-      new THREE.Plane(new THREE.Vector3(0, 1, 0), 0),
-    );
+    const _groundPlane = React.useRef(GROUND_PLANE);
     const _aimTarget = React.useRef<THREE.Vector3>(new THREE.Vector3());
     const _fireDir = React.useRef<THREE.Vector3>(new THREE.Vector3());
     const _tempVec = React.useRef<THREE.Vector3>(new THREE.Vector3());

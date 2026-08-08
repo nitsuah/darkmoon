@@ -133,25 +133,15 @@ export function useGalleryDebugMode({
   galleryDebugRestartRef,
 }: GalleryDebugDeps): void {
   useEffect(() => {
-    if (!galleryDebugMode) return;
+    if (!galleryDebugMode || gameState.isActive) return;
 
-    if (!gameState.isActive && gameState.mode !== "shooting_gallery") {
-      const t = setTimeout(() => {
-        if (gameManagerRef.current) {
-          gameManagerRef.current.startShootingGalleryGame();
-          syncGameState();
-        }
-      }, 500);
-      galleryDebugRestartRef.current = t;
-    } else if (!gameState.isActive && gameState.mode === "shooting_gallery") {
-      const t = setTimeout(() => {
-        if (gameManagerRef.current) {
-          gameManagerRef.current.startShootingGalleryGame();
-          syncGameState();
-        }
-      }, 3000);
-      galleryDebugRestartRef.current = t;
-    }
+    const delay = gameState.mode === "shooting_gallery" ? 3000 : 500;
+    galleryDebugRestartRef.current = setTimeout(() => {
+      if (gameManagerRef.current) {
+        gameManagerRef.current.startShootingGalleryGame();
+        syncGameState();
+      }
+    }, delay);
 
     return () => {
       if (galleryDebugRestartRef.current) {

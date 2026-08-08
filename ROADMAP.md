@@ -16,7 +16,7 @@ Last Updated: 2026-08-07
 - [x] Align README, FEATURES.md, and roadmap language with solo mode as the live experience.
 - [ ] Validate mobile controls and responsive layouts on real devices. _(deferred)_
 
-## 2026 Q2 (Completed / Deferred)
+## 2026 Q2 (Deferred)
 
 ### CEO Priorities
 
