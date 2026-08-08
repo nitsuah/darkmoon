@@ -17,6 +17,7 @@ interface PlayerRespawnerProps {
   weaponManagerRef: React.RefObject<{
     getEquipped: () => { id: string } | null;
     refill: (weaponId: string) => void;
+    restock: (weaponId: string) => void;
     getAmmo: (weaponId: string) => number | null;
   } | null>;
 }
@@ -42,7 +43,7 @@ export const PlayerRespawner = React.memo(
         // Player just respawned - refill ammo
         const equipped = weaponManagerRef.current?.getEquipped();
         if (equipped) {
-          weaponManagerRef.current?.refill(equipped.id);
+          weaponManagerRef.current?.restock(equipped.id);
           gameManager.updatePlayer(currentPlayerId, {
             currentAmmo: weaponManagerRef.current?.getAmmo(equipped.id),
           });

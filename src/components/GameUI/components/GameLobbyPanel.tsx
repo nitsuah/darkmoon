@@ -10,15 +10,22 @@ interface Props {
   onStartGame: (mode: StartableMode) => void;
   onToggleDebug?: () => void;
   onToggleGalleryDebug?: () => void;
+  onMainMenu: () => void;
 }
 
-function btnPad(isMinimal: boolean, isMobile: boolean): string {
-  return isMinimal ? "3px 5px" : isMobile ? "6px 8px" : "6px 10px";
-}
-
-function btnFontSize(isMinimal: boolean, isMobile: boolean): string {
-  return isMinimal ? "14px" : isMobile ? "14px" : "11px";
-}
+const btn = (bg: string, border: string): React.CSSProperties => ({
+  width: "100%",
+  padding: "6px 8px",
+  background: bg,
+  border: `1px solid ${border}`,
+  borderRadius: "3px",
+  color: "white",
+  fontFamily: "monospace",
+  fontSize: "11px",
+  cursor: "pointer",
+  textAlign: "center",
+  userSelect: "none",
+});
 
 const GameLobbyPanel: React.FC<Props> = ({
   players,
@@ -29,177 +36,126 @@ const GameLobbyPanel: React.FC<Props> = ({
   onStartGame,
   onToggleDebug,
   onToggleGalleryDebug,
+  onMainMenu,
 }) => {
-  const btnBase: React.CSSProperties = {
-    borderRadius: "3px",
-    color: "white",
-    cursor: "pointer",
-    width: "100%",
-    padding: btnPad(isMinimal, isMobile),
-    fontSize: btnFontSize(isMinimal, isMobile),
-  };
+  const panelWidth = isMinimal ? 70 : isMobile ? 120 : 170;
 
   return (
     <div
       style={{
         position: "fixed",
         top: isMinimal ? "8px" : "10px",
-        right: isMinimal ? "8px" : "10px",
-        padding: isMinimal ? "3px 5px" : isMobile ? "6px 8px" : "10px 12px",
-        backgroundColor: "rgba(0, 0, 0, 0.9)",
-        border: "1px solid rgba(255, 255, 255, 0.25)",
+        left: isMinimal ? "8px" : "10px",
+        width: panelWidth,
+        padding: isMinimal ? "3px 5px" : "8px 10px",
+        backgroundColor: "rgba(0,0,0,0.88)",
+        border: "1px solid rgba(255,255,255,0.22)",
         borderRadius: isMinimal ? "3px" : "6px",
         color: "white",
         fontFamily: "monospace",
-        fontSize: isMinimal ? "8px" : isMobile ? "10px" : "11px",
+        fontSize: isMinimal ? "8px" : "11px",
         zIndex: 1000,
-        minWidth: isMinimal ? "auto" : isMobile ? "auto" : "160px",
-        maxWidth: isMinimal ? "70px" : "auto",
-        textAlign: "center",
+        boxSizing: "border-box",
       }}
     >
-      {!isMobile && !isMinimal && (
+      {!isMinimal && (
         <div
-          style={{ marginBottom: "8px", fontSize: "12px", fontWeight: "bold" }}
+          style={{
+            marginBottom: "6px",
+            fontSize: "12px",
+            fontWeight: "bold",
+            textAlign: "center",
+          }}
         >
           🎮 Game Modes
         </div>
       )}
-
       {!isMinimal && (
         <div
           style={{
             marginBottom: "6px",
             color: "#aaa",
-            fontSize: isMobile ? "9px" : "10px",
-          }}
-        >
-          {isMobile ? `👥 ${players.size}` : `Players: ${players.size}`}
-        </div>
-      )}
-
-      {players.size >= 2 || players.size <= 1 ? (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: isMinimal ? "2px" : "6px",
-          }}
-        >
-          <button
-            onClick={() => onStartGame("shooting_gallery")}
-            style={{
-              ...btnBase,
-              backgroundColor: "rgba(255, 200, 0, 0.85)",
-              border: "1px solid #ffd700",
-              color: "#111",
-              fontWeight: "bold",
-            }}
-          >
-            {isMinimal || isMobile ? "🎯" : "🎯 Shooting Gallery"}
-          </button>
-
-          <button
-            onClick={() => onStartGame("tag")}
-            style={{
-              ...btnBase,
-              backgroundColor: "rgba(74, 144, 226, 0.8)",
-              border: "1px solid #4a90e2",
-            }}
-          >
-            {isMinimal || isMobile
-              ? "▶️"
-              : `Start Tag ${players.size <= 1 ? "(Practice)" : ""}`}
-          </button>
-
-          {players.size >= 2 && (
-            <button
-              onClick={() => onStartGame("deathmatch")}
-              style={{
-                ...btnBase,
-                backgroundColor: "rgba(220, 53, 69, 0.8)",
-                border: "1px solid #dc3545",
-              }}
-            >
-              {isMinimal || isMobile ? "🔫" : "Start Deathmatch"}
-            </button>
-          )}
-
-          {players.size >= 2 && (
-            <button
-              onClick={() => onStartGame("ctf")}
-              style={{
-                ...btnBase,
-                backgroundColor: "rgba(155, 89, 182, 0.8)",
-                border: "1px solid #9b59b6",
-              }}
-            >
-              {isMinimal || isMobile ? "🚩" : "Start CTF"}
-            </button>
-          )}
-
-          {onToggleDebug && (
-            <button
-              onClick={onToggleDebug}
-              style={{
-                ...btnBase,
-                backgroundColor: botDebugMode
-                  ? "rgba(220, 53, 69, 0.8)"
-                  : "rgba(255, 140, 0, 0.8)",
-                border: botDebugMode
-                  ? "1px solid #dc3545"
-                  : "1px solid #ff8c00",
-              }}
-            >
-              {isMinimal || isMobile
-                ? "🔧"
-                : botDebugMode
-                  ? "⏹️ Stop Debug"
-                  : "🔧 Start Debug"}
-            </button>
-          )}
-
-          {onToggleGalleryDebug && (
-            <button
-              onClick={onToggleGalleryDebug}
-              style={{
-                ...btnBase,
-                marginTop: "3px",
-                backgroundColor: galleryDebugMode
-                  ? "rgba(220, 53, 69, 0.8)"
-                  : "rgba(0, 170, 100, 0.8)",
-                border: galleryDebugMode
-                  ? "1px solid #dc3545"
-                  : "1px solid #00aa64",
-              }}
-            >
-              {isMinimal || isMobile
-                ? "🎯"
-                : galleryDebugMode
-                  ? "⏹️ Stop Gallery Debug"
-                  : "🎯 Gallery Debug"}
-            </button>
-          )}
-
-          {!isMobile && !isMinimal && (
-            <div
-              style={{ fontSize: "9px", color: "#888", textAlign: "center" }}
-            >
-              {players.size <= 1 ? "Practice vs Bot" : "3 min • Tag to pass"}
-            </div>
-          )}
-        </div>
-      ) : (
-        <div
-          style={{
-            color: "#888",
+            fontSize: "9px",
             textAlign: "center",
-            fontSize: isMinimal ? "8px" : isMobile ? "9px" : "10px",
           }}
         >
-          {isMinimal || isMobile ? "Need 2+" : "Need 2+ players"}
+          {players.size === 1 ? "1 player (vs Bot)" : `${players.size} players`}
         </div>
       )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+        <button
+          onClick={() => onStartGame("shooting_gallery")}
+          style={btn("rgba(200,160,0,0.85)", "#ffd700")}
+        >
+          {isMinimal ? "🎯" : "🎯 Shooting Gallery"}
+        </button>
+
+        <button
+          onClick={() => onStartGame("tag")}
+          style={btn("rgba(55,120,200,0.8)", "#4a90e2")}
+        >
+          {isMinimal ? "▶️" : `🏃 Tag${players.size <= 1 ? " (Practice)" : ""}`}
+        </button>
+
+        {players.size >= 2 && (
+          <button
+            onClick={() => onStartGame("deathmatch")}
+            style={btn("rgba(180,40,40,0.8)", "#dc3545")}
+          >
+            {isMinimal ? "🔫" : "💀 Deathmatch"}
+          </button>
+        )}
+
+        {players.size >= 2 && (
+          <button
+            onClick={() => onStartGame("ctf")}
+            style={btn("rgba(120,60,170,0.8)", "#9b59b6")}
+          >
+            {isMinimal ? "🚩" : "🚩 CTF"}
+          </button>
+        )}
+
+        <div
+          style={{
+            height: "1px",
+            background: "rgba(255,255,255,0.12)",
+            margin: "2px 0",
+          }}
+        />
+
+        <button onClick={onMainMenu} style={btn("rgba(50,50,80,0.85)", "#555")}>
+          {isMinimal ? "🏠" : "🏠 Main Menu"}
+        </button>
+
+        {onToggleDebug && (
+          <button
+            onClick={onToggleDebug}
+            style={btn(
+              botDebugMode ? "rgba(180,30,30,0.8)" : "rgba(200,120,0,0.8)",
+              botDebugMode ? "#dc3545" : "#ff8c00",
+            )}
+          >
+            {isMinimal ? "🔧" : botDebugMode ? "⏹ Debug OFF" : "🔧 Debug Mode"}
+          </button>
+        )}
+
+        {onToggleGalleryDebug && (
+          <button
+            onClick={onToggleGalleryDebug}
+            style={btn(
+              galleryDebugMode ? "rgba(180,30,30,0.8)" : "rgba(0,140,80,0.8)",
+              galleryDebugMode ? "#dc3545" : "#00aa64",
+            )}
+          >
+            {isMinimal
+              ? "🎯"
+              : galleryDebugMode
+                ? "⏹ Gallery OFF"
+                : "🎯 Gallery Debug"}
+          </button>
+        )}
+      </div>
     </div>
   );
 };

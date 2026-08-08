@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { expect, describe, it, vi, beforeEach, afterEach } from "vitest";
 import Home from "../pages/Home";
 import { BrowserRouter } from "react-router-dom";
@@ -61,13 +61,7 @@ describe("Home Page", () => {
     expect(navigateMock).toHaveBeenCalledWith("/solo");
   });
 
-  it("flips card on mobile first tap and navigates on second tap", () => {
-    Object.defineProperty(window, "innerWidth", {
-      configurable: true,
-      writable: true,
-      value: 768,
-    });
-
+  it("navigates on CTA button tap", () => {
     render(
       <ThemeProvider>
         <BrowserRouter>
@@ -76,16 +70,7 @@ describe("Home Page", () => {
       </ThemeProvider>,
     );
 
-    const soloCardTitle = screen.getByText("Solo Practice");
-
-    fireEvent.click(soloCardTitle);
-    expect(navigateMock).not.toHaveBeenCalled();
-
-    fireEvent.click(soloCardTitle);
+    fireEvent.click(screen.getByRole("button", { name: /play now/i }));
     expect(navigateMock).toHaveBeenCalledWith("/solo");
-
-    act(() => {
-      vi.advanceTimersByTime(4000);
-    });
   });
 });

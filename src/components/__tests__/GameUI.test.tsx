@@ -45,6 +45,7 @@ describe("GameUI", () => {
         currentPlayerId="p1"
         onStartGame={vi.fn()}
         onEndGame={onEndGame}
+        onMainMenu={vi.fn()}
         botDebugMode={false}
         onToggleDebug={onToggleDebug}
       />,
@@ -53,10 +54,10 @@ describe("GameUI", () => {
     expect(screen.getByText(/01:30/)).toBeInTheDocument();
     expect(screen.getByText(/Player Two is IT/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText("End Game"));
+    fireEvent.click(screen.getByText("⏹ Stop Game"));
     expect(onEndGame).toHaveBeenCalled();
 
-    fireEvent.click(screen.getByText("🔧 Debug Mode"));
+    fireEvent.click(screen.getByText("🔧 Debug ON"));
     expect(onToggleDebug).toHaveBeenCalled();
   });
 
@@ -78,21 +79,22 @@ describe("GameUI", () => {
         currentPlayerId="p1"
         onStartGame={onStartGame}
         onEndGame={vi.fn()}
+        onMainMenu={vi.fn()}
         botDebugMode={true}
         onToggleDebug={onToggleDebug}
       />,
     );
 
-    fireEvent.click(screen.getByText("Start Tag"));
+    fireEvent.click(screen.getByText("🏃 Tag"));
     expect(onStartGame).toHaveBeenCalledWith("tag");
 
-    fireEvent.click(screen.getByText("Start Deathmatch"));
+    fireEvent.click(screen.getByText("💀 Deathmatch"));
     expect(onStartGame).toHaveBeenCalledWith("deathmatch");
 
-    fireEvent.click(screen.getByText("Start CTF"));
+    fireEvent.click(screen.getByText("🚩 CTF"));
     expect(onStartGame).toHaveBeenCalledWith("ctf");
 
-    fireEvent.click(screen.getByText("⏹️ Stop Debug"));
+    fireEvent.click(screen.getByText("⏹ Debug OFF"));
     expect(onToggleDebug).toHaveBeenCalled();
   });
 
@@ -119,10 +121,11 @@ describe("GameUI", () => {
         currentPlayerId="p1"
         onStartGame={vi.fn()}
         onEndGame={vi.fn()}
+        onMainMenu={vi.fn()}
       />,
     );
 
-    expect(screen.getByText(/DEATHMATCH GAME/)).toBeInTheDocument();
+    expect(screen.getByText(/💀 DEATHMATCH/)).toBeInTheDocument();
     expect(screen.getByText("❤️ 70 / 100")).toBeInTheDocument();
     expect(screen.getByText("💀 Player Two: 5 / 10")).toBeInTheDocument();
     expect(screen.getByText("💀 Player One: 2 / 10")).toBeInTheDocument();
@@ -150,6 +153,7 @@ describe("GameUI", () => {
         currentPlayerId="p1"
         onStartGame={vi.fn()}
         onEndGame={vi.fn()}
+        onMainMenu={vi.fn()}
       />,
     );
 
@@ -178,6 +182,7 @@ describe("GameUI", () => {
         currentPlayerId="p1"
         onStartGame={vi.fn()}
         onEndGame={vi.fn()}
+        onMainMenu={vi.fn()}
       />,
     );
 
@@ -217,10 +222,11 @@ describe("GameUI", () => {
         currentPlayerId="p1"
         onStartGame={vi.fn()}
         onEndGame={vi.fn()}
+        onMainMenu={vi.fn()}
       />,
     );
 
-    expect(screen.getByText(/CTF GAME/)).toBeInTheDocument();
+    expect(screen.getByText(/🚩 CTF/)).toBeInTheDocument();
     expect(screen.getByText("🔵 Team A")).toBeInTheDocument();
     expect(screen.getByText("🔵 1 - 2 🔴")).toBeInTheDocument();
     expect(
@@ -231,6 +237,7 @@ describe("GameUI", () => {
   it("shows results screen after deathmatch ends, with Play Again and Main Menu buttons", () => {
     const onStartGame = vi.fn();
     const onEndGame = vi.fn();
+    const onMainMenu = vi.fn();
 
     const gameState: GameState = {
       mode: "deathmatch",
@@ -250,6 +257,7 @@ describe("GameUI", () => {
         currentPlayerId="p1"
         onStartGame={onStartGame}
         onEndGame={onEndGame}
+        onMainMenu={onMainMenu}
       />,
     );
 
@@ -263,7 +271,8 @@ describe("GameUI", () => {
     expect(onStartGame).toHaveBeenCalledWith("deathmatch");
 
     fireEvent.click(screen.getByText("Main Menu"));
-    expect(onEndGame).toHaveBeenCalled();
+    expect(onMainMenu).toHaveBeenCalled();
+    expect(onEndGame).not.toHaveBeenCalled();
   });
 
   it("shows DEFEATED when the current player loses", () => {
@@ -285,6 +294,7 @@ describe("GameUI", () => {
         currentPlayerId="p1"
         onStartGame={vi.fn()}
         onEndGame={vi.fn()}
+        onMainMenu={vi.fn()}
       />,
     );
 

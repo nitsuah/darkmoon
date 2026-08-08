@@ -223,13 +223,10 @@ export const PlayerMovement = React.memo(
           lastWalkSoundTimeRef.current = now;
         }
 
-        // Facing yaw
-        const isAiming = keysPressedRef.current["MouseRight"] ?? false; // Placeholder - need to pass mouse controls
+        // Facing yaw — always follows camera so crosshair is independent of strafe direction
         const targetYaw = movement.computeFacingYaw(
           directionRef.current,
           cameraHorizontal,
-          isAiming,
-          meshRef.current.rotation.y,
         );
         meshRef.current.rotation.y = THREE.MathUtils.lerp(
           meshRef.current.rotation.y,

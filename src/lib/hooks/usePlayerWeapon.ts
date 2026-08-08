@@ -31,6 +31,25 @@ export interface FireResult {
  * shooter is still on cooldown). On a hit, applies the weapon's damage to
  * the target's health via GameManager and plays fire/hit SFX.
  */
+const _pelletDir = new THREE.Vector3();
+const _right = new THREE.Vector3();
+const _up = new THREE.Vector3(0, 1, 0);
+
+function spreadDirection(
+  baseDir: THREE.Vector3,
+  spreadAngle: number,
+): THREE.Vector3 {
+  _right.crossVectors(baseDir, _up).normalize();
+  const yaw = (Math.random() - 0.5) * 2 * spreadAngle;
+  const pitch = (Math.random() - 0.5) * 2 * spreadAngle * 0.5;
+  _pelletDir
+    .copy(baseDir)
+    .addScaledVector(_right, Math.tan(yaw))
+    .addScaledVector(_up, Math.tan(pitch))
+    .normalize();
+  return _pelletDir;
+}
+
 export function processFiring(params: FireParams): FireResult | null {
   const {
     origin,
@@ -47,14 +66,6 @@ export function processFiring(params: FireParams): FireResult | null {
   const weapon = weaponManager.fire(shooterId, now);
   if (!weapon) return null;
 
-  const hit = collisionSystem.checkProjectileHit(
-    origin,
-    direction,
-    weapon.range,
-    gameManager.getPlayers(),
-    shooterId,
-  );
-
   try {
     const soundMgr = getSoundManager();
     if (soundMgr) soundMgr.playWeaponFireSound();
@@ -64,14 +75,62 @@ export function processFiring(params: FireParams): FireResult | null {
     }
   }
 
-  if (hit) {
-    const gameState = gameManager.getGameState();
-    let damageApplied = false;
+  const gameState = gameManager.getGameState();
 
+  // Cone shotgun: fire multiple pellets, each doing damage/pelletCount
+  if (weapon.pelletCount && weapon.pelletCount > 1 && weapon.spreadAngle) {
+    // Use floor so total damage never exceeds weapon.damage
+    const pelletDamage = Math.floor(weapon.damage / weapon.pelletCount);
+    let bestHit: ProjectileHit | null = null;
+    let hitLanded = false;
+
+    for (let i = 0; i < weapon.pelletCount; i++) {
+      const pelletDir = spreadDirection(direction, weapon.spreadAngle).clone();
+      const hit = collisionSystem.checkProjectileHit(
+        origin,
+        pelletDir,
+        weapon.range,
+        gameManager.getPlayers(),
+        shooterId,
+      );
+      if (hit) {
+        if (!bestHit || hit.distance < bestHit.distance) bestHit = hit;
+        if (gameState.isActive) {
+          const applied = gameManager.hitPlayer(
+            shooterId,
+            hit.hitPlayerId,
+            pelletDamage,
+            weapon.id,
+          );
+          if (applied) hitLanded = true;
+        }
+      }
+    }
+
+    if (hitLanded) {
+      try {
+        const soundMgr = getSoundManager();
+        if (soundMgr) soundMgr.playHitSound();
+      } catch (e) {
+        if (import.meta.env.DEV) console.warn("Failed to play hit sound:", e);
+      }
+    }
+
+    return { weapon, hit: bestHit };
+  }
+
+  // Standard single-ray weapon
+  const hit = collisionSystem.checkProjectileHit(
+    origin,
+    direction,
+    weapon.range,
+    gameManager.getPlayers(),
+    shooterId,
+  );
+
+  if (hit) {
+    let damageApplied = false;
     if (gameState.isActive) {
-      // Route all hits through the active game mode's onAction handler.
-      // DeathmatchMode/CTFMode apply health/respawn; TagMode treats a hit
-      // from the IT player as a ranged tag (no health damage).
       damageApplied = gameManager.hitPlayer(
         shooterId,
         hit.hitPlayerId,

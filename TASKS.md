@@ -1,6 +1,6 @@
 # Tasks
 
-Last Updated: 2026-06-25
+Last Updated: 2026-08-07
 
 ## In Progress
 
@@ -50,6 +50,17 @@ Last Updated: 2026-06-25
 
 - [x] **[Phase D] Capture the Flag mode** — teams, flag entities, and capture zones.
   - Done: `CTFMode`, team assignment, flag pickup/carry/capture/drop-on-death, bot CTF AI, CTF combat, team HUD; see `docs/MULTIPLAYER_SHOOTER_ROADMAP.md` Phase D.
+
+- [x] **[Phase E partial] HUD polish + code quality** — Phase E polish items completed in PR #391:
+  - Done: Homepage redesign (glassmorphism cards, feature/roadmap sections, mobile CTA, favicon); ShotgunVFX cone particle effect; reserve ammo system; tag-mode health/damage; reload precision meter v2 (snap mechanic); weapon swap key bindings (Tab/Q/E + GAMEPLAY_KEYS constant); scoreboard rebind to [I]; camera-relative A/D strafing fix; Crosshair GPU-composited positioning (transform instead of top/left); tensionWarning useMemo; crosshair spread setInterval; scoreboard blur reset; GameUI type safety improvements.
+  - Completed: 2026-08-07
+
+- [x] **GameUI monolith componentization** — `GameUI.tsx` (2,078 lines) split into 15 sub-components and a dedicated `useGameUIState.ts` hook; barrel re-export preserves all consumer imports unchanged.
+  - Done: `src/components/GameUI/components/` (DamageFlash, HitDirectionIndicator, KillAnnouncement, PickupToast, ScoreBoard, KillFeed, MinimapRadar, Crosshair, BottomHUD, DeathScreen, StreakAnnouncement, BonusRoundOverlay, GameStatusPanel, GameResultsScreen, GameLobbyPanel) + `src/components/GameUI/hooks/useGameUIState.ts`
+  - Completed: 2026-08-04
+
+- [x] **Solo.tsx modular refactor** — Solo.tsx (previously ~1,002 lines) extracted into focused hooks: `useGameStart`, `useBotPositionHandlers`, `useDebugModes` (botDebugMode, galleryDebugMode, autoRestart).
+  - Completed: 2026-08-04
 
 ## Todo
 
@@ -106,10 +117,10 @@ Last Updated: 2026-06-25
   - Problem: grenade currently fires like a laser (instant, straight-line). Intended mechanic is hold-to-charge + release with a live arc preview.
   - Acceptance Criteria: holding LMB with grenade equipped renders a dotted parabolic arc from player to predicted landing zone; releasing fires along that arc; throw distance scales with hold duration; existing grenade damage/splash radius unchanged.
 
-- [ ] **[Phase E] Multiplayer shooter polish** — over-the-shoulder aim camera and combat music cross-fade layer.
+- [ ] **[Phase E remaining] Over-the-shoulder aim camera + combat music** — remaining Phase E items after PR #391 landed most of the polish pass.
   - Priority: P2
-  - Note: HUD, ammo, reload bar, kill feed, damage numbers, and hit marker are already done. Remaining: aim-mode camera offset and a combat music layer that cross-fades when shooting/hit events occur.
-  - Acceptance Criteria: see `docs/MULTIPLAYER_SHOOTER_ROADMAP.md` Phase E.
+  - Note: HUD, ammo, reload bar, kill feed, damage numbers, hit marker, ShotgunVFX, reserve ammo, tag-mode health, reload snap mechanic, homepage redesign, and GameUI/Solo componentization are all done. Remaining: over-the-shoulder aim-mode camera offset and a combat music layer that cross-fades when shooting/hit events occur.
+  - Acceptance Criteria: see `docs/MULTIPLAYER_SHOOTER_ROADMAP.md` Phase E "Remaining" section.
 
 - [ ] Fix server-side multiplayer tag parity before Multiplayer Tag ships.
   - Priority: P1

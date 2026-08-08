@@ -14,14 +14,15 @@
 
 ## ✨ Features
 
-- `[shipped]` **Combat Gameplay with AI Bots** — Full deathmatch and CTF modes with bot LOS checks, weapon reload system, angular spread, bot jumping, tracer beams, hit direction indicators, score tension alerts, and a **new hold-to-throw grenade mechanic with trajectory preview.**
-- `[shipped]` **Shooting Gallery Mode** — Standalone target-practice mode (Phase BM) with crosshair and bot tracer improvements.
-- `[shipped]` **Mouse-Aimed Firing & Player Reticle** — Ground-plane raycast aiming with CSS crosshair overlay; velocity-based smooth movement.
-- `[shipped]` **Pluggable Game Mode Architecture** — `GameModeHandler` interface decouples mode logic; `TagMode`, `DeathmatchMode`, and `CTFMode` ship as reference implementations.
+- `[shipped]` **Combat Gameplay with AI Bots** — Full deathmatch and CTF modes with bot LOS checks, weapon reload system (including timing-based precision snap mechanic), angular spread, bot jumping, tracer beams, hit direction indicators, score tension alerts, and ShotgunVFX cone particle effects.
+- `[shipped]` **Shooting Gallery Mode** — Standalone target-practice mode with crosshair and bot tracer improvements.
+- `[shipped]` **Mouse-Aimed Firing & Player Reticle** — Ground-plane raycast aiming with GPU-composited CSS crosshair overlay; velocity-based smooth movement with camera-relative A/D strafing.
+- `[shipped]` **Pluggable Game Mode Architecture** — `GameModeHandler` interface decouples mode logic; `TagMode` (with health/damage support), `DeathmatchMode`, and `CTFMode` ship as reference implementations.
+- `[shipped]` **Modular UI Architecture** — `GameUI` and `Solo.tsx` fully componentized: 15 HUD sub-components, 3 new hooks (`useGameStart`, `useBotPositionHandlers`, `useDebugModes`), and a dedicated `useGameUIState.ts` for all event-driven state.
 - `[shipped]` **WebSocket Server Foundation** — Socket.io and server validation are in place for future live modes.
 - `[in-progress]` **Multiplayer 3D Gameplay** — Multiplayer foundations exist, but the deployed experience is still solo-first.
 - `[in-progress]` **Mobile Support** — Responsive layout and touch controls exist, but device validation is still open.
-- `[shipped]` **Modern Tooling** — Vite, Vitest, ESLint, Prettier, TypeScript, and CI are wired into the repo.
+- `[shipped]` **Modern Tooling** — Vite, Vitest (558+ tests), ESLint, Prettier, TypeScript, and CI are wired into the repo.
 
 ## Quick Start
 
@@ -37,7 +38,7 @@ Visit `http://localhost:4444`. **Solo mode is the only live experience; multipla
 All checks run via Docker — no local Node.js required.
 
 ```bash
-# Run all tests (378+ tests, Vitest)
+# Run all tests (558+ tests, Vitest)
 docker compose -f config/docker-compose.yml --project-name darkmoon --profile test run --rm test
 
 # Lint

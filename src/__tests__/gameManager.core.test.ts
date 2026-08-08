@@ -131,8 +131,8 @@ describe("GameManager core", () => {
     expect(manager.getPlayers().get("p1")?.isIt).toBe(false);
     expect(manager.getPlayers().get("p2")?.isIt).toBe(true);
     expect(manager.getGameState().itPlayerId).toBe("p2");
-    // No health damage in tag mode
-    expect(manager.getPlayers().get("p2")?.health).toBeUndefined();
+    // Tag mode now initializes health; target gets health reset on tag transfer
+    expect(manager.getPlayers().get("p2")?.health).toBe(100);
   });
 
   it("tag event is pushed to killFeed on a successful tag", () => {
@@ -163,12 +163,14 @@ describe("GameManager core", () => {
     manager.addPlayer(makePlayer("p2", "Player 2"));
     manager.startTagGame(60);
 
-    // p2 (not IT) fires at p1 — should not transfer IT
+    // p2 (not IT) fires at p1 — deals damage but does not transfer IT
     const result = manager.hitPlayer("p2", "p1", 10, "laser");
 
-    expect(result).toBe(false);
+    expect(result).toBe(true);
     expect(manager.getPlayers().get("p1")?.isIt).toBe(true);
     expect(manager.getPlayers().get("p2")?.isIt).toBe(false);
+    // Damage reduces health without affecting IT status
+    expect(manager.getPlayers().get("p1")?.health).toBe(90);
   });
 
   it("tag streak: 3 cumulative tags by the same player trigger a streak announcement", () => {

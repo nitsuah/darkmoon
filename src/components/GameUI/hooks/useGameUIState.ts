@@ -1,6 +1,9 @@
 import * as React from "react";
 import { GameState } from "../../GameManager";
 import { WEAPONS } from "../../combat/WeaponManager";
+import { createLogger } from "../../../lib/utils/logger";
+
+const log = createLogger("GameUI");
 
 const GALLERY_HS_KEY = "darkmoon_gallery_highscore";
 
@@ -9,9 +12,13 @@ export function useViewport(): {
   isLandscape: boolean;
   isMinimal: boolean;
 } {
-  const [isMobile, setIsMobile] = React.useState(window.innerWidth <= 768);
+  const [isMobile, setIsMobile] = React.useState(
+    typeof window !== "undefined" ? window.innerWidth <= 768 : false,
+  );
   const [isLandscape, setIsLandscape] = React.useState(
-    window.innerWidth > window.innerHeight,
+    typeof window !== "undefined"
+      ? window.innerWidth > window.innerHeight
+      : false,
   );
 
   React.useEffect(() => {
@@ -28,7 +35,7 @@ export function useViewport(): {
 
 export function useStreakAnnouncement(
   streakAnnouncement: GameState["streakAnnouncement"],
-) {
+): { killerName: string; count: number } | null {
   const [visibleStreak, setVisibleStreak] = React.useState<{
     killerName: string;
     count: number;
@@ -48,7 +55,9 @@ export function useStreakAnnouncement(
   return visibleStreak;
 }
 
-export function useRespawnCountdown(respawnAt: number | undefined) {
+export function useRespawnCountdown(
+  respawnAt: number | undefined,
+): number | null {
   const [respawnSecondsLeft, setRespawnSecondsLeft] = React.useState<
     number | null
   >(null);
@@ -74,7 +83,9 @@ export function useHitDirection() {
 
   React.useEffect(() => {
     const onDamaged = (e: Event) => {
-      const angle = (e as CustomEvent<{ angle: number }>).detail.angle;
+      const detail = (e as CustomEvent<{ angle?: number }>).detail;
+      if (typeof detail?.angle !== "number") return;
+      const angle = detail.angle;
       if (timerRef.current) clearTimeout(timerRef.current);
       setHitAngle(angle);
       timerRef.current = setTimeout(() => setHitAngle(null), 900);
@@ -154,7 +165,7 @@ export function useGalleryHighScore(
     try {
       return parseInt(localStorage.getItem(GALLERY_HS_KEY) ?? "0", 10) || 0;
     } catch (err) {
-      console.warn("[darkmoon] Failed to read gallery high score:", err);
+      log.warn("Failed to read gallery high score:", err);
       return 0;
     }
   });
@@ -180,7 +191,7 @@ export function useGalleryHighScore(
           setIsNewRecord(true);
         }
       } catch (err) {
-        console.warn("[darkmoon] Failed to write gallery high score:", err);
+        log.warn("Failed to write gallery high score:", err);
       }
     }
   }, [gameState.isActive, gameState.mode, gameState.gameResults]);
@@ -188,7 +199,7 @@ export function useGalleryHighScore(
   return { galleryHighScore, isNewRecord };
 }
 
-export function useBonusRound() {
+export function useBonusRound(): boolean {
   const [bonusRoundVisible, setBonusRoundVisible] = React.useState(false);
   const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -217,7 +228,10 @@ export function useGalleryCombo(): {
 
   React.useEffect(() => {
     const onCombo = (e: unknown) => {
-      const d = (e as { detail: { combo: number; multiplier: number } }).detail;
+      const d = (e as { detail: { combo: unknown; multiplier: unknown } })
+        .detail;
+      if (typeof d?.combo !== "number" || typeof d?.multiplier !== "number")
+        return;
       setGalleryCombo(d.combo);
       setGalleryMultiplier(d.multiplier);
     };
@@ -233,7 +247,8 @@ export function useCrosshairSpread(): number {
 
   React.useEffect(() => {
     const onFired = (e: unknown) => {
-      const weaponId = (e as { detail: { weaponId: string } }).detail.weaponId;
+      const weaponId = (e as { detail: { weaponId: unknown } }).detail.weaponId;
+      if (typeof weaponId !== "string") return;
       const addSpread = weaponId === "smg" ? 8 : weaponId === "shotgun" ? 6 : 3;
       setCrosshairSpread((prev) => Math.min(prev + addSpread, 24));
     };
@@ -242,12 +257,11 @@ export function useCrosshairSpread(): number {
   }, []);
 
   React.useEffect(() => {
-    if (crosshairSpread <= 0) return;
-    const t = setTimeout(() => {
+    const t = setInterval(() => {
       setCrosshairSpread((prev) => Math.max(0, prev - 2));
     }, 50);
-    return () => clearTimeout(t);
-  }, [crosshairSpread]);
+    return () => clearInterval(t);
+  }, []);
 
   return crosshairSpread;
 }
@@ -261,36 +275,38 @@ export function useScoreboard(enabled: boolean): boolean {
       return;
     }
     const down = (e: KeyboardEvent) => {
-      if (e.code === "Tab") {
+      if (e.code === "KeyI") {
         e.preventDefault();
         setShowScoreboard(true);
       }
     };
     const up = (e: KeyboardEvent) => {
-      if (e.code === "Tab") setShowScoreboard(false);
+      if (e.code === "KeyI") setShowScoreboard(false);
     };
+    const blur = () => setShowScoreboard(false);
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
+    window.addEventListener("blur", blur);
     return () => {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", blur);
     };
   }, [enabled]);
 
   return showScoreboard;
 }
 
-export function usePickupToast() {
+export function usePickupToast(): string | null {
   const [pickupToast, setPickupToast] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     const onWeapon = (e: unknown) => {
-      const { weaponId } = (e as { detail: { weaponId: string } }).detail;
+      const { weaponId } = (e as { detail: { weaponId: unknown } }).detail;
+      if (typeof weaponId !== "string") return;
       if (!WEAPONS[weaponId]) {
-        console.warn(
-          `[darkmoon] Unknown weapon ID in pickup event: "${weaponId}"`,
-        );
+        log.warn(`Unknown weapon ID in pickup event: "${weaponId}"`);
       }
       const name = WEAPONS[weaponId]?.name ?? weaponId;
       setPickupToast(`PICKED UP ${name.toUpperCase()}`);
@@ -298,7 +314,8 @@ export function usePickupToast() {
       timer = setTimeout(() => setPickupToast(null), 2200);
     };
     const onHealth = (e: unknown) => {
-      const { amount } = (e as { detail: { amount: number } }).detail;
+      const { amount } = (e as { detail: { amount: unknown } }).detail;
+      if (typeof amount !== "number") return;
       setPickupToast(`+${amount} HEALTH`);
       clearTimeout(timer);
       timer = setTimeout(() => setPickupToast(null), 2200);
@@ -336,9 +353,7 @@ export function useKillAnnouncement(
     lastKeyRef.current = key;
     if (latest.killerId !== currentPlayerId) return;
     if (!WEAPONS[latest.weaponId]) {
-      console.warn(
-        `[darkmoon] Unknown weapon ID in kill feed: "${latest.weaponId}"`,
-      );
+      log.warn(`Unknown weapon ID in kill feed: "${latest.weaponId}"`);
     }
     const weaponLabel = WEAPONS[latest.weaponId]?.name ?? latest.weaponId;
     if (announcementTimerRef.current)

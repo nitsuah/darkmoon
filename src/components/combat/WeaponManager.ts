@@ -7,6 +7,8 @@ export interface WeaponConfig {
   cooldownMs: number;
   /** Maximum ammo capacity. undefined/null means infinite. */
   maxAmmo?: number;
+  /** Total reserve ammo beyond the magazine (undefined = unlimited reserves). */
+  reserveAmmo?: number;
   /** Reload duration in ms. undefined = instant refill. */
   reloadTimeMs?: number;
   /** If true, weapon reloads automatically when ammo hits 0. */
@@ -19,6 +21,10 @@ export interface WeaponConfig {
   isChargeable?: boolean;
   /** Charge time in ms for maximum throw distance. */
   maxChargeTimeMs?: number;
+  /** Number of pellets fired (shotgun cone). Each pellet does damage/pelletCount damage. */
+  pelletCount?: number;
+  /** Half-angle spread for cone weapons (radians). */
+  spreadAngle?: number;
 }
 
 export const WEAPONS: Record<string, WeaponConfig> = {
@@ -32,11 +38,14 @@ export const WEAPONS: Record<string, WeaponConfig> = {
   shotgun: {
     id: "shotgun",
     name: "Pulse Shotgun",
-    damage: 25,
-    range: 8,
+    damage: 60,
+    range: 10,
     cooldownMs: 1000,
     maxAmmo: 6,
+    reserveAmmo: 30,
     reloadTimeMs: 2200,
+    pelletCount: 6,
+    spreadAngle: 0.28,
   },
   rocket: {
     id: "rocket",
@@ -45,6 +54,7 @@ export const WEAPONS: Record<string, WeaponConfig> = {
     range: 12,
     cooldownMs: 2000,
     maxAmmo: 3,
+    reserveAmmo: 9,
     reloadTimeMs: 3000,
     splashRadius: 5,
     splashDamage: 50,
@@ -56,6 +66,7 @@ export const WEAPONS: Record<string, WeaponConfig> = {
     range: 18,
     cooldownMs: 4000,
     maxAmmo: 3,
+    reserveAmmo: 9,
     splashRadius: 7,
     splashDamage: 75,
     isChargeable: true,
@@ -68,6 +79,7 @@ export const WEAPONS: Record<string, WeaponConfig> = {
     range: 18,
     cooldownMs: 120,
     maxAmmo: 40,
+    reserveAmmo: 200,
     reloadTimeMs: 2000,
   },
 };
@@ -80,6 +92,7 @@ export class WeaponManager {
   private equippedWeaponId: string | null = null;
   private lastFiredAt: Map<string, number> = new Map();
   private ammoMap: Map<string, number> = new Map();
+  private reserveAmmoMap: Map<string, number> = new Map();
   private reloadStartAt: Map<string, number> = new Map();
   private chargeStartAt: Map<string, number> = new Map();
 
@@ -91,25 +104,69 @@ export class WeaponManager {
     if (weapon.maxAmmo !== undefined && !this.ammoMap.has(weaponId)) {
       this.ammoMap.set(weaponId, weapon.maxAmmo);
     }
+    if (
+      weapon.reserveAmmo !== undefined &&
+      !this.reserveAmmoMap.has(weaponId)
+    ) {
+      this.reserveAmmoMap.set(weaponId, weapon.reserveAmmo);
+    }
     return true;
   }
 
-  /** Refill a weapon's ammo to its maximum (call this when picking up a crate). */
+  /** Reload from reserves (called when a timed reload completes). */
   refill(weaponId: string): void {
     const weapon = WEAPONS[weaponId];
-    if (weapon?.maxAmmo !== undefined) {
-      this.ammoMap.set(weaponId, weapon.maxAmmo);
-      this.reloadStartAt.delete(weaponId);
+    if (weapon?.maxAmmo === undefined) return;
+    // Lazily initialize reserveAmmo so refill works even if equip() was skipped
+    if (
+      !this.reserveAmmoMap.has(weaponId) &&
+      weapon.reserveAmmo !== undefined
+    ) {
+      this.reserveAmmoMap.set(weaponId, weapon.reserveAmmo);
     }
+    const reserve = this.reserveAmmoMap.get(weaponId);
+    if (reserve !== undefined && weapon.reserveAmmo !== undefined) {
+      const needed = weapon.maxAmmo - (this.ammoMap.get(weaponId) ?? 0);
+      const toLoad = Math.min(needed, reserve);
+      this.ammoMap.set(weaponId, (this.ammoMap.get(weaponId) ?? 0) + toLoad);
+      this.reserveAmmoMap.set(weaponId, reserve - toLoad);
+    } else {
+      this.ammoMap.set(weaponId, weapon.maxAmmo);
+    }
+    this.reloadStartAt.delete(weaponId);
   }
 
-  /** Begin reloading the weapon. No-op if already reloading or at full ammo. */
+  /** Restore full magazine and full reserves (weapon pickup / respawn). */
+  restock(weaponId: string): void {
+    const weapon = WEAPONS[weaponId];
+    if (!weapon) return;
+    if (weapon.maxAmmo !== undefined)
+      this.ammoMap.set(weaponId, weapon.maxAmmo);
+    if (weapon.reserveAmmo !== undefined)
+      this.reserveAmmoMap.set(weaponId, weapon.reserveAmmo);
+    this.reloadStartAt.delete(weaponId);
+  }
+
+  /** Returns current reserve ammo, null if weapon has unlimited reserves, or undefined if weaponId is unknown. */
+  getReserveAmmo(weaponId: string): number | null | undefined {
+    const weapon = WEAPONS[weaponId];
+    if (!weapon) return undefined;
+    if (weapon.reserveAmmo === undefined) return null;
+    return this.reserveAmmoMap.get(weaponId) ?? weapon.reserveAmmo;
+  }
+
+  /** Begin reloading the weapon. No-op if already reloading, at full ammo, or no reserves. */
   startReload(weaponId: string, now: number = Date.now()): boolean {
     const weapon = WEAPONS[weaponId];
     if (!weapon?.reloadTimeMs) return false;
     if (this.reloadStartAt.has(weaponId)) return false; // already reloading
     const current = this.ammoMap.get(weaponId) ?? weapon.maxAmmo ?? 0;
     if (current >= (weapon.maxAmmo ?? 0)) return false; // already full
+    // Need reserve ammo to reload (if reserves are tracked)
+    if (weapon.reserveAmmo !== undefined) {
+      const reserve = this.reserveAmmoMap.get(weaponId) ?? weapon.reserveAmmo;
+      if (reserve <= 0) return false; // no ammo left to reload with
+    }
     this.reloadStartAt.set(weaponId, now);
     return true;
   }
@@ -159,6 +216,14 @@ export class WeaponManager {
     if (progress !== null && progress >= 1) {
       this.refill(weaponId);
     }
+  }
+
+  /** Force-completes a reload instantly (precision reload mechanic). */
+  completeReloadNow(weaponId: string): void {
+    if (!this.reloadStartAt.has(weaponId)) return;
+    const weapon = WEAPONS[weaponId];
+    if (!weapon) return;
+    this.refill(weaponId);
   }
 
   unequip(): void {

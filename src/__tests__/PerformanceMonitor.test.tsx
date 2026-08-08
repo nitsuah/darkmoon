@@ -23,7 +23,7 @@ describe("PerformanceMonitor Component", () => {
       const fpsElement = screen.getByRole("button");
       expect(fpsElement).toHaveStyle({
         position: "fixed",
-        top: "10px",
+        bottom: "10px",
         left: "10px",
       });
     });

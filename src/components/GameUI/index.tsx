@@ -28,6 +28,7 @@ import KillFeed from "./components/KillFeed";
 import MinimapRadar from "./components/MinimapRadar";
 import Crosshair from "./components/Crosshair";
 import BottomHUD from "./components/BottomHUD";
+import ReloadMeter from "./components/ReloadMeter";
 import DeathScreen from "./components/DeathScreen";
 import StreakAnnouncement from "./components/StreakAnnouncement";
 import BonusRoundOverlay from "./components/BonusRoundOverlay";
@@ -40,6 +41,7 @@ interface GameUIProps {
   currentPlayerId: string;
   onStartGame: (mode: StartableMode) => void;
   onEndGame: () => void;
+  onMainMenu: () => void;
   botDebugMode?: boolean;
   onToggleDebug?: () => void;
   galleryDebugMode?: boolean;
@@ -55,6 +57,7 @@ const GameUI: React.FC<GameUIProps> = ({
   currentPlayerId,
   onStartGame,
   onEndGame,
+  onMainMenu,
   botDebugMode = false,
   onToggleDebug,
   galleryDebugMode = false,
@@ -85,7 +88,7 @@ const GameUI: React.FC<GameUIProps> = ({
 
   const recentKills: KillEvent[] = (gameState.killFeed ?? []).slice(-5);
 
-  const tensionWarning: string | null = (() => {
+  const tensionWarning = React.useMemo((): string | null => {
     if (
       gameState.mode !== "deathmatch" ||
       !gameState.isActive ||
@@ -109,9 +112,17 @@ const GameUI: React.FC<GameUIProps> = ({
     if (needed === 2)
       return `${leaderName.toUpperCase()} NEEDS 2 MORE KILLS TO WIN`;
     return null;
-  })();
+  }, [
+    gameState.mode,
+    gameState.isActive,
+    gameState.killLimit,
+    gameState.scores,
+    players,
+  ]);
 
-  const isSpawnProtected = currentPlayer?.spawnProtectedUntil !== undefined;
+  const isSpawnProtected =
+    currentPlayer?.spawnProtectedUntil !== undefined &&
+    currentPlayer.spawnProtectedUntil > Date.now();
 
   const isCombat = COMBAT_MODES.has(gameState.mode);
   const showCrosshair = isCombat && respawnSecondsLeft === null && !isMinimal;
@@ -125,6 +136,12 @@ const GameUI: React.FC<GameUIProps> = ({
       gameState.mode === "ctf" ||
       gameState.mode === "tag") &&
     !isMinimal;
+  const reloadPct = currentPlayer?.reloadProgress ?? null;
+  const showReloadMeter =
+    showBottomHUD &&
+    reloadPct !== null &&
+    reloadPct !== undefined &&
+    reloadPct < 1;
 
   // Active game overlay
   if (gameState.isActive) {
@@ -177,6 +194,7 @@ const GameUI: React.FC<GameUIProps> = ({
           isMinimal={isMinimal}
           isMobile={isMobile}
           onEndGame={onEndGame}
+          onMainMenu={onMainMenu}
           botDebugMode={botDebugMode}
           onToggleDebug={onToggleDebug}
           galleryDebugMode={galleryDebugMode}
@@ -206,9 +224,11 @@ const GameUI: React.FC<GameUIProps> = ({
           />
         )}
 
-        {showBottomHUD && (
-          <BottomHUD currentPlayer={currentPlayer!} mode={gameState.mode} />
+        {showBottomHUD && currentPlayer && (
+          <BottomHUD currentPlayer={currentPlayer} mode={gameState.mode} />
         )}
+
+        {showReloadMeter && <ReloadMeter isReloading reloadPct={reloadPct!} />}
 
         <DeathScreen
           respawnSecondsLeft={respawnSecondsLeft}
@@ -293,8 +313,12 @@ const GameUI: React.FC<GameUIProps> = ({
         autoRestartSecondsLeft={autoRestartSecondsLeft}
         galleryHighScore={galleryHighScore}
         isNewRecord={isNewRecord}
-        onPlayAgain={() => onStartGame(gameState.mode as StartableMode)}
-        onMainMenu={onEndGame}
+        onPlayAgain={() => {
+          if (gameState.mode !== "none" && gameState.mode !== "solo") {
+            onStartGame(gameState.mode as StartableMode);
+          }
+        }}
+        onMainMenu={onMainMenu}
       />
     );
   }
@@ -310,6 +334,7 @@ const GameUI: React.FC<GameUIProps> = ({
       onStartGame={onStartGame}
       onToggleDebug={onToggleDebug}
       onToggleGalleryDebug={onToggleGalleryDebug}
+      onMainMenu={onMainMenu}
     />
   );
 };

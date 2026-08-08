@@ -4,11 +4,17 @@ import { render, screen } from "@testing-library/react";
 import Players from "../Players";
 
 vi.mock("../../../../components/characters/PlayerCharacter", () => {
-  const PlayerCharacter = React.forwardRef<unknown, unknown>((props, ref) => {
-    void props;
-    void ref;
-    return <div data-testid="player-character" />;
-  });
+  const PlayerCharacter = React.forwardRef<unknown, Record<string, unknown>>(
+    (props, ref) => {
+      void ref;
+      return (
+        <div
+          data-testid="player-character"
+          data-show-hitboxes={String(props.showHitboxes)}
+        />
+      );
+    },
+  );
   PlayerCharacter.displayName = "MockPlayerCharacter";
 
   return { PlayerCharacter };
@@ -67,6 +73,7 @@ describe("Players", () => {
             >
           >
         }
+        botDebugMode={false}
       />,
     );
 
@@ -113,9 +120,50 @@ describe("Players", () => {
             >
           >
         }
+        botDebugMode={false}
       />,
     );
 
     expect(screen.getByText("1234")).toBeInTheDocument();
+  });
+
+  it("passes showHitboxes=true to PlayerCharacter when botDebugMode is true", () => {
+    const gameManager = {
+      getPlayers: () => new Map(),
+    } as unknown as import("../../../../components/GameManager").GameManager;
+
+    render(
+      <Players
+        ref={React.createRef()}
+        keysPressedRef={{ current: {} }}
+        socketClient={null}
+        mouseControls={null as unknown as never}
+        clients={{}}
+        gameManager={gameManager}
+        currentPlayerId="p1"
+        joystickMove={{ x: 0, y: 0 }}
+        lastWalkSoundTimeRef={{ current: 0 }}
+        isPaused={false}
+        onPositionUpdate={vi.fn()}
+        playerIsIt={false}
+        setPlayerIsIt={vi.fn()}
+        setBotIsIt={vi.fn()}
+        setBot1GotTagged={vi.fn()}
+        setBot2GotTagged={vi.fn()}
+        setGameState={
+          vi.fn() as unknown as React.Dispatch<
+            React.SetStateAction<
+              import("../../../../components/GameManager").GameState
+            >
+          >
+        }
+        botDebugMode={true}
+      />,
+    );
+
+    expect(screen.getByTestId("player-character")).toHaveAttribute(
+      "data-show-hitboxes",
+      "true",
+    );
   });
 });

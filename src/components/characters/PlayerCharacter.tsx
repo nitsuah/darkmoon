@@ -142,6 +142,7 @@ export const PlayerCharacter = React.forwardRef<
   const prevKey4Ref = React.useRef(false);
   const prevKey5Ref = React.useRef(false);
   const prevKeyRRef = React.useRef(false);
+  const prevKeyTabRef = React.useRef(false);
 
   // Look indicator (aim preview)
   const lookIndicatorRef = React.useRef<THREE.Mesh>(
@@ -469,6 +470,7 @@ export const PlayerCharacter = React.forwardRef<
         prevKey4Ref={prevKey4Ref}
         prevKey5Ref={prevKey5Ref}
         prevKeyRRef={prevKeyRRef}
+        prevKeyTabRef={prevKeyTabRef}
         canAct={canActRef.current}
         collisionSystemRef={collisionSystemRef}
         isPlayerFrozenRef={isPlayerFrozenRef}

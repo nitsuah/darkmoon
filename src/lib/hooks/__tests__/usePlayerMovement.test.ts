@@ -43,21 +43,61 @@ describe("usePlayerMovement helpers", () => {
     expect(dir.length()).toBeGreaterThan(0);
   });
 
-  test("computeFacingYaw follows camera yaw while aiming", () => {
+  test("computeFacingYaw always returns camera yaw (strafe-independent)", () => {
     const direction = new THREE.Vector3(1, 0, 0);
-    const facing = computeFacingYaw(direction, Math.PI / 3, true, 0);
+    const facing = computeFacingYaw(direction, Math.PI / 3);
     expect(facing).toBeCloseTo(Math.PI / 3);
   });
 
-  test("computeFacingYaw follows movement direction when not aiming", () => {
+  test("computeFacingYaw returns camera yaw even when strafing sideways", () => {
     const direction = new THREE.Vector3(1, 0, 0);
-    const facing = computeFacingYaw(direction, 0, false, 0);
-    expect(facing).toBeCloseTo(-Math.PI / 2);
+    const facing = computeFacingYaw(direction, 0);
+    expect(facing).toBeCloseTo(0);
   });
 
-  test("computeFacingYaw keeps current yaw with no movement", () => {
+  test("computeFacingYaw returns camera yaw with no movement", () => {
     const direction = new THREE.Vector3(0, 0, 0);
-    const facing = computeFacingYaw(direction, 0.7, false, 1.1);
-    expect(facing).toBeCloseTo(1.1);
+    const facing = computeFacingYaw(direction, 0.7);
+    expect(facing).toBeCloseTo(0.7);
+  });
+
+  test("A key strafes left relative to camera facing -Z", () => {
+    const dir = computeDirection(
+      0,
+      { x: 0, y: 0 },
+      { a: true, w: false, s: false, d: false, q: false, e: false },
+      false,
+    );
+    expect(dir.length()).toBeCloseTo(1);
+    // camera=0: right=(1,0,0), A subtracts right → direction.x < 0
+    expect(dir.x).toBeLessThan(0);
+    expect(dir.z).toBeCloseTo(0);
+  });
+
+  test("D key strafes right relative to camera facing -Z", () => {
+    const dir = computeDirection(
+      0,
+      { x: 0, y: 0 },
+      { d: true, w: false, a: false, s: false, q: false, e: false },
+      false,
+    );
+    expect(dir.length()).toBeCloseTo(1);
+    // camera=0: right=(1,0,0), D adds right → direction.x > 0
+    expect(dir.x).toBeGreaterThan(0);
+    expect(dir.z).toBeCloseTo(0);
+  });
+
+  test("A key strafes camera-relative at 90° rotation", () => {
+    const cam = Math.PI / 2;
+    const dir = computeDirection(
+      cam,
+      { x: 0, y: 0 },
+      { a: true, w: false, s: false, d: false, q: false, e: false },
+      false,
+    );
+    expect(dir.length()).toBeCloseTo(1);
+    // camera=PI/2: right=(0,0,-1), A subtracts right → direction.z > 0
+    expect(dir.z).toBeGreaterThan(0);
+    expect(dir.x).toBeCloseTo(0);
   });
 });

@@ -16,22 +16,19 @@ export const TAG_STREAK_LABELS: Record<number, string> = {
   10: "TAG GOD",
 };
 const TAG_STREAK_ANNOUNCE_MS = 3000;
+const TAG_RESPAWN_MS = 3000;
+const TAG_PLAYER_MAX_HP = 100;
 
 /**
- * Classic tag rules: one player is "IT" and tags others to pass on the
- * role. Scores reward fast tags; cooldowns prevent instant tag-back
- * ping-pong and give a freshly-tagged player a moment to react.
+ * Tag rules with deathmatch health/respawn:
+ * - IT player hits non-IT → instant tag transfer + respawn target (shot-as-tag preserved)
+ * - Non-IT players deal normal damage to each other; death triggers respawn
+ * - Respawn timer: 3 seconds
  */
 export class TagMode implements GameModeHandler {
-  // Scoring constants
   private readonly MAX_TAG_SCORE = 300;
   private readonly MILLISECONDS_PER_SECOND = 1000;
-
-  // Prevents a player who was just tagged (and is now IT) from instantly
-  // tagging back the player who tagged them.
   private readonly TAG_BACK_COOLDOWN_MS = 2000;
-  // Prevents a player who was just tagged from being tagged again by anyone
-  // (gives them a moment to react/move before becoming a target again).
   private readonly TAG_FREEZE_MS = 1500;
 
   onStart(players: Map<string, Player>, gameState: GameState): void {
@@ -47,17 +44,31 @@ export class TagMode implements GameModeHandler {
       player.lastTagTime = undefined;
       player.lastTaggedById = undefined;
       player.currentKillStreak = 0;
+      player.health = TAG_PLAYER_MAX_HP;
+      player.maxHealth = TAG_PLAYER_MAX_HP;
+      player.respawnAt = undefined;
+      player.spawnProtectedUntil = undefined;
     });
   }
 
   onTick(
     deltaTime: number,
-    _players: Map<string, Player>,
+    players: Map<string, Player>,
     gameState: GameState,
   ): void {
     gameState.timeRemaining -= deltaTime;
 
     const now = Date.now();
+
+    // Process respawns
+    players.forEach((player) => {
+      if (player.respawnAt !== undefined && now >= player.respawnAt) {
+        player.respawnAt = undefined;
+        player.health = TAG_PLAYER_MAX_HP;
+        player.spawnProtectedUntil = now + 2000;
+      }
+    });
+
     if (
       gameState.streakAnnouncement !== undefined &&
       now >= gameState.streakAnnouncement.timestamp + TAG_STREAK_ANNOUNCE_MS
@@ -71,10 +82,66 @@ export class TagMode implements GameModeHandler {
     players: Map<string, Player>,
     gameState: GameState,
   ): boolean {
-    // A laser "hit" in tag mode works as a ranged tag — no health damage, just IT transfer.
     if (action.type === "hit") {
-      const { attackerId, targetId } = action;
-      return this.applyTag(attackerId, targetId, players, gameState);
+      const { attackerId, targetId, damage, weaponId } = action;
+      const attacker = players.get(attackerId);
+      const target = players.get(targetId);
+      if (!attacker || !target) return false;
+      if (attackerId === targetId) return false;
+      if (attacker.respawnAt !== undefined) return false;
+      if (target.respawnAt !== undefined) return false;
+      // Ignore hits on spawn-protected players
+      if (
+        target.spawnProtectedUntil !== undefined &&
+        Date.now() < target.spawnProtectedUntil
+      )
+        return false;
+
+      // IT player hitting non-IT: instant tag transfer (shot-as-tag preserved)
+      if (attacker.isIt && !target.isIt) {
+        const tagged = this.applyTag(attackerId, targetId, players, gameState);
+        if (tagged) {
+          // Respawn the newly IT player after a short delay
+          target.health = TAG_PLAYER_MAX_HP;
+          target.respawnAt = Date.now() + TAG_RESPAWN_MS;
+        }
+        return tagged;
+      }
+
+      // Non-IT hitting non-IT or non-IT hitting IT: normal damage
+      target.health = Math.max(
+        0,
+        (target.health ?? TAG_PLAYER_MAX_HP) - damage,
+      );
+      if (target.health <= 0) {
+        target.health = 0;
+        target.respawnAt = Date.now() + TAG_RESPAWN_MS;
+        const killEvent: KillEvent = {
+          killerId: attackerId,
+          killerName: attacker.name,
+          targetId,
+          targetName: target.name,
+          weaponId: weaponId ?? "laser",
+          timestamp: Date.now(),
+        };
+        if (!gameState.killFeed) gameState.killFeed = [];
+        gameState.killFeed.push(killEvent);
+        if (gameState.killFeed.length > 20) gameState.killFeed.shift();
+        // If IT dies to a non-IT, pick a new IT
+        if (target.isIt) {
+          target.isIt = false;
+          const survivors = Array.from(players.entries()).filter(
+            ([id, p]) => id !== targetId && p.respawnAt === undefined,
+          );
+          if (survivors.length > 0) {
+            const [newItId, newIt] =
+              survivors[Math.floor(Math.random() * survivors.length)];
+            newIt.isIt = true;
+            gameState.itPlayerId = newItId;
+          }
+        }
+      }
+      return true;
     }
     if (action.type !== "tag") return false;
     const { taggerId, taggedId } = action;
@@ -214,6 +281,9 @@ export class TagMode implements GameModeHandler {
       player.lastTagTime = undefined;
       player.lastTaggedById = undefined;
       player.currentKillStreak = 0;
+      player.health = TAG_PLAYER_MAX_HP;
+      player.respawnAt = undefined;
+      player.spawnProtectedUntil = undefined;
     });
 
     gameState.killFeed = undefined;

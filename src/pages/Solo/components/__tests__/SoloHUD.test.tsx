@@ -86,6 +86,7 @@ const baseProps: React.ComponentProps<typeof SoloHUD> = {
   currentPlayerId: "p1",
   onStartGame: vi.fn(),
   onEndGame: vi.fn(),
+  onMainMenu: vi.fn(),
   botDebugMode: false,
   onToggleDebug: vi.fn(),
   notifications: [{ id: "n1", message: "Hello", type: "info" }],
