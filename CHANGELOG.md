@@ -57,9 +57,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Technical Details
 
-- React 19.2.0 with TypeScript
-- Vite 7.1.12 for fast builds and HMR
-- Socket.io 4.8.1 for real-time communication
+- React 19.2.3 with TypeScript
+- Vite 8.2.1 for fast builds and HMR
+- Socket.io 4.8.3 for real-time communication
 - Three.js 0.180.0 for 3D graphics
 - Comprehensive test coverage with Vitest
 
