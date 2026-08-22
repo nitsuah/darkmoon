@@ -9,8 +9,8 @@
 
 ## Documentation
 
-- [ARCHITECTURE.md](ARCHITECTURE.md): App boundaries, deployment, and contracts
-- [API.md](API.md): HTTP and WebSocket interface reference
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md): App boundaries, deployment, and contracts
+- [API.md](docs/API.md): HTTP and WebSocket interface reference
 
 ## ✨ Features
 

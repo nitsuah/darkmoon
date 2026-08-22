@@ -1,6 +1,6 @@
 # Roadmap
 
-Last Updated: 2026-08-07
+Last Updated: 2026-08-22
 
 ## 2025 Q4 ✅
 
@@ -27,7 +27,8 @@ Last Updated: 2026-08-07
 ### Existing Planned Items
 
 - [ ] Define the multiplayer readiness gate around deployment, CORS, logging, shutdown behavior, and operational visibility.
-- [ ] Add `ARCHITECTURE.md`, `API.md`, and a measured `METRICS.md` refresh.
+- [x] Add `ARCHITECTURE.md` and `API.md`. _(completed 2026-08-21; `docs/ARCHITECTURE.md` and `docs/API.md` exist)_
+- [ ] Measured `METRICS.md` refresh. _(estimates remain; in-progress)_
 - [ ] Re-scope the remaining refactor backlog against the current codebase.
 
 ## 2026 Q3 (In Progress)
