@@ -263,7 +263,7 @@
 | 🟢 Medium Priority (P2) | 5            | 3-5 weeks        |
 | **Total (open)**        | **9**        | **8-13 weeks**   |
 
-> Items 4, 5 (server validation, debug logger) and 11 (Prettier/Husky) are resolved. Items 2 and 2b (monolith refactors) are resolved.
+> 5 items resolved: items 4 and 5 (server validation, debug logger), item 11 (Prettier/Husky), and items 2 and 2b (monolith refactors). 9 open items remain as shown in the table above.
 
 ---
 

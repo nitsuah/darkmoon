@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bumped vitest from 4.0.4 to 4.0.15
 - Bumped @vitest/coverage-v8 from 4.0.4 to 4.0.15
 - Synced react-dom to 19.2.3 to match react version
+- Bumped Vite from 7.1.12 to 8.2.1
 
 ## [1.0.0] - 2025-11-23
 
@@ -58,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Technical Details
 
 - React 19.2.3 with TypeScript
-- Vite 8.2.1 for fast builds and HMR
+- Vite 7.1.12 for fast builds and HMR
 - Socket.io 4.8.3 for real-time communication
 - Three.js 0.180.0 for 3D graphics
 - Comprehensive test coverage with Vitest
