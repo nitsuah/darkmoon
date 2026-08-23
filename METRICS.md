@@ -4,10 +4,10 @@
 
 | Metric           | Value  | Notes                                                    |
 | ---------------- | ------ | -------------------------------------------------------- |
-| Code Coverage    | 79.93% | Measured by Vitest v8 (Docker), statements at 95.16%     |
+| Code Coverage    | 70.65% | Measured by Vitest v8 (Docker). Branches: 54.49%, Functions: 75.65%, Lines: 73.24% |
 | Build Time       | ~5s    | Vite production build (measured on M1 Mac, Mar 2026)     |
 | Bundle Size      | 2.1MB  | Measured: `dist/` output, Mar 2026                       |
-| Test Files       | 75     | Vitest unit and integration tests                        |
+| Test Files       | 74     | Vitest unit and integration tests                        |
 | Test Cases       | 563    | Total test cases (558 passing, 5 skipped)                |
 | Source Files     | ~80    | TypeScript/TSX files in src/ (excluding tests and types) |
 | Lines of Code    | ~10K   | Estimated (excluding node_modules and generated files)   |
