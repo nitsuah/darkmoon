@@ -4,7 +4,7 @@
 
 | Metric           | Value  | Notes                                                    |
 | ---------------- | ------ | -------------------------------------------------------- |
-| Code Coverage    | 79.93% | Measured by Vitest v8 (Docker), statements at 95.16%     |
+| Code Coverage    | 70.65% | Measured by Vitest v8 (Docker). Branches: 54.49%, Functions: 75.65%, Lines: 73.24% |
 | Build Time       | ~5s    | Vite production build (measured on M1 Mac, Mar 2026)     |
 | Bundle Size      | 2.1MB  | Measured: `dist/` output, Mar 2026                       |
 | Test Files       | 74     | Vitest unit and integration tests                        |
@@ -12,8 +12,8 @@
 | Source Files     | ~80    | TypeScript/TSX files in src/ (excluding tests and types) |
 | Lines of Code    | ~10K   | Estimated (excluding node_modules and generated files)   |
 | API Routes       | 1      | WebSocket server with /health endpoint                   |
-| Dependencies     | 9      | Production dependencies (see package.json)               |
-| Dev Dependencies | 22     | Development and testing tools                            |
+| Dependencies     | 10     | Production dependencies (see package.json)               |
+| Dev Dependencies | 31     | Development and testing tools                            |
 
 ## Health
 
@@ -22,7 +22,7 @@
 | Open Issues      | 0          | As of Mar 2026                                                               |
 | Open PRs         | 0          | As of Mar 2026                                                               |
 | Health Score     | 100        | Overseer calculated, Mar 2026                                                |
-| Last Updated     | 2026-08-07 | Test suite expanded to 74 files / 558 passing; GameUI + Solo refactor landed |
+| Last Updated     | 2026-08-22 | Test suite expanded to 75 files / 558 passing; grenade arc, ARCHITECTURE.md, API.md added |
 | CI Status        | ✅ Passing | All tests passing, build successful                                          |
 | TypeScript       | ✅ Strict  | Strict mode enabled, 0 type errors                                           |
 | Linting          | ✅ Clean   | ESLint with --max-warnings=0                                                 |

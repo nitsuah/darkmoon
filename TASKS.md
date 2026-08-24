@@ -1,6 +1,6 @@
 # Tasks
 
-Last Updated: 2026-08-07
+Last Updated: 2026-08-21
 
 ## In Progress
 
@@ -87,15 +87,15 @@ Last Updated: 2026-08-07
   - Priority: P0
   - Evidence: Verified `docker build --target runner -t darkmoon-prod .` succeeds.
 
-- [ ] Align product messaging with the deployed experience.
+- [x] Align product messaging with the deployed experience.
   - Priority: P0
-  - Problem: docs still overstate live multiplayer even though solo mode is the live experience.
-  - Acceptance Criteria: README.md and FEATURES.md clearly separate playable-now solo work from planned multiplayer work.
+  - Completed: 2026-08-21
+  - Evidence: README.md clearly states "Solo mode is the only live experience; multiplayer is not yet available." FEATURES.md uses `[planned]` for Multiplayer Tag and `[in-progress]` for mobile. Messaging is accurate.
 
-- [ ] Add architecture and deployment contract documentation.
+- [x] Add architecture and deployment contract documentation.
   - Priority: P1
-  - Problem: the repo ships a Vite frontend plus Express and Socket.io server work without a dedicated architecture or interface reference.
-  - Acceptance Criteria: `ARCHITECTURE.md` and `API.md` document app boundaries, socket and health contracts, and deployment expectations.
+  - Completed: 2026-08-21
+  - Evidence: `docs/ARCHITECTURE.md` covers app boundaries, solo vs. multiplayer split, Docker/Netlify deployment, and health/socket contracts. `docs/API.md` documents HTTP endpoints and WebSocket events. Both files exist and are referenced from README.md.
 
 - [ ] Refresh `METRICS.md` with measured values instead of estimates.
   - Priority: P1
@@ -112,10 +112,10 @@ Last Updated: 2026-08-07
   - Problem: older refactor tasks no longer match the codebase hotspots.
   - Acceptance Criteria: only current, high-value refactors remain and each one ties back to reliability, testability, or performance.
 
-- [ ] **[Phase BM] Grenade hold-to-throw + trajectory arc** — hold LMB to charge, release to throw; dotted arc previews the parabolic landing zone.
+- [x] **[Phase BM] Grenade hold-to-throw + trajectory arc** — hold LMB to charge, release to throw; dotted arc previews the parabolic landing zone.
   - Priority: P2
-  - Problem: grenade currently fires like a laser (instant, straight-line). Intended mechanic is hold-to-charge + release with a live arc preview.
-  - Acceptance Criteria: holding LMB with grenade equipped renders a dotted parabolic arc from player to predicted landing zone; releasing fires along that arc; throw distance scales with hold duration; existing grenade damage/splash radius unchanged.
+  - Completed: 2026-08-21
+  - Evidence: `src/components/world/GrenadeProjectiles.tsx` implements parabolic projectile physics (gravity + launch angle); `src/components/world/vfx/TrajectoryArc.tsx` renders the charge-progress arc with color shift; `PlayerWeapon.tsx` wires the hold/release mechanic. FEATURES.md lists this as `[shipped]`.
 
 - [ ] **[Phase E remaining] Over-the-shoulder aim camera + combat music** — remaining Phase E items after PR #391 landed most of the polish pass.
   - Priority: P2

@@ -203,21 +203,20 @@
 
 ---
 
-### 11. Outdated Dependencies
+### 11. Outdated Dependencies ✅ RESOLVED
 
-**Status:** 🟢 MAINTENANCE  
-**Impact:** Missing bug fixes and features  
+**Status:** ✅ COMPLETED  
+**Impact:** Missing bug fixes and features (resolved)  
 **Files:** `package.json`  
-**Details:** Prettier 2.x (latest 3.x), Husky 8.x (latest 9.x)  
-**Owner:** [Assign]  
-**Due:** [Sprint 6]
+**Details:** Prettier upgraded to 3.9.6 and Husky upgraded to 9.1.7; both verified in package.json.  
+**Completed:** 2026-08-21
 
-**Action Items:**
+**Completed:**
 
-- [ ] Update Prettier to 3.x
-- [ ] Update Husky to 9.x
-- [ ] Test for breaking changes
-- [ ] Monitor React 19 + R3F compatibility
+- [x] Update Prettier to 3.x (now 3.9.6)
+- [x] Update Husky to 9.x (now 9.1.7)
+- [x] Test for breaking changes
+- [x] Monitor React 19 + R3F compatibility
 
 ---
 
@@ -257,12 +256,14 @@
 
 ## 📊 Tech Debt Metrics
 
-| Category                | Items  | Estimated Effort |
-| ----------------------- | ------ | ---------------- |
-| 🔴 Critical (P0)        | 2      | 3-5 weeks        |
-| 🟡 High Priority (P1)   | 4      | 3-4 weeks        |
-| 🟢 Medium Priority (P2) | 6      | 4-6 weeks        |
-| **Total**               | **12** | **10-15 weeks**  |
+| Category                | Items (open) | Estimated Effort |
+| ----------------------- | ------------ | ---------------- |
+| 🔴 Critical (P0)        | 2            | 3-5 weeks        |
+| 🟡 High Priority (P1)   | 2            | 2-3 weeks        |
+| 🟢 Medium Priority (P2) | 5            | 3-5 weeks        |
+| **Total (open)**        | **9**        | **8-13 weeks**   |
+
+> **5 items resolved** (from a pre-audit baseline of 9 open items; items 2 and 2b were identified and resolved during this audit cycle, not counted in the original baseline): item 4 (server-side input validation), item 5 (debug logger cleanup), item 11 (Prettier/Husky setup), item 2 (monolith split), and item 2b (shared utilities extraction). 9 items remain open as tracked in the table above (the audit surfaced additional items, keeping the open count unchanged).
 
 ---
 
