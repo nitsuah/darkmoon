@@ -263,7 +263,7 @@
 | 🟢 Medium Priority (P2) | 5            | 3-5 weeks        |
 | **Total (open)**        | **9**        | **8-13 weeks**   |
 
-> 5 items resolved: items 4 and 5 (server validation, debug logger), item 11 (Prettier/Husky), and items 2 and 2b (monolith refactors). 9 open items remain as shown in the table above.
+> **5 items resolved** (from a pre-audit baseline of 9 open items; items 2 and 2b were identified and resolved during this audit cycle, not counted in the original baseline): item 4 (server-side input validation), item 5 (debug logger cleanup), item 11 (Prettier/Husky setup), item 2 (monolith split), and item 2b (shared utilities extraction). 9 items remain open as tracked in the table above (the audit surfaced additional items, keeping the open count unchanged).
 
 ---
 
