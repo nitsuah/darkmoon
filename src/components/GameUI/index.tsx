@@ -125,7 +125,9 @@ const GameUI: React.FC<GameUIProps> = ({
     currentPlayer.spawnProtectedUntil > Date.now();
 
   const isCombat = COMBAT_MODES.has(gameState.mode);
-  const showCrosshair = isCombat && respawnSecondsLeft === null && !isMinimal;
+  // Always show crosshair on mobile (fires from NDC center regardless); hide only on desktop minimal
+  const showCrosshair =
+    isCombat && respawnSecondsLeft === null && (!isMinimal || isMobile);
   const showBottomHUD =
     isCombat &&
     !isMinimal &&
@@ -221,11 +223,16 @@ const GameUI: React.FC<GameUIProps> = ({
             hitMarker={hitMarker}
             hitRingKey={hitRingKey}
             isGallery={gameState.mode === "shooting_gallery"}
+            isMobile={isMobile}
           />
         )}
 
         {showBottomHUD && currentPlayer && (
-          <BottomHUD currentPlayer={currentPlayer} mode={gameState.mode} />
+          <BottomHUD
+            currentPlayer={currentPlayer}
+            mode={gameState.mode}
+            isMobile={isMobile}
+          />
         )}
 
         {showReloadMeter && <ReloadMeter isReloading reloadPct={reloadPct!} />}
@@ -310,6 +317,7 @@ const GameUI: React.FC<GameUIProps> = ({
         gameState={gameState}
         currentPlayerId={currentPlayerId}
         isMinimal={isMinimal}
+        isMobile={isMobile}
         autoRestartSecondsLeft={autoRestartSecondsLeft}
         galleryHighScore={galleryHighScore}
         isNewRecord={isNewRecord}
@@ -318,6 +326,7 @@ const GameUI: React.FC<GameUIProps> = ({
             onStartGame(gameState.mode as StartableMode);
           }
         }}
+        onStartMode={onStartGame}
         onMainMenu={onMainMenu}
       />
     );

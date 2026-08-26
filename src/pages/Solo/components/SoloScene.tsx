@@ -27,6 +27,8 @@ export const SoloScene: React.FC<Props> = ({
   gameManager,
   currentPlayerId,
   joystickMove,
+  joystickCamera,
+  mobileJetpackTrigger,
   lastWalkSoundTimeRef,
   isPaused,
   onPositionUpdate,
@@ -84,6 +86,8 @@ export const SoloScene: React.FC<Props> = ({
         gameManager={gameManager}
         currentPlayerId={currentPlayerId}
         joystickMove={joystickMove}
+        joystickCamera={joystickCamera}
+        mobileJetpackTrigger={mobileJetpackTrigger}
         lastWalkSoundTimeRef={lastWalkSoundTimeRef}
         isPaused={isPaused}
         onPositionUpdate={onPositionUpdate}

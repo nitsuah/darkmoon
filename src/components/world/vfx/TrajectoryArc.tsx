@@ -7,6 +7,8 @@ interface TrajectoryArcProps {
   direction: THREE.Vector3;
   chargeProgress: number; // 0 to 1
   isVisible: boolean;
+  /** Camera vertical angle (radians) — used to set launch angle */
+  cameraVertical?: number;
 }
 
 /**
@@ -17,21 +19,23 @@ export const TrajectoryArc: React.FC<TrajectoryArcProps> = ({
   direction,
   chargeProgress,
   isVisible,
+  cameraVertical = 0,
 }) => {
-  // Simple parabolic projection
   const points = React.useMemo(() => {
     if (!isVisible || chargeProgress <= 0) return [];
 
     const pts: THREE.Vector3[] = [];
-    const maxDistance = 18 * chargeProgress; // Based on range in WeaponManager
     const gravity = 9.8;
     const initialVelocity = 15 * chargeProgress;
-    const angle = Math.PI / 4; // 45 degrees
+    // Launch angle: base 30° + camera vertical (clamped so it stays reasonable)
+    const angle = Math.max(0.1, Math.PI / 6 + cameraVertical * 0.5);
+    const maxTime = (2 * initialVelocity * Math.sin(angle)) / gravity + 0.5;
 
-    for (let i = 0; i <= 20; i++) {
-      const t = (i / 20) * (maxDistance / (initialVelocity * Math.cos(angle)));
+    for (let i = 0; i <= 24; i++) {
+      const t = (i / 24) * maxTime;
       const x = initialVelocity * Math.cos(angle) * t;
       const y = initialVelocity * Math.sin(angle) * t - 0.5 * gravity * t * t;
+      if (origin.y + y < 0) break;
 
       const vec = direction.clone().multiplyScalar(x);
       pts.push(
@@ -39,7 +43,7 @@ export const TrajectoryArc: React.FC<TrajectoryArcProps> = ({
       );
     }
     return pts;
-  }, [origin, direction, chargeProgress, isVisible]);
+  }, [origin, direction, chargeProgress, isVisible, cameraVertical]);
 
   if (points.length === 0) return null;
 

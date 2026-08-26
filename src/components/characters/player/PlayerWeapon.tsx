@@ -6,9 +6,9 @@ import type { WeaponManager } from "../../../components/combat/WeaponManager";
 import { CollisionSystem } from "../../../components/CollisionSystem";
 import { KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_R, KEY_TAB } from "../../utils";
 import { processFiring } from "../../../lib/hooks/usePlayerWeapon";
+import * as gameInput from "../../../lib/gameInput";
 
 // Shared read-only ground plane — never mutated, safe to reuse across instances.
-const GROUND_PLANE = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
 interface PlayerWeaponProps {
   /** Player mesh ref */
@@ -82,7 +82,6 @@ const WEAPON_CYCLE_ORDER = [
 export const PlayerWeapon = React.memo(
   ({
     meshRef,
-    cameraHorizontal,
     mouseControls,
     keysPressedRef,
     socketClient,
@@ -114,8 +113,6 @@ export const PlayerWeapon = React.memo(
     const _fireOrigin = React.useRef<THREE.Vector3>(new THREE.Vector3());
     const _raycaster = React.useRef<THREE.Raycaster>(new THREE.Raycaster());
     const _ndc = React.useRef<THREE.Vector2>(new THREE.Vector2());
-    const _groundPlane = React.useRef(GROUND_PLANE);
-    const _aimTarget = React.useRef<THREE.Vector3>(new THREE.Vector3());
     const _fireDir = React.useRef<THREE.Vector3>(new THREE.Vector3());
     const _tempVec = React.useRef<THREE.Vector3>(new THREE.Vector3());
     const _tempVec2 = React.useRef<THREE.Vector3>(new THREE.Vector3());
@@ -150,6 +147,10 @@ export const PlayerWeapon = React.memo(
       const key5 = keysPressedRef.current[KEY_5] ?? false;
       const keyR = keysPressedRef.current[KEY_R] ?? false;
       const keyTab = keysPressedRef.current[KEY_TAB] ?? false;
+
+      // Consume scroll input on every frame so stale input never carries over
+      const scrollDir = gameInput.weaponScrollInput.direction;
+      gameInput.weaponScrollInput.direction = 0;
 
       if (canActNow) {
         if (key1 && !prevKey1Ref.current) {
@@ -215,6 +216,24 @@ export const PlayerWeapon = React.memo(
             currentAmmo: weaponManagerRef.current.getAmmo(nextId),
           });
         }
+        // Scroll wheel: cycle weapons
+        if (scrollDir !== 0) {
+          const currentId = weaponManagerRef.current.getEquipped()?.id;
+          const idx = currentId
+            ? WEAPON_CYCLE_ORDER.indexOf(
+                currentId as (typeof WEAPON_CYCLE_ORDER)[number],
+              )
+            : -1;
+          const len = WEAPON_CYCLE_ORDER.length;
+          const nextIdx =
+            scrollDir > 0 ? (idx + 1) % len : (idx - 1 + len) % len;
+          const nextId = WEAPON_CYCLE_ORDER[nextIdx];
+          weaponManagerRef.current.equip(nextId);
+          gameManager?.updatePlayer(myId, {
+            equippedWeaponId: nextId,
+            currentAmmo: weaponManagerRef.current.getAmmo(nextId),
+          });
+        }
       }
       prevKey1Ref.current = key1;
       prevKey2Ref.current = key2;
@@ -230,182 +249,238 @@ export const PlayerWeapon = React.memo(
         _fireOrigin.current.copy(meshRef.current.position);
         _fireOrigin.current.y += 1;
 
-        // Use R3F state size to avoid division-by-zero from hardcoded size prop
-        const w = state.size.width || 1;
-        const h = state.size.height || 1;
-        const ndcX = (mouseControls.mouseX / w) * 2 - 1;
-        const ndcY = -(mouseControls.mouseY / h) * 2 + 1;
-        _raycaster.current.setFromCamera(
-          _ndc.current.set(ndcX, ndcY),
-          state.camera,
-        );
-        const hasAimTarget =
-          _raycaster.current.ray.intersectPlane(
-            _groundPlane.current,
-            _aimTarget.current,
-          ) !== null;
-        if (hasAimTarget) {
-          _fireDir.current
-            .copy(_aimTarget.current)
-            .sub(_fireOrigin.current)
-            .normalize();
-        } else {
-          _fireDir.current.set(
-            -Math.sin(cameraHorizontal),
-            0,
-            -Math.cos(cameraHorizontal),
-          );
+        // Always fire from crosshair center (NDC 0,0) for accurate aiming
+        _raycaster.current.setFromCamera(_ndc.current.set(0, 0), state.camera);
+        _fireDir.current.copy(_raycaster.current.ray.direction);
+
+        // Mobile aim assist: snap toward the nearest enemy within a 20° cone
+        if (gameInput.isMobile && gameManager) {
+          const AIM_CONE = Math.cos(Math.PI / 9); // cos(20°)
+          let bestDistance = Infinity;
+          let bestDir: THREE.Vector3 | null = null;
+          gameManager.getPlayers().forEach((p, id) => {
+            if (id === myId || !p.position || p.respawnAt !== undefined) return;
+            const toTarget = _tempVec2.current
+              .set(p.position[0], p.position[1] + 1, p.position[2])
+              .sub(_fireOrigin.current);
+            const dist = toTarget.length();
+            toTarget.normalize();
+            const dot = toTarget.dot(_fireDir.current);
+            if (dot >= AIM_CONE && dist < bestDistance) {
+              bestDistance = dist;
+              bestDir = toTarget.clone();
+            }
+          });
+          if (bestDir) _fireDir.current.copy(bestDir);
         }
 
-        const fireResult = processFiring({
-          origin: _fireOrigin.current,
-          direction: _fireDir.current,
-          shooterId: myId,
-          gameManager,
-          weaponManager: weaponManagerRef.current,
-          collisionSystem: collisionSystemRef.current,
-          now,
-        });
+        const equippedId = weaponManagerRef.current.getEquipped()?.id;
 
-        if (fireResult && typeof window !== "undefined") {
-          window.dispatchEvent(
-            new window.CustomEvent("weapon-fired", {
-              detail: { weaponId: fireResult.weapon.id },
-            }),
-          );
-        }
-
-        if (fireResult && laserBeamRef.current) {
-          const beamLength =
-            fireResult.hit?.distance ?? fireResult.weapon.range;
-          const wid = fireResult.weapon.id;
-
-          // Shotgun: dispatch cone event, skip single beam
-          if (wid === "shotgun") {
+        // Grenade: dispatch projectile event instead of instant raycast
+        if (equippedId === "grenade") {
+          const firedWeapon = weaponManagerRef.current.fire(myId, now);
+          if (firedWeapon) {
+            const flatDir = _tempVec.current
+              .set(_fireDir.current.x, 0, _fireDir.current.z)
+              .normalize();
+            const pitchLen = Math.sqrt(
+              _fireDir.current.x * _fireDir.current.x +
+                _fireDir.current.z * _fireDir.current.z,
+            );
+            const launchAngle = Math.max(
+              0.1,
+              Math.atan2(_fireDir.current.y, pitchLen),
+            );
+            const chargeProgress =
+              weaponManagerRef.current.getChargeProgress("grenade") || 0.5;
             window.dispatchEvent(
-              new window.CustomEvent("shotgun-pellets-fired", {
+              new window.CustomEvent("grenade-throw", {
                 detail: {
                   origin: _fireOrigin.current.clone(),
-                  direction: _fireDir.current.clone(),
-                  range: fireResult.weapon.range,
-                  spreadAngle: fireResult.weapon.spreadAngle ?? 0.28,
-                  pelletCount: fireResult.weapon.pelletCount ?? 6,
+                  direction: flatDir.clone(),
+                  launchAngle,
+                  chargeProgress: Math.max(0.35, chargeProgress),
+                },
+              }),
+            );
+            window.dispatchEvent(
+              new window.CustomEvent("weapon-fired", {
+                detail: { weaponId: "grenade" },
+              }),
+            );
+          }
+          // Skip standard fire path for grenade
+        } else {
+          const fireResult = processFiring({
+            origin: _fireOrigin.current,
+            direction: _fireDir.current,
+            shooterId: myId,
+            gameManager,
+            weaponManager: weaponManagerRef.current,
+            collisionSystem: collisionSystemRef.current,
+            now,
+          });
+
+          // Gallery mode: dispatch hit event for shooting gallery targets
+          if (
+            gameManager.getGameState().mode === "shooting_gallery" &&
+            fireResult
+          ) {
+            window.dispatchEvent(
+              new window.CustomEvent("gallery-fire", {
+                detail: {
+                  originX: state.camera.position.x,
+                  originY: state.camera.position.y,
+                  originZ: state.camera.position.z,
+                  dirX: _fireDir.current.x,
+                  dirY: _fireDir.current.y,
+                  dirZ: _fireDir.current.z,
+                  range: 80,
                 },
               }),
             );
           }
 
-          if (wid === "shotgun") {
-            // Suppress single-beam for shotgun (cone VFX handles visuals)
-          } else {
-            const beamHalfWidth =
-              wid === "rocket" || wid === "grenade"
-                ? 0.2
-                : wid === "smg"
-                  ? 0.04
-                  : 0.04;
-            const beamColor =
-              wid === "rocket"
-                ? "#ff1100"
-                : wid === "grenade"
-                  ? "#44ff00"
+          if (fireResult && typeof window !== "undefined") {
+            window.dispatchEvent(
+              new window.CustomEvent("weapon-fired", {
+                detail: { weaponId: fireResult.weapon.id },
+              }),
+            );
+          }
+
+          if (fireResult && laserBeamRef.current) {
+            const beamLength =
+              fireResult.hit?.distance ?? fireResult.weapon.range;
+            const wid = fireResult.weapon.id;
+
+            // Shotgun: dispatch cone event, skip single beam
+            if (wid === "shotgun") {
+              window.dispatchEvent(
+                new window.CustomEvent("shotgun-pellets-fired", {
+                  detail: {
+                    origin: _fireOrigin.current.clone(),
+                    direction: _fireDir.current.clone(),
+                    range: fireResult.weapon.range,
+                    spreadAngle: fireResult.weapon.spreadAngle ?? 0.28,
+                    pelletCount: fireResult.weapon.pelletCount ?? 6,
+                  },
+                }),
+              );
+            }
+
+            if (wid === "shotgun") {
+              // Suppress single-beam for shotgun (cone VFX handles visuals)
+            } else {
+              const beamHalfWidth =
+                wid === "rocket" || wid === "grenade"
+                  ? 0.2
                   : wid === "smg"
-                    ? "#ff44cc"
-                    : "#33ffe6";
-            laserBeamRef.current.visible = true;
-            laserBeamRef.current.position
+                    ? 0.04
+                    : 0.04;
+              const beamColor =
+                wid === "rocket"
+                  ? "#ff1100"
+                  : wid === "grenade"
+                    ? "#44ff00"
+                    : wid === "smg"
+                      ? "#ff44cc"
+                      : "#33ffe6";
+              laserBeamRef.current.visible = true;
+              laserBeamRef.current.position
+                .copy(_fireOrigin.current)
+                .add(
+                  _tempVec.current
+                    .copy(_fireDir.current)
+                    .multiplyScalar(beamLength / 2),
+                );
+              laserBeamRef.current.rotation.y = Math.atan2(
+                _fireDir.current.x,
+                _fireDir.current.z,
+              );
+              laserBeamRef.current.scale.set(
+                beamHalfWidth / 0.04,
+                beamHalfWidth / 0.04,
+                beamLength,
+              );
+              laserBeamHideAtRef.current = now + LASER_BEAM_VISIBLE_MS;
+              if (beamMeshRef.current) {
+                (
+                  beamMeshRef.current.material as THREE.MeshBasicMaterial
+                ).color.set(beamColor);
+              }
+              if (beamGlowRef.current) {
+                (
+                  beamGlowRef.current.material as THREE.MeshBasicMaterial
+                ).color.set(beamColor);
+              }
+            } // end else (non-shotgun beam)
+
+            // Camera shake per weapon
+            const shakeAmt =
+              wid === "shotgun"
+                ? 0.11
+                : wid === "rocket"
+                  ? 0.09
+                  : wid === "grenade"
+                    ? 0.07
+                    : wid === "smg"
+                      ? 0.03
+                      : 0.04;
+            cameraShakeRef.current.set(
+              (Math.random() - 0.5) * shakeAmt,
+              (0.3 + Math.random() * 0.5) * shakeAmt,
+              (Math.random() - 0.5) * shakeAmt * 0.3,
+            );
+            // Muzzle flash
+            if (muzzleFlashRef.current) {
+              muzzleFlashRef.current.position.copy(_fireOrigin.current);
+              muzzleFlashRef.current.visible = true;
+              muzzleFlashHideAtRef.current = now + 55;
+            }
+            // Sync ammo + reload progress to HUD
+            const remainingAmmo = weaponManagerRef.current.getAmmo(wid);
+            const reloadProgress =
+              weaponManagerRef.current.getReloadProgress(wid);
+            gameManager?.updatePlayer(myId, {
+              currentAmmo: remainingAmmo,
+              reloadProgress,
+            });
+          }
+          if (fireResult && fireResult.hit && typeof window !== "undefined") {
+            window.dispatchEvent(new window.Event("player-hit-landed"));
+            const hitPos = _tempVec.current
               .copy(_fireOrigin.current)
               .add(
-                _tempVec.current
+                _tempVec2.current
                   .copy(_fireDir.current)
-                  .multiplyScalar(beamLength / 2),
+                  .multiplyScalar(fireResult.hit.distance),
               );
-            laserBeamRef.current.rotation.y = Math.atan2(
-              _fireDir.current.x,
-              _fireDir.current.z,
-            );
-            laserBeamRef.current.scale.set(
-              beamHalfWidth / 0.04,
-              beamHalfWidth / 0.04,
-              beamLength,
-            );
-            laserBeamHideAtRef.current = now + LASER_BEAM_VISIBLE_MS;
-            if (beamMeshRef.current) {
-              (
-                beamMeshRef.current.material as THREE.MeshBasicMaterial
-              ).color.set(beamColor);
-            }
-            if (beamGlowRef.current) {
-              (
-                beamGlowRef.current.material as THREE.MeshBasicMaterial
-              ).color.set(beamColor);
-            }
-          } // end else (non-shotgun beam)
-
-          // Camera shake per weapon
-          const shakeAmt =
-            wid === "shotgun"
-              ? 0.11
-              : wid === "rocket"
-                ? 0.09
-                : wid === "grenade"
-                  ? 0.07
-                  : wid === "smg"
-                    ? 0.03
-                    : 0.04;
-          cameraShakeRef.current.set(
-            (Math.random() - 0.5) * shakeAmt,
-            (0.3 + Math.random() * 0.5) * shakeAmt,
-            (Math.random() - 0.5) * shakeAmt * 0.3,
-          );
-          // Muzzle flash
-          if (muzzleFlashRef.current) {
-            muzzleFlashRef.current.position.copy(_fireOrigin.current);
-            muzzleFlashRef.current.visible = true;
-            muzzleFlashHideAtRef.current = now + 55;
-          }
-          // Sync ammo + reload progress to HUD
-          const remainingAmmo = weaponManagerRef.current.getAmmo(wid);
-          const reloadProgress =
-            weaponManagerRef.current.getReloadProgress(wid);
-          gameManager?.updatePlayer(myId, {
-            currentAmmo: remainingAmmo,
-            reloadProgress,
-          });
-        }
-        if (fireResult && fireResult.hit && typeof window !== "undefined") {
-          window.dispatchEvent(new window.Event("player-hit-landed"));
-          const hitPos = _tempVec.current
-            .copy(_fireOrigin.current)
-            .add(
-              _tempVec2.current
-                .copy(_fireDir.current)
-                .multiplyScalar(fireResult.hit.distance),
-            );
-          window.dispatchEvent(
-            new window.CustomEvent("damage-number", {
-              detail: {
-                x: hitPos.x,
-                y: hitPos.y + 1.0,
-                z: hitPos.z,
-                damage: fireResult.weapon.damage,
-              },
-            }),
-          );
-          // Explosion VFX for splash weapons
-          if (fireResult.weapon.splashRadius) {
             window.dispatchEvent(
-              new window.CustomEvent("weapon-explosion", {
+              new window.CustomEvent("damage-number", {
                 detail: {
                   x: hitPos.x,
-                  y: hitPos.y,
+                  y: hitPos.y + 1.0,
                   z: hitPos.z,
-                  radius: fireResult.weapon.splashRadius,
+                  damage: fireResult.weapon.damage,
                 },
               }),
             );
+            // Explosion VFX for splash weapons
+            if (fireResult.weapon.splashRadius) {
+              window.dispatchEvent(
+                new window.CustomEvent("weapon-explosion", {
+                  detail: {
+                    x: hitPos.x,
+                    y: hitPos.y,
+                    z: hitPos.z,
+                    radius: fireResult.weapon.splashRadius,
+                  },
+                }),
+              );
+            }
           }
-        }
+        } // end else (non-grenade weapons)
       }
 
       // Hide laser beam after visible time

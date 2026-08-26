@@ -1,14 +1,16 @@
 import * as React from "react";
-import { GameState } from "../../GameManager";
+import { GameState, StartableMode } from "../../GameManager";
 
 interface Props {
   gameState: GameState;
   currentPlayerId: string;
   isMinimal: boolean;
+  isMobile?: boolean;
   autoRestartSecondsLeft: number | null;
   galleryHighScore: number;
   isNewRecord: boolean;
   onPlayAgain: () => void;
+  onStartMode: (mode: StartableMode) => void;
   onMainMenu: () => void;
 }
 
@@ -16,10 +18,12 @@ const GameResultsScreen: React.FC<Props> = ({
   gameState,
   currentPlayerId,
   isMinimal,
+  isMobile = false,
   autoRestartSecondsLeft,
   galleryHighScore,
   isNewRecord,
   onPlayAgain,
+  onStartMode,
   onMainMenu,
 }) => {
   const winner = gameState.gameResults![0];
@@ -37,9 +41,30 @@ const GameResultsScreen: React.FC<Props> = ({
   const galleryAcc =
     galleryShots > 0 ? Math.round((galleryHits / galleryShots) * 100) : 0;
 
-  return (
-    <div
-      style={{
+  // On mobile, anchor near top so results don't overlap with bottom controls
+  const containerStyle: React.CSSProperties = isMobile
+    ? {
+        position: "fixed",
+        top: "8%",
+        left: "50%",
+        transform: "translateX(-50%)",
+        maxHeight: "72vh",
+        overflowY: "auto",
+        backgroundColor: "rgba(0,0,0,0.94)",
+        border: isGallery
+          ? "2px solid #ffd700"
+          : "2px solid rgba(255,255,255,0.3)",
+        borderRadius: "12px",
+        color: "white",
+        fontFamily: "monospace",
+        fontSize: "14px",
+        zIndex: 1001,
+        minWidth: "280px",
+        maxWidth: "90vw",
+        textAlign: "center",
+        padding: "20px 24px",
+      }
+    : {
         position: "fixed",
         top: "50%",
         left: "50%",
@@ -56,8 +81,10 @@ const GameResultsScreen: React.FC<Props> = ({
         minWidth: isMinimal ? "160px" : "240px",
         textAlign: "center",
         padding: isMinimal ? "10px 12px" : "20px 28px",
-      }}
-    >
+      };
+
+  return (
+    <div style={containerStyle}>
       <div
         style={{
           fontSize: isMinimal ? "18px" : "28px",
@@ -168,37 +195,138 @@ const GameResultsScreen: React.FC<Props> = ({
         </div>
       )}
 
+      {/* Play Again — same mode, highlighted */}
       <button
         onClick={onPlayAgain}
         style={{
-          padding: isMinimal ? "4px 8px" : "6px 14px",
-          backgroundColor: "rgba(74, 144, 226, 0.85)",
-          border: "1px solid #4a90e2",
-          borderRadius: "4px",
+          padding: isMobile ? "12px 14px" : isMinimal ? "5px 8px" : "7px 14px",
+          backgroundColor: isGallery
+            ? "rgba(200,160,0,0.85)"
+            : "rgba(74, 144, 226, 0.85)",
+          border: `1px solid ${isGallery ? "#ffd700" : "#4a90e2"}`,
+          borderRadius: isMobile ? "8px" : "4px",
           color: "white",
           cursor: "pointer",
-          fontSize: isMinimal ? "10px" : "12px",
+          fontSize: isMobile ? "15px" : isMinimal ? "10px" : "12px",
+          fontWeight: "bold",
           width: "100%",
-          marginBottom: "6px",
+          marginBottom: isMobile ? "8px" : "4px",
+          minHeight: isMobile ? "48px" : undefined,
         }}
       >
-        Play Again
+        {isMinimal
+          ? "▶ Again"
+          : `▶ Play Again (${gameState.mode.replace("_", " ").toUpperCase()})`}
       </button>
+
+      {/* Other game modes */}
+      {!isMinimal && (
+        <div style={{ marginBottom: isMobile ? "8px" : "4px" }}>
+          <div
+            style={{
+              fontSize: isMobile ? "11px" : "9px",
+              color: "#777",
+              letterSpacing: "1px",
+              marginBottom: isMobile ? "6px" : "4px",
+              textAlign: "center",
+            }}
+          >
+            OR SWITCH MODE
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: isMobile ? "6px" : "3px",
+            }}
+          >
+            {gameState.mode !== "shooting_gallery" && (
+              <button
+                onClick={() => onStartMode("shooting_gallery")}
+                style={{
+                  padding: isMobile ? "10px 6px" : "4px 6px",
+                  backgroundColor: "rgba(200,160,0,0.7)",
+                  border: "1px solid #ffd700",
+                  borderRadius: isMobile ? "6px" : "3px",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: isMobile ? "13px" : "10px",
+                  minHeight: isMobile ? "44px" : undefined,
+                }}
+              >
+                🎯 Gallery
+              </button>
+            )}
+            {gameState.mode !== "tag" && (
+              <button
+                onClick={() => onStartMode("tag")}
+                style={{
+                  padding: isMobile ? "10px 6px" : "4px 6px",
+                  backgroundColor: "rgba(55,120,200,0.7)",
+                  border: "1px solid #4a90e2",
+                  borderRadius: isMobile ? "6px" : "3px",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: isMobile ? "13px" : "10px",
+                  minHeight: isMobile ? "44px" : undefined,
+                }}
+              >
+                🏃 Tag
+              </button>
+            )}
+            {gameState.mode !== "deathmatch" && (
+              <button
+                onClick={() => onStartMode("deathmatch")}
+                style={{
+                  padding: isMobile ? "10px 6px" : "4px 6px",
+                  backgroundColor: "rgba(180,40,40,0.7)",
+                  border: "1px solid #dc3545",
+                  borderRadius: isMobile ? "6px" : "3px",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: isMobile ? "13px" : "10px",
+                  minHeight: isMobile ? "44px" : undefined,
+                }}
+              >
+                💀 Deathmatch
+              </button>
+            )}
+            {gameState.mode !== "ctf" && (
+              <button
+                onClick={() => onStartMode("ctf")}
+                style={{
+                  padding: isMobile ? "10px 6px" : "4px 6px",
+                  backgroundColor: "rgba(120,60,170,0.7)",
+                  border: "1px solid #9b59b6",
+                  borderRadius: isMobile ? "6px" : "3px",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: isMobile ? "13px" : "10px",
+                  minHeight: isMobile ? "44px" : undefined,
+                }}
+              >
+                🚩 CTF
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <button
         onClick={onMainMenu}
         style={{
-          padding: isMinimal ? "3px 6px" : "4px 10px",
+          padding: isMobile ? "10px 10px" : isMinimal ? "3px 6px" : "4px 10px",
           backgroundColor: "rgba(100,100,100,0.7)",
           border: "1px solid #666",
-          borderRadius: "4px",
+          borderRadius: isMobile ? "8px" : "4px",
           color: "#ccc",
           cursor: "pointer",
-          fontSize: isMinimal ? "9px" : "10px",
+          fontSize: isMobile ? "13px" : isMinimal ? "9px" : "10px",
           width: "100%",
+          minHeight: isMobile ? "44px" : undefined,
         }}
       >
-        Main Menu
+        🏠 Main Menu
       </button>
     </div>
   );

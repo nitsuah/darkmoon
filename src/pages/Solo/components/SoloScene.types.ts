@@ -44,6 +44,8 @@ export type SoloSceneProps = {
   gameManager: GameManager | null;
   currentPlayerId: string;
   joystickMove: JoystickMove;
+  joystickCamera?: { x: number; y: number };
+  mobileJetpackTrigger?: React.MutableRefObject<boolean>;
   lastWalkSoundTimeRef: React.RefObject<number>;
   isPaused: boolean;
   onPositionUpdate: (p: [number, number, number]) => void;

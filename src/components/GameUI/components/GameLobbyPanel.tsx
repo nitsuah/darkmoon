@@ -13,18 +13,23 @@ interface Props {
   onMainMenu: () => void;
 }
 
-const btn = (bg: string, border: string): React.CSSProperties => ({
+const btn = (
+  bg: string,
+  border: string,
+  mobile: boolean = false,
+): React.CSSProperties => ({
   width: "100%",
-  padding: "6px 8px",
+  padding: mobile ? "10px 8px" : "6px 8px",
   background: bg,
   border: `1px solid ${border}`,
-  borderRadius: "3px",
+  borderRadius: mobile ? "6px" : "3px",
   color: "white",
   fontFamily: "monospace",
-  fontSize: "11px",
+  fontSize: mobile ? "13px" : "11px",
   cursor: "pointer",
   textAlign: "center",
   userSelect: "none",
+  minHeight: mobile ? "44px" : undefined,
 });
 
 const GameLobbyPanel: React.FC<Props> = ({
@@ -38,7 +43,7 @@ const GameLobbyPanel: React.FC<Props> = ({
   onToggleGalleryDebug,
   onMainMenu,
 }) => {
-  const panelWidth = isMinimal ? 70 : isMobile ? 120 : 170;
+  const panelWidth = isMinimal ? 70 : isMobile ? 160 : 170;
 
   return (
     <div
@@ -86,14 +91,14 @@ const GameLobbyPanel: React.FC<Props> = ({
       <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
         <button
           onClick={() => onStartGame("shooting_gallery")}
-          style={btn("rgba(200,160,0,0.85)", "#ffd700")}
+          style={btn("rgba(200,160,0,0.85)", "#ffd700", isMobile)}
         >
           {isMinimal ? "🎯" : "🎯 Shooting Gallery"}
         </button>
 
         <button
           onClick={() => onStartGame("tag")}
-          style={btn("rgba(55,120,200,0.8)", "#4a90e2")}
+          style={btn("rgba(55,120,200,0.8)", "#4a90e2", isMobile)}
         >
           {isMinimal ? "▶️" : `🏃 Tag${players.size <= 1 ? " (Practice)" : ""}`}
         </button>
@@ -101,7 +106,7 @@ const GameLobbyPanel: React.FC<Props> = ({
         {players.size >= 2 && (
           <button
             onClick={() => onStartGame("deathmatch")}
-            style={btn("rgba(180,40,40,0.8)", "#dc3545")}
+            style={btn("rgba(180,40,40,0.8)", "#dc3545", isMobile)}
           >
             {isMinimal ? "🔫" : "💀 Deathmatch"}
           </button>
@@ -110,7 +115,7 @@ const GameLobbyPanel: React.FC<Props> = ({
         {players.size >= 2 && (
           <button
             onClick={() => onStartGame("ctf")}
-            style={btn("rgba(120,60,170,0.8)", "#9b59b6")}
+            style={btn("rgba(120,60,170,0.8)", "#9b59b6", isMobile)}
           >
             {isMinimal ? "🚩" : "🚩 CTF"}
           </button>
@@ -124,7 +129,10 @@ const GameLobbyPanel: React.FC<Props> = ({
           }}
         />
 
-        <button onClick={onMainMenu} style={btn("rgba(50,50,80,0.85)", "#555")}>
+        <button
+          onClick={onMainMenu}
+          style={btn("rgba(50,50,80,0.85)", "#555", isMobile)}
+        >
           {isMinimal ? "🏠" : "🏠 Main Menu"}
         </button>
 
@@ -134,6 +142,7 @@ const GameLobbyPanel: React.FC<Props> = ({
             style={btn(
               botDebugMode ? "rgba(180,30,30,0.8)" : "rgba(200,120,0,0.8)",
               botDebugMode ? "#dc3545" : "#ff8c00",
+              isMobile,
             )}
           >
             {isMinimal ? "🔧" : botDebugMode ? "⏹ Debug OFF" : "🔧 Debug Mode"}
@@ -146,6 +155,7 @@ const GameLobbyPanel: React.FC<Props> = ({
             style={btn(
               galleryDebugMode ? "rgba(180,30,30,0.8)" : "rgba(0,140,80,0.8)",
               galleryDebugMode ? "#dc3545" : "#00aa64",
+              isMobile,
             )}
           >
             {isMinimal

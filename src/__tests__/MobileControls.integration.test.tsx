@@ -161,6 +161,9 @@ describe("MobileActionButton", () => {
 describe("Mobile Controls Integration", () => {
   it("should render MobileControls with joystick and action buttons", () => {
     const onMove = vi.fn();
+    const onCameraMove = vi.fn();
+    const onShoot = vi.fn();
+    const onShootRelease = vi.fn();
     const onJumpPress = vi.fn();
     const onJumpRelease = vi.fn();
     const onJumpDoubleTap = vi.fn();
@@ -170,6 +173,9 @@ describe("Mobile Controls Integration", () => {
     const { container, getByText } = render(
       <MobileControls
         onJoystickMove={onMove}
+        onCameraMove={onCameraMove}
+        onShoot={onShoot}
+        onShootRelease={onShootRelease}
         onJumpPress={onJumpPress}
         onJumpRelease={onJumpRelease}
         onJumpDoubleTap={onJumpDoubleTap}
@@ -182,7 +188,7 @@ describe("Mobile Controls Integration", () => {
     const buttons = container.querySelectorAll(".mobile-action-button");
 
     expect(joystick).toBeTruthy();
-    expect(buttons.length).toBe(2);
+    expect(buttons.length).toBe(3);
     expect(getByText("Move")).toBeTruthy();
     expect(getByText("Jump")).toBeTruthy();
     expect(getByText("Sprint")).toBeTruthy();
@@ -190,6 +196,9 @@ describe("Mobile Controls Integration", () => {
 
   it("should have proper accessibility", () => {
     const onMove = vi.fn();
+    const onCameraMove = vi.fn();
+    const onShoot = vi.fn();
+    const onShootRelease = vi.fn();
     const onJumpPress = vi.fn();
     const onJumpRelease = vi.fn();
     const onJumpDoubleTap = vi.fn();
@@ -199,6 +208,9 @@ describe("Mobile Controls Integration", () => {
     const { getByText } = render(
       <MobileControls
         onJoystickMove={onMove}
+        onCameraMove={onCameraMove}
+        onShoot={onShoot}
+        onShootRelease={onShootRelease}
         onJumpPress={onJumpPress}
         onJumpRelease={onJumpRelease}
         onJumpDoubleTap={onJumpDoubleTap}

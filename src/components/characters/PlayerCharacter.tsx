@@ -379,6 +379,7 @@ export const PlayerCharacter = React.forwardRef<
           }
           chargeProgress={weaponManagerRef.current.getChargeProgress("grenade")}
           isVisible={weaponManagerRef.current.isCharging("grenade")}
+          cameraVertical={cameraRotationRef.current.vertical}
         />
       )}
 

@@ -41,6 +41,7 @@ import { useMobileDetection } from "../lib/hooks/useMobileDetection";
 import { useRockPositions } from "../lib/hooks/useRockPositions";
 import { useQualitySettings } from "../lib/hooks/useQualitySettings";
 import { useMouseControls } from "../lib/hooks/useMouseControls";
+import * as gameInput from "../lib/gameInput";
 import {
   useChatMessages,
   type ChatMessage,
@@ -118,6 +119,7 @@ const Solo: React.FC = () => {
   );
   const currentPlayerId = socketClient?.id || localPlayerId;
   const [joystickMove, setJoystickMove] = useState({ x: 0, y: 0 });
+  const [joystickCamera, setJoystickCamera] = useState({ x: 0, y: 0 });
 
   const playerPositionRef = useRef<[number, number, number]>([0, 0.5, 0]);
   const bot1PositionRef = useRef<[number, number, number]>([-5, 0.5, -5]);
@@ -148,6 +150,11 @@ const Solo: React.FC = () => {
 
   const mobileJetpackTrigger = useRef(false);
   const isMobileDevice = useMobileDetection();
+
+  // Sync mobile flag to gameInput singleton so aim assist can read it
+  useEffect(() => {
+    gameInput.setIsMobile(isMobileDevice);
+  }, [isMobileDevice]);
 
   const gameManager = useRef<GameManager | null>(null);
   const [gameManagerState, setGameManagerState] = useState<GameManager | null>(
@@ -292,14 +299,6 @@ const Solo: React.FC = () => {
     let lastTouchUpdate = 0;
     const INTERVAL = 16;
 
-    const onMouseDown = (e: MouseEvent) =>
-      setMouseControls((prev) => ({
-        ...prev,
-        leftClick: e.button === 0 ? true : prev.leftClick,
-        rightClick: e.button === 2 ? true : prev.rightClick,
-        middleClick: e.button === 1 ? true : prev.middleClick,
-      }));
-
     const onMouseUp = (e: MouseEvent) =>
       setMouseControls((prev) => ({
         ...prev,
@@ -309,6 +308,11 @@ const Solo: React.FC = () => {
       }));
 
     const onMouseMove = (e: MouseEvent) => {
+      // Accumulate raw pointer-lock deltas for camera (consumed by PlayerCamera each frame)
+      if (document.pointerLockElement) {
+        gameInput.mouseMovement.dx += e.movementX;
+        gameInput.mouseMovement.dy += e.movementY;
+      }
       const now = Date.now();
       if (now - lastMouseUpdate < INTERVAL) return;
       lastMouseUpdate = now;
@@ -317,6 +321,35 @@ const Solo: React.FC = () => {
         mouseX: e.clientX,
         mouseY: e.clientY,
       }));
+    };
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      if (e.altKey) {
+        // Alt + scroll: zoom camera
+        gameInput.cameraZoom.delta += e.deltaY > 0 ? 0.5 : -0.5;
+      } else {
+        // Plain scroll: cycle weapons (+1 = next, -1 = prev)
+        gameInput.weaponScrollInput.direction = e.deltaY > 0 ? 1 : -1;
+      }
+    };
+
+    const onPointerLockChange = () => {
+      gameInput.setPointerLocked(document.pointerLockElement != null);
+    };
+
+    const onMouseDownWithLock = (e: MouseEvent) => {
+      setMouseControls((prev) => ({
+        ...prev,
+        leftClick: e.button === 0 ? true : prev.leftClick,
+        rightClick: e.button === 2 ? true : prev.rightClick,
+        middleClick: e.button === 1 ? true : prev.middleClick,
+      }));
+      // Request pointer lock on first click inside the game canvas
+      if (!document.pointerLockElement) {
+        const canvas = document.querySelector("canvas");
+        canvas?.requestPointerLock();
+      }
     };
 
     const onContextMenu = (e: MouseEvent) => e.preventDefault();
@@ -371,24 +404,30 @@ const Solo: React.FC = () => {
       }
     };
 
-    window.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("mousedown", onMouseDownWithLock);
     window.addEventListener("mouseup", onMouseUp);
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("contextmenu", onContextMenu);
+    window.addEventListener("wheel", onWheel, { passive: false });
     window.addEventListener("touchstart", onTouchStart, { passive: true });
     window.addEventListener("touchmove", onTouchMove, { passive: true });
     window.addEventListener("touchend", onTouchEnd, { passive: true });
     window.addEventListener("touchcancel", onTouchEnd, { passive: true });
+    document.addEventListener("pointerlockchange", onPointerLockChange);
 
     return () => {
-      window.removeEventListener("mousedown", onMouseDown);
+      window.removeEventListener("mousedown", onMouseDownWithLock);
       window.removeEventListener("mouseup", onMouseUp);
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("contextmenu", onContextMenu);
+      window.removeEventListener("wheel", onWheel);
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("touchend", onTouchEnd);
       window.removeEventListener("touchcancel", onTouchEnd);
+      document.removeEventListener("pointerlockchange", onPointerLockChange);
+      if (document.pointerLockElement) document.exitPointerLock();
+      gameInput.resetTransientInput();
     };
   }, [setMouseControls]);
 
@@ -521,6 +560,8 @@ const Solo: React.FC = () => {
         gameManager={gameManagerState}
         currentPlayerId={currentPlayerId}
         joystickMove={joystickMove}
+        joystickCamera={joystickCamera}
+        mobileJetpackTrigger={mobileJetpackTrigger}
         lastWalkSoundTimeRef={lastWalkSoundTime}
         isPaused={isPaused}
         onPositionUpdate={handlePlayerPositionUpdate}
@@ -552,6 +593,13 @@ const Solo: React.FC = () => {
       <SoloHUD
         isMobileDevice={isMobileDevice}
         onJoystickMove={(x, y) => setJoystickMove({ x, y })}
+        onCameraMove={(x, y) => setJoystickCamera({ x, y })}
+        onShoot={() =>
+          setMouseControls((prev) => ({ ...prev, leftClick: true }))
+        }
+        onShootRelease={() =>
+          setMouseControls((prev) => ({ ...prev, leftClick: false }))
+        }
         onJumpPress={() => setKeyState(SPACE, true)}
         onJumpRelease={() => setKeyState(SPACE, false)}
         onJumpDoubleTap={() => {

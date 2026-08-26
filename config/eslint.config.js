@@ -53,6 +53,7 @@ export default [
                 Event: 'readonly',
                 CustomEvent: 'readonly',
                 TouchEvent: 'readonly',
+                WheelEvent: 'readonly',
                 // Browser APIs
                 setTimeout: 'readonly',
                 clearTimeout: 'readonly',

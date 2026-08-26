@@ -68,6 +68,45 @@
   transform: scale(0.92);
 }
 
+/* Fire button — large, left of the right camera joystick */
+.mobile-action-button.fire {
+  bottom: max(70px, calc(70px + env(safe-area-inset-bottom, 0px)));
+  right: max(175px, calc(175px + env(safe-area-inset-right, 0px)));
+  width: 96px;
+  height: 96px;
+  background: linear-gradient(
+    135deg,
+    rgba(200, 30, 30, 0.85),
+    rgba(80, 0, 0, 0.85)
+  );
+  border-color: rgba(255, 100, 100, 0.5);
+}
+
+.mobile-action-button.fire:active,
+.mobile-action-button.fire.pressed {
+  transform: scale(0.92);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 50, 50, 1),
+    rgba(120, 0, 0, 0.95)
+  );
+  border-color: rgba(255, 120, 120, 0.8);
+  box-shadow:
+    0 6px 20px rgba(220, 30, 30, 0.7),
+    0 0 30px rgba(220, 30, 30, 0.5);
+}
+
+/* Jump button on right side (stacked above fire) */
+.mobile-action-button.jump-right {
+  bottom: max(190px, calc(190px + env(safe-area-inset-bottom, 0px)));
+  right: max(175px, calc(175px + env(safe-area-inset-right, 0px)));
+}
+
+.mobile-action-button.jump-right:active,
+.mobile-action-button.jump-right.pressed {
+  transform: scale(0.92);
+}
+
 /* Hide on desktop (non-touch devices) */
 @media (hover: hover) and (pointer: fine) {
   .mobile-action-button {
@@ -126,6 +165,18 @@
   .mobile-action-button.bottom-right {
     bottom: max(100px, calc(100px + env(safe-area-inset-bottom, 0px)));
     right: max(15px, env(safe-area-inset-right, 10px));
+  }
+
+  .mobile-action-button.fire {
+    width: 78px;
+    height: 78px;
+    bottom: max(55px, calc(55px + env(safe-area-inset-bottom, 0px)));
+    right: max(140px, calc(140px + env(safe-area-inset-right, 0px)));
+  }
+
+  .mobile-action-button.jump-right {
+    bottom: max(140px, calc(140px + env(safe-area-inset-bottom, 0px)));
+    right: max(140px, calc(140px + env(safe-area-inset-right, 0px)));
   }
 
   .mobile-button-icon {

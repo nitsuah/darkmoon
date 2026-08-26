@@ -76,6 +76,9 @@ vi.mock("../../../../components/MobileControls", () => ({
 const baseProps: React.ComponentProps<typeof SoloHUD> = {
   isMobileDevice: true,
   onJoystickMove: vi.fn(),
+  onCameraMove: vi.fn(),
+  onShoot: vi.fn(),
+  onShootRelease: vi.fn(),
   onJumpPress: vi.fn(),
   onJumpRelease: vi.fn(),
   onJumpDoubleTap: vi.fn(),
