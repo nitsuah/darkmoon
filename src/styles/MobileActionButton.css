@@ -167,6 +167,18 @@
     right: max(15px, env(safe-area-inset-right, 10px));
   }
 
+  .mobile-action-button.fire {
+    width: 78px;
+    height: 78px;
+    bottom: max(55px, calc(55px + env(safe-area-inset-bottom, 0px)));
+    right: max(140px, calc(140px + env(safe-area-inset-right, 0px)));
+  }
+
+  .mobile-action-button.jump-right {
+    bottom: max(140px, calc(140px + env(safe-area-inset-bottom, 0px)));
+    right: max(140px, calc(140px + env(safe-area-inset-right, 0px)));
+  }
+
   .mobile-button-icon {
     font-size: 22px;
   }

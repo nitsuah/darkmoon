@@ -16,7 +16,7 @@ interface Props {
 const btn = (
   bg: string,
   border: string,
-  mobile = false,
+  mobile: boolean = false,
 ): React.CSSProperties => ({
   width: "100%",
   padding: mobile ? "10px 8px" : "6px 8px",

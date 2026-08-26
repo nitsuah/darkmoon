@@ -12,7 +12,7 @@ export const mouseMovement = { dx: 0, dy: 0 };
 
 /** Whether the browser pointer lock is currently active. */
 export let pointerLocked = false;
-export function setPointerLocked(v: boolean) {
+export function setPointerLocked(v: boolean): void {
   pointerLocked = v;
 }
 
@@ -25,6 +25,14 @@ export const weaponScrollInput = { direction: 0 };
 
 /** Whether the player is on a mobile/touch device. Set once on mount; used for aim assist. */
 export let isMobile = false;
-export function setIsMobile(v: boolean) {
+export function setIsMobile(v: boolean): void {
   isMobile = v;
+}
+
+export function resetTransientInput(): void {
+  mouseMovement.dx = 0;
+  mouseMovement.dy = 0;
+  cameraZoom.delta = 0;
+  weaponScrollInput.direction = 0;
+  pointerLocked = false;
 }

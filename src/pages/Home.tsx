@@ -69,7 +69,20 @@ const Home = () => {
           <div className="game-card__icon game-card__icon--large">🎯</div>
           <div className="game-card__content">
             <h3 className="game-card__title game-card__title--large">
-              Solo Practice
+              <button
+                type="button"
+                onClick={() => navigate("/solo")}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "inherit",
+                  font: "inherit",
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+              >
+                Solo Practice
+              </button>
             </h3>
             <p className="game-card__desc">
               Hone your aim against smart AI opponents across multiple game

@@ -148,6 +148,10 @@ export const PlayerWeapon = React.memo(
       const keyR = keysPressedRef.current[KEY_R] ?? false;
       const keyTab = keysPressedRef.current[KEY_TAB] ?? false;
 
+      // Consume scroll input on every frame so stale input never carries over
+      const scrollDir = gameInput.weaponScrollInput.direction;
+      gameInput.weaponScrollInput.direction = 0;
+
       if (canActNow) {
         if (key1 && !prevKey1Ref.current) {
           weaponManagerRef.current.equip("laser");
@@ -213,7 +217,7 @@ export const PlayerWeapon = React.memo(
           });
         }
         // Scroll wheel: cycle weapons
-        if (gameInput.weaponScrollInput.direction !== 0) {
+        if (scrollDir !== 0) {
           const currentId = weaponManagerRef.current.getEquipped()?.id;
           const idx = currentId
             ? WEAPON_CYCLE_ORDER.indexOf(
@@ -221,15 +225,14 @@ export const PlayerWeapon = React.memo(
               )
             : -1;
           const len = WEAPON_CYCLE_ORDER.length;
-          const dir = gameInput.weaponScrollInput.direction;
-          const nextIdx = dir > 0 ? (idx + 1) % len : (idx - 1 + len) % len;
+          const nextIdx =
+            scrollDir > 0 ? (idx + 1) % len : (idx - 1 + len) % len;
           const nextId = WEAPON_CYCLE_ORDER[nextIdx];
           weaponManagerRef.current.equip(nextId);
           gameManager?.updatePlayer(myId, {
             equippedWeaponId: nextId,
             currentAmmo: weaponManagerRef.current.getAmmo(nextId),
           });
-          gameInput.weaponScrollInput.direction = 0;
         }
       }
       prevKey1Ref.current = key1;
@@ -250,22 +253,25 @@ export const PlayerWeapon = React.memo(
         _raycaster.current.setFromCamera(_ndc.current.set(0, 0), state.camera);
         _fireDir.current.copy(_raycaster.current.ray.direction);
 
-        // Mobile aim assist: snap toward nearest enemy within a 20° cone
+        // Mobile aim assist: snap toward the nearest enemy within a 20° cone
         if (gameInput.isMobile && gameManager) {
           const AIM_CONE = Math.cos(Math.PI / 9); // cos(20°)
-          let bestDot = AIM_CONE;
+          let bestDistance = Infinity;
+          let bestDir: THREE.Vector3 | null = null;
           gameManager.getPlayers().forEach((p, id) => {
-            if (id === myId || !p.position) return;
-            _tempVec2.current
+            if (id === myId || !p.position || p.respawnAt !== undefined) return;
+            const toTarget = _tempVec2.current
               .set(p.position[0], p.position[1] + 1, p.position[2])
-              .sub(_fireOrigin.current)
-              .normalize();
-            const dot = _tempVec2.current.dot(_fireDir.current);
-            if (dot > bestDot) {
-              bestDot = dot;
-              _fireDir.current.copy(_tempVec2.current);
+              .sub(_fireOrigin.current);
+            const dist = toTarget.length();
+            toTarget.normalize();
+            const dot = toTarget.dot(_fireDir.current);
+            if (dot >= AIM_CONE && dist < bestDistance) {
+              bestDistance = dist;
+              bestDir = toTarget.clone();
             }
           });
+          if (bestDir) _fireDir.current.copy(bestDir);
         }
 
         const equippedId = weaponManagerRef.current.getEquipped()?.id;

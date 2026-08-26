@@ -28,6 +28,8 @@ type PlayersProps = Pick<
   | "botDebugMode"
 >;
 
+const DEFAULT_JOYSTICK_CAMERA = { x: 0, y: 0 };
+
 const Players = React.forwardRef<PlayerCharacterHandle | null, PlayersProps>(
   (props, ref) => {
     // Ensure mouseControls is always provided to PlayerCharacter (non-nullable in PlayerCharacter)
@@ -38,11 +40,6 @@ const Players = React.forwardRef<PlayerCharacterHandle | null, PlayersProps>(
       rightClick: false,
       middleClick: false,
     };
-
-    // Fall back to local ref only if parent didn't wire up mobileJetpackTrigger
-    const fallbackJetpackRef = React.useRef<boolean>(false);
-    const mobileJetpackTriggerRef =
-      props.mobileJetpackTrigger ?? fallbackJetpackRef;
 
     return (
       <>
@@ -55,7 +52,7 @@ const Players = React.forwardRef<PlayerCharacterHandle | null, PlayersProps>(
           gameManager={props.gameManager}
           currentPlayerId={props.currentPlayerId}
           joystickMove={props.joystickMove}
-          joystickCamera={props.joystickCamera ?? { x: 0, y: 0 }}
+          joystickCamera={props.joystickCamera ?? DEFAULT_JOYSTICK_CAMERA}
           lastWalkSoundTimeRef={props.lastWalkSoundTimeRef}
           isPaused={props.isPaused}
           onPositionUpdate={props.onPositionUpdate}
@@ -66,9 +63,7 @@ const Players = React.forwardRef<PlayerCharacterHandle | null, PlayersProps>(
           setBot2GotTagged={props.setBot2GotTagged}
           setGameState={props.setGameState}
           showHitboxes={props.botDebugMode}
-          mobileJetpackTrigger={
-            mobileJetpackTriggerRef as React.MutableRefObject<boolean>
-          }
+          mobileJetpackTrigger={props.mobileJetpackTrigger}
           onTagSuccess={() => {}}
         />
 

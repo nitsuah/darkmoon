@@ -58,8 +58,8 @@ const GrenadeProjectiles: React.FC = () => {
       const { origin, direction, chargeProgress, launchAngle } = (
         e as {
           detail: {
-            origin: THREE.Vector3;
-            direction: THREE.Vector3;
+            origin: THREE.Vector3 | { x: number; y: number; z: number };
+            direction: THREE.Vector3 | { x: number; y: number; z: number };
             chargeProgress: number;
             launchAngle?: number;
           };

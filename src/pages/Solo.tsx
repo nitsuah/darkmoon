@@ -427,7 +427,7 @@ const Solo: React.FC = () => {
       window.removeEventListener("touchcancel", onTouchEnd);
       document.removeEventListener("pointerlockchange", onPointerLockChange);
       if (document.pointerLockElement) document.exitPointerLock();
-      gameInput.setPointerLocked(false);
+      gameInput.resetTransientInput();
     };
   }, [setMouseControls]);
 
