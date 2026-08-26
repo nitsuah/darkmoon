@@ -8,7 +8,7 @@ interface MobileActionButtonProps {
   onPress: () => void;
   onRelease: () => void;
   onDoubleTap?: () => void;
-  position?: "bottom-center" | "bottom-right";
+  position?: "bottom-center" | "bottom-right" | "fire" | "jump-right";
 }
 
 export const MobileActionButton: React.FC<MobileActionButtonProps> = ({

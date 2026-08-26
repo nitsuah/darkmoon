@@ -20,6 +20,9 @@ import "../../../styles/Notification.css";
 interface SoloHUDProps {
   isMobileDevice: boolean;
   onJoystickMove: (x: number, y: number) => void;
+  onCameraMove: (x: number, y: number) => void;
+  onShoot: () => void;
+  onShootRelease: () => void;
   onJumpPress: () => void;
   onJumpRelease: () => void;
   onJumpDoubleTap: () => void;
@@ -61,6 +64,9 @@ interface SoloHUDProps {
 const SoloHUD: React.FC<SoloHUDProps> = ({
   isMobileDevice,
   onJoystickMove,
+  onCameraMove,
+  onShoot,
+  onShootRelease,
   onJumpPress,
   onJumpRelease,
   onJumpDoubleTap,
@@ -99,6 +105,9 @@ const SoloHUD: React.FC<SoloHUDProps> = ({
       {isMobileDevice && (
         <MobileControls
           onJoystickMove={onJoystickMove}
+          onCameraMove={onCameraMove}
+          onShoot={onShoot}
+          onShootRelease={onShootRelease}
           onJumpPress={onJumpPress}
           onJumpRelease={onJumpRelease}
           onJumpDoubleTap={onJumpDoubleTap}

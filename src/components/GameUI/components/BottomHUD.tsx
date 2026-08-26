@@ -5,6 +5,7 @@ import { WEAPONS } from "../../combat/WeaponManager";
 interface Props {
   currentPlayer: Player;
   mode: GameMode;
+  isMobile?: boolean;
 }
 
 const WEAPON_COLORS: Record<string, string> = {
@@ -14,7 +15,11 @@ const WEAPON_COLORS: Record<string, string> = {
   smg: "#ff44cc",
 };
 
-const BottomHUD: React.FC<Props> = ({ currentPlayer, mode }) => {
+const BottomHUD: React.FC<Props> = ({
+  currentPlayer,
+  mode,
+  isMobile = false,
+}) => {
   const hp = currentPlayer.health ?? currentPlayer.maxHealth ?? 100;
   const maxHp = currentPlayer.maxHealth ?? 100;
   const frac = Math.max(0, Math.min(1, hp / maxHp));
@@ -30,24 +35,31 @@ const BottomHUD: React.FC<Props> = ({ currentPlayer, mode }) => {
     reloadPct !== null && reloadPct !== undefined && reloadPct < 1;
   const wColor = (wId && WEAPON_COLORS[wId]) || "#33ffe6";
 
+  // On mobile, sit above the sprint button (bottom-center ~130px) and the mobile controls area
+  // Sprint button is at bottom: max(40px,...) with 80px height → clears ~120px. Add margin.
+  const bottomOffset = isMobile ? "160px" : "14px";
+  const fontSize = isMobile ? "13px" : "11px";
+  const barWidth = isMobile ? "100px" : "80px";
+
   return (
     <div
       style={{
         position: "fixed",
-        bottom: "14px",
+        bottom: bottomOffset,
         left: "50%",
         transform: "translateX(-50%)",
         display: "flex",
         alignItems: "center",
         gap: "14px",
         fontFamily: "monospace",
-        fontSize: "11px",
+        fontSize,
         pointerEvents: "none",
         zIndex: 997,
-        backgroundColor: "rgba(0,0,0,0.6)",
-        border: "1px solid rgba(255,255,255,0.15)",
-        borderRadius: "5px",
-        padding: "4px 12px",
+        backgroundColor: "rgba(0,0,0,0.7)",
+        border: "1px solid rgba(255,255,255,0.2)",
+        borderRadius: "8px",
+        padding: isMobile ? "6px 16px" : "4px 12px",
+        backdropFilter: "blur(4px)",
       }}
     >
       {mode !== "tag" && (
@@ -62,7 +74,7 @@ const BottomHUD: React.FC<Props> = ({ currentPlayer, mode }) => {
           >
             <div
               style={{
-                fontSize: "9px",
+                fontSize: isMobile ? "11px" : "9px",
                 color: barColor,
                 fontWeight: "bold",
                 lineHeight: 1,
@@ -72,10 +84,10 @@ const BottomHUD: React.FC<Props> = ({ currentPlayer, mode }) => {
             </div>
             <div
               style={{
-                width: "80px",
-                height: "7px",
+                width: barWidth,
+                height: isMobile ? "8px" : "7px",
                 background: "#1a1a1a",
-                borderRadius: "2px",
+                borderRadius: "3px",
                 overflow: "hidden",
                 border: "1px solid #333",
               }}
@@ -145,12 +157,17 @@ const BottomHUD: React.FC<Props> = ({ currentPlayer, mode }) => {
               )}
             </span>
           )}
-          <span style={{ color: "#555", fontSize: "10px" }}>
-            {isReloading ? "" : " [R]"}
-          </span>
-          <span style={{ color: "#555", fontSize: "10px" }}>
-            [Tab]swap [I]scores
-          </span>
+          {/* Hide keyboard hints on mobile — no keyboard in use */}
+          {!isMobile && (
+            <>
+              <span style={{ color: "#555", fontSize: "10px" }}>
+                {isReloading ? "" : " [R]"}
+              </span>
+              <span style={{ color: "#555", fontSize: "10px" }}>
+                [Tab]swap [I]scores
+              </span>
+            </>
+          )}
         </>
       )}
     </div>
