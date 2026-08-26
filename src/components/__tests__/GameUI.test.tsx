@@ -267,10 +267,10 @@ describe("GameUI", () => {
     expect(screen.getByText(/Player Two/)).toBeInTheDocument();
     expect(screen.getByText(/3 kills/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText("Play Again"));
+    fireEvent.click(screen.getByText(/Play Again/));
     expect(onStartGame).toHaveBeenCalledWith("deathmatch");
 
-    fireEvent.click(screen.getByText("Main Menu"));
+    fireEvent.click(screen.getByText(/Main Menu/));
     expect(onMainMenu).toHaveBeenCalled();
     expect(onEndGame).not.toHaveBeenCalled();
   });
