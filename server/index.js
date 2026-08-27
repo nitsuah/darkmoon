@@ -8,17 +8,26 @@ import {
   validateChatMessage,
   validateGameMode,
 } from "./validation.js";
+import { createLogger, GAME_EVENTS } from "./logger.js";
+import {
+  parseAllowedOrigins,
+  createCorsOptions,
+  CORS_ERROR_CODE,
+} from "./cors.js";
+import { buildHealthReport, healthStatusCode } from "./health.js";
 
 // Environment configuration
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4444;
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",")
-  : [
-      "http://localhost:3000",
-      "http://localhost:4444",
-      "https://deploy-preview-*--darkmoon-dev.netlify.app",
-      "https://darkmoon-dev.netlify.app",
-    ];
+const ALLOWED_ORIGINS = parseAllowedOrigins(process.env.ALLOWED_ORIGINS);
+const SERVER_STARTED_AT = Date.now();
+const APP_VERSION = process.env.APP_VERSION || null;
+
+// Structured JSON logger. Every server log line is a single JSON object so log
+// aggregators can index fields directly. Level is controlled by LOG_LEVEL.
+const logger = createLogger({
+  level: process.env.LOG_LEVEL,
+  base: { service: "darkmoon-server" },
+});
 
 // Rate limiting configuration. Limits are applied per-client within a time
 // window (see checkRateLimit windowMs parameter). The default window used by
@@ -37,7 +46,7 @@ const rateLimitTrackers = new Map();
  * Clean up old rate limit entries to prevent memory leaks
  * Runs every 5 minutes
  */
-setInterval(() => {
+const rateLimitCleanupTimer = setInterval(() => {
   const now = Date.now();
   const keysToDelete = [];
 
@@ -51,9 +60,7 @@ setInterval(() => {
   keysToDelete.forEach((key) => rateLimitTrackers.delete(key));
 
   if (keysToDelete.length > 0) {
-    console.log(
-      `[Rate Limit Cleanup] Removed ${keysToDelete.length} stale entries`,
-    );
+    logger.debug("ratelimit.cleanup", { removedEntries: keysToDelete.length });
   }
 }, 300000); // Run every 5 minutes
 
@@ -96,22 +103,38 @@ const checkRateLimit = (clientId, action, limit, windowMs = 1000) => {
 // Create router (Express 5 has native async support)
 const router = express.Router();
 
-// Health check endpoint
-router.get("/health", (req, res) => {
-  res.json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
+/**
+ * Build the current health snapshot from live server state.
+ * @returns {object} Health report.
+ */
+const currentHealthReport = () =>
+  buildHealthReport({
     connections: ioServer ? ioServer.engine.clientsCount : 0,
+    clients,
+    gameState,
+    startedAt: SERVER_STARTED_AT,
+    version: APP_VERSION,
   });
+
+// Health / observability endpoint. Reports server status, uptime, active player
+// count, and active game count. Used by the Docker HEALTHCHECK, the Render
+// healthCheckPath, and any external uptime monitor.
+router.get("/health", (req, res) => {
+  const report = currentHealthReport();
+  res.status(healthStatusCode(report)).json(report);
 });
 
 // Main route for production - simple status page
 router.get("/", async (req, res) => {
+  const report = currentHealthReport();
   res.json({
     service: "Multi WebSocket Server",
     status: "running",
-    connections: ioServer ? ioServer.engine.clientsCount : 0,
-    timestamp: new Date().toISOString(),
+    connections: report.activePlayers,
+    activePlayers: report.activePlayers,
+    activeGames: report.activeGames,
+    uptimeSeconds: report.uptimeSeconds,
+    timestamp: report.timestamp,
   });
 });
 
@@ -119,33 +142,13 @@ router.get("/", async (req, res) => {
 
 // Create express app and listen on specified port
 const app = express();
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
 
-      // Check if origin is allowed
-      const isAllowed = ALLOWED_ORIGINS.some((allowedOrigin) => {
-        if (allowedOrigin.includes("*")) {
-          const pattern = new RegExp(
-            "^" + allowedOrigin.replace(/\*/g, ".*") + "$",
-          );
-          return pattern.test(origin);
-        }
-        return allowedOrigin === origin;
-      });
-
-      if (isAllowed) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: ["GET", "POST"],
-    credentials: true,
-  }),
+// Shared CORS policy: the same allow-list guards the HTTP app and the Socket.io
+// handshake, so anything that can reach /health can also open a socket.
+const corsOptions = createCorsOptions(ALLOWED_ORIGINS, ({ origin }) =>
+  logger.warn(GAME_EVENTS.CORS_REJECTED, { origin, transport: "http" }),
 );
+app.use(cors(corsOptions));
 app.use(express.static("dist"));
 
 const httpLimiter = rateLimit({
@@ -155,6 +158,12 @@ const httpLimiter = rateLimit({
   legacyHeaders: false,
 });
 app.use(httpLimiter);
+
+// API routes must be mounted BEFORE the SPA fallback. `req.accepts("html")` is
+// truthy for `Accept: */*` (curl, the Docker HEALTHCHECK, and platform probes
+// all send it), so a fallback registered first would answer /health with
+// index.html and the endpoint would never run.
+app.use(router);
 
 // Serve index.html for all non-API, non-static routes (SPA support)
 app.use((req, res, next) => {
@@ -166,38 +175,43 @@ app.use((req, res, next) => {
     next();
   }
 });
-app.use(router);
+
+// Central error handler. Keeps every failure path on the structured logger
+// instead of Express's default handler, which prints an unstructured stack
+// trace to stdout and would break the "all log output is JSON" guarantee.
+// The unused `next` parameter is required: Express identifies error handlers by
+// arity, and a 3-argument function is treated as ordinary middleware.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err, req, res, next) => {
+  if (err?.code === CORS_ERROR_CODE) {
+    // Already logged by the CORS rejection hook; answer with a clean 403.
+    res.status(403).json({ error: "Origin not allowed" });
+    return;
+  }
+
+  logger.error("http.request_failed", {
+    method: req.method,
+    path: req.path,
+    message: err?.message,
+    code: err?.code,
+  });
+
+  res.status(err?.statusCode || 500).json({ error: "Internal server error" });
+});
 
 const server = app.listen(PORT, () => {
-  console.log(`Server listening on http://localhost:${PORT}...`);
-  console.log(`Allowed origins: ${ALLOWED_ORIGINS.join(", ")}`);
+  logger.info(GAME_EVENTS.SERVER_STARTED, {
+    port: PORT,
+    allowedOrigins: ALLOWED_ORIGINS,
+    logLevel: process.env.LOG_LEVEL || "info",
+    nodeEnv: process.env.NODE_ENV || "development",
+  });
 });
 
 const ioServer = new Server(server, {
-  cors: {
-    origin: (origin, callback) => {
-      // Allow requests with no origin
-      if (!origin) return callback(null, true);
-
-      const isAllowed = ALLOWED_ORIGINS.some((allowedOrigin) => {
-        if (allowedOrigin.includes("*")) {
-          const pattern = new RegExp(
-            "^" + allowedOrigin.replace(/\*/g, ".*") + "$",
-          );
-          return pattern.test(origin);
-        }
-        return allowedOrigin === origin;
-      });
-
-      if (isAllowed) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
+  cors: createCorsOptions(ALLOWED_ORIGINS, ({ origin }) =>
+    logger.warn(GAME_EVENTS.CORS_REJECTED, { origin, transport: "websocket" }),
+  ),
 });
 
 let clients = {};
@@ -208,17 +222,39 @@ let gameState = {
   startTime: null,
 };
 
+// Per-player scores for the active match. Reset on game start and game end.
+let scores = {};
+
+/**
+ * Award a point to a player and emit a structured score-change record.
+ * @param {string} playerId - Player receiving the point.
+ * @param {number} delta - Points to add.
+ * @param {string} reason - Why the score changed (e.g. "tag").
+ */
+const awardScore = (playerId, delta, reason) => {
+  const previousScore = scores[playerId] ?? 0;
+  const newScore = previousScore + delta;
+  scores[playerId] = newScore;
+
+  logger.scoreChanged({ playerId, previousScore, newScore, reason });
+  return newScore;
+};
+
 // Socket app msgs
 ioServer.on("connection", (client) => {
-  console.log(
-    `User ${client.id} connected, Total: ${ioServer.engine.clientsCount} users connected`,
-  );
-
   //Add a new client indexed by their id
   clients[client.id] = {
     position: [0, 0, 0],
     rotation: [0, 0, 0],
   };
+
+  // Count from the tracked map rather than engine.clientsCount: the engine
+  // counter has not yet been decremented inside a `disconnect` handler, so the
+  // map is the only source that is accurate on both edges.
+  logger.playerConnected({
+    playerId: client.id,
+    activePlayers: Object.keys(clients).length,
+  });
 
   ioServer.sockets.emit("move", clients);
 
@@ -226,19 +262,28 @@ ioServer.on("connection", (client) => {
   client.on("move", ({ rotation, position }) => {
     // Rate limit check
     if (checkRateLimit(client.id, "move", RATE_LIMITS.MOVE)) {
-      console.warn(`Rate limit exceeded for ${client.id} on move events`);
+      logger.warn(GAME_EVENTS.RATE_LIMITED, {
+        playerId: client.id,
+        action: "move",
+      });
       return;
     }
 
     // Validate input
     if (!validatePosition(position)) {
-      console.warn(`Invalid position from ${client.id}:`, position);
+      logger.warn(GAME_EVENTS.VALIDATION_FAILED, {
+        playerId: client.id,
+        field: "position",
+      });
       client.emit("error", { message: "Invalid position data" });
       return;
     }
 
     if (!validateRotation(rotation)) {
-      console.warn(`Invalid rotation from ${client.id}:`, rotation);
+      logger.warn(GAME_EVENTS.VALIDATION_FAILED, {
+        playerId: client.id,
+        field: "rotation",
+      });
       client.emit("error", { message: "Invalid rotation data" });
       return;
     }
@@ -255,19 +300,30 @@ ioServer.on("connection", (client) => {
   client.on("chat-message", async (message) => {
     // Rate limit check (10 messages per minute)
     if (checkRateLimit(client.id, "chat", RATE_LIMITS.CHAT, 60000)) {
-      console.warn(`Rate limit exceeded for ${client.id} on chat`);
+      logger.warn(GAME_EVENTS.RATE_LIMITED, {
+        playerId: client.id,
+        action: "chat",
+      });
       client.emit("error", { message: "Slow down! Too many messages." });
       return;
     }
 
     // Validate message
     if (!validateChatMessage(message)) {
-      console.warn(`Invalid chat message from ${client.id}`);
+      logger.warn(GAME_EVENTS.VALIDATION_FAILED, {
+        playerId: client.id,
+        field: "chatMessage",
+      });
       client.emit("error", { message: "Invalid message format" });
       return;
     }
 
-    console.log(`Chat message from ${client.id}: ${message.message}`);
+    // Message bodies are user content and are intentionally not logged; only
+    // metadata is recorded.
+    logger.info(GAME_EVENTS.CHAT_MESSAGE, {
+      playerId: client.id,
+      messageLength: message.message.length,
+    });
 
     // Basic profanity filter (configurable in CHAT_PROFANITY) - use helper
     const defaultBadWords = [
@@ -314,18 +370,22 @@ ioServer.on("connection", (client) => {
   client.on("game-start", (gameData) => {
     // Rate limit game actions
     if (checkRateLimit(client.id, "game", RATE_LIMITS.GAME_ACTION)) {
-      console.warn(`Rate limit exceeded for ${client.id} on game actions`);
+      logger.warn(GAME_EVENTS.RATE_LIMITED, {
+        playerId: client.id,
+        action: "game-start",
+      });
       return;
     }
 
     // Validate game mode
     if (gameData && !validateGameMode(gameData.mode)) {
-      console.warn(`Invalid game mode from ${client.id}:`, gameData.mode);
+      logger.warn(GAME_EVENTS.VALIDATION_FAILED, {
+        playerId: client.id,
+        field: "gameMode",
+      });
       client.emit("game-error", { message: "Invalid game mode" });
       return;
     }
-
-    console.log(`Game start requested by ${client.id}:`, gameData);
 
     const playerCount = Object.keys(clients).length;
     // Support explicit solo practice mode (allow when at least 1 player exists)
@@ -337,13 +397,19 @@ ioServer.on("connection", (client) => {
       gameState.isActive = true;
       gameState.mode = gameData.mode;
       gameState.startTime = Date.now();
+      scores = {};
 
       // Pick random 'it' player
       const playerIds = Object.keys(clients);
       gameState.itPlayerId =
         playerIds[Math.floor(Math.random() * playerIds.length)];
 
-      console.log(`Game started! ${gameState.itPlayerId} is IT!`);
+      logger.gameStarted({
+        mode: gameState.mode,
+        itPlayerId: gameState.itPlayerId,
+        playerCount,
+        requestedBy: client.id,
+      });
 
       // Broadcast game start to all clients
       ioServer.sockets.emit("game-start", {
@@ -352,6 +418,11 @@ ioServer.on("connection", (client) => {
         startTime: gameState.startTime,
       });
     } else {
+      logger.warn("game.start_rejected", {
+        playerId: client.id,
+        playerCount,
+        reason: "insufficient_players",
+      });
       client.emit("game-error", {
         message: "Need at least 2 players to start",
       });
@@ -360,43 +431,65 @@ ioServer.on("connection", (client) => {
 
   // Handle player tagging
   client.on("player-tagged", (data) => {
-    console.log(`Tag attempt: ${data.taggerId} -> ${data.taggedId}`);
+    const taggerId = data?.taggerId;
+    const taggedId = data?.taggedId;
 
-    if (
-      gameState.isActive &&
-      gameState.mode === "tag" &&
-      data.taggerId === gameState.itPlayerId
-    ) {
-      // Verify both players exist
-      if (clients[data.taggerId] && clients[data.taggedId]) {
-        gameState.itPlayerId = data.taggedId;
-        console.log(`Tag successful! ${data.taggedId} is now IT!`);
-
-        // Broadcast to all clients
-        ioServer.sockets.emit("player-tagged", data);
-      }
+    if (!gameState.isActive || gameState.mode !== "tag") {
+      logger.tagRejected({ taggerId, taggedId, reason: "no_active_tag_game" });
+      return;
     }
+
+    if (taggerId !== gameState.itPlayerId) {
+      logger.tagRejected({ taggerId, taggedId, reason: "tagger_not_it" });
+      return;
+    }
+
+    if (!clients[taggerId] || !clients[taggedId]) {
+      logger.tagRejected({ taggerId, taggedId, reason: "unknown_player" });
+      return;
+    }
+
+    gameState.itPlayerId = taggedId;
+    awardScore(taggerId, 1, "tag");
+
+    logger.playerTagged({ taggerId, taggedId, mode: gameState.mode });
+
+    // Broadcast to all clients. `scores` is additive — existing clients ignore it.
+    ioServer.sockets.emit("player-tagged", { ...data, scores });
   });
 
   // Handle game end
   client.on("game-end", () => {
-    console.log(`Game end requested by ${client.id}`);
+    const durationMs = gameState.startTime
+      ? Date.now() - gameState.startTime
+      : null;
+
+    logger.gameEnded({
+      mode: gameState.mode,
+      durationMs,
+      playerCount: Object.keys(clients).length,
+      requestedBy: client.id,
+      finalScores: scores,
+    });
 
     gameState.isActive = false;
     gameState.mode = "none";
     gameState.itPlayerId = null;
     gameState.startTime = null;
+    scores = {};
 
     ioServer.sockets.emit("game-end");
   });
 
   client.on("disconnect", () => {
-    console.log(
-      `User ${client.id} disconnected, there are currently ${ioServer.engine.clientsCount} users connected`,
-    );
-
     // Delete their client from the object
     delete clients[client.id];
+
+    logger.playerDisconnected({
+      playerId: client.id,
+      activePlayers: Object.keys(clients).length,
+      wasIt: gameState.itPlayerId === client.id,
+    });
 
     // Clean up rate limit tracking for this client
     const keysToDelete = [];
@@ -410,3 +503,32 @@ ioServer.on("connection", (client) => {
     ioServer.sockets.emit("move", clients);
   });
 });
+
+/**
+ * Graceful shutdown: stop accepting new connections, close open sockets, and
+ * clear timers so the process can exit cleanly when the platform sends SIGTERM
+ * (Render/Docker deploy or scale-down).
+ *
+ * @param {string} signal - The signal that triggered shutdown.
+ */
+const shutdown = (signal) => {
+  logger.info(GAME_EVENTS.SERVER_SHUTDOWN, {
+    signal,
+    activePlayers: ioServer ? ioServer.engine.clientsCount : 0,
+    uptimeSeconds: Math.floor((Date.now() - SERVER_STARTED_AT) / 1000),
+  });
+
+  clearInterval(rateLimitCleanupTimer);
+
+  ioServer.close(() => {
+    server.close(() => {
+      process.exit(0);
+    });
+  });
+
+  // Failsafe: force exit if connections do not drain within 10 seconds.
+  setTimeout(() => process.exit(0), 10000).unref();
+};
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));

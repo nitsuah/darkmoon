@@ -102,10 +102,22 @@ Last Updated: 2026-08-21
   - Problem: current metrics are still estimate-heavy.
   - Acceptance Criteria: build, test, and coverage values are measured or clearly marked `TBD` with blockers.
 
-- [ ] Finish server production-hardening work beyond the current baseline.
+- [x] Finish server production-hardening work beyond the current baseline.
   - Priority: P1
-  - Problem: structured logging, graceful shutdown, and operational visibility have not been fully verified.
-  - Acceptance Criteria: hardening tasks are documented, implemented, and validated.
+  - Completed: 2026-08-27
+  - Evidence: `docs/MULTIPLAYER_GATE.md` defines the four readiness criteria
+    (deployment, CORS, logging, observability) each with a runnable acceptance
+    check, and the repo passes all four. New modules `server/logger.js`
+    (structured JSON logging + game event catalogue), `server/cors.js` (shared
+    HTTP/WebSocket allow-list), and `server/health.js` (`/health` payload), plus
+    SIGTERM graceful shutdown in `server/index.js`. Covered by 69 new tests in
+    `src/__tests__/server.{logger,cors,health}.test.ts`. Full suite: 77 files,
+    627 passed / 5 skipped; typecheck and lint clean.
+  - Note: fixed two latent bugs found while validating — the SPA fallback was
+    mounted before the API router (so `/health` returned `index.html` for any
+    `Accept: */*` request, including the Docker healthcheck and Render probe),
+    and the CORS wildcard matcher did not escape regex metacharacters (so
+    `darkmoon-dev.netlify.app` also matched look-alike hosts).
 
 - [ ] Re-baseline the remaining large-file refactor work.
   - Priority: P2
