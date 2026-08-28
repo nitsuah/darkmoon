@@ -2,7 +2,11 @@ export type CorsOriginCallback = (err: Error | null, allow?: boolean) => void;
 
 export type OriginRejectionHook = (event: { origin: string }) => void;
 
-export type UnsafeWildcardHook = (event: { entry: string }) => void;
+export interface UnsafeWildcardEvent {
+  entry: string;
+}
+
+export type UnsafeWildcardHook = (event: UnsafeWildcardEvent) => void;
 
 export interface CorsOptions {
   origin: (origin: string | undefined, callback: CorsOriginCallback) => void;
