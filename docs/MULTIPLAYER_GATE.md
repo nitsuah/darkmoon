@@ -138,10 +138,12 @@ Requirements:
 ```bash
 npx vitest run src/__tests__/server.cors.test.ts
 
-# Live check against a running server — capture headers and body, not just the
-# status code, so the allow-list and the rejection contract are both proven.
-curl -s -D - -o body-allowed.json -H 'Origin: https://darkmoon-dev.netlify.app' localhost:4444/health
-grep -i '^Access-Control-Allow-Origin: https://darkmoon-dev.netlify.app' <(curl -si -H 'Origin: https://darkmoon-dev.netlify.app' localhost:4444/health)
+# Live check against a running server — one request, asserting status code
+# AND the echoed header (checking either alone would miss a server that gets
+# the other wrong).
+STATUS=$(curl -s -D headers-allowed.txt -o body-allowed.json -w '%{http_code}' \
+  -H 'Origin: https://darkmoon-dev.netlify.app' localhost:4444/health)
+test "$STATUS" = "200" && grep -qi '^Access-Control-Allow-Origin: https://darkmoon-dev.netlify.app' headers-allowed.txt && echo "allowed origin: PASS"
 
 curl -s -D - -o body-rejected.json -w '%{http_code}\n' -H 'Origin: https://evil.example' localhost:4444/health   # → 403
 jq -e '.error' body-rejected.json   # rejection body is JSON, not an HTML stack trace
