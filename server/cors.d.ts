@@ -2,6 +2,8 @@ export type CorsOriginCallback = (err: Error | null, allow?: boolean) => void;
 
 export type OriginRejectionHook = (event: { origin: string }) => void;
 
+export type UnsafeWildcardHook = (event: { entry: string }) => void;
+
 export interface CorsOptions {
   origin: (origin: string | undefined, callback: CorsOriginCallback) => void;
   methods: string[];
@@ -16,7 +18,9 @@ export function createCorsError(): Error & {
 };
 export function parseAllowedOrigins(
   envValue: string | undefined | null,
+  onUnsafeWildcard?: UnsafeWildcardHook,
 ): string[];
+export function isUnsafeWildcard(entry: string): boolean;
 export function matchesOrigin(origin: string, allowedOrigin: string): boolean;
 export function isOriginAllowed(
   origin: string | undefined | null,
@@ -35,6 +39,7 @@ declare const _default: {
   DEFAULT_ALLOWED_ORIGINS: typeof DEFAULT_ALLOWED_ORIGINS;
   CORS_ERROR_CODE: typeof CORS_ERROR_CODE;
   parseAllowedOrigins: typeof parseAllowedOrigins;
+  isUnsafeWildcard: typeof isUnsafeWildcard;
   matchesOrigin: typeof matchesOrigin;
   isOriginAllowed: typeof isOriginAllowed;
   createCorsError: typeof createCorsError;

@@ -22,6 +22,15 @@ does not cover multiplayer _gameplay_ correctness; see "Out of scope" below.
 | 3   | Logging       | ✅ Pass |
 | 4   | Observability | ✅ Pass |
 
+> **Accepted risk: unauthenticated `/health`.** The endpoint returns active
+> player/game counts, capacity, uptime, and version with no auth. This is
+> deliberate — Render's `healthCheckPath` and the container `HEALTHCHECK`
+> both probe it unauthenticated, and none of the exposed fields are
+> per-player identifying data (no player IDs, positions, or chat content).
+> The disclosure is aggregate operational status, not gameplay data, so it
+> does not block this gate. Revisit if `/health` ever grows a field that
+> identifies an individual player.
+
 ---
 
 ## Criterion 1 — Deployment
@@ -48,13 +57,17 @@ Requirements:
 docker build --target runner -t darkmoon-prod .
 docker run -d --name gate -p 4444:4444 darkmoon-prod
 
-# 2. Graceful shutdown: expect exit code 0 and a server.shutdown log record
+# 2. Graceful shutdown: send SIGTERM, then block until the container actually
+# exits (docker wait) instead of inspecting state that may still say "running".
 docker kill --signal=SIGTERM gate
-docker inspect -f '{{.State.ExitCode}}' gate   # → 0
+EXIT_CODE=$(timeout 10 docker wait gate)   # blocks until exit or 10s timeout
+echo "$EXIT_CODE"   # → 0
+docker logs gate 2>&1 | tail -n 5 | jq -e 'select(.event == "server.shutdown")'
 ```
 
-**Pass when** the image builds, the server boots with no arguments, and SIGTERM
-produces exit code `0` plus a `server.shutdown` record.
+**Pass when** the image builds, the server boots with no arguments, `docker
+wait` reports exit code `0` within 10s, and a `server.shutdown` record appears
+in the logs.
 
 ### Reverse proxy configuration
 
@@ -86,7 +99,7 @@ location / {
 
 **Caddy:**
 
-```
+```caddy
 darkmoon.example.com {
     reverse_proxy 127.0.0.1:4444
 }
@@ -125,13 +138,19 @@ Requirements:
 ```bash
 npx vitest run src/__tests__/server.cors.test.ts
 
-# Live check against a running server
-curl -s -o /dev/null -w '%{http_code}\n' -H 'Origin: https://darkmoon-dev.netlify.app' localhost:4444/health   # → 200
-curl -s -o /dev/null -w '%{http_code}\n' -H 'Origin: https://evil.example'             localhost:4444/health   # → 403
+# Live check against a running server — capture headers and body, not just the
+# status code, so the allow-list and the rejection contract are both proven.
+curl -s -D - -o body-allowed.json -H 'Origin: https://darkmoon-dev.netlify.app' localhost:4444/health
+grep -i '^Access-Control-Allow-Origin: https://darkmoon-dev.netlify.app' <(curl -si -H 'Origin: https://darkmoon-dev.netlify.app' localhost:4444/health)
+
+curl -s -D - -o body-rejected.json -w '%{http_code}\n' -H 'Origin: https://evil.example' localhost:4444/health   # → 403
+jq -e '.error' body-rejected.json   # rejection body is JSON, not an HTML stack trace
+docker logs <container> 2>&1 | tail -n 5 | jq -e 'select(.event == "security.cors_rejected" and .origin == "https://evil.example")'
 ```
 
 **Pass when** the suite is green, an allowed origin gets `200` with the origin
-echoed in `Access-Control-Allow-Origin`, and an unlisted origin gets `403`.
+echoed back in `Access-Control-Allow-Origin`, and an unlisted origin gets `403`
+with a JSON body and a matching `security.cors_rejected` log record.
 
 Implementation: `server/cors.js`.
 
@@ -231,12 +250,16 @@ Requirements:
 ```bash
 npx vitest run src/__tests__/server.health.test.ts
 
-curl -s localhost:4444/health | jq -e '.status and (.activePlayers >= 0) and (.activeGames >= 0)'
+# Require HTTP 200 (a 503 with a plausible-looking body must not pass) and a
+# status strictly in {ok, degraded} — jq's truthiness accepts "error" too, so
+# the check has to name the allowed values explicitly.
+curl -s -o /dev/null -w '%{http_code}\n' localhost:4444/health   # → 200
+curl -s localhost:4444/health | jq -e '(.status == "ok" or .status == "degraded") and (.activePlayers >= 0) and (.activeGames >= 0)'
 curl -s -H 'Accept: text/html' localhost:4444/health | jq -e '.status'   # must be JSON, not HTML
 ```
 
-**Pass when** the suite is green and both curl calls return JSON with a valid
-`status` and non-negative counts.
+**Pass when** the suite is green, the endpoint returns HTTP `200`, and the body
+is JSON with `status` exactly `ok` or `degraded` plus non-negative counts.
 
 Verified live with one connected socket:
 

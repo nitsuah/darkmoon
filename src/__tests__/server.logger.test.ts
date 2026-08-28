@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import type { Logger, LogContext, LogRecord } from "../../server/logger.d.ts";
 import {
   createLogger,
   buildRecord,
@@ -8,10 +9,25 @@ import {
   GAME_EVENTS,
 } from "../../server/logger.js";
 
+interface CapturingLoggerOptions {
+  level?: string;
+  base?: LogContext;
+  now?: () => string;
+}
+
+interface CapturingLogger {
+  logger: Logger;
+  lines: string[];
+  records: () => LogRecord[];
+  last: () => LogRecord;
+}
+
 /**
  * Build a logger whose output is captured as parsed JSON records.
  */
-const createCapturingLogger = (options: Record<string, unknown> = {}) => {
+const createCapturingLogger = (
+  options: CapturingLoggerOptions = {},
+): CapturingLogger => {
   const lines: string[] = [];
   const logger = createLogger({
     write: (line: string) => lines.push(line),
@@ -174,6 +190,18 @@ describe("server structured logger", () => {
       logger.child({ playerId: "abc" }).info("suppressed");
 
       expect(lines).toHaveLength(0);
+    });
+
+    it("does not let a call-site context field overwrite a bound child field", () => {
+      const { logger, last } = createCapturingLogger({
+        base: { service: "darkmoon-server" },
+      });
+
+      logger.child({ playerId: "abc" }).info("scoped.event", {
+        playerId: "spoofed",
+      });
+
+      expect(last().playerId).toBe("abc");
     });
   });
 

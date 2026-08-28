@@ -1,6 +1,8 @@
 export type LogLevelName = "debug" | "info" | "warn" | "error" | "silent";
 
-export type LogContext = Record<string, unknown>;
+export interface LogContext {
+  [key: string]: unknown;
+}
 export type LogRecord = Record<string, unknown> & {
   timestamp: string;
   level: string;
@@ -23,6 +25,7 @@ export const GAME_EVENTS: {
   RATE_LIMITED: string;
   VALIDATION_FAILED: string;
   CORS_REJECTED: string;
+  CORS_UNSAFE_WILDCARD_DROPPED: string;
 };
 
 export function resolveLevel(level: string | undefined | null): number;

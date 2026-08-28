@@ -47,6 +47,7 @@ export const GAME_EVENTS = {
   RATE_LIMITED: "security.rate_limited",
   VALIDATION_FAILED: "security.validation_failed",
   CORS_REJECTED: "security.cors_rejected",
+  CORS_UNSAFE_WILDCARD_DROPPED: "security.cors_unsafe_wildcard_dropped",
 };
 
 /**
@@ -148,10 +149,13 @@ export const createLogger = (options = {}) => {
   const log = (recordLevel, event, context = {}) => {
     if (!isLevelEnabled(recordLevel)) return null;
 
+    // Base wins over per-record context: child() documents its fields as
+    // permanent, so a call-site key must not silently reattribute a record
+    // (e.g. a stray `playerId` overwriting the child's bound one).
     const record = buildRecord(
       recordLevel,
       event,
-      { ...base, ...context },
+      { ...context, ...base },
       now,
     );
     emit(serializeRecord(record));

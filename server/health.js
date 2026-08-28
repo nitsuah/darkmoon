@@ -75,6 +75,14 @@ export const buildHealthReport = ({
   maxPlayers = DEFAULT_MAX_PLAYERS,
   version,
 } = {}) => {
+  // A NaN or infinite limit would make the comparison below always false and
+  // serialize as null; a negative one would pin the server to "degraded"
+  // forever. Only a finite positive integer is a meaningful capacity.
+  const normalizedMaxPlayers =
+    Number.isInteger(maxPlayers) && maxPlayers > 0
+      ? maxPlayers
+      : DEFAULT_MAX_PLAYERS;
+
   const activePlayers = countActivePlayers({ connections, clients });
   const activeGames = countActiveGames(gameState);
 
@@ -83,7 +91,8 @@ export const buildHealthReport = ({
       ? Math.max(0, Math.floor((now - startedAt) / 1000))
       : 0;
 
-  const status = activePlayers >= maxPlayers ? STATUS_DEGRADED : STATUS_OK;
+  const status =
+    activePlayers >= normalizedMaxPlayers ? STATUS_DEGRADED : STATUS_OK;
 
   return {
     status,
@@ -91,7 +100,7 @@ export const buildHealthReport = ({
     uptimeSeconds,
     activePlayers,
     activeGames,
-    maxPlayers,
+    maxPlayers: normalizedMaxPlayers,
     game: {
       isActive: countActiveGames(gameState) > 0,
       mode: gameState?.mode ?? "none",

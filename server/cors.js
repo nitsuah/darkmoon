@@ -25,23 +25,49 @@ export const DEFAULT_ALLOWED_ORIGINS = [
  * Parse the `ALLOWED_ORIGINS` env var into a normalized allow-list.
  *
  * Empty/whitespace-only entries are dropped, and each entry is trimmed so that
- * `"a, b"` and `"a,b"` behave identically. Falls back to
- * {@link DEFAULT_ALLOWED_ORIGINS} when the value is missing or contains no
- * usable entries.
+ * `"a, b"` and `"a,b"` behave identically. A bare `*` entry is also dropped
+ * (see {@link isUnsafeWildcard}) rather than kept, since `createCorsOptions`
+ * always sets `credentials: true` and reflecting every origin under that
+ * combination (CWE-942) would let any site make authenticated requests as a
+ * logged-in player. Falls back to {@link DEFAULT_ALLOWED_ORIGINS} when the
+ * value is missing or contains no usable entries after filtering.
  *
  * @param {string | undefined | null} envValue - Raw env var value.
+ * @param {(event: { entry: string }) => void} [onUnsafeWildcard] - Optional
+ *   hook invoked once per bare-`*` entry that gets dropped, used for
+ *   structured logging so a misconfiguration is visible instead of silently
+ *   downgraded.
  * @returns {string[]} Normalized allow-list (never empty).
  */
-export const parseAllowedOrigins = (envValue) => {
+export const parseAllowedOrigins = (envValue, onUnsafeWildcard) => {
   if (typeof envValue !== "string") return [...DEFAULT_ALLOWED_ORIGINS];
 
   const parsed = envValue
     .split(",")
     .map((origin) => origin.trim())
-    .filter((origin) => origin.length > 0);
+    .filter((origin) => origin.length > 0)
+    .filter((origin) => {
+      if (!isUnsafeWildcard(origin)) return true;
+      if (typeof onUnsafeWildcard === "function")
+        onUnsafeWildcard({ entry: origin });
+      return false;
+    });
 
   return parsed.length > 0 ? parsed : [...DEFAULT_ALLOWED_ORIGINS];
 };
+
+/**
+ * A bare `*` (optionally with surrounding whitespace, already trimmed by the
+ * caller) matches every origin once compiled by {@link matchesOrigin}. Unlike
+ * a scoped wildcard such as `https://deploy-preview-*--darkmoon-dev.netlify.app`,
+ * it carries no host constraint at all, so allowing it here would combine
+ * with `credentials: true` to permit any origin to make authenticated
+ * cross-site requests (CWE-942).
+ *
+ * @param {string} entry - Single allow-list entry.
+ * @returns {boolean} True when the entry is exactly `*`.
+ */
+export const isUnsafeWildcard = (entry) => entry === "*";
 
 /**
  * Escape regex metacharacters, leaving `*` intact so it can become `.*`.
@@ -154,6 +180,7 @@ export default {
   DEFAULT_ALLOWED_ORIGINS,
   CORS_ERROR_CODE,
   parseAllowedOrigins,
+  isUnsafeWildcard,
   matchesOrigin,
   isOriginAllowed,
   createCorsError,

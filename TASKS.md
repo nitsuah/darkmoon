@@ -109,15 +109,25 @@ Last Updated: 2026-08-21
     (deployment, CORS, logging, observability) each with a runnable acceptance
     check, and the repo passes all four. New modules `server/logger.js`
     (structured JSON logging + game event catalogue), `server/cors.js` (shared
-    HTTP/WebSocket allow-list), and `server/health.js` (`/health` payload), plus
-    SIGTERM graceful shutdown in `server/index.js`. Covered by 69 new tests in
-    `src/__tests__/server.{logger,cors,health}.test.ts`. Full suite: 77 files,
-    627 passed / 5 skipped; typecheck and lint clean.
-  - Note: fixed two latent bugs found while validating — the SPA fallback was
-    mounted before the API router (so `/health` returned `index.html` for any
-    `Accept: */*` request, including the Docker healthcheck and Render probe),
-    and the CORS wildcard matcher did not escape regex metacharacters (so
-    `darkmoon-dev.netlify.app` also matched look-alike hosts).
+    HTTP/WebSocket allow-list), `server/health.js` (`/health` payload),
+    `server/port.js` (`PORT` validation), and `server/tagAuthorization.js`
+    (pure `player-tagged` authorization decision — impersonation/self-tag/
+    unknown-player rejection), plus SIGTERM graceful shutdown in
+    `server/index.js`. Covered by 95 new tests across
+    `src/__tests__/server.{logger,cors,health,port,tagAuthorization}.test.ts`.
+    Full suite: 79 files, 653 passed / 5 skipped; typecheck and lint clean.
+  - Note: fixed several latent bugs found while validating — the SPA fallback
+    was mounted before the API router (so `/health` returned `index.html` for
+    any `Accept: */*` request, including the Docker healthcheck and Render
+    probe); the CORS wildcard matcher did not escape regex metacharacters (so
+    `darkmoon-dev.netlify.app` also matched look-alike hosts); a bare
+    `ALLOWED_ORIGINS=*` combined with `credentials: true` would have reflected
+    every origin (CWE-942), so `parseAllowedOrigins` now drops a literal `*`
+    entry; `/health`'s `maxPlayers` was not validated, so `NaN`/negative/
+    non-integer values could serialize as `null` or pin the server to
+    `degraded` forever; an unset/invalid `PORT` reached `app.listen(NaN)` with
+    no diagnostic; and the `player-tagged` handler trusted a client-supplied
+    `taggerId`, letting any connected client impersonate the current IT player.
 
 - [ ] Re-baseline the remaining large-file refactor work.
   - Priority: P2
@@ -136,10 +146,10 @@ Last Updated: 2026-08-21
 
 - [ ] Fix server-side multiplayer tag parity before Multiplayer Tag ships.
   - Priority: P1
-  - Problem: `server/index.js`'s `player-tagged` handler has no cooldown/freeze enforcement and trusts client-supplied tagger/tagged IDs, and its `disconnect` handler doesn't reassign or clear `itPlayerId` if the IT player disconnects.
+  - Problem: `server/index.js`'s `player-tagged` handler has no cooldown/freeze enforcement, and its `disconnect` handler doesn't reassign or clear `itPlayerId` if the IT player disconnects.
+  - Note (2026-08-27): the client-supplied tagger/tagged ID trust issue is fixed — `taggerId` is now bound to `client.id`, self-tags are rejected, and the broadcast payload always carries the authenticated IDs rather than whatever the client sent. Cooldown/freeze enforcement and IT-disconnect handoff remain open.
   - Acceptance Criteria: see `docs/MULTIPLAYER_SHOOTER_ROADMAP.md` "Server-side tag parity"; must be resolved before Multiplayer Tag moves out of `[planned]` in `FEATURES.md`.
 
 ## See also: docs/INSTRUCTIONS.md for agent handoff and workflow best practices.
 
-- Docker-first validation is blocked by the current production build failure.
 - The deployed site presents solo mode as live and multiplayer or tournament work as planned.

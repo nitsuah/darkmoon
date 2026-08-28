@@ -133,6 +133,35 @@ describe("server health endpoint payload", () => {
       );
     });
 
+    it("falls back to the default capacity for a non-finite maxPlayers", () => {
+      const report = buildHealthReport({
+        connections: 3,
+        maxPlayers: NaN,
+        now: NOW,
+      });
+
+      expect(report.maxPlayers).toBe(DEFAULT_MAX_PLAYERS);
+      expect(report.status).toBe(STATUS_OK);
+    });
+
+    it("falls back to the default capacity for a negative maxPlayers instead of pinning degraded forever", () => {
+      const report = buildHealthReport({
+        connections: 0,
+        maxPlayers: -5,
+        now: NOW,
+      });
+
+      expect(report.maxPlayers).toBe(DEFAULT_MAX_PLAYERS);
+      expect(report.status).toBe(STATUS_OK);
+    });
+
+    it("falls back to the default capacity for a non-integer maxPlayers", () => {
+      expect(
+        buildHealthReport({ connections: 1, maxPlayers: 2.5, now: NOW })
+          .maxPlayers,
+      ).toBe(DEFAULT_MAX_PLAYERS);
+    });
+
     it("reports the build version when configured", () => {
       expect(buildHealthReport({ now: NOW, version: "1.4.0" }).version).toBe(
         "1.4.0",

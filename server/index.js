@@ -15,10 +15,10 @@ import {
   CORS_ERROR_CODE,
 } from "./cors.js";
 import { buildHealthReport, healthStatusCode } from "./health.js";
+import { authorizeTag } from "./tagAuthorization.js";
+import { resolvePort } from "./port.js";
 
-// Environment configuration
-const PORT = process.env.PORT ? Number(process.env.PORT) : 4444;
-const ALLOWED_ORIGINS = parseAllowedOrigins(process.env.ALLOWED_ORIGINS);
+const PORT = resolvePort(process.env.PORT);
 const SERVER_STARTED_AT = Date.now();
 const APP_VERSION = process.env.APP_VERSION || null;
 
@@ -28,6 +28,15 @@ const logger = createLogger({
   level: process.env.LOG_LEVEL,
   base: { service: "darkmoon-server" },
 });
+
+// A bare `*` in ALLOWED_ORIGINS is dropped by parseAllowedOrigins (see cors.js
+// for why); log it so a misconfigured deploy is visible instead of silently
+// falling back to the default allow-list.
+const ALLOWED_ORIGINS = parseAllowedOrigins(
+  process.env.ALLOWED_ORIGINS,
+  ({ entry }) =>
+    logger.warn(GAME_EVENTS.CORS_UNSAFE_WILDCARD_DROPPED, { entry }),
+);
 
 // Rate limiting configuration. Limits are applied per-client within a time
 // window (see checkRateLimit windowMs parameter). The default window used by
@@ -431,21 +440,15 @@ ioServer.on("connection", (client) => {
 
   // Handle player tagging
   client.on("player-tagged", (data) => {
-    const taggerId = data?.taggerId;
+    // The actor is the sending socket, never the payload. Trusting
+    // data.taggerId would let any connected client impersonate the IT player,
+    // reassign `itPlayerId`, and award points to someone else.
+    const taggerId = client.id;
     const taggedId = data?.taggedId;
 
-    if (!gameState.isActive || gameState.mode !== "tag") {
-      logger.tagRejected({ taggerId, taggedId, reason: "no_active_tag_game" });
-      return;
-    }
-
-    if (taggerId !== gameState.itPlayerId) {
-      logger.tagRejected({ taggerId, taggedId, reason: "tagger_not_it" });
-      return;
-    }
-
-    if (!clients[taggerId] || !clients[taggedId]) {
-      logger.tagRejected({ taggerId, taggedId, reason: "unknown_player" });
+    const decision = authorizeTag({ taggerId, taggedId, gameState, clients });
+    if (!decision.ok) {
+      logger.tagRejected({ taggerId, taggedId, reason: decision.reason });
       return;
     }
 
@@ -454,8 +457,15 @@ ioServer.on("connection", (client) => {
 
     logger.playerTagged({ taggerId, taggedId, mode: gameState.mode });
 
-    // Broadcast to all clients. `scores` is additive — existing clients ignore it.
-    ioServer.sockets.emit("player-tagged", { ...data, scores });
+    // Broadcast to all clients. `scores` is additive — existing clients ignore
+    // it. taggerId is overridden with the authenticated actor so a spoofed
+    // payload value is never relayed onward.
+    ioServer.sockets.emit("player-tagged", {
+      ...data,
+      taggerId,
+      taggedId,
+      scores,
+    });
   });
 
   // Handle game end

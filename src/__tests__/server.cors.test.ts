@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import {
   DEFAULT_ALLOWED_ORIGINS,
   parseAllowedOrigins,
+  isUnsafeWildcard,
   matchesOrigin,
   isOriginAllowed,
   createOriginCallback,
@@ -33,6 +34,45 @@ describe("server CORS policy", () => {
       first.push("https://evil.example");
       expect(parseAllowedOrigins(undefined)).toEqual(DEFAULT_ALLOWED_ORIGINS);
       expect(DEFAULT_ALLOWED_ORIGINS).not.toContain("https://evil.example");
+    });
+
+    it("drops a bare wildcard entry instead of allowing every origin under credentials: true", () => {
+      // createCorsOptions always sets credentials: true, so a literal "*"
+      // reaching the allow-list would let any site make authenticated
+      // cross-site requests (CWE-942).
+      expect(parseAllowedOrigins("*")).toEqual(DEFAULT_ALLOWED_ORIGINS);
+    });
+
+    it("drops a bare wildcard mixed in with real origins, keeping the rest", () => {
+      expect(
+        parseAllowedOrigins("https://a.example, *, https://b.example"),
+      ).toEqual(["https://a.example", "https://b.example"]);
+    });
+
+    it("keeps a scoped wildcard like the deploy-preview pattern", () => {
+      const scoped = "https://deploy-preview-*--darkmoon-dev.netlify.app";
+      expect(parseAllowedOrigins(scoped)).toEqual([scoped]);
+    });
+
+    it("reports the dropped entry via the onUnsafeWildcard hook", () => {
+      const onUnsafeWildcard = vi.fn();
+      parseAllowedOrigins("https://a.example, *", onUnsafeWildcard);
+
+      expect(onUnsafeWildcard).toHaveBeenCalledTimes(1);
+      expect(onUnsafeWildcard).toHaveBeenCalledWith({ entry: "*" });
+    });
+  });
+
+  describe("isUnsafeWildcard", () => {
+    it("flags a bare wildcard", () => {
+      expect(isUnsafeWildcard("*")).toBe(true);
+    });
+
+    it("does not flag a scoped wildcard or a normal origin", () => {
+      expect(
+        isUnsafeWildcard("https://deploy-preview-*--darkmoon-dev.netlify.app"),
+      ).toBe(false);
+      expect(isUnsafeWildcard("https://darkmoon-dev.netlify.app")).toBe(false);
     });
   });
 

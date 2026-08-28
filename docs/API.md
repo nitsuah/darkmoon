@@ -62,13 +62,13 @@ but not yet driven by a shipped client experience.
 
 ### Client to server
 
-| Event           | Payload                                    | Notes                                          |
-| --------------- | ------------------------------------------ | ---------------------------------------------- |
-| `move`          | `{ position: [x,y,z], rotation: [x,y,z] }` | Validated and rate limited (100/s)             |
-| `chat-message`  | `{ message, playerId, playerName }`        | Validated, profanity filtered, 10/min          |
-| `game-start`    | `{ mode }`                                 | Mode must be `tag`/`collectible`/`race`/`solo` |
-| `player-tagged` | `{ taggerId, taggedId }`                   | Rejected unless the tagger is currently IT     |
-| `game-end`      | none                                       | Resets game state and scores                   |
+| Event           | Payload                                    | Notes                                                                                                                                                                                                                                  |
+| --------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `move`          | `{ position: [x,y,z], rotation: [x,y,z] }` | Validated and rate limited (100/s)                                                                                                                                                                                                     |
+| `chat-message`  | `{ message, playerId, playerName }`        | Validated, profanity filtered, 10/min                                                                                                                                                                                                  |
+| `game-start`    | `{ mode }`                                 | Mode must be `tag`/`collectible`/`race`/`solo`                                                                                                                                                                                         |
+| `player-tagged` | `{ taggedId }`                             | Tagger is always the sending socket (`client.id`), never a client-supplied `taggerId` — this prevents impersonating the IT player. Rejected unless the sender is currently IT, or if `taggedId` is missing/unknown/equal to the tagger |
+| `game-end`      | none                                       | Resets game state and scores                                                                                                                                                                                                           |
 
 ### Server to client
 
