@@ -111,6 +111,19 @@ describe("server CORS policy", () => {
       ).toBe(true);
     });
 
+    it("scopes the wildcard to a single DNS label so it cannot absorb extra subdomains", () => {
+      // Regression guard: a cross-label wildcard (.*) would let an attacker
+      // splice extra, attacker-controlled subdomains into the wildcard slot
+      // of a deploy-preview pattern.
+      const pattern = "https://deploy-preview-*--darkmoon-dev.netlify.app";
+      expect(
+        matchesOrigin(
+          "https://deploy-preview-1.attacker.example--darkmoon-dev.netlify.app",
+          pattern,
+        ),
+      ).toBe(false);
+    });
+
     it("treats dots literally so look-alike hosts are rejected", () => {
       // Regression guard: an unescaped `.` in the pattern would let this pass.
       expect(

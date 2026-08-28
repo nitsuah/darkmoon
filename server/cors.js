@@ -70,16 +70,24 @@ export const parseAllowedOrigins = (envValue, onUnsafeWildcard) => {
 export const isUnsafeWildcard = (entry) => entry === "*";
 
 /**
- * Escape regex metacharacters, leaving `*` intact so it can become `.*`.
- * Without this, an entry like `https://darkmoon-dev.netlify.app` would be
+ * Escape regex metacharacters, leaving `*` intact so it can become a
+ * single-label wildcard.
+ *
+ * Without escaping, an entry like `https://darkmoon-dev.netlify.app` would be
  * compiled with `.` as "any character" and would match hostile look-alike
  * origins such as `https://darkmoon-devxnetlify.app`.
+ *
+ * `*` expands to `[^.]*` rather than `.*` so it matches only within a single
+ * DNS label. A cross-label `.*` would let a deploy-preview pattern like
+ * `https://deploy-preview-*--darkmoon-dev.netlify.app` also match an origin
+ * with extra, attacker-controlled subdomains spliced into the wildcard slot
+ * (e.g. `https://deploy-preview-1.attacker.example--darkmoon-dev.netlify.app`).
  *
  * @param {string} pattern - Allow-list entry.
  * @returns {string} Regex source escaped everywhere except `*`.
  */
 const escapeExceptWildcard = (pattern) =>
-  pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
+  pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^.]*");
 
 /**
  * Test a single origin against a single allow-list entry.

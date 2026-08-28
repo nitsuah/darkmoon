@@ -113,9 +113,9 @@ Last Updated: 2026-08-21
     `server/port.js` (`PORT` validation), and `server/tagAuthorization.js`
     (pure `player-tagged` authorization decision — impersonation/self-tag/
     unknown-player rejection), plus SIGTERM graceful shutdown in
-    `server/index.js`. Covered by 95 new tests across
+    `server/index.js`. Covered by 96 new tests across
     `src/__tests__/server.{logger,cors,health,port,tagAuthorization}.test.ts`.
-    Full suite: 79 files, 653 passed / 5 skipped; typecheck and lint clean.
+    Full suite: 79 files, 654 passed / 5 skipped; typecheck and lint clean.
   - Note: fixed several latent bugs found while validating — the SPA fallback
     was mounted before the API router (so `/health` returned `index.html` for
     any `Accept: */*` request, including the Docker healthcheck and Render
@@ -123,7 +123,10 @@ Last Updated: 2026-08-21
     `darkmoon-dev.netlify.app` also matched look-alike hosts); a bare
     `ALLOWED_ORIGINS=*` combined with `credentials: true` would have reflected
     every origin (CWE-942), so `parseAllowedOrigins` now drops a literal `*`
-    entry; `/health`'s `maxPlayers` was not validated, so `NaN`/negative/
+    entry; the origin wildcard expanded to `.*` (cross-label) instead of
+    `[^.]*` (single-label), so a deploy-preview pattern could absorb extra
+    attacker-controlled subdomains spliced into the wildcard slot;
+    `/health`'s `maxPlayers` was not validated, so `NaN`/negative/
     non-integer values could serialize as `null` or pin the server to
     `degraded` forever; an unset/invalid `PORT` reached `app.listen(NaN)` with
     no diagnostic; and the `player-tagged` handler trusted a client-supplied
