@@ -1,6 +1,6 @@
 # Tasks
 
-Last Updated: 2026-08-21
+Last Updated: 2026-08-27
 
 ## In Progress
 
@@ -102,10 +102,39 @@ Last Updated: 2026-08-21
   - Problem: current metrics are still estimate-heavy.
   - Acceptance Criteria: build, test, and coverage values are measured or clearly marked `TBD` with blockers.
 
-- [ ] Finish server production-hardening work beyond the current baseline.
+- [x] Finish server production-hardening work beyond the current baseline.
   - Priority: P1
-  - Problem: structured logging, graceful shutdown, and operational visibility have not been fully verified.
-  - Acceptance Criteria: hardening tasks are documented, implemented, and validated.
+  - Completed: 2026-08-27
+  - Evidence: `docs/MULTIPLAYER_GATE.md` defines the four readiness criteria
+    (deployment, CORS, logging, observability) each with a runnable acceptance
+    check, and the repo passes all four. New modules `server/logger.js`
+    (structured JSON logging + game event catalogue), `server/cors.js` (shared
+    HTTP/WebSocket allow-list), `server/health.js` (`/health` payload),
+    `server/port.js` (`PORT` validation), and `server/tagAuthorization.js`
+    (pure `player-tagged` authorization decision — impersonation/self-tag/
+    unknown-player rejection), plus SIGTERM graceful shutdown in
+    `server/index.js`. Covered by 96 new tests across
+    `src/__tests__/server.{logger,cors,health,port,tagAuthorization}.test.ts`.
+    Full suite (`docker build --target test -t darkmoon:test .` then
+    `docker run --rm darkmoon:test`, which runs `npm run test:run` →
+    `vitest run --config ./config/vitest.config.ts --configLoader runner`;
+    scope excludes only `e2e/**`, matching the 79-file/5-skipped figures
+    above): 79 files, 654 passed / 5 skipped; typecheck and lint clean.
+  - Note: fixed several latent bugs found while validating — the SPA fallback
+    was mounted before the API router (so `/health` returned `index.html` for
+    any `Accept: */*` request, including the Docker healthcheck and Render
+    probe); the CORS wildcard matcher did not escape regex metacharacters (so
+    `darkmoon-dev.netlify.app` also matched look-alike hosts); a bare
+    `ALLOWED_ORIGINS=*` combined with `credentials: true` would have reflected
+    every origin (CWE-942), so `parseAllowedOrigins` now drops a literal `*`
+    entry; the origin wildcard expanded to `.*` (cross-label) instead of
+    `[^.]*` (single-label), so a deploy-preview pattern could absorb extra
+    attacker-controlled subdomains spliced into the wildcard slot;
+    `/health`'s `maxPlayers` was not validated, so `NaN`/negative/
+    non-integer values could serialize as `null` or pin the server to
+    `degraded` forever; an unset/invalid `PORT` reached `app.listen(NaN)` with
+    no diagnostic; and the `player-tagged` handler trusted a client-supplied
+    `taggerId`, letting any connected client impersonate the current IT player.
 
 - [ ] Re-baseline the remaining large-file refactor work.
   - Priority: P2
@@ -124,10 +153,10 @@ Last Updated: 2026-08-21
 
 - [ ] Fix server-side multiplayer tag parity before Multiplayer Tag ships.
   - Priority: P1
-  - Problem: `server/index.js`'s `player-tagged` handler has no cooldown/freeze enforcement and trusts client-supplied tagger/tagged IDs, and its `disconnect` handler doesn't reassign or clear `itPlayerId` if the IT player disconnects.
+  - Problem: `server/index.js`'s `player-tagged` handler has no cooldown/freeze enforcement, and its `disconnect` handler doesn't reassign or clear `itPlayerId` if the IT player disconnects.
+  - Note (2026-08-27): the client-supplied tagger/tagged ID trust issue is fixed — `taggerId` is now bound to `client.id`, self-tags are rejected, and the broadcast payload always carries the authenticated IDs rather than whatever the client sent. Cooldown/freeze enforcement and IT-disconnect handoff remain open.
   - Acceptance Criteria: see `docs/MULTIPLAYER_SHOOTER_ROADMAP.md` "Server-side tag parity"; must be resolved before Multiplayer Tag moves out of `[planned]` in `FEATURES.md`.
 
 ## See also: docs/INSTRUCTIONS.md for agent handoff and workflow best practices.
 
-- Docker-first validation is blocked by the current production build failure.
 - The deployed site presents solo mode as live and multiplayer or tournament work as planned.

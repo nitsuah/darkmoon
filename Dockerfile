@@ -94,9 +94,10 @@ USER appuser
 # Expose the application port
 EXPOSE 4444
 
-# Health check endpoint
+# Health check endpoint. Hits /health (not /) and asserts the reported status so
+# a server that answers but cannot describe its own state is treated as failing.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:4444/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)}).on('error', () => process.exit(1))"
+  CMD node -e "require('http').get('http://localhost:'+(process.env.PORT||4444)+'/health', (r) => {let d='';r.on('data',c=>d+=c);r.on('end',()=>{try{const s=JSON.parse(d).status;process.exit(r.statusCode===200&&(s==='ok'||s==='degraded')?0:1)}catch{process.exit(1)}})}).on('error', () => process.exit(1))"
 
 # Start the Express server directly with Node
 CMD ["node", "server/index.js"]
