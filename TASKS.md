@@ -115,7 +115,11 @@ Last Updated: 2026-08-27
     unknown-player rejection), plus SIGTERM graceful shutdown in
     `server/index.js`. Covered by 96 new tests across
     `src/__tests__/server.{logger,cors,health,port,tagAuthorization}.test.ts`.
-    Full suite: 79 files, 654 passed / 5 skipped; typecheck and lint clean.
+    Full suite (`docker build --target test -t darkmoon:test .` then
+    `docker run --rm darkmoon:test`, which runs `npm run test:run` →
+    `vitest run --config ./config/vitest.config.ts --configLoader runner`;
+    scope excludes only `e2e/**`, matching the 79-file/5-skipped figures
+    above): 79 files, 654 passed / 5 skipped; typecheck and lint clean.
   - Note: fixed several latent bugs found while validating — the SPA fallback
     was mounted before the API router (so `/health` returned `index.html` for
     any `Accept: */*` request, including the Docker healthcheck and Render
