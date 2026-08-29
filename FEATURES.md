@@ -139,7 +139,11 @@ Status guide: `[shipped]` is live today, `[in-progress]` is partially implemente
 ### 🔐 Server & Networking
 
 - **WebSocket Server**: Express + Socket.io for real-time communication
-- **Health Checks**: `/health` endpoint for monitoring
-- **CORS Configuration**: Environment-based origin allowlist
+- **Health Checks**: `/health` endpoint for monitoring — pure-function payload (`server/health.js`) reports status/uptime/active players/games and degrades to `degraded` (still HTTP 200) at capacity rather than failing
+- **CORS Configuration**: Environment-based origin allowlist shared identically between the HTTP app and the Socket.io handshake (`server/cors.js`); wildcard entries are scoped to a single DNS label (rejects cross-label spoofing) and a bare `ALLOWED_ORIGINS=*` is dropped rather than combined with `credentials: true`
+- **Structured JSON Logging**: Every server log line is one JSON object (`server/logger.js`) with a stable `event` key; child loggers carry permanent bound fields that a call-site context key cannot silently overwrite
+- **Graceful Shutdown**: `SIGTERM` drains connections and exits `0` within 10s, verified against a `server.shutdown` log record — required for zero-downtime deploys on platforms that send `SIGTERM` on scale-down
+- **player-tagged Authorization**: the tag-mode socket event binds the acting player to the authenticated socket connection (`client.id`) rather than trusting a client-supplied ID, and rejects self-tags — prevents a connected client from impersonating the current IT player
+- **Multiplayer Readiness Gate**: four criteria (deployment, CORS, logging, observability) each with a runnable acceptance check documented in `docs/MULTIPLAYER_GATE.md`; all four pass
 - **Connection Management**: Graceful disconnect handling
 - **Error Recovery**: Automatic reconnection with exponential backoff

@@ -1,6 +1,6 @@
 # Roadmap
 
-Last Updated: 2026-08-22
+Last Updated: 2026-08-28
 
 ## 2025 Q4 ✅
 
@@ -28,13 +28,14 @@ Last Updated: 2026-08-22
 
 - [x] Define the multiplayer readiness gate around deployment, CORS, logging, shutdown behavior, and operational visibility. _(completed 2026-08-27; see `docs/MULTIPLAYER_GATE.md` — all four criteria pass)_
 - [x] Add `ARCHITECTURE.md` and `API.md`. _(completed 2026-08-21; `docs/ARCHITECTURE.md` and `docs/API.md` exist)_
-- [ ] Measured `METRICS.md` refresh. _(estimates remain; in-progress)_
+- [x] Measured `METRICS.md` refresh. _(completed 2026-08-28: 71.18% statements / 55.85% branches / 76.65% functions / 73.65% lines, 79 test files / 659 cases, measured in Docker post-#418 merge — PR #419)_
 - [ ] Re-scope the remaining refactor backlog against the current codebase.
 
 ## 2026 Q3 (In Progress)
 
-- [ ] Ship the first validated multiplayer-capable experience after the readiness gate is met.
+- [ ] Ship the first validated multiplayer-capable experience after the readiness gate is met. Readiness gate itself is done (all four criteria pass, PR #418); remaining blockers are the two gameplay-parity gaps tracked in TASKS.md (tag cooldown/freeze window, IT-player disconnect handoff).
 - [ ] Revisit additional gameplay modes only after the live foundation is stable.
+- [ ] **CORS wildcard/allowlist operator doc** — new idea (2026-08-28): the readiness gate work fixed two subtle CORS bugs (a bare `ALLOWED_ORIGINS=*` combined with `credentials:true`, and a wildcard that matched across DNS labels instead of within one) that would be easy for a future deploy to reintroduce by hand-editing `ALLOWED_ORIGINS`. A short "how to safely add an origin" note in `docs/MULTIPLAYER_GATE.md` — with the drop-a-bare-wildcard and single-label-only rules stated plainly — would prevent the next person (or agent) from silently reverting the fix in `.env`.
 
 ## 2026 Q4 (Exploratory)
 
