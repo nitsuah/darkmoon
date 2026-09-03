@@ -120,6 +120,16 @@ export const PlayerMovement = React.memo(
 
       if (isPaused || !meshRef.current) return;
 
+      // Freeze movement while the player is downed and awaiting respawn
+      // (deathmatch/CTF). Without this check a downed player could still
+      // walk/jump/jetpack even though PlayerWeapon and PlayerCharacter both
+      // already disable weapons and tagging in this state.
+      if (gameManager) {
+        const myId = socketClient?.id || currentPlayerId;
+        const mePlayer = gameManager.getPlayers().get(myId);
+        if (mePlayer?.respawnAt !== undefined) return;
+      }
+
       // Check freeze state
       if (isPlayerFrozenRef.current) {
         if (now >= playerFreezeEndTimeRef.current) {

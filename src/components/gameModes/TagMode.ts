@@ -1,5 +1,6 @@
 import { createLogger } from "../../lib/utils/logger";
 import type { GameState, KillEvent, Player } from "../GameManager";
+import { WEAPONS } from "../combat/WeaponManager";
 import type {
   GameAction,
   GameModeHandler,
@@ -109,38 +110,50 @@ export class TagMode implements GameModeHandler {
       }
 
       // Non-IT hitting non-IT or non-IT hitting IT: normal damage
-      target.health = Math.max(
-        0,
-        (target.health ?? TAG_PLAYER_MAX_HP) - damage,
+      this.applyDamageAndDeath(
+        attackerId,
+        attacker,
+        targetId,
+        target,
+        damage,
+        weaponId,
+        players,
+        gameState,
       );
-      if (target.health <= 0) {
-        target.health = 0;
-        target.respawnAt = Date.now() + TAG_RESPAWN_MS;
-        const killEvent: KillEvent = {
-          killerId: attackerId,
-          killerName: attacker.name,
-          targetId,
-          targetName: target.name,
-          weaponId: weaponId ?? "laser",
-          timestamp: Date.now(),
-        };
-        if (!gameState.killFeed) gameState.killFeed = [];
-        gameState.killFeed.push(killEvent);
-        if (gameState.killFeed.length > 20) gameState.killFeed.shift();
-        // If IT dies to a non-IT, pick a new IT
-        if (target.isIt) {
-          target.isIt = false;
-          const survivors = Array.from(players.entries()).filter(
-            ([id, p]) => id !== targetId && p.respawnAt === undefined,
+
+      // Rocket/grenade splash: deal splash damage to bystanders within
+      // splashRadius of the target. Deathmatch and CTF already do this;
+      // Tag mode — the only mode live in solo play — was silently dropping
+      // it, so the rocket launcher's headline AOE never actually applied.
+      const weaponDef = weaponId ? WEAPONS[weaponId] : undefined;
+      if (weaponDef?.splashRadius && weaponDef.splashDamage) {
+        const { splashRadius, splashDamage } = weaponDef;
+        players.forEach((nearby, nearbyId) => {
+          if (nearbyId === attackerId || nearbyId === targetId) return;
+          if (nearby.respawnAt !== undefined) return;
+          if (
+            nearby.spawnProtectedUntil !== undefined &&
+            Date.now() < nearby.spawnProtectedUntil
+          )
+            return;
+          const dx = target.position[0] - nearby.position[0];
+          const dy = target.position[1] - nearby.position[1];
+          const dz = target.position[2] - nearby.position[2];
+          if (Math.sqrt(dx * dx + dy * dy + dz * dz) > splashRadius) return;
+
+          this.applyDamageAndDeath(
+            attackerId,
+            attacker,
+            nearbyId,
+            nearby,
+            splashDamage,
+            weaponId,
+            players,
+            gameState,
           );
-          if (survivors.length > 0) {
-            const [newItId, newIt] =
-              survivors[Math.floor(Math.random() * survivors.length)];
-            newIt.isIt = true;
-            gameState.itPlayerId = newItId;
-          }
-        }
+        });
       }
+
       return true;
     }
     if (action.type !== "tag") return false;
@@ -151,6 +164,48 @@ export class TagMode implements GameModeHandler {
     );
 
     return this.applyTag(taggerId, taggedId, players, gameState);
+  }
+
+  /** Applies damage to `target`; on death, respawns them and pushes a kill-feed entry. */
+  private applyDamageAndDeath(
+    attackerId: string,
+    attacker: Player,
+    targetId: string,
+    target: Player,
+    damage: number,
+    weaponId: string | undefined,
+    players: Map<string, Player>,
+    gameState: GameState,
+  ): void {
+    target.health = Math.max(0, (target.health ?? TAG_PLAYER_MAX_HP) - damage);
+    if (target.health > 0) return;
+
+    target.health = 0;
+    target.respawnAt = Date.now() + TAG_RESPAWN_MS;
+    const killEvent: KillEvent = {
+      killerId: attackerId,
+      killerName: attacker.name,
+      targetId,
+      targetName: target.name,
+      weaponId: weaponId ?? "laser",
+      timestamp: Date.now(),
+    };
+    if (!gameState.killFeed) gameState.killFeed = [];
+    gameState.killFeed.push(killEvent);
+    if (gameState.killFeed.length > 20) gameState.killFeed.shift();
+    // If IT dies (direct hit or splash), pick a new IT.
+    if (target.isIt) {
+      target.isIt = false;
+      const survivors = Array.from(players.entries()).filter(
+        ([id, p]) => id !== targetId && p.respawnAt === undefined,
+      );
+      if (survivors.length > 0) {
+        const [newItId, newIt] =
+          survivors[Math.floor(Math.random() * survivors.length)];
+        newIt.isIt = true;
+        gameState.itPlayerId = newItId;
+      }
+    }
   }
 
   private applyTag(

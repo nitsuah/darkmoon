@@ -22,7 +22,7 @@
 - `[shipped]` **WebSocket Server Foundation** — Socket.io and server validation are in place for future live modes.
 - `[in-progress]` **Multiplayer 3D Gameplay** — Multiplayer foundations exist, but the deployed experience is still solo-first.
 - `[in-progress]` **Mobile Support** — Responsive layout and touch controls exist, but device validation is still open.
-- `[shipped]` **Modern Tooling** — Vite, Vitest (558+ tests), ESLint, Prettier, TypeScript, and CI are wired into the repo.
+- `[shipped]` **Modern Tooling** — Vite, Vitest (659 tests), ESLint, Prettier, TypeScript, and CI are wired into the repo.
 
 ## Quick Start
 
@@ -38,7 +38,7 @@ Visit `http://localhost:4444`. **Solo mode is the only live experience; multipla
 All checks run via Docker — no local Node.js required.
 
 ```bash
-# Run all tests (558+ tests, Vitest)
+# Run all tests (659 tests, Vitest)
 docker compose -f config/docker-compose.yml --project-name darkmoon --profile test run --rm test
 
 # Lint

@@ -243,8 +243,37 @@ export const PlayerWeapon = React.memo(
       prevKeyRRef.current = keyR;
       prevKeyTabRef.current = keyTab;
 
-      // Fire the equipped weapon while left-click is held
-      if (mouseControls.leftClick && canActNow) {
+      const equippedId = weaponManagerRef.current.getEquipped()?.id;
+      const isGrenadeEquipped = equippedId === "grenade";
+
+      // Grenade charge management: hold LMB to charge, release LMB to throw
+      // (Phase BM / docs/MULTIPLAYER_SHOOTER_ROADMAP.md). This must key off
+      // the same button ("leftClick") that fires every other weapon — not
+      // rightClick — otherwise charging and firing use two different inputs.
+      if (canActNow && isGrenadeEquipped) {
+        if (
+          mouseControls.leftClick &&
+          !weaponManagerRef.current.isCharging("grenade")
+        ) {
+          weaponManagerRef.current.startCharge("grenade", now);
+        }
+      } else if (weaponManagerRef.current.isCharging("grenade")) {
+        // Player can no longer act, or switched off grenade mid-charge — cancel silently.
+        weaponManagerRef.current.stopCharge("grenade");
+      }
+
+      const grenadeReleaseFire =
+        isGrenadeEquipped &&
+        canActNow &&
+        !mouseControls.leftClick &&
+        weaponManagerRef.current.isCharging("grenade");
+
+      // Fire the equipped weapon while left-click is held; the grenade is the
+      // one exception — it charges while held and fires on release.
+      if (
+        (mouseControls.leftClick && !isGrenadeEquipped && canActNow) ||
+        grenadeReleaseFire
+      ) {
         // Reuse scratch objects to avoid per-frame GC churn
         _fireOrigin.current.copy(meshRef.current.position);
         _fireOrigin.current.y += 1;
@@ -274,10 +303,12 @@ export const PlayerWeapon = React.memo(
           if (bestDir) _fireDir.current.copy(bestDir);
         }
 
-        const equippedId = weaponManagerRef.current.getEquipped()?.id;
-
         // Grenade: dispatch projectile event instead of instant raycast
-        if (equippedId === "grenade") {
+        if (isGrenadeEquipped) {
+          const heldMs = weaponManagerRef.current.stopCharge("grenade") ?? 0;
+          const maxChargeMs =
+            weaponManagerRef.current.getEquipped()?.maxChargeTimeMs ?? 1;
+          const chargeProgress = Math.min(1, heldMs / maxChargeMs);
           const firedWeapon = weaponManagerRef.current.fire(myId, now);
           if (firedWeapon) {
             const flatDir = _tempVec.current
@@ -291,8 +322,6 @@ export const PlayerWeapon = React.memo(
               0.1,
               Math.atan2(_fireDir.current.y, pitchLen),
             );
-            const chargeProgress =
-              weaponManagerRef.current.getChargeProgress("grenade") || 0.5;
             window.dispatchEvent(
               new window.CustomEvent("grenade-throw", {
                 detail: {

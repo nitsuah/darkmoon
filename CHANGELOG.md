@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Multiplayer readiness gate** (PR #418) — `server/logger.js` (structured JSON logging), `server/cors.js` (shared HTTP/WebSocket origin allowlist), `server/health.js`, `server/port.js`, and `server/tagAuthorization.js`; SIGTERM graceful shutdown; 96 new server tests. See `docs/MULTIPLAYER_GATE.md`.
+- **Mobile controls overhaul** (PR #417) — reworked touch joystick, aim assist, and responsive HUD; mobile input verified functional via browser emulation.
+- **Dependabot grouping** — `minor`/`patch` npm updates and GitHub Actions updates now group into single PRs instead of one-per-dependency.
+
+### Fixed
+
+- CORS wildcard matcher escaping and single-DNS-label scoping; bare `ALLOWED_ORIGINS=*` no longer combines with `credentials: true`.
+- `/health` SPA-fallback ordering and `maxPlayers` validation.
+- `player-tagged` socket handler now binds `taggerId` to the authenticated socket instead of trusting client-supplied IDs.
+
+### Docs
+
+- Documentation audit passes (PRs #409, #419, #420): refreshed METRICS.md coverage/test figures, corrected README test-count staleness, archived the superseded `docs/ROADMAP_DETAILED.md`, and updated `docs/TECH_DEBT.md` to reflect the completed mobile-controls and `PlayerCharacter.tsx` refactor items.
+
+## [1.1.0] - 2026-08-08
+
+### Added
+
 - **ShotgunVFX component** — cone particle burst effect for every shotgun shot, rendered in the 3D scene (`src/pages/Solo/components/ShotgunVFX.tsx`)
 - **Reserve ammo system** — `reserveAmmo` field on `Player`, tracked and decremented in `WeaponManager`; HUD displays magazine/reserve separately
 - **Tag mode health** — `TagMode` now initializes `health: 100 / maxHealth: 100` on each player and handles `"hit"` actions for damage in tag mode, enabling weapon-based interactions without disrupting IT-transfer logic

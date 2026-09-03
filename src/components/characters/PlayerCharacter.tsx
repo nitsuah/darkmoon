@@ -217,25 +217,13 @@ export const PlayerCharacter = React.forwardRef<
 
     const mePlayer = gameManager?.getPlayers().get(currentPlayerId);
 
-    // Grenade charge logic
-    const equipped = weaponManagerRef.current.getEquipped();
-    const isGrenade = equipped?.id === "grenade";
+    // Charge/fire management for the grenade lives entirely in PlayerWeapon
+    // (hold LMB to charge, release LMB to throw — see Phase BM / docs/MULTIPLAYER_SHOOTER_ROADMAP.md).
+    // PlayerCharacter only needs `canAct` for gating, and reads the charge
+    // state below (via weaponManagerRef getters) to drive the TrajectoryArc preview.
     const canAct =
       mePlayer?.respawnAt === undefined && !isPlayerFrozenRef.current;
     canActRef.current = canAct;
-
-    if (isGrenade && canAct) {
-      if (mouseControls.rightClick) {
-        if (!weaponManagerRef.current.isCharging("grenade")) {
-          weaponManagerRef.current.startCharge("grenade", now);
-        }
-      } else if (weaponManagerRef.current.isCharging("grenade")) {
-        weaponManagerRef.current.stopCharge("grenade");
-      }
-    } else if (weaponManagerRef.current.isCharging("grenade")) {
-      // Clear charge if player cannot act or grenade unequipped
-      weaponManagerRef.current.stopCharge("grenade");
-    }
 
     // Freeze all input while the player is awaiting respawn (downed in deathmatch/CTF).
     if (mePlayer?.respawnAt !== undefined) {
