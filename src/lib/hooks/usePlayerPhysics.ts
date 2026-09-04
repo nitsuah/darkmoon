@@ -17,6 +17,7 @@ export const PHYSICS_CONSTANTS = {
   RCS_THRUST: 0.05, // Directional thrust strength
   RCS_MAX_DURATION: 3.0, // Can use RCS for 3 seconds
   POSITION_UPDATE_THRESHOLD: 0.01, // Only update if moved > 1cm
+  DOUBLE_JUMP_WINDOW_MS: 600, // Second SPACE press within this window while airborne activates the jetpack
 } as const;
 
 /**
