@@ -95,6 +95,10 @@ export const PlayerMovement = React.memo(
     const movement = usePlayerMovement();
     const playerState = usePlayerState();
 
+    // Rising-edge detection for SPACE, used to detect a fresh second press
+    // (double-jump-to-jetpack) rather than the key still being held down.
+    const prevSpaceRef = React.useRef(false);
+
     const {
       velocityRef,
       directionRef,
@@ -257,11 +261,28 @@ export const PlayerMovement = React.memo(
         meshRef.current.position.y <= PHYSICS_CONSTANTS.GROUND_Y + 0.01;
       const currentTime = Date.now();
 
+      const spacePressed = keysPressedRef.current[SPACE] ?? false;
+      const spaceRisingEdge = spacePressed && !prevSpaceRef.current;
+      prevSpaceRef.current = spacePressed;
+
       const mobileDoubleTap = mobileJetpackTriggerRef.current || false;
       const canMobileJump =
         mobileDoubleTap && isOnGround && !isJumpingRef.current;
       const canKeyboardJump =
-        keysPressedRef.current[SPACE] && isOnGround && !isJumpingRef.current;
+        spacePressed && isOnGround && !isJumpingRef.current;
+      // Desktop double-jump: a second SPACE press while airborne (and not
+      // already jetpacking) within DOUBLE_JUMP_WINDOW_MS of the first jump
+      // activates the jetpack — the keyboard equivalent of the mobile
+      // double-tap path below. FEATURES.md advertises "Spacebar for jump and
+      // double-jump mechanics"; previously lastJumpTimeRef was recorded but
+      // never read, so this path never existed on desktop.
+      const canKeyboardDoubleJump =
+        spaceRisingEdge &&
+        !isOnGround &&
+        isJumpingRef.current &&
+        !jetpackActiveRef.current &&
+        currentTime - lastJumpTimeRef.current <
+          PHYSICS_CONSTANTS.DOUBLE_JUMP_WINDOW_MS;
 
       if (canMobileJump || canKeyboardJump) {
         if (canMobileJump && shouldActivateJetpackFromMobile(mobileDoubleTap)) {
@@ -283,6 +304,17 @@ export const PlayerMovement = React.memo(
           } catch {
             /* Sound manager not ready */
           }
+        }
+      } else if (canKeyboardDoubleJump) {
+        jetpackActiveRef.current = true;
+        setShowJetpackFlame(true);
+        verticalVelocityRef.current = PHYSICS_CONSTANTS.JETPACK_INITIAL_BOOST;
+        jumpHoldTimeRef.current = 0;
+        try {
+          const soundMgr = getSoundManager();
+          if (soundMgr) soundMgr.playJumpSound();
+        } catch {
+          /* Sound manager not ready */
         }
       }
 

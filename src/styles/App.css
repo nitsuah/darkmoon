@@ -176,7 +176,15 @@ a:focus {
   background: var(--bg-primary);
   color: var(--text-primary);
   text-align: center;
-  overflow: hidden;
+  /* Vertical overflow must scroll, not clip: this rule is unconditional and
+     comes after the `@media (max-width: 600px) { .App { ... } }` block above,
+     so at equal specificity it always wins the cascade — including its
+     `overflow-x: hidden` — silently overriding that block's intended mobile
+     fix. On the Home page (the only route using .App; the fixed #root
+     ancestor is 100dvh) that clipped the bottom two "Coming Soon" cards and
+     the footer whenever content exceeded one viewport's height. */
+  overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
   transition:
     background 0.3s ease,
