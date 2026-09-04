@@ -1,6 +1,6 @@
 # Roadmap
 
-Last Updated: 2026-08-28
+Last Updated: 2026-09-03
 
 ## 2025 Q4 ✅
 
@@ -41,3 +41,34 @@ Last Updated: 2026-08-28
 
 - [ ] Evaluate identity, progression, and social systems.
 - [ ] Evaluate broader platform expansion such as native mobile packaging.
+
+## 2027 (Deferred — larger items not cleanly scoped in the 2026-09 docs/bugfix pass)
+
+> During the 2026-09 docs-and-bugfix cycle (branch `v2026/roadmap-and-docs-2026-09`), the
+> P0-class gameplay bugs (downed-player movement, grenade charge input, rocket splash in Tag
+> mode, mobile camera inversion, desktop double-jump, home page card cutoff) were fixed and
+> verified. The items below were either already tracked as deferred CEO priorities or surfaced
+> during this pass but are too large/ambiguous to scope safely alongside a bug-fix PR.
+
+- [ ] **21st.dev component integration + UI/UX interactivity pass** — carried over from 2026
+      Q2 CEO priorities (still not started); see TASKS.md for acceptance criteria.
+- [ ] **Open-source safety scrub** — carried over from 2026 Q2 CEO priorities.
+- [ ] **Over-the-shoulder aim camera + combat music layer** — Phase E remaining items; see
+      `docs/MULTIPLAYER_SHOOTER_ROADMAP.md` Phase E "Remaining".
+- [ ] **Crosshair vs. actual aim point under pointer lock** — investigated during this pass but
+      not fixed: the visible reticle (`Crosshair.tsx`) is positioned from raw `mousemove`
+      `clientX/clientY`, which the Pointer Lock spec freezes at lock-acquisition time, while
+      actual firing always raycasts from screen-center (NDC 0,0) in `PlayerWeapon.tsx`. If the
+      player's cursor wasn't already centered when pointer lock engaged, the crosshair can sit
+      off from the true aim point for the rest of the session. Needs a design decision (snap the
+      reticle to center on lock, or drive it from camera-forward instead of raw mouse position)
+      before implementing — flagging rather than guessing blind.
+- [ ] **`docker-compose.yml` `test` service silently serves stale images** — discovered while
+      verifying this pass's fixes: unlike `solo` (bind-mounted), the `test` service has no
+      `volumes:` mount, so `docker compose run --rm test` (including the `.husky/pre-push` hook
+      itself) reuses whatever `darkmoon-test:latest` image already exists locally and does
+      **not** rebuild on source changes unless `docker compose build test` (matching
+      `--project-name darkmoon`) is run first. On this branch the local image was 41+ hours
+      stale and the pre-push hook was silently validating an old commit on every push until this
+      was caught and the image rebuilt by hand. Either add a bind mount to `test` like `solo`
+      has, or have `.husky/pre-push` run `docker compose build test` before `run`.
