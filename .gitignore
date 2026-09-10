@@ -17,3 +17,6 @@ logs/
 logs/*
 bundle-stats.html
 tmp/
+
+test-results/
+playwright-report/

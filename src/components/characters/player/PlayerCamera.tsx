@@ -85,11 +85,15 @@ export const PlayerCamera = React.memo(
       }
 
       // ── Joystick camera ──────────────────────────────────────────────────
+      // joystickCamera.y follows the same screen-space (Y-down-positive)
+      // convention as the mouse deltas above, so it must also be subtracted —
+      // otherwise dragging the touch camera stick down pitches the camera the
+      // opposite direction from an equivalent mouse-down movement.
       if (joystickCamera.x !== 0 || joystickCamera.y !== 0) {
         const speed = 1.5;
         const dt = Math.min(delta, 0.05);
         cameraRotationRef.current.horizontal -= joystickCamera.x * speed * dt;
-        cameraRotationRef.current.vertical += joystickCamera.y * speed * dt;
+        cameraRotationRef.current.vertical -= joystickCamera.y * speed * dt;
       }
 
       // ── Middle-click: reset camera behind player ─────────────────────────

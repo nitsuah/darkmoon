@@ -95,6 +95,10 @@ export const PlayerMovement = React.memo(
     const movement = usePlayerMovement();
     const playerState = usePlayerState();
 
+    // Rising-edge detection for SPACE, used to detect a fresh second press
+    // (double-jump-to-jetpack) rather than the key still being held down.
+    const prevSpaceRef = React.useRef(false);
+
     const {
       velocityRef,
       directionRef,
@@ -118,7 +122,48 @@ export const PlayerMovement = React.memo(
     useFrame((state, delta) => {
       const now = Date.now();
 
+      // Sync the previous-SPACE-state edge detector before any early return
+      // below. If this ran only in the active-movement path, holding SPACE
+      // through a paused/downed/frozen frame would read as a fresh press on
+      // the next active frame and could trigger an unintended jump/jetpack.
+      const spacePressed = keysPressedRef.current[SPACE] ?? false;
+      const spaceRisingEdge = spacePressed && !prevSpaceRef.current;
+      prevSpaceRef.current = spacePressed;
+
       if (isPaused || !meshRef.current) return;
+
+      // Freeze movement while the player is downed and awaiting respawn
+      // (deathmatch/CTF). Without this check a downed player could still
+      // walk/jump/jetpack even though PlayerWeapon and PlayerCharacter both
+      // already disable weapons and tagging in this state.
+      if (gameManager) {
+        const myId = socketClient?.id || currentPlayerId;
+        const mePlayer = gameManager.getPlayers().get(myId);
+        if (mePlayer?.respawnAt !== undefined) {
+          // Clear jetpack/jump state so a player downed mid-thrust doesn't
+          // resume with stale physics (stuck flame, phantom velocity) once
+          // they respawn — none of the death/respawn paths reset this.
+          if (jetpackActiveRef.current) {
+            jetpackActiveRef.current = false;
+            setShowJetpackFlame(false);
+          }
+          isJumpingRef.current = false;
+          verticalVelocityRef.current = 0;
+          jumpHoldTimeRef.current = 0;
+          if (jetpackThrustSoundRef.current) {
+            try {
+              const soundMgr = getSoundManager();
+              if (soundMgr) {
+                soundMgr.stopJetpackThrustSound(jetpackThrustSoundRef.current);
+              }
+            } catch {
+              /* Sound manager not ready */
+            }
+            jetpackThrustSoundRef.current = null;
+          }
+          return;
+        }
+      }
 
       // Check freeze state
       if (isPlayerFrozenRef.current) {
@@ -251,7 +296,20 @@ export const PlayerMovement = React.memo(
       const canMobileJump =
         mobileDoubleTap && isOnGround && !isJumpingRef.current;
       const canKeyboardJump =
-        keysPressedRef.current[SPACE] && isOnGround && !isJumpingRef.current;
+        spacePressed && isOnGround && !isJumpingRef.current;
+      // Desktop double-jump: a second SPACE press while airborne (and not
+      // already jetpacking) within DOUBLE_JUMP_WINDOW_MS of the first jump
+      // activates the jetpack — the keyboard equivalent of the mobile
+      // double-tap path below. FEATURES.md advertises "Spacebar for jump and
+      // double-jump mechanics"; previously lastJumpTimeRef was recorded but
+      // never read, so this path never existed on desktop.
+      const canKeyboardDoubleJump =
+        spaceRisingEdge &&
+        !isOnGround &&
+        isJumpingRef.current &&
+        !jetpackActiveRef.current &&
+        currentTime - lastJumpTimeRef.current <
+          PHYSICS_CONSTANTS.DOUBLE_JUMP_WINDOW_MS;
 
       if (canMobileJump || canKeyboardJump) {
         if (canMobileJump && shouldActivateJetpackFromMobile(mobileDoubleTap)) {
@@ -273,6 +331,17 @@ export const PlayerMovement = React.memo(
           } catch {
             /* Sound manager not ready */
           }
+        }
+      } else if (canKeyboardDoubleJump) {
+        jetpackActiveRef.current = true;
+        setShowJetpackFlame(true);
+        verticalVelocityRef.current = PHYSICS_CONSTANTS.JETPACK_INITIAL_BOOST;
+        jumpHoldTimeRef.current = 0;
+        try {
+          const soundMgr = getSoundManager();
+          if (soundMgr) soundMgr.playJumpSound();
+        } catch {
+          /* Sound manager not ready */
         }
       }
 
