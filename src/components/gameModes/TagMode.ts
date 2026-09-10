@@ -98,7 +98,11 @@ export class TagMode implements GameModeHandler {
       )
         return false;
 
-      // IT player hitting non-IT: instant tag transfer (shot-as-tag preserved)
+      // IT player hitting non-IT: instant tag transfer (shot-as-tag preserved).
+      // Rocket/grenade splash still applies to bystanders even though the
+      // direct target is tagged rather than damaged — splash must run before
+      // this early return, or an IT player's rocket/grenade hits never
+      // splash in Tag mode (the mode's most common attacker state).
       if (attacker.isIt && !target.isIt) {
         const tagged = this.applyTag(attackerId, targetId, players, gameState);
         if (tagged) {
@@ -106,6 +110,15 @@ export class TagMode implements GameModeHandler {
           target.health = TAG_PLAYER_MAX_HP;
           target.respawnAt = Date.now() + TAG_RESPAWN_MS;
         }
+        this.applySplashDamage(
+          attackerId,
+          attacker,
+          targetId,
+          target,
+          weaponId,
+          players,
+          gameState,
+        );
         return tagged;
       }
 
@@ -121,38 +134,15 @@ export class TagMode implements GameModeHandler {
         gameState,
       );
 
-      // Rocket/grenade splash: deal splash damage to bystanders within
-      // splashRadius of the target. Deathmatch and CTF already do this;
-      // Tag mode — the only mode live in solo play — was silently dropping
-      // it, so the rocket launcher's headline AOE never actually applied.
-      const weaponDef = weaponId ? WEAPONS[weaponId] : undefined;
-      if (weaponDef?.splashRadius && weaponDef.splashDamage) {
-        const { splashRadius, splashDamage } = weaponDef;
-        players.forEach((nearby, nearbyId) => {
-          if (nearbyId === attackerId || nearbyId === targetId) return;
-          if (nearby.respawnAt !== undefined) return;
-          if (
-            nearby.spawnProtectedUntil !== undefined &&
-            Date.now() < nearby.spawnProtectedUntil
-          )
-            return;
-          const dx = target.position[0] - nearby.position[0];
-          const dy = target.position[1] - nearby.position[1];
-          const dz = target.position[2] - nearby.position[2];
-          if (Math.sqrt(dx * dx + dy * dy + dz * dz) > splashRadius) return;
-
-          this.applyDamageAndDeath(
-            attackerId,
-            attacker,
-            nearbyId,
-            nearby,
-            splashDamage,
-            weaponId,
-            players,
-            gameState,
-          );
-        });
-      }
+      this.applySplashDamage(
+        attackerId,
+        attacker,
+        targetId,
+        target,
+        weaponId,
+        players,
+        gameState,
+      );
 
       return true;
     }
@@ -164,6 +154,53 @@ export class TagMode implements GameModeHandler {
     );
 
     return this.applyTag(taggerId, taggedId, players, gameState);
+  }
+
+  /**
+   * Rocket/grenade splash: deal splash damage to bystanders within
+   * splashRadius of `target`. Deathmatch and CTF already do this; Tag
+   * mode — the only mode live in solo play — was silently dropping it, so
+   * the rocket launcher's headline AOE never actually applied. Called from
+   * both the IT tag-transfer branch and the normal-damage branch of
+   * onAction, since splash is independent of whether the direct hit tags
+   * or damages its target.
+   */
+  private applySplashDamage(
+    attackerId: string,
+    attacker: Player,
+    targetId: string,
+    target: Player,
+    weaponId: string | undefined,
+    players: Map<string, Player>,
+    gameState: GameState,
+  ): void {
+    const weaponDef = weaponId ? WEAPONS[weaponId] : undefined;
+    if (!weaponDef?.splashRadius || !weaponDef.splashDamage) return;
+    const { splashRadius, splashDamage } = weaponDef;
+    players.forEach((nearby, nearbyId) => {
+      if (nearbyId === attackerId || nearbyId === targetId) return;
+      if (nearby.respawnAt !== undefined) return;
+      if (
+        nearby.spawnProtectedUntil !== undefined &&
+        Date.now() < nearby.spawnProtectedUntil
+      )
+        return;
+      const dx = target.position[0] - nearby.position[0];
+      const dy = target.position[1] - nearby.position[1];
+      const dz = target.position[2] - nearby.position[2];
+      if (Math.sqrt(dx * dx + dy * dy + dz * dz) > splashRadius) return;
+
+      this.applyDamageAndDeath(
+        attackerId,
+        attacker,
+        nearbyId,
+        nearby,
+        splashDamage,
+        weaponId,
+        players,
+        gameState,
+      );
+    });
   }
 
   /** Applies damage to `target`; on death, respawns them and pushes a kill-feed entry. */

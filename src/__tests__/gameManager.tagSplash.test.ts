@@ -24,7 +24,7 @@ const makePlayer = (
  * Force the attacker off IT duty so every test deterministically exercises
  * the "normal damage" (and therefore splash) path.
  */
-function forceNotIt(manager: GameManager, playerId: string) {
+function forceNotIt(manager: GameManager, playerId: string): void {
   const player = manager.getPlayers().get(playerId)!;
   player.isIt = false;
   const state = manager.getGameState();

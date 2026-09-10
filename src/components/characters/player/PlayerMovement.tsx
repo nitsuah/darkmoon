@@ -122,6 +122,14 @@ export const PlayerMovement = React.memo(
     useFrame((state, delta) => {
       const now = Date.now();
 
+      // Sync the previous-SPACE-state edge detector before any early return
+      // below. If this ran only in the active-movement path, holding SPACE
+      // through a paused/downed/frozen frame would read as a fresh press on
+      // the next active frame and could trigger an unintended jump/jetpack.
+      const spacePressed = keysPressedRef.current[SPACE] ?? false;
+      const spaceRisingEdge = spacePressed && !prevSpaceRef.current;
+      prevSpaceRef.current = spacePressed;
+
       if (isPaused || !meshRef.current) return;
 
       // Freeze movement while the player is downed and awaiting respawn
@@ -131,7 +139,30 @@ export const PlayerMovement = React.memo(
       if (gameManager) {
         const myId = socketClient?.id || currentPlayerId;
         const mePlayer = gameManager.getPlayers().get(myId);
-        if (mePlayer?.respawnAt !== undefined) return;
+        if (mePlayer?.respawnAt !== undefined) {
+          // Clear jetpack/jump state so a player downed mid-thrust doesn't
+          // resume with stale physics (stuck flame, phantom velocity) once
+          // they respawn — none of the death/respawn paths reset this.
+          if (jetpackActiveRef.current) {
+            jetpackActiveRef.current = false;
+            setShowJetpackFlame(false);
+          }
+          isJumpingRef.current = false;
+          verticalVelocityRef.current = 0;
+          jumpHoldTimeRef.current = 0;
+          if (jetpackThrustSoundRef.current) {
+            try {
+              const soundMgr = getSoundManager();
+              if (soundMgr) {
+                soundMgr.stopJetpackThrustSound(jetpackThrustSoundRef.current);
+              }
+            } catch {
+              /* Sound manager not ready */
+            }
+            jetpackThrustSoundRef.current = null;
+          }
+          return;
+        }
       }
 
       // Check freeze state
@@ -260,10 +291,6 @@ export const PlayerMovement = React.memo(
       const isOnGround =
         meshRef.current.position.y <= PHYSICS_CONSTANTS.GROUND_Y + 0.01;
       const currentTime = Date.now();
-
-      const spacePressed = keysPressedRef.current[SPACE] ?? false;
-      const spaceRisingEdge = spacePressed && !prevSpaceRef.current;
-      prevSpaceRef.current = spacePressed;
 
       const mobileDoubleTap = mobileJetpackTriggerRef.current || false;
       const canMobileJump =

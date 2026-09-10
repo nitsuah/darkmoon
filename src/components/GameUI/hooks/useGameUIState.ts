@@ -149,10 +149,37 @@ export function useMousePosition(): { x: number; y: number } {
   });
 
   React.useEffect(() => {
-    const onMove = (e: MouseEvent) =>
+    const center = () =>
+      setMousePos({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+
+    const onMove = (e: MouseEvent) => {
+      // While pointer lock is engaged the OS cursor is captured/hidden and
+      // clientX/clientY freeze at wherever it was the instant lock started —
+      // they no longer reflect aim. PlayerWeapon's firing raycast always
+      // fires through the exact viewport center (NDC 0,0) regardless, so
+      // once locked the crosshair must track that same point instead of the
+      // stale absolute position. Without this, moving the mouse while
+      // aiming visibly does nothing to the crosshair, which reads as "the
+      // crosshair doesn't show up" and puts it out of alignment with where
+      // shots actually land.
+      if (document.pointerLockElement) return;
       setMousePos({ x: e.clientX, y: e.clientY });
+    };
+    const onLockChange = () => {
+      if (document.pointerLockElement) center();
+    };
+    const onResize = () => {
+      if (document.pointerLockElement) center();
+    };
+
     window.addEventListener("mousemove", onMove);
-    return () => window.removeEventListener("mousemove", onMove);
+    document.addEventListener("pointerlockchange", onLockChange);
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      document.removeEventListener("pointerlockchange", onLockChange);
+      window.removeEventListener("resize", onResize);
+    };
   }, []);
 
   return mousePos;

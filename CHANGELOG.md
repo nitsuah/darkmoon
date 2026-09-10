@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CORS wildcard matcher escaping and single-DNS-label scoping; bare `ALLOWED_ORIGINS=*` no longer combines with `credentials: true`.
 - `/health` SPA-fallback ordering and `maxPlayers` validation.
 - `player-tagged` socket handler now binds `taggerId` to the authenticated socket instead of trusting client-supplied IDs.
+- **P0: downed player could still move** — `PlayerMovement.tsx` now checks `respawnAt` and freezes movement/jump/jetpack for a player awaiting respawn, matching the existing weapon/tag lockout for that state; also clears any in-flight jetpack thrust (flame, sound, velocity) so a player downed mid-thrust doesn't resume with stale physics after respawning.
+- **Grenade charge/throw used two different buttons** — charging was bound to `rightClick` in `PlayerCharacter.tsx` while the throw fired on `leftClick` held in `PlayerWeapon.tsx`. Consolidated hold-to-charge/release-to-throw into `PlayerWeapon.tsx`, keyed on `leftClick` throughout.
+- **Rocket/grenade splash damage missing in Tag mode** — `TagMode` didn't apply `splashRadius`/`splashDamage` to bystanders the way `DeathmatchMode`/`CTFMode` do, and even after adding it, splash was skipped whenever the direct hit came from the IT player (the tag-transfer branch returned before splash ran). Both paths now apply splash.
+- **Mobile joystick camera inversion** — the touch camera joystick's vertical axis used `+=` while both mouse-look paths use `-=` for the same screen-space delta convention, inverting vertical look for touch users relative to desktop.
+- **Desktop jetpack double-jump missing** — a second SPACE press while airborne now activates the jetpack (rising-edge detection with a 600ms window), mirroring the existing mobile double-tap flow.
+- **Home page bottom cards clipped on desktop** — an unconditional `.App { overflow: hidden }` rule outranked the mobile-only scroll fix at equal specificity, clipping content on any viewport once it exceeded one screen's height. `.App` now scrolls vertically.
 
 ### Docs
 
