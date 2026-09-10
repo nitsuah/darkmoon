@@ -65,12 +65,12 @@ Last Updated: 2026-09-03
       before implementing — flagging rather than guessing blind.
 - [ ] **`config/docker-compose.yml` `test` service silently serves stale images** — discovered
       while verifying this pass's fixes: unlike `solo` (bind-mounted), the `test` service has no
-      `volumes:` mount, so `docker compose -f config/docker-compose.yml run --rm test`
-      (including the `.husky/pre-push` hook itself) reuses whatever `darkmoon-test:latest` image
-      already exists locally and does **not** rebuild on source changes unless
-      `docker compose -f config/docker-compose.yml build test` (matching `--project-name
-    darkmoon`) is run first. On this branch the local image was 41+ hours stale and the
-      pre-push hook was silently validating an old commit on every push until this was caught
-      and the image rebuilt by hand. Either add a bind mount to `test` like `solo` has, or have
-      `.husky/pre-push` run `docker compose -f config/docker-compose.yml build test` before
-      `run`.
+      `volumes:` mount, so `docker compose -f config/docker-compose.yml --project-name darkmoon
+    run --rm test` (including the `.husky/pre-push` hook itself) reuses whatever
+      `darkmoon-test:latest` image already exists locally and does **not** rebuild on source
+      changes unless `docker compose -f config/docker-compose.yml --project-name darkmoon build
+    test` is run first. On this branch the local image was 41+ hours stale and the pre-push
+      hook was silently validating an old commit on every push until this was caught and the
+      image rebuilt by hand. Either add a bind mount to `test` like `solo` has, or have
+      `.husky/pre-push` run `docker compose -f config/docker-compose.yml --project-name darkmoon
+    build test` before `run`.
