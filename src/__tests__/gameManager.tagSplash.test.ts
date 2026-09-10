@@ -143,4 +143,34 @@ describe("GameManager tag mode splash damage", () => {
 
     expect(manager.getPlayers().get("p3")!.health).toBe(100);
   });
+
+  it("rocket splash still applies to bystanders when the attacker is IT (tag-transfer branch)", () => {
+    const manager = new GameManager();
+    manager.addPlayer(makePlayer("p1")); // attacker, kept IT — exercises the early-return branch
+    manager.addPlayer(makePlayer("p2", [0, 0, 0])); // direct target, tagged rather than damaged
+    manager.addPlayer(makePlayer("p3", [0.5, 0, 0])); // bystander within splashRadius
+
+    vi.spyOn(Date, "now").mockReturnValue(10000);
+    manager.startTagGame();
+    // Force p1 to be IT (rather than relying on the random pick in startTagGame),
+    // deliberately *not* calling forceNotIt so hitPlayer takes the IT tag-transfer
+    // branch in TagMode.onAction instead of the normal-damage branch.
+    const state = manager.getGameState();
+    manager.getPlayers().forEach((player) => {
+      player.isIt = player.id === "p1";
+    });
+    state.itPlayerId = "p1";
+
+    expect(manager.hitPlayer("p1", "p2", 100, "rocket")).toBe(true);
+
+    // p2 was tagged, not damaged.
+    const p2After = manager.getPlayers().get("p2")!;
+    expect(p2After.isIt).toBe(true);
+    expect(p2After.health).toBe(100);
+
+    // p3 still takes rocket splash even though the direct hit tagged rather
+    // than damaged its target.
+    const p3After = manager.getPlayers().get("p3")!;
+    expect(p3After.health).toBe(50);
+  });
 });

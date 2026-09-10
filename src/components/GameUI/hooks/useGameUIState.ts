@@ -149,10 +149,10 @@ export function useMousePosition(): { x: number; y: number } {
   });
 
   React.useEffect(() => {
-    const center = () =>
+    const center = (): void =>
       setMousePos({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
 
-    const onMove = (e: MouseEvent) => {
+    const onMove = (e: MouseEvent): void => {
       // While pointer lock is engaged the OS cursor is captured/hidden and
       // clientX/clientY freeze at wherever it was the instant lock started —
       // they no longer reflect aim. PlayerWeapon's firing raycast always
@@ -165,10 +165,10 @@ export function useMousePosition(): { x: number; y: number } {
       if (document.pointerLockElement) return;
       setMousePos({ x: e.clientX, y: e.clientY });
     };
-    const onLockChange = () => {
+    const onLockChange = (): void => {
       if (document.pointerLockElement) center();
     };
-    const onResize = () => {
+    const onResize = (): void => {
       if (document.pointerLockElement) center();
     };
 
