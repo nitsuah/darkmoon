@@ -262,6 +262,23 @@ describe("server structured logger", () => {
       });
     });
 
+    it("logs an IT reassignment after a disconnect", () => {
+      const { logger, last } = createCapturingLogger();
+      logger.itReassigned({
+        previousItPlayerId: "p1",
+        newItPlayerId: "p2",
+        reason: "disconnect",
+      });
+
+      expect(last()).toMatchObject({
+        event: GAME_EVENTS.IT_REASSIGNED,
+        level: "info",
+        previousItPlayerId: "p1",
+        newItPlayerId: "p2",
+        reason: "disconnect",
+      });
+    });
+
     it("logs a score change with a computed delta", () => {
       const { logger, last } = createCapturingLogger();
       logger.scoreChanged({
