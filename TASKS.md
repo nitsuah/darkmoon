@@ -6,6 +6,22 @@ Last Updated: 2026-08-27
 
 ## Done
 
+- [x] Fix `.husky/pre-push` silently validating a stale Docker test image.
+  - Completed: 2026-09-11
+  - Evidence: `docker compose run` (without `--build`) reuses an already-built
+    `darkmoon-test:latest` image regardless of whether the Dockerfile/source/
+    dependencies changed since it was built. Caught this when the hook reported
+    "vitest v4.1.11, 80 files/665 tests" on a push, while a freshly-built image
+    of the identical commit correctly reported "vitest v5.0.0, 81 files/673
+    tests" (matching package-lock.json's pinned vitest@5.0.0) — the cached
+    image dated back to 2026-09-10, a day before the pushed commit even
+    existed, so pre-push had been silently validating old code, not what was
+    actually being pushed. Added `--build` to both the real and the
+    Docker-missing-fallback command in `.husky/pre-push`, so the image is
+    rebuilt (fast via Docker's own layer cache when nothing changed) before
+    every push. Verified: same command now reports vitest 5.0.0 and 673/673
+    tests for the current commit.
+
 - [x] Review debug mode and regular tag logic for edge cases and regressions.
   - Completed: 2026-06-11
   - Evidence: new `src/__tests__/gameManager.edgeCases.test.ts` (8 tests) and a new
