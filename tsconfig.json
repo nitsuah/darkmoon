@@ -20,7 +20,12 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src/**/*", "src/**/*.tsx", "src/**/*.ts"],
+  "include": [
+    "src/**/*",
+    "src/**/*.tsx",
+    "src/**/*.ts",
+    "config/vitest.setup.ts"
+  ],
   "exclude": [
     "node_modules",
     "dist",
