@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { resolveItHandoff } from "../../server/itHandoff.js";
+import type { ItHandoffGameState } from "../../server/itHandoff.d.ts";
 
-const activeTagGame = (itPlayerId: string) => ({
+const activeTagGame = (itPlayerId: string): ItHandoffGameState => ({
   isActive: true,
   mode: "tag",
   itPlayerId,
