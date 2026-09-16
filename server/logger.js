@@ -40,6 +40,7 @@ export const GAME_EVENTS = {
   PLAYER_DISCONNECTED: "player.disconnected",
   PLAYER_TAGGED: "game.player_tagged",
   TAG_REJECTED: "game.tag_rejected",
+  IT_REASSIGNED: "game.it_reassigned",
   SCORE_CHANGED: "game.score_changed",
   GAME_STARTED: "game.started",
   GAME_ENDED: "game.ended",
@@ -197,6 +198,9 @@ export const createLogger = (options = {}) => {
 
     /** @param {{ taggerId: string, taggedId: string, reason: string }} data */
     tagRejected: (data) => log("warn", GAME_EVENTS.TAG_REJECTED, data),
+
+    /** @param {{ previousItPlayerId: string, newItPlayerId: string | null, reason: string }} data */
+    itReassigned: (data) => log("info", GAME_EVENTS.IT_REASSIGNED, data),
 
     /** @param {{ playerId: string, previousScore: number, newScore: number, reason?: string }} data */
     scoreChanged: (data) =>

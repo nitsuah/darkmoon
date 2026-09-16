@@ -16,6 +16,7 @@ import {
 } from "./cors.js";
 import { buildHealthReport, healthStatusCode } from "./health.js";
 import { authorizeTag } from "./tagAuthorization.js";
+import { resolveItHandoff } from "./itHandoff.js";
 import { resolvePort } from "./port.js";
 
 const PORT = resolvePort(process.env.PORT);
@@ -408,6 +409,13 @@ ioServer.on("connection", (client) => {
       gameState.startTime = Date.now();
       scores = {};
 
+      // Clear any tag cooldown/freeze state left over from a previous round
+      // so it can't bleed into this one (mirrors TagMode.onStart).
+      Object.values(clients).forEach((tracked) => {
+        tracked.lastTagTime = undefined;
+        tracked.lastTaggedById = undefined;
+      });
+
       // Pick random 'it' player
       const playerIds = Object.keys(clients);
       gameState.itPlayerId =
@@ -445,14 +453,32 @@ ioServer.on("connection", (client) => {
     // reassign `itPlayerId`, and award points to someone else.
     const taggerId = client.id;
     const taggedId = data?.taggedId;
+    const now = Date.now();
 
-    const decision = authorizeTag({ taggerId, taggedId, gameState, clients });
+    const decision = authorizeTag({
+      taggerId,
+      taggedId,
+      gameState,
+      clients,
+      now,
+    });
     if (!decision.ok) {
       logger.tagRejected({ taggerId, taggedId, reason: decision.reason });
       return;
     }
 
     gameState.itPlayerId = taggedId;
+
+    // Record cooldown/freeze state for this pair so the next player-tagged
+    // event is evaluated against it (mirrors TagMode.applyTag).
+    if (clients[taggerId]) {
+      clients[taggerId].lastTagTime = now;
+    }
+    if (clients[taggedId]) {
+      clients[taggedId].lastTagTime = now;
+      clients[taggedId].lastTaggedById = taggerId;
+    }
+
     awardScore(taggerId, 1, "tag");
 
     logger.playerTagged({ taggerId, taggedId, mode: gameState.mode });
@@ -488,18 +514,67 @@ ioServer.on("connection", (client) => {
     gameState.startTime = null;
     scores = {};
 
+    // Clear tag cooldown/freeze state along with everything else the round
+    // reset touches (mirrors TagMode.onEnd).
+    Object.values(clients).forEach((tracked) => {
+      tracked.lastTagTime = undefined;
+      tracked.lastTaggedById = undefined;
+    });
+
     ioServer.sockets.emit("game-end");
   });
 
   client.on("disconnect", () => {
+    const wasIt = gameState.itPlayerId === client.id;
+
     // Delete their client from the object
     delete clients[client.id];
 
     logger.playerDisconnected({
       playerId: client.id,
       activePlayers: Object.keys(clients).length,
-      wasIt: gameState.itPlayerId === client.id,
+      wasIt,
     });
+
+    // If the disconnecting player was IT, either hand IT to a remaining
+    // player or end the round — otherwise itPlayerId keeps pointing at a
+    // client that no longer exists, and no one can ever be tagged again
+    // until the next game-start/game-end (mirrors
+    // TagMode.onPlayerRemoved's zero-players branch).
+    const handoff = resolveItHandoff({
+      disconnectingId: client.id,
+      gameState,
+      remainingClients: clients,
+    });
+
+    if (handoff.action === "end") {
+      gameState.isActive = false;
+      gameState.mode = "none";
+      gameState.itPlayerId = null;
+      gameState.startTime = null;
+      scores = {};
+
+      logger.itReassigned({
+        previousItPlayerId: client.id,
+        newItPlayerId: null,
+        reason: "disconnect_no_players_remaining",
+      });
+
+      ioServer.sockets.emit("game-end");
+    } else if (handoff.action === "reassign") {
+      gameState.itPlayerId = handoff.itPlayerId;
+
+      logger.itReassigned({
+        previousItPlayerId: client.id,
+        newItPlayerId: handoff.itPlayerId,
+        reason: "disconnect",
+      });
+
+      ioServer.sockets.emit("it-player-changed", {
+        itPlayerId: handoff.itPlayerId,
+        reason: "disconnect",
+      });
+    }
 
     // Clean up rate limit tracking for this client
     const keysToDelete = [];

@@ -18,6 +18,7 @@ export const GAME_EVENTS: {
   PLAYER_DISCONNECTED: string;
   PLAYER_TAGGED: string;
   TAG_REJECTED: string;
+  IT_REASSIGNED: string;
   SCORE_CHANGED: string;
   GAME_STARTED: string;
   GAME_ENDED: string;
@@ -62,6 +63,11 @@ export interface Logger {
   tagRejected(data: {
     taggerId: string;
     taggedId: string;
+    reason: string;
+  }): LogRecord | null;
+  itReassigned(data: {
+    previousItPlayerId: string;
+    newItPlayerId: string | null;
     reason: string;
   }): LogRecord | null;
   scoreChanged(data: {
