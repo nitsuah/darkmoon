@@ -13,6 +13,8 @@ export default defineConfig({
                 'src/styles/**',
                 'src/assets/**',
                 '**/*.{png,jpg,jpeg,gif,svg,webp}',
+                // Shared test helpers are test code, not product code.
+                '**/*.test.utils.{ts,tsx}',
                 // Realtime-heavy modules are validated by integration/smoke tests; exclude from line coverage gate.
                 'src/components/characters/PlayerCharacter.tsx',
                 'src/pages/Solo.tsx',
