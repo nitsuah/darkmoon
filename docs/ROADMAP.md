@@ -64,6 +64,7 @@ Last Updated: 2026-09-23
       reticle to center on lock, or drive it from camera-forward instead of raw mouse position)
       before implementing — flagging rather than guessing blind.
 - [x] **`config/docker-compose.yml` `test` service silently serves stale images** — fixed
-      2026-09-11: `.husky/pre-push` now runs `--build` before `run` on both the real and the
-      Docker-missing-fallback command, so the image rebuilds (fast via layer cache when nothing
-      changed) before every push. See `CHANGELOG.md`.
+      2026-09-11: `.husky/pre-push` now runs `--build` before `run` so the image rebuilds (fast
+      via layer cache when nothing changed) before every push when Docker is available; when
+      Docker isn't available, the hook prints that same `--build ... run` command as a manual
+      fallback and exits 1, blocking the push until it's run by hand. See `CHANGELOG.md`.
