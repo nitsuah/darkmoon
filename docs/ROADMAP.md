@@ -1,6 +1,6 @@
 # Roadmap
 
-Last Updated: 2026-09-03
+Last Updated: 2026-09-23
 
 ## 2025 Q4 ✅
 
@@ -63,14 +63,7 @@ Last Updated: 2026-09-03
       off from the true aim point for the rest of the session. Needs a design decision (snap the
       reticle to center on lock, or drive it from camera-forward instead of raw mouse position)
       before implementing — flagging rather than guessing blind.
-- [ ] **`config/docker-compose.yml` `test` service silently serves stale images** — discovered
-      while verifying this pass's fixes: unlike `solo` (bind-mounted), the `test` service has no
-      `volumes:` mount, so `docker compose -f config/docker-compose.yml --project-name darkmoon
-run --rm test` (including the `.husky/pre-push` hook itself) reuses whatever
-      `darkmoon-test:latest` image already exists locally and does **not** rebuild on source
-      changes unless `docker compose -f config/docker-compose.yml --project-name darkmoon build
-test` is run first. On this branch the local image was 41+ hours stale and the pre-push
-      hook was silently validating an old commit on every push until this was caught and the
-      image rebuilt by hand. Either add a bind mount to `test` like `solo` has, or have
-      `.husky/pre-push` run `docker compose -f config/docker-compose.yml --project-name darkmoon
-build test` before `run`.
+- [x] **`config/docker-compose.yml` `test` service silently serves stale images** — fixed
+      2026-09-11: `.husky/pre-push` now runs `--build` before `run` on both the real and the
+      Docker-missing-fallback command, so the image rebuilds (fast via layer cache when nothing
+      changed) before every push. See `CHANGELOG.md`.
