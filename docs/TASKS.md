@@ -1,6 +1,6 @@
 # Tasks
 
-Last Updated: 2026-09-23
+Last Updated: 2026-09-24
 
 ## In Progress
 
@@ -13,6 +13,8 @@ _Shipped work is condensed into `docs/ROADMAP.md` (milestones), `docs/FEATURES.m
 see those files rather than a duplicated narrative here._
 
 ## Todo
+
+- [ ] Revisit the eslint 10 bump (issue #446, closed-unmerged PR #445) once `eslint-plugin-jsx-a11y` supports it. (P3 · Tech Debt · Confidence: High) Blocked externally: as of the 2026-09-24 PMO audit, `npm view eslint-plugin-jsx-a11y peerDependencies` still caps `eslint` at `^9`. Acceptance Criteria: when a jsx-a11y release allows eslint 10, bump both, `npm run lint` passes in Docker, and #446 is closed.
 
 - [ ] **[Q2-CEO] 21st.dev component integration pass** — replace or augment key game site UI surfaces (lobby, scoreboard, game-over, nav) with 21st.dev components to improve visual quality and interactivity.
   - Priority: P1
