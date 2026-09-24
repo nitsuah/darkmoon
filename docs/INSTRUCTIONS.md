@@ -29,7 +29,7 @@ You are picking up work on the Darkmoon repo (branch: play-modes). The previous 
    - Move to the next task in TASKS.md.
 
 7. **Update Documentation**
-   - If your change affects docs, update README.md, FEATURES.md, or other relevant files.
+   - If your change affects docs, update README.md, docs/FEATURES.md, or other relevant files.
 
 ## Where to Resume
 

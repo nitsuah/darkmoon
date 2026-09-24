@@ -220,7 +220,7 @@ Incremental, can run alongside B–D.
 
 ## Server-side tag parity (must-fix before Multiplayer Tag ships)
 
-**Status: fixed.** `FEATURES.md` still lists Multiplayer Tag as `[planned]` (not
+**Status: fixed.** `docs/FEATURES.md` still lists Multiplayer Tag as `[planned]` (not
 live) — this fix closes the gameplay-parity gap but does not by itself ship a
 client experience.
 
