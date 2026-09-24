@@ -19,8 +19,8 @@
 
 | Metric           | Value      | Notes                                                                                                                   |
 | ---------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Open Issues      | 0          | As of Mar 2026                                                                                                          |
-| Open PRs         | 0          | As of Mar 2026                                                                                                          |
+| Open Issues      | 1          | #446 (eslint 10 bump blocked on `eslint-plugin-jsx-a11y`). `gh issue list`, 2026-09-24                                  |
+| Open PRs         | 0          | `gh pr list`, 2026-09-24                                                                                                |
 | Health Score     | 100        | Overseer calculated, Mar 2026                                                                                           |
 | Last Updated     | 2026-09-23 | Coverage push: R3F scene components tested via @react-three/test-renderer; suite now 96 files / 789 passing / 5 skipped |
 | CI Status        | ✅ Passing | All tests passing, build successful                                                                                     |
