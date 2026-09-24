@@ -9,6 +9,7 @@ import {
   inAct,
   advance,
   mockNow,
+  type MockClock,
   type R3FRenderer,
 } from "../../../../__tests__/r3f.test.utils";
 
@@ -84,7 +85,7 @@ function recordEvents(...names: string[]) {
 }
 
 describe("ShootingGallery (rendered)", () => {
-  let clock: ReturnType<typeof mockNow>;
+  let clock: MockClock;
 
   beforeEach(() => {
     clock = mockNow(100_000);

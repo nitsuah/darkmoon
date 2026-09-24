@@ -8,6 +8,7 @@ import {
   inAct,
   advance,
   mockNow,
+  type MockClock,
   type R3FRenderer,
 } from "../../../../__tests__/r3f.test.utils";
 
@@ -80,7 +81,7 @@ type Shot = {
 };
 
 describe("useGalleryBot", () => {
-  let clock: ReturnType<typeof mockNow>;
+  let clock: MockClock;
   let shots: Shot[];
   const onFire = (e: Event) => shots.push((e as CustomEvent<Shot>).detail);
   let renderer: R3FRenderer | null = null;
@@ -218,6 +219,20 @@ describe("useGalleryBot", () => {
         .mocked(console.log)
         .mock.calls.some((c) => c.includes("[forcing miss]")),
     ).toBe(true);
+  });
+
+  // Known bug: useGalleryBot scales the forced-miss deflection by an extra
+  // Math.random(), so a "forced" miss can land inside the hitbox. This case
+  // (random = 0.4) deflects only ~0.27 against a 0.3 half-width. Flip to it()
+  // once the deflection no longer depends on that extra random factor.
+  it.fails("clears the target hitbox on a forced miss", async () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.4);
+    const targets = [target("a", 0, -10, 10)];
+    renderer = await renderR3F(
+      <Harness targets={targets} config={{ ...baseConfig, missChance: 0.5 }} />,
+    );
+    await advance(renderer);
+    expect(Math.abs(lastAimX())).toBeGreaterThan(targets[0].def.targetW);
   });
 
   it("applies random aim jitter when configured", async () => {

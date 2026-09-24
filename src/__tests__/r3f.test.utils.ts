@@ -31,8 +31,14 @@ export const advance = (
     await renderer.advanceFrames(frames, delta);
   });
 
+export interface MockClock {
+  get: () => number;
+  set: (t: number) => void;
+  tick: (ms: number) => void;
+}
+
 /** Install a controllable Date.now(). Restore with vi.restoreAllMocks(). */
-export function mockNow(start: number) {
+export function mockNow(start: number): MockClock {
   let now = start;
   vi.spyOn(Date, "now").mockImplementation(() => now);
   return {

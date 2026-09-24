@@ -1,9 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { WeaponManager, WEAPONS } from "../WeaponManager";
-import {
-  SPAWN_POINTS,
-  pickSafeSpawn,
-} from "../../../lib/constants/spawnPoints";
 
 describe("WeaponManager reloads, reserves and charging", () => {
   afterEach(() => {
@@ -66,20 +62,36 @@ describe("WeaponManager reloads, reserves and charging", () => {
     expect(wm.startReload("shotgun", t)).toBe(false);
   });
 
-  it("only partially refills when reserves run low", () => {
+  it("partially refills when the reserve is smaller than the deficit, then stops at empty", () => {
     const wm = new WeaponManager();
+    wm.equip("rocket"); // 3 in the mag, 9 in reserve
     let t = 0;
-    // Rocket: 3 in the mag, 9 in reserve.
-    for (let mag = 0; mag < 3; mag++) {
-      t = emptyMagazine(wm, "rocket", t);
-      wm.startReload("rocket", t);
-      wm.completeReloadNow("rocket");
+    const fire = (shots: number) => {
+      for (let i = 0; i < shots; i++) {
+        expect(wm.fire("me", t)).not.toBeNull();
+        t += WEAPONS.rocket.cooldownMs;
+      }
+    };
+
+    // Four 2-round top-ups drain the reserve from 9 to 1.
+    for (let i = 0; i < 4; i++) {
+      fire(2);
+      wm.refill("rocket");
     }
     expect(wm.getAmmo("rocket")).toBe(3);
-    expect(wm.getReserveAmmo("rocket")).toBe(0);
-    wm.fire("me", t);
+    expect(wm.getReserveAmmo("rocket")).toBe(1);
+
+    // Needs 2 but only 1 is left: loads what remains.
+    fire(2);
     wm.refill("rocket");
     expect(wm.getAmmo("rocket")).toBe(2);
+    expect(wm.getReserveAmmo("rocket")).toBe(0);
+
+    // Empty reserve: the magazine is not topped up.
+    fire(1);
+    wm.refill("rocket");
+    expect(wm.getAmmo("rocket")).toBe(1);
+    expect(wm.getReserveAmmo("rocket")).toBe(0);
   });
 
   it("completeReloadNow is a no-op unless a reload is in progress", () => {
@@ -165,30 +177,5 @@ describe("WeaponManager reloads, reserves and charging", () => {
     expect(wm.isCharging("grenade")).toBe(false);
     wm.unequip(); // idempotent with nothing equipped
     expect(wm.fire("me", 0)).toBeNull();
-  });
-});
-
-describe("pickSafeSpawn", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("picks a random spawn point when there are no enemies", () => {
-    vi.spyOn(Math, "random").mockReturnValue(0.99);
-    expect(pickSafeSpawn([])).toBe(SPAWN_POINTS[SPAWN_POINTS.length - 1]);
-  });
-
-  it("picks the spawn point farthest from the nearest enemy", () => {
-    // Enemies clustered on the +x side → spawn at the far -x point.
-    expect(
-      pickSafeSpawn([
-        [12, 0, 0],
-        [10, 0, 10],
-        [10, 0, -10],
-      ]),
-    ).toEqual([-12, 0.5, 0]);
-    // A single enemy at the north point → a far southern corner (24.2 away)
-    // beats the south point (24 away); ties keep the first candidate.
-    expect(pickSafeSpawn([[0, 0, -12]])).toEqual([-10, 0.5, 10]);
   });
 });

@@ -437,8 +437,15 @@ describe("useGameUIState hooks", () => {
       rerender({ feed: mine });
       expect(result.current).toBe("Target [Rocket Launcher]");
 
-      // Same entry again (new array identity): not re-announced.
+      // Let the announcement expire, then re-render the same entry with a new
+      // array identity: it must not be announced again.
+      act(() => {
+        vi.advanceTimersByTime(2_000);
+      });
+      expect(result.current).toBeNull();
       rerender({ feed: [...mine] });
+      expect(result.current).toBeNull();
+
       rerender({ feed: [...mine, kill("me", "spork", 3)] });
       expect(result.current).toBe("Target [spork]");
       expect(warn).toHaveBeenCalled();
