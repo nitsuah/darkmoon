@@ -154,8 +154,12 @@ export function useGalleryBot(
 
     if (jitterRad !== 0) {
       // Independent horizontal + vertical jitter (more realistic than single-axis).
-      const hJitter =
-        jitterRad * (Math.random() < 0.5 ? 1 : -1) * Math.random();
+      // A forced miss applies its full horizontal deflection: scaling it down by
+      // another random factor could leave the ray inside the hitbox.
+      const hSign = Math.random() < 0.5 ? 1 : -1;
+      const hJitter = intentionalMiss
+        ? jitterRad * hSign
+        : jitterRad * hSign * Math.random();
       const vJitter =
         jitterRad * (Math.random() < 0.5 ? 1 : -1) * Math.random() * 0.6;
       const worldUp = new THREE.Vector3(0, 1, 0);
