@@ -4,7 +4,7 @@ Last Updated: 2026-08-27
 
 ## Purpose
 
-Multiplayer Tag stays `[planned]` in `FEATURES.md` until the server it depends
+Multiplayer Tag stays `[planned]` in `docs/FEATURES.md` until the server it depends
 on is demonstrably deployable, reachable, observable, and debuggable. This
 document defines that bar as four criteria, each with a **testable acceptance
 check** — a command anyone can run to get a pass/fail answer, not a judgement

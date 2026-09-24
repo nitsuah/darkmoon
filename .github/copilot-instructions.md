@@ -84,7 +84,7 @@ This file provides custom instructions to GitHub Copilot when working in this re
 - Update README.md when adding new features or changing setup.
 - Document complex algorithms or business logic.
 - Keep API documentation in sync with implementation (if applicable).
-- Update CHANGELOG.md for notable changes.
+- Update docs/CHANGELOG.md for notable changes.
 
 ## Common Pitfalls to Avoid
 

@@ -9,7 +9,7 @@ _None._
 ## Done
 
 _Shipped work is condensed into `docs/ROADMAP.md` (milestones), `docs/FEATURES.md`
-(gameplay/server capabilities), and `CHANGELOG.md` (change-by-change history) —
+(gameplay/server capabilities), and `docs/CHANGELOG.md` (change-by-change history) —
 see those files rather than a duplicated narrative here._
 
 ## Todo

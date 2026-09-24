@@ -67,4 +67,4 @@ Last Updated: 2026-09-23
       2026-09-11: `.husky/pre-push` now runs `--build` before `run` so the image rebuilds (fast
       via layer cache when nothing changed) before every push when Docker is available; when
       Docker isn't available, the hook prints that same `--build ... run` command as a manual
-      fallback and exits 1, blocking the push until it's run by hand. See `CHANGELOG.md`.
+      fallback and exits 1, blocking the push until it's run by hand. See `docs/CHANGELOG.md`.

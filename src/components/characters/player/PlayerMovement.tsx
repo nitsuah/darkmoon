@@ -300,7 +300,7 @@ export const PlayerMovement = React.memo(
       // Desktop double-jump: a second SPACE press while airborne (and not
       // already jetpacking) within DOUBLE_JUMP_WINDOW_MS of the first jump
       // activates the jetpack — the keyboard equivalent of the mobile
-      // double-tap path below. FEATURES.md advertises "Spacebar for jump and
+      // double-tap path below. docs/FEATURES.md advertises "Spacebar for jump and
       // double-jump mechanics"; previously lastJumpTimeRef was recorded but
       // never read, so this path never existed on desktop.
       const canKeyboardDoubleJump =
