@@ -221,19 +221,23 @@ describe("useGalleryBot", () => {
     ).toBe(true);
   });
 
-  // Known bug: useGalleryBot scales the forced-miss deflection by an extra
-  // Math.random(), so a "forced" miss can land inside the hitbox. This case
-  // (random = 0.4) deflects only ~0.27 against a 0.3 half-width. Flip to it()
-  // once the deflection no longer depends on that extra random factor.
-  it.fails("clears the target hitbox on a forced miss", async () => {
-    vi.spyOn(Math, "random").mockReturnValue(0.4);
-    const targets = [target("a", 0, -10, 10)];
-    renderer = await renderR3F(
-      <Harness targets={targets} config={{ ...baseConfig, missChance: 0.5 }} />,
-    );
-    await advance(renderer);
-    expect(Math.abs(lastAimX())).toBeGreaterThan(targets[0].def.targetW);
-  });
+  // Every random draw below 0.5 fires the 50% miss chance. Low draws used to
+  // shrink the deflection to almost nothing and let the "miss" hit.
+  it.each([0.01, 0.4, 0.49])(
+    "clears the target hitbox on a forced miss (random = %s)",
+    async (r) => {
+      vi.spyOn(Math, "random").mockReturnValue(r);
+      const targets = [target("a", 0, -10, 10)];
+      renderer = await renderR3F(
+        <Harness
+          targets={targets}
+          config={{ ...baseConfig, missChance: 0.5 }}
+        />,
+      );
+      await advance(renderer);
+      expect(Math.abs(lastAimX())).toBeGreaterThan(targets[0].def.targetW);
+    },
+  );
 
   it("applies random aim jitter when configured", async () => {
     vi.spyOn(Math, "random").mockReturnValue(0.9);
