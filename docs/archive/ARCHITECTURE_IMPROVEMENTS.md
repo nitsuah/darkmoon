@@ -1,5 +1,7 @@
 # Architecture Improvements - Quick Reference
 
+> 🧭 [darkmoon](../../README.md) · [Features](../FEATURES.md) · [Roadmap](../ROADMAP.md) · [Tasks](../TASKS.md) · [Changelog](../CHANGELOG.md) · [Metrics](../METRICS.md) <!-- nav -->
+
 **Purpose:** Actionable improvements for code organization and architecture  
 **Related:** [L7_ENGINEERING_REVIEW.md](./L7_ENGINEERING_REVIEW.md), [TECH_DEBT.md](./TECH_DEBT.md)
 

@@ -1,5 +1,7 @@
 # Agent Pickup Instructions
 
+> 🧭 [darkmoon](../README.md) · [Features](./FEATURES.md) · [Roadmap](./ROADMAP.md) · [Tasks](./TASKS.md) · [Changelog](./CHANGELOG.md) · [Metrics](./METRICS.md) <!-- nav -->
+
 ## Context
 
 You are picking up work on the Darkmoon repo (branch: play-modes). The previous agent was focused on stabilizing the solo tag game, ensuring bot-vs-player and player-vs-bot tagging is robust, and enforcing a Docker-first validation workflow for all changes.

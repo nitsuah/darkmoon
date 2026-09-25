@@ -1,5 +1,7 @@
 # Multiplayer Shooter Roadmap — "Robot Conker's Bad Fur Day"
 
+> 🧭 [darkmoon](../../../README.md) · [Features](../../FEATURES.md) · [Roadmap](../../ROADMAP.md) · [Tasks](../../TASKS.md) · [Changelog](../../CHANGELOG.md) · [Metrics](../../METRICS.md) <!-- nav -->
+
 repo: [[repos/darkmoon|darkmoon]]
 
 **Status:** Phase 1 (tag stabilization) complete. Phase A (pluggable game modes)
