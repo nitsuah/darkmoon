@@ -76,7 +76,7 @@ See [CONTRIBUTING.md](https://github.com/nitsuah/.github/blob/main/CONTRIBUTING.
 
 ## Docs Index
 
-Every doc at the repo root and under `docs/` (the files mirrored into the Obsidian vault), so none of them is orphaned.
+Every doc at the repo root (other than this README) and under `docs/` (the files mirrored into the Obsidian vault), so none of them is orphaned.
 
 - [Darkmoon API Reference](./docs/API.md) — `docs/API.md`
 - [Darkmoon Architecture](./docs/ARCHITECTURE.md) — `docs/ARCHITECTURE.md`
