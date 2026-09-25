@@ -1,5 +1,7 @@
 # Tech Debt Tracker
 
+> 🧭 [darkmoon](../../../README.md) · [Features](../../FEATURES.md) · [Roadmap](../../ROADMAP.md) · [Tasks](../../TASKS.md) · [Changelog](../../CHANGELOG.md) · [Metrics](../../METRICS.md) <!-- nav -->
+
 **Last Updated:** September 2, 2026  
 **Status:** Actively tracked
 

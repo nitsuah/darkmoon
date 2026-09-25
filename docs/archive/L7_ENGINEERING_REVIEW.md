@@ -1,5 +1,7 @@
 # L7 Engineering Review - Darkmoon
 
+> 🧭 [darkmoon](../../README.md) · [Features](../FEATURES.md) · [Roadmap](../ROADMAP.md) · [Tasks](../TASKS.md) · [Changelog](../CHANGELOG.md) · [Metrics](../METRICS.md) <!-- nav -->
+
 **Date:** November 23, 2025  
 **Reviewer:** L7 Engineering Analysis  
 **Repository:** github.com/nitsuah/darkmoon

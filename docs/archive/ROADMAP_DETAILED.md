@@ -1,5 +1,7 @@
 # DARKMOON Product Roadmap
 
+> 🧭 [darkmoon](../../README.md) · [Features](../FEATURES.md) · [Roadmap](../ROADMAP.md) · [Tasks](../TASKS.md) · [Changelog](../CHANGELOG.md) · [Metrics](../METRICS.md) <!-- nav -->
+
 **Version:** 2.0  
 **Last Updated:** November 23, 2025  
 **Status:** Active Development

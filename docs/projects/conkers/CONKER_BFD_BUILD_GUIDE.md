@@ -1,5 +1,7 @@
 # 🐿️ Conker's Bad Fur Day — Open Source Three.js Recreation Guide
 
+> 🧭 [darkmoon](../../../README.md) · [Features](../../FEATURES.md) · [Roadmap](../../ROADMAP.md) · [Tasks](../../TASKS.md) · [Changelog](../../CHANGELOG.md) · [Metrics](../../METRICS.md) <!-- nav -->
+
 > **For Agent Use**: This document is a complete implementation specification for recreating the gameplay systems, maps, modes, and mechanics of _Conker's Bad Fur Day_ (Rare, 2001) using Three.js as the rendering foundation. Assume a base framework is already in place (scene graph, input handler, asset loader, basic physics stub, and render loop). Your job is to **extend** that framework with the systems described below.
 
 ---
