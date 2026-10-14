@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Mobile controls overhaul** (PR #417) — reworked touch joystick, aim assist, and responsive HUD; mobile input verified functional via browser emulation.
 - **Dependabot grouping** — `minor`/`patch` npm updates and GitHub Actions updates now group into single PRs instead of one-per-dependency.
 
+### Removed
+
+- Dead web3 wallet CSS (`.poly-wallet`, `.neutral-wallet`, `.connect-wallet-container`, `.connect-wallet-button`, `.eth-wallet`) left in `src/styles/App.css` after the wallet auth was removed; no markup referenced these classes.
+
 ### Fixed
 
 - CORS wildcard matcher escaping and single-DNS-label scoping; bare `ALLOWED_ORIGINS=*` no longer combines with `credentials: true`.
