@@ -16,6 +16,7 @@ import { getAddress, isAddress, verifyMessage } from "viem";
 const NONCE_TTL_MS = 5 * 60 * 1000;
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const NONCE_PATTERN = /Nonce: ([0-9a-f]{32})/;
+const MAX_OUTSTANDING_NONCES = 10_000;
 
 /**
  * The exact text a wallet signs. Verification rebuilds this from the nonce and
@@ -61,6 +62,8 @@ export const createWalletAuth = ({
    */
   const issueNonce = () => {
     pruneExpiredNonces();
+    // Unauthenticated callers can request nonces freely, so cap the map.
+    if (nonces.size >= MAX_OUTSTANDING_NONCES) return null;
     const nonce = randomBytes(16).toString("hex");
     nonces.set(nonce, now() + nonceTtlMs);
     return { nonce, message: buildSignInMessage(nonce) };

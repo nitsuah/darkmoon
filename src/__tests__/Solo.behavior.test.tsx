@@ -110,7 +110,9 @@ describe("Solo behavior", () => {
 
     expect(gameManager.startTagGame).toHaveBeenCalled();
     expect(gameManager.endGame).toHaveBeenCalled();
-    // Solo has no server connection, so chat is not sent anywhere.
+    // Offline solo keeps chat local: the message is shown, nothing is emitted.
+    const chat = lastSoloHudProps?.chatMessages as Array<{ message: string }>;
+    expect(chat.map((m) => m.message)).toContain("clean:hello");
     expect(emitMock).not.toHaveBeenCalled();
   });
 

@@ -16,10 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Mobile controls overhaul** (PR #417) — reworked touch joystick, aim assist, and responsive HUD; mobile input verified functional via browser emulation.
 - **Dependabot grouping** — `minor`/`patch` npm updates and GitHub Actions updates now group into single PRs instead of one-per-dependency.
 
-### Changed
-
-- Solo mode runs offline and no longer connects to the multiplayer server, so the server's wallet gate cannot be bypassed by connecting as solo.
-
 ### Removed
 
 - Dead web3 wallet CSS (`.poly-wallet`, `.neutral-wallet`, `.connect-wallet-container`, `.connect-wallet-button`, `.eth-wallet`) left in `src/styles/App.css` after the wallet auth was removed; no markup referenced these classes.
@@ -45,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Solo mode runs offline and no longer connects to the multiplayer server, so the server's wallet gate cannot be bypassed by connecting as solo.
 - Agent instructions (`.github/copilot-instructions.md`) now require closing tracked work in the same PR: update `docs/TASKS.md`, `docs/ROADMAP.md` and this changelog before the last push, and confirm `git diff origin/main...HEAD --stat` includes them before merge; added `.github/pull_request_template.md` with a "Closes TASKS item(s)" checklist.
 - Test coverage raised from ~74% to ~96% lines (#456).
 - Dependabot now ignores `eslint` semver-major updates until `eslint-plugin-jsx-a11y` supports eslint 10 (#446); stops the recurring eslint 10 PR that fails `npm ci` with ERESOLVE.

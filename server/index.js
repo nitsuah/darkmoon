@@ -164,7 +164,12 @@ router.get("/", async (req, res) => {
 // POST /auth/verify checks the signature and returns a session token that the
 // client passes in the Socket.io handshake (`auth.token`).
 router.post("/auth/nonce", (req, res) => {
-  res.json(walletAuth.issueNonce());
+  const challenge = walletAuth.issueNonce();
+  if (!challenge) {
+    res.status(503).json({ error: "nonce_capacity_exceeded" });
+    return;
+  }
+  res.json(challenge);
 });
 
 router.post(

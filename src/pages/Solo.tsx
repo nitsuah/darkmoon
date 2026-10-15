@@ -501,17 +501,17 @@ const Solo: React.FC = () => {
   }, [botDebugMode, syncGameState, addNotification]);
 
   const handleSendMessage = (message: string) => {
-    if (!socketClient) return;
     const filtered = filterProfanity(message);
     const chatMessage: ChatMessage = {
       id: `${Date.now()}-${Math.random()}`,
-      playerId: socketClient.id || "unknown",
+      playerId: socketClient?.id || localPlayerId,
       playerName: "You",
       message: filtered,
       timestamp: Date.now(),
     };
     addChatMessage(chatMessage);
-    socketClient.emit("chat-message", { message: filtered });
+    // Offline solo has no socket, so the message stays local.
+    socketClient?.emit("chat-message", { message: filtered });
   };
 
   return (

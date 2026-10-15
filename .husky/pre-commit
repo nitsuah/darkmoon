@@ -25,7 +25,7 @@ if [ -f ".git" ]; then
         JS_FILES="$(echo "$STAGED" | grep -E '\.(js|jsx|ts|tsx)$' | tr '\n' ' ' || true)"
         if [ -n "$FORMAT_FILES" ]; then
             MSYS_NO_PATHCONV=1 docker run --rm \
-                -v "$(pwd -W):/app" \
+                -v "$(pwd -W 2>/dev/null || pwd):/app" \
                 -v darkmoon-wt-node-modules:/app/node_modules \
                 -w /app \
                 -e FORMAT_FILES="$FORMAT_FILES" \

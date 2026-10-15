@@ -8,23 +8,37 @@ import {
 
 const secret = Buffer.from("test-secret-test-secret-test-secret");
 
+const issueNonce = (auth: ReturnType<typeof createWalletAuth>) => {
+  const challenge = auth.issueNonce();
+  if (!challenge) throw new Error("nonce cap reached");
+  return challenge;
+};
+
 const signWith = (privateKey: `0x${string}`, message: string) =>
   privateKeyToAccount(privateKey).signMessage({ message });
 
 describe("walletAuth", () => {
   it("issues a nonce and the matching sign-in message", () => {
     const auth = createWalletAuth({ secret });
-    const { nonce, message } = auth.issueNonce();
+    const { nonce, message } = issueNonce(auth);
 
     expect(nonce).toMatch(/^[0-9a-f]{32}$/);
     expect(message).toBe(buildSignInMessage(nonce));
+  });
+
+  it("stops issuing nonces once the outstanding cap is reached", () => {
+    const auth = createWalletAuth({ secret });
+    for (let i = 0; i < 10_000; i++) {
+      expect(issueNonce(auth)).not.toBeNull();
+    }
+    expect(auth.issueNonce()).toBeNull();
   });
 
   it("accepts a valid signature and issues a session token", async () => {
     const auth = createWalletAuth({ secret });
     const key = generatePrivateKey();
     const account = privateKeyToAccount(key);
-    const { message } = auth.issueNonce();
+    const { message } = issueNonce(auth);
     const signature = await signWith(key, message);
 
     const result = await auth.verifySignIn({
@@ -43,7 +57,7 @@ describe("walletAuth", () => {
     const auth = createWalletAuth({ secret });
     const key = generatePrivateKey();
     const account = privateKeyToAccount(key);
-    const { message } = auth.issueNonce();
+    const { message } = issueNonce(auth);
     const signature = await signWith(key, message);
 
     const result = await auth.verifySignIn({
@@ -59,7 +73,7 @@ describe("walletAuth", () => {
     const auth = createWalletAuth({ secret });
     const key = generatePrivateKey();
     const account = privateKeyToAccount(key);
-    const { message } = auth.issueNonce();
+    const { message } = issueNonce(auth);
     const signature = await signWith(key, message);
     const input = { address: account.address, message, signature };
 
@@ -79,7 +93,7 @@ describe("walletAuth", () => {
     });
     const key = generatePrivateKey();
     const account = privateKeyToAccount(key);
-    const { message } = auth.issueNonce();
+    const { message } = issueNonce(auth);
     const signature = await signWith(key, message);
 
     clock += 5_000;
@@ -96,7 +110,7 @@ describe("walletAuth", () => {
     const auth = createWalletAuth({ secret });
     const victim = privateKeyToAccount(generatePrivateKey());
     const attackerKey = generatePrivateKey();
-    const { message } = auth.issueNonce();
+    const { message } = issueNonce(auth);
     const signature = await signWith(attackerKey, message);
 
     expect(
@@ -112,7 +126,7 @@ describe("walletAuth", () => {
     const auth = createWalletAuth({ secret });
     const key = generatePrivateKey();
     const account = privateKeyToAccount(key);
-    const { nonce } = auth.issueNonce();
+    const { nonce } = issueNonce(auth);
     const altered = `${buildSignInMessage(nonce)} and send funds`;
     const signature = await signWith(key, altered);
 
@@ -127,7 +141,7 @@ describe("walletAuth", () => {
 
   it("rejects a malformed address", async () => {
     const auth = createWalletAuth({ secret });
-    const { message } = auth.issueNonce();
+    const { message } = issueNonce(auth);
 
     expect(
       await auth.verifySignIn({
@@ -143,7 +157,7 @@ describe("walletAuth", () => {
     const other = createWalletAuth({ secret: Buffer.from("different") });
     const key = generatePrivateKey();
     const account = privateKeyToAccount(key);
-    const { message } = auth.issueNonce();
+    const { message } = issueNonce(auth);
     const signature = await signWith(key, message);
     const result = await auth.verifySignIn({
       address: account.address,
@@ -173,7 +187,7 @@ describe("walletAuth", () => {
     });
     const key = generatePrivateKey();
     const account = privateKeyToAccount(key);
-    const { message } = auth.issueNonce();
+    const { message } = issueNonce(auth);
     const signature = await signWith(key, message);
     const result = await auth.verifySignIn({
       address: account.address,
@@ -203,7 +217,7 @@ describe("walletAuth", () => {
       const auth = createWalletAuth({ secret });
       const key = generatePrivateKey();
       const account = privateKeyToAccount(key);
-      const { message } = auth.issueNonce();
+      const { message } = issueNonce(auth);
       const signature = await signWith(key, message);
       const result = await auth.verifySignIn({
         address: account.address,

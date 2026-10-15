@@ -21,7 +21,8 @@ export interface SocketLike {
 }
 
 export interface WalletAuth {
-  issueNonce(): NonceChallenge;
+  /** Returns null when too many nonces are outstanding. */
+  issueNonce(): NonceChallenge | null;
   verifySignIn(input: {
     address: unknown;
     message: unknown;
