@@ -2,13 +2,27 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Darkmoon E2E Smoke Tests", () => {
   test("home page loads", async ({ page }) => {
-    await page.goto("http://localhost:4444/");
-    const title = await page.title();
-    expect(title).toBe("DARKMOON.DEV");
+    await page.goto("/");
+    await expect(page).toHaveTitle("DARKMOON.DEV");
   });
 
-  test("solo page loads", async ({ page }) => {
-    await page.goto("http://localhost:4444/solo");
-    await expect(page.locator("canvas")).toBeVisible({ timeout: 10000 });
+  test("solo scene mounts without uncaught browser errors", async ({ page }) => {
+    const pageErrors: string[] = [];
+    page.on("pageerror", (error) => pageErrors.push(error.message));
+
+    await page.goto("/solo");
+
+    const canvas = page.locator("canvas").first();
+    await expect(canvas).toBeVisible({ timeout: 10000 });
+    await expect
+      .poll(async () => {
+        const bounds = await canvas.boundingBox();
+        return bounds ? bounds.width > 0 && bounds.height > 0 : false;
+      })
+      .toBe(true);
+
+    // Allow the initial React/Three.js render and effects to run before checking.
+    await page.waitForTimeout(1000);
+    expect(pageErrors, "uncaught browser errors during solo startup").toEqual([]);
   });
 });
