@@ -51,8 +51,6 @@
 
 /* Accessibility: Focus styles for buttons and links */
 button:focus,
-.poly-wallet:focus,
-.neutral-wallet:focus,
 .mint-button:focus,
 a:focus {
   outline: 2px solid #ff8c7f;
@@ -97,17 +95,6 @@ a:focus {
   .projects-card p {
     font-size: 13px;
     margin: 0.5rem 0;
-  }
-  .poly-wallet,
-  .neutral-wallet {
-    min-height: 48px; /* Touch-friendly size */
-    width: 100%;
-    font-size: 16px;
-    padding: 12px 20px;
-  }
-  .poly-wallet h3,
-  .neutral-wallet h3 {
-    font-size: 16px;
   }
   .middle-row {
     position: static;
@@ -263,48 +250,6 @@ a:focus {
   color: white;
 }
 
-.connect-wallet-container {
-  display: flex;
-  flex-direction: column;
-  margin: auto;
-  max-width: 550px;
-}
-
-.connect-wallet-container img {
-  padding-bottom: 20px;
-  user-select: none;
-}
-
-.connect-wallet-button {
-  background-image: linear-gradient(
-    to right,
-    #ff8177 0%,
-    #ff867a 0%,
-    #ff8c7f 21%,
-    #f99185 52%,
-    #cf556c 78%,
-    #b12a5b 100%
-  );
-  background-size: 200% 200%;
-  animation: gradient-animation 4s ease infinite;
-}
-
-.eth-wallet {
-  background: -webkit-linear-gradient(left, #058500, #000000);
-  background-size: 200% 200%;
-  animation: gradient-animation 4s ease infinite;
-  margin: 20px;
-  border-radius: 20px;
-  letter-spacing: 1px;
-  font-size: 16px;
-  width: auto;
-  padding: 10px 20px;
-  text-align: center;
-  user-select: none;
-  display: flex;
-  flex-direction: row;
-}
-
 .gif-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
@@ -412,58 +357,6 @@ a:focus {
   pointer-events: none;
   color: #ffffff;
   overflow: auto;
-}
-
-.poly-wallet {
-  background: -webkit-linear-gradient(left, #750691, #000000);
-  background-size: 200% 200%;
-  color: white;
-  animation: gradient-animation 4s ease infinite;
-  margin: 20px;
-  border-radius: 20px;
-  letter-spacing: 1px;
-  font-size: 16px;
-  width: auto;
-  min-width: 100px;
-  padding: 10px 20px;
-  text-align: center;
-  cursor: pointer;
-  user-select: auto;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.poly-wallet h3,
-.neutral-wallet h3 {
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-
-.neutral-wallet {
-  background: -webkit-linear-gradient(left, #343434, #000000);
-  background-size: 200% 200%;
-  color: white;
-  animation: gradient-animation 4s ease infinite;
-  margin: 20px;
-  border-radius: 20px;
-  letter-spacing: 1px;
-  font-size: 16px;
-  width: auto;
-  min-width: 100px;
-  padding: 10px 20px;
-  text-align: center;
-  cursor: not-allowed;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
 }
 
 .mint-button {

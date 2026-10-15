@@ -18,6 +18,7 @@ import { buildHealthReport, healthStatusCode } from "./health.js";
 import { authorizeTag } from "./tagAuthorization.js";
 import { resolveItHandoff } from "./itHandoff.js";
 import { resolvePort } from "./port.js";
+import { createWalletAuth } from "./walletAuth.js";
 
 const PORT = resolvePort(process.env.PORT);
 const SERVER_STARTED_AT = Date.now();
@@ -28,6 +29,17 @@ const APP_VERSION = process.env.APP_VERSION || null;
 const logger = createLogger({
   level: process.env.LOG_LEVEL,
   base: { service: "darkmoon-server" },
+});
+
+// Without WALLET_AUTH_SECRET the signing key is random per process: sessions are
+// still safe, but they stop working after a restart or on another instance.
+if (!process.env.WALLET_AUTH_SECRET) {
+  logger.warn("auth.ephemeral_secret", {
+    reason: "WALLET_AUTH_SECRET not set; sessions reset on restart",
+  });
+}
+const walletAuth = createWalletAuth({
+  secret: process.env.WALLET_AUTH_SECRET || undefined,
 });
 
 // A bare `*` in ALLOWED_ORIGINS is dropped by parseAllowedOrigins (see cors.js
@@ -148,6 +160,33 @@ router.get("/", async (req, res) => {
   });
 });
 
+// Wallet sign-in. POST /auth/nonce hands out a one-time message to sign;
+// POST /auth/verify checks the signature and returns a session token that the
+// client passes in the Socket.io handshake (`auth.token`).
+router.post("/auth/nonce", (req, res) => {
+  const challenge = walletAuth.issueNonce();
+  if (!challenge) {
+    res.status(503).json({ error: "nonce_capacity_exceeded" });
+    return;
+  }
+  res.json(challenge);
+});
+
+router.post(
+  "/auth/verify",
+  express.json({ limit: "4kb" }),
+  async (req, res) => {
+    const result = await walletAuth.verifySignIn(req.body ?? {});
+    if (!result.ok) {
+      logger.warn("auth.sign_in_rejected", { reason: result.reason });
+      res.status(401).json({ error: result.reason });
+      return;
+    }
+    logger.info("auth.sign_in", { address: result.address });
+    res.json({ address: result.address, token: result.token });
+  },
+);
+
 // ...existing code...
 
 // Create express app and listen on specified port
@@ -223,6 +262,9 @@ const ioServer = new Server(server, {
     logger.warn(GAME_EVENTS.CORS_REJECTED, { origin, transport: "websocket" }),
   ),
 });
+
+// Multiplayer requires a wallet session: refuse any socket without a valid token.
+ioServer.use(walletAuth.requireSocketSession);
 
 let clients = {};
 let gameState = {

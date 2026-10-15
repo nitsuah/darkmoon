@@ -1,6 +1,7 @@
 import React from "react";
 import { render, screen, waitFor, act } from "@testing-library/react";
-import { expect, describe, it, vi, beforeEach } from "vitest";
+import { expect, describe, it, vi, beforeEach, afterEach } from "vitest";
+import { io } from "socket.io-client";
 import Lobby from "../pages/Lobby";
 import { BrowserRouter } from "react-router-dom";
 
@@ -51,10 +52,67 @@ vi.mock("@react-three/drei", () => {
   };
 });
 
+const SESSION_KEY = "darkmoon.wallet-session";
+
 describe("Lobby Page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     Object.keys(socketHandlers).forEach((k) => delete socketHandlers[k]);
+    globalThis.sessionStorage.setItem(
+      SESSION_KEY,
+      JSON.stringify({ address: "0xabc", token: "test-token" }),
+    );
+  });
+
+  afterEach(() => {
+    globalThis.sessionStorage.clear();
+    delete (window as { ethereum?: unknown }).ethereum;
+  });
+
+  it("asks for a wallet and opens no socket without a session", async () => {
+    globalThis.sessionStorage.clear();
+
+    render(
+      <BrowserRouter>
+        <Lobby />
+      </BrowserRouter>,
+    );
+
+    expect(
+      await screen.findByText("Sign in with a wallet to play multiplayer"),
+    ).toBeInTheDocument();
+    expect(io).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("canvas-mock")).toBeNull();
+  });
+
+  it("lists injected wallets and offers sign-in", async () => {
+    globalThis.sessionStorage.clear();
+    (window as { ethereum?: unknown }).ethereum = { request: vi.fn() };
+
+    render(
+      <BrowserRouter>
+        <Lobby />
+      </BrowserRouter>,
+    );
+
+    expect(
+      await screen.findByRole("button", { name: "Browser wallet" }),
+    ).toBeInTheDocument();
+    expect(io).not.toHaveBeenCalled();
+  });
+
+  it("sends the session token in the socket handshake", async () => {
+    render(
+      <BrowserRouter>
+        <Lobby />
+      </BrowserRouter>,
+    );
+
+    await screen.findByTestId("canvas-mock");
+    expect(io).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ auth: { token: "test-token" } }),
+    );
   });
 
   it("connects socket and renders scene shell", async () => {
