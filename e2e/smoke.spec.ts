@@ -36,7 +36,7 @@ test.describe("Darkmoon E2E Smoke Tests", () => {
     const pageErrors: string[] = [];
     page.on("pageerror", (error) => {
       if (error.stack?.includes("/@vite/client")) return;
-      pageErrors.push(`${error.message}\\n${error.stack ?? ""}`);
+      pageErrors.push(`${error.message}\n${error.stack ?? ""}`);
     });
 
     await page.goto("/solo");
@@ -54,7 +54,7 @@ test.describe("Darkmoon E2E Smoke Tests", () => {
     await page.keyboard.down("Tab");
     try {
       await expect(page.getByText(/SHOOTING_GALLERY — SCORES/)).toBeVisible({ timeout: 5000 });
-      await expect(page.getByText(/\\d+ pts/).filter({ hasText: /^[1-9]\\d* pts$/ }).first()).toBeVisible({ timeout: 15000 });
+      await expect(page.getByText(/\d+ pts/).filter({ hasText: /^[1-9]\d* pts$/ }).first()).toBeVisible({ timeout: 15000 });
     } finally {
       await page.keyboard.up("Tab");
     }
