@@ -8,11 +8,6 @@ import Solo from "../pages/Solo";
 const navigateMock = vi.fn();
 const emitMock = vi.fn();
 
-const socket = {
-  id: "socket-1",
-  emit: emitMock,
-};
-
 const gameState = {
   mode: "none",
   isActive: false,
@@ -47,13 +42,6 @@ vi.mock("react-router-dom", async () => {
 
 vi.mock("../lib/constants/profanity", () => ({
   filterProfanity: (m: string) => `clean:${m}`,
-}));
-
-vi.mock("../lib/hooks/useSocketConnection", () => ({
-  useSocketConnection: () => ({
-    getSocket: () => socket,
-    connect: vi.fn(),
-  }),
 }));
 
 vi.mock("../lib/hooks/useSoloGame", () => ({
@@ -110,7 +98,7 @@ describe("Solo behavior", () => {
       </BrowserRouter>,
     );
 
-  it("wires SoloHUD handlers for start/end game and chat send", () => {
+  it("wires SoloHUD handlers for start/end game; solo chat stays local", () => {
     renderSolo();
     expect(lastSoloHudProps).toBeTruthy();
 
@@ -122,9 +110,8 @@ describe("Solo behavior", () => {
 
     expect(gameManager.startTagGame).toHaveBeenCalled();
     expect(gameManager.endGame).toHaveBeenCalled();
-    expect(emitMock).toHaveBeenCalledWith("chat-message", {
-      message: "clean:hello",
-    });
+    // Solo has no server connection, so chat is not sent anywhere.
+    expect(emitMock).not.toHaveBeenCalled();
   });
 
   it("toggles pause with Escape and toggles debug via HUD callback", () => {

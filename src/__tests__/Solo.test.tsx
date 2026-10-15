@@ -96,9 +96,9 @@ describe("Solo Component", () => {
     expect(screen.getByTestId("orbit-controls")).toBeDefined();
   });
 
-  it("initializes socket connection on mount", () => {
+  it("runs offline and never opens a multiplayer socket", () => {
     renderWithTheme(<Solo />);
-    expect(io).toHaveBeenCalled();
+    expect(io).not.toHaveBeenCalled();
   });
 
   it.skip("disconnects socket on unmount", () => {
@@ -199,35 +199,13 @@ describe("Solo Component", () => {
     expect(mockSocket.off).toHaveBeenCalledWith("move");
   });
 
-  it("uses environment variable for socket server URL when available", () => {
-    // Mock import.meta.env for Vite
+  it("does not open a multiplayer socket when the server URL is set", () => {
     vi.stubEnv("VITE_SOCKET_SERVER_URL", "http://custom-server.com");
 
     renderWithTheme(<Solo />);
 
-    expect(io).toHaveBeenCalledWith("http://custom-server.com", {
-      transports: ["websocket"],
-      reconnection: false,
-      reconnectionAttempts: 0,
-      reconnectionDelay: 0,
-      autoConnect: false,
-    });
+    expect(io).not.toHaveBeenCalled();
 
     vi.unstubAllEnvs();
-  });
-
-  it("falls back to window.location.origin when no env variable is set", () => {
-    // Ensure no env variable is set
-    vi.unstubAllEnvs();
-
-    renderWithTheme(<Solo />);
-
-    expect(io).toHaveBeenCalledWith(window.location.origin, {
-      transports: ["websocket"],
-      reconnection: false,
-      reconnectionAttempts: 0,
-      reconnectionDelay: 0,
-      autoConnect: false,
-    });
   });
 });

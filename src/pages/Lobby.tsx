@@ -7,6 +7,15 @@ import { io } from "socket.io-client";
 import type { Socket } from "socket.io-client";
 import type { Clients } from "../types/socket";
 import Footer from "../components/Footer";
+import {
+  clearSession,
+  discoverWallets,
+  getServerUrl,
+  loadSession,
+  signInWithWallet,
+  type WalletOption,
+  type WalletSession,
+} from "../lib/wallet/walletAuth";
 import "../styles/App.css";
 
 interface ControlsWrapperProps {
@@ -98,21 +107,109 @@ const UserWrapper: React.FC<UserWrapperProps> = ({
   );
 };
 
+interface WalletGateProps {
+  wallets: WalletOption[] | null;
+  error: string | null;
+  signingIn: boolean;
+  onSignIn: (wallet: WalletOption) => void;
+}
+
+// Shown until the player has signed in with a wallet. Multiplayer needs a
+// session token; the server refuses sockets without one.
+const WalletGate: React.FC<WalletGateProps> = ({
+  wallets,
+  error,
+  signingIn,
+  onSignIn,
+}) => (
+  <div className="App">
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "12px",
+        padding: "40px 16px",
+      }}
+    >
+      <h2>Sign in with a wallet to play multiplayer</h2>
+      <p>Solo play does not need a wallet.</p>
+      {wallets === null && <p>Looking for wallets…</p>}
+      {wallets?.length === 0 && (
+        <p>No wallet found. Install a browser wallet and reload this page.</p>
+      )}
+      {wallets?.map((wallet) => (
+        <button
+          key={wallet.info.uuid}
+          type="button"
+          disabled={signingIn}
+          onClick={() => onSignIn(wallet)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            padding: "10px 20px",
+            borderRadius: "12px",
+            border: 0,
+            cursor: "pointer",
+            fontSize: "16px",
+          }}
+        >
+          {wallet.info.icon && (
+            <img src={wallet.info.icon} alt="" width={24} height={24} />
+          )}
+          {wallet.info.name}
+        </button>
+      ))}
+      {error && <p role="alert">{error}</p>}
+    </div>
+    <Footer />
+  </div>
+);
+
 const Lobby: React.FC = () => {
+  const [session, setSession] = useState<WalletSession | null>(() =>
+    loadSession(),
+  );
   const [socketClient, setSocketClient] = useState<Socket | null>(null);
   const [clients, setClients] = useState<Clients>({});
+  const [wallets, setWallets] = useState<WalletOption[] | null>(null);
+  const [signInError, setSignInError] = useState<string | null>(null);
+  const [signingIn, setSigningIn] = useState(false);
 
+  // Without a session, list the injected wallets for the sign-in gate.
   useEffect(() => {
-    // On mount initialize the socket connection
-    const serverUrl =
-      import.meta.env.VITE_SOCKET_SERVER_URL || window.location.origin;
-    const socket = io(serverUrl, { transports: ["websocket"] });
+    if (session) return;
+    let active = true;
+    discoverWallets().then((found) => {
+      if (active) setWallets(found);
+    });
+    return () => {
+      active = false;
+    };
+  }, [session]);
+
+  // Open the multiplayer socket only with a session token.
+  useEffect(() => {
+    if (!session) return;
+    const socket = io(getServerUrl(), {
+      transports: ["websocket"],
+      auth: { token: session.token },
+    });
+    socket.on("connect_error", (err: Error) => {
+      if (err.message === "wallet_auth_required") {
+        clearSession();
+        setSession(null);
+        setSignInError("Your wallet session expired. Please sign in again.");
+      }
+    });
     setSocketClient(socket);
     // Dispose gracefully
     return () => {
       socket.disconnect();
+      setSocketClient(null);
     };
-  }, []);
+  }, [session]);
 
   useEffect(() => {
     if (socketClient) {
@@ -121,6 +218,29 @@ const Lobby: React.FC = () => {
       });
     }
   }, [socketClient]);
+
+  const handleSignIn = async (wallet: WalletOption) => {
+    setSignInError(null);
+    setSigningIn(true);
+    try {
+      setSession(await signInWithWallet(wallet));
+    } catch (err) {
+      setSignInError(err instanceof Error ? err.message : "Sign-in failed.");
+    } finally {
+      setSigningIn(false);
+    }
+  };
+
+  if (!session) {
+    return (
+      <WalletGate
+        wallets={wallets}
+        error={signInError}
+        signingIn={signingIn}
+        onSignIn={handleSignIn}
+      />
+    );
+  }
 
   if (!socketClient) return null;
 

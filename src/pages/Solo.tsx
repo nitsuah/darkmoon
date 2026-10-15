@@ -10,8 +10,7 @@ import "../styles/App.css";
 import { useNavigate } from "react-router-dom";
 import { filterProfanity } from "../lib/constants/profanity";
 import { createTagLogger } from "../lib/utils/logger";
-import { useSoloGame, attachToConnection } from "../lib/hooks/useSoloGame";
-import { useSocketConnection } from "../lib/hooks/useSocketConnection";
+import { useSoloGame } from "../lib/hooks/useSoloGame";
 import {
   BOT1_CONFIG,
   BOT2_CONFIG,
@@ -78,7 +77,9 @@ const GAMEPLAY_KEYS = Object.freeze([
 
 const Solo: React.FC = () => {
   const navigate = useNavigate();
-  const [socketClient, setSocketClient] = useState<Socket | null>(null);
+  // Solo runs offline and never opens a multiplayer socket (the server only
+  // accepts wallet-authenticated players), so there is no socket client here.
+  const socketClient = null as Socket | null;
   const clients = useMemo<Clients>(() => ({}), []);
   const clientsRef = useRef<Clients>(clients);
   const [currentFPS, setCurrentFPS] = useState(60);
@@ -202,22 +203,11 @@ const Solo: React.FC = () => {
 
   const rockPositions = useRockPositions();
   const { initializeForSocket } = useSoloGame();
-  const { getSocket, connect: connectSocket } = useSocketConnection({
-    autoConnect: false,
-    ioOptions: { reconnection: false },
-  });
-
-  useEffect(() => {
-    const s = getSocket();
-    if (s) setSocketClient(s as Socket);
-  }, [getSocket]);
-
-  // Socket + GameManager initialization
+  // GameManager initialization for offline solo play
   useEffect(() => {
     try {
-      const maybeSocket = getSocket() || { id: localPlayerId };
       const mgr = initializeForSocket(
-        maybeSocket,
+        { id: localPlayerId },
         { setGamePlayers, setGameState, setPlayerIsIt },
         botDebugMode ? BOT2_CONFIG : BOT1_CONFIG,
       );
@@ -228,22 +218,6 @@ const Solo: React.FC = () => {
     } catch {
       // ignore init errors in tests / non-browser envs
     }
-
-    const cleanup = attachToConnection(
-      getSocket,
-      connectSocket,
-      initializeForSocket,
-      { setGamePlayers, setGameState, setPlayerIsIt },
-      botDebugMode ? BOT2_CONFIG : BOT1_CONFIG,
-    );
-
-    return () => {
-      try {
-        cleanup?.();
-      } catch {
-        /* ignore */
-      }
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

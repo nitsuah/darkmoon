@@ -11,9 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Wallet sign-in for multiplayer** — the `/play` lobby asks the player to sign a one-time message with any injected browser wallet (EIP-6963 or `window.ethereum`). The server verifies the signature (`viem`) and issues a session token, and refuses any socket without one. Endpoints: `POST /auth/nonce`, `POST /auth/verify`; optional `WALLET_AUTH_SECRET`. See `docs/API.md` → Wallet sign-in. Covered by `server/walletAuth.js` and `src/lib/wallet/walletAuth.ts` tests.
 - **Multiplayer readiness gate** (PR #418) — `server/logger.js` (structured JSON logging), `server/cors.js` (shared HTTP/WebSocket origin allowlist), `server/health.js`, `server/port.js`, and `server/tagAuthorization.js`; SIGTERM graceful shutdown; 96 new server tests. See `docs/projects/multi/MULTIPLAYER_GATE.md`.
 - **Mobile controls overhaul** (PR #417) — reworked touch joystick, aim assist, and responsive HUD; mobile input verified functional via browser emulation.
 - **Dependabot grouping** — `minor`/`patch` npm updates and GitHub Actions updates now group into single PRs instead of one-per-dependency.
+
+### Changed
+
+- Solo mode runs offline and no longer connects to the multiplayer server, so the server's wallet gate cannot be bypassed by connecting as solo.
 
 ### Removed
 
