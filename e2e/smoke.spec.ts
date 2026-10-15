@@ -31,7 +31,7 @@ test.describe("Darkmoon E2E Smoke Tests", () => {
     await page.waitForTimeout(1000);
     expect(pageErrors, "uncaught application errors during solo startup").toEqual([]);
   });
-  
+
   test("gallery debug bot can fire and score in a playable round", async ({ page }) => {
     const pageErrors: string[] = [];
     page.on("pageerror", (error) => {
@@ -39,6 +39,10 @@ test.describe("Darkmoon E2E Smoke Tests", () => {
       pageErrors.push(`${error.message}\n${error.stack ?? ""}`);
     });
 
+    // Make first-run UI deterministic so the tutorial cannot intercept game controls.
+    await page.addInitScript(() => {
+      window.localStorage.setItem("darkmoon-tutorial-complete", "true");
+    });
     await page.goto("/solo");
     await expect(page.locator("canvas").first()).toBeVisible({ timeout: 10000 });
 
@@ -49,14 +53,14 @@ test.describe("Darkmoon E2E Smoke Tests", () => {
 
     await expect(page.getByText(/Shooting Gallery! Hit targets to score/i)).toBeVisible({ timeout: 5000 });
 
-    // Holding Tab exposes the actual game score state. A positive score proves
-    // the bot's fire event passed through gameplay hit detection and scoring.
-    await page.keyboard.down("Tab");
+    // The game UI scoreboard hook opens on I; assert a positive score rather than
+    // assuming the bot is functional just because the round started.
+    await page.keyboard.down("i");
     try {
       await expect(page.getByText(/SHOOTING_GALLERY — SCORES/)).toBeVisible({ timeout: 5000 });
-      await expect(page.getByText(/\d+ pts/).filter({ hasText: /^[1-9]\d* pts$/ }).first()).toBeVisible({ timeout: 15000 });
+      await expect(page.getByText(/^[1-9]\d* pts$/).first()).toBeVisible({ timeout: 15000 });
     } finally {
-      await page.keyboard.up("Tab");
+      await page.keyboard.up("i");
     }
 
     expect(pageErrors, "uncaught application errors during gallery gameplay").toEqual([]);
