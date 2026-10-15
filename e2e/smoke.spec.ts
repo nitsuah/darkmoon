@@ -46,12 +46,12 @@ test.describe("Darkmoon E2E Smoke Tests", () => {
     await page.goto("/solo");
     await expect(page.locator("canvas").first()).toBeVisible({ timeout: 10000 });
 
-    // Use the game's own debug bot as a deterministic actor instead of trying
-    // to infer hit registration from screenshots or canvas pixels.
+    // Enabling gallery debug mode auto-starts the shooting gallery after a short
+    // delay. Starting it manually races that effect and the lobby disappears.
     await page.getByRole("button", { name: /Gallery Debug/ }).click();
-    await page.getByRole("button", { name: /Shooting Gallery/ }).click();
-
-    await expect(page.getByText(/Shooting Gallery! Hit targets to score/i)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/Shooting Gallery! Hit targets to score/i)).toBeVisible({
+      timeout: 10000,
+    });
 
     // The game UI scoreboard hook opens on I; assert a positive score rather than
     // assuming the bot is functional just because the round started.
