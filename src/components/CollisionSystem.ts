@@ -282,6 +282,10 @@ export class CollisionSystem {
         .add(dir.clone().multiplyScalar(along));
       const perpendicularDistance = targetPos.distanceTo(closestPoint);
 
+      // Hitscan weapons must respect the same world geometry as bot line-of-sight.
+      // Without this check, player raycasts can damage targets through crates and rocks.
+      if (!this.hasLineOfSight(origin, targetPos)) return;
+
       if (perpendicularDistance <= this.projectileHitRadius) {
         if (!closest || along < closest.distance) {
           closest = { hitPlayerId: id, distance: along };
