@@ -88,6 +88,24 @@ describe("CollisionSystem", () => {
       expect(hit).toEqual({ hitPlayerId: "target", distance: 5 });
     });
 
+    it("does not hit a player through the center-field crate", () => {
+      const system = new CollisionSystem();
+      const players = new Map([
+        ["shooter", makePlayer("shooter", [5, 0, 0])],
+        ["target", makePlayer("target", [12, 0, 0])],
+      ]);
+
+      const hit = system.checkProjectileHit(
+        new THREE.Vector3(5, 0, 0),
+        new THREE.Vector3(1, 0, 0),
+        30,
+        players,
+        "shooter",
+      );
+
+      expect(hit).toBeNull();
+    });
+
     it("misses a player outside the weapon's range", () => {
       const system = new CollisionSystem();
       const players = new Map([
