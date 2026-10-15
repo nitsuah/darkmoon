@@ -31,4 +31,34 @@ test.describe("Darkmoon E2E Smoke Tests", () => {
     await page.waitForTimeout(1000);
     expect(pageErrors, "uncaught application errors during solo startup").toEqual([]);
   });
+  
+  test("gallery debug bot can fire and score in a playable round", async ({ page }) => {
+    const pageErrors: string[] = [];
+    page.on("pageerror", (error) => {
+      if (error.stack?.includes("/@vite/client")) return;
+      pageErrors.push(`${error.message}\\n${error.stack ?? ""}`);
+    });
+
+    await page.goto("/solo");
+    await expect(page.locator("canvas").first()).toBeVisible({ timeout: 10000 });
+
+    // Use the game's own debug bot as a deterministic actor instead of trying
+    // to infer hit registration from screenshots or canvas pixels.
+    await page.getByRole("button", { name: /Gallery Debug/ }).click();
+    await page.getByRole("button", { name: /Shooting Gallery/ }).click();
+
+    await expect(page.getByText(/Shooting Gallery! Hit targets to score/i)).toBeVisible({ timeout: 5000 });
+
+    // Holding Tab exposes the actual game score state. A positive score proves
+    // the bot's fire event passed through gameplay hit detection and scoring.
+    await page.keyboard.down("Tab");
+    try {
+      await expect(page.getByText(/SHOOTING_GALLERY — SCORES/)).toBeVisible({ timeout: 5000 });
+      await expect(page.getByText(/\\d+ pts/).filter({ hasText: /^[1-9]\\d* pts$/ }).first()).toBeVisible({ timeout: 15000 });
+    } finally {
+      await page.keyboard.up("Tab");
+    }
+
+    expect(pageErrors, "uncaught application errors during gallery gameplay").toEqual([]);
+  });
 });
