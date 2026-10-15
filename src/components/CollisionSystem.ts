@@ -298,7 +298,7 @@ export class CollisionSystem {
         const firstHitPoint = origin
           .clone()
           .add(dir.clone().multiplyScalar(firstHitDistance));
-        if (!this.hasLineOfSight(origin, firstHitPoint)) return;
+        if (!this.isSegmentClear(origin, firstHitPoint, 0.01)) return;
 
         if (!closest || along < closest.distance) {
           closest = { hitPlayerId: id, distance: along };
@@ -315,6 +315,20 @@ export class CollisionSystem {
    * firing when a wall is in the way.
    */
   hasLineOfSight(from: THREE.Vector3, to: THREE.Vector3): boolean {
+    // Bot AI endpoints sit at a player's center, so ignore boxes within 0.3 of it.
+    return this.isSegmentClear(from, to, 0.3);
+  }
+
+  /**
+   * Returns true if no boundary box is hit between `from` and `to`, ignoring hits
+   * within `endTolerance` of `to`. Hit points near `from` are ignored too, so an
+   * origin inside cover does not block its own shot.
+   */
+  private isSegmentClear(
+    from: THREE.Vector3,
+    to: THREE.Vector3,
+    endTolerance: number,
+  ): boolean {
     const dir = new THREE.Vector3().subVectors(to, from);
     const dist = dir.length();
     if (dist < 0.01) return true;
@@ -324,7 +338,7 @@ export class CollisionSystem {
       const hit = ray.intersectBox(box, new THREE.Vector3());
       if (hit !== null) {
         const hitDist = hit.distanceTo(from);
-        if (hitDist > 0.1 && hitDist < dist - 0.3) return false;
+        if (hitDist > 0.1 && hitDist < dist - endTolerance) return false;
       }
     }
     return true;

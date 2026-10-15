@@ -126,6 +126,26 @@ describe("CollisionSystem", () => {
       expect(hit).toBeNull();
     });
 
+    it("does not hit through cover that ends just before the target's hit point", () => {
+      const system = new CollisionSystem();
+      // The ray along +X at z=1.4 enters the east crate at x=7 and reaches the
+      // target's hit-radius entry point at x=7.2, only 0.2 past the crate face.
+      const players = new Map([
+        ["shooter", makePlayer("shooter", [5, 1, 1.4])],
+        ["target", makePlayer("target", [7.53, 1, 1.9])],
+      ]);
+
+      const hit = system.checkProjectileHit(
+        new THREE.Vector3(5, 1, 1.4),
+        new THREE.Vector3(1, 0, 0),
+        30,
+        players,
+        "shooter",
+      );
+
+      expect(hit).toBeNull();
+    });
+
     it("misses a player outside the weapon's range", () => {
       const system = new CollisionSystem();
       const players = new Map([
