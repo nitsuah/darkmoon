@@ -17,13 +17,47 @@ const makeWallet = (
   provider: { request },
 });
 
+const walletConnectRequest = vi.fn(async () => "0xwc");
+vi.mock("@walletconnect/ethereum-provider", () => ({
+  default: {
+    init: vi.fn(async () => ({ request: walletConnectRequest })),
+  },
+}));
+
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
   globalThis.sessionStorage.clear();
   delete (window as { ethereum?: unknown }).ethereum;
 });
 
 describe("discoverWallets", () => {
+  it("offers no WalletConnect option without a project ID", async () => {
+    const found = await discoverWallets();
+    expect(found.map((w) => w.info.uuid)).not.toContain("walletconnect");
+  });
+
+  it("offers a WalletConnect option when a project ID is set", async () => {
+    vi.stubEnv("VITE_WALLETCONNECT_PROJECT_ID", "test-project");
+
+    const found = await discoverWallets();
+
+    expect(found.map((w) => w.info.uuid)).toContain("walletconnect");
+  });
+
+  it("routes WalletConnect requests through the provider", async () => {
+    vi.stubEnv("VITE_WALLETCONNECT_PROJECT_ID", "test-project");
+
+    const found = await discoverWallets();
+    const wc = found.find((w) => w.info.uuid === "walletconnect");
+    const result = await wc?.provider.request({ method: "eth_accounts" });
+
+    expect(result).toBe("0xwc");
+    expect(walletConnectRequest).toHaveBeenCalledWith({
+      method: "eth_accounts",
+    });
+  });
+
   it("lists wallets that announce via EIP-6963", async () => {
     const wallet = makeWallet("a", vi.fn());
     const onRequest = () =>

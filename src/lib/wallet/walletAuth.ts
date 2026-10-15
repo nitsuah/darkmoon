@@ -1,8 +1,13 @@
 /**
  * Wallet sign-in for multiplayer. Works with any injected browser wallet:
  * wallets that announce themselves via EIP-6963 are listed individually, and a
- * plain `window.ethereum` provider is used as a fallback.
+ * plain `window.ethereum` provider is used as a fallback. Mobile wallets are
+ * offered through WalletConnect when a project ID is configured.
  */
+import {
+  getWalletConnectProjectId,
+  walletConnectOption,
+} from "./walletConnect";
 
 export interface Eip1193Provider {
   request(args: { method: string; params?: unknown[] }): Promise<unknown>;
@@ -68,7 +73,11 @@ export const discoverWallets = (): Promise<WalletOption[]> =>
         });
       }
 
-      resolve([...found.values()]);
+      const wallets = [...found.values()];
+      const projectId = getWalletConnectProjectId();
+      if (projectId) wallets.push(walletConnectOption(projectId));
+
+      resolve(wallets);
     }, DISCOVERY_WINDOW_MS);
   });
 

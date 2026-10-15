@@ -47,7 +47,9 @@ Service status summary: `service`, `status`, `connections`, `activePlayers`,
 ### Wallet sign-in
 
 Multiplayer requires a wallet session. Any injected browser wallet works (EIP-6963
-wallets and `window.ethereum`).
+wallets and `window.ethereum`). When the client build sets
+`VITE_WALLETCONNECT_PROJECT_ID`, phone wallets are also offered via WalletConnect
+(QR code). Without that variable, the option is hidden.
 
 1. `POST /auth/nonce` → `{ nonce, message }`. The nonce is single-use and expires
    after 5 minutes.
