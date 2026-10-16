@@ -159,7 +159,9 @@ const ShootingGallery: React.FC<Props> = ({
   debugMode = false,
   botConfig,
 }) => {
-  const activeBotConfig = botConfig ?? GALLERY_BOT_PRESETS.medium;
+  // Debug mode runs the bot as a deterministic perfect-aim bot so its score is reliable.
+  const activeBotConfig =
+    botConfig ?? GALLERY_BOT_PRESETS[debugMode ? "perfect" : "medium"];
   const targets = useRef<TargetState[]>([]);
   const meshRefs = useRef<Map<string, THREE.Mesh>>(new Map()); // hitbox + material flash
   const groupRefs = useRef<Map<string, THREE.Group>>(new Map()); // position / visibility / scale
