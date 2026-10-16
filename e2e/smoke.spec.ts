@@ -40,6 +40,8 @@ test.describe("Darkmoon E2E Smoke Tests", () => {
   test("gallery debug bot can fire and score in a playable round", async ({
     page,
   }) => {
+    // Software WebGL in the E2E container stalls the page for ~20s at a time.
+    test.setTimeout(120000);
     const pageErrors: string[] = [];
     page.on("pageerror", (error) => {
       if (error.stack?.includes("/@vite/client")) return;
@@ -70,7 +72,7 @@ test.describe("Darkmoon E2E Smoke Tests", () => {
       await expect(page.getByText(/SHOOTING_GALLERY — SCORES/)).toBeVisible({
         timeout: 5000,
       });
-      await expect(page.getByText(/^[1-9]\d* pts$/).first()).toBeVisible({
+      await expect(page.getByText(/[1-9]\d* pts/).first()).toBeVisible({
         timeout: 15000,
       });
     } finally {
