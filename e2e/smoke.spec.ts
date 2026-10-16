@@ -6,7 +6,9 @@ test.describe("Darkmoon E2E Smoke Tests", () => {
     await expect(page).toHaveTitle("DARKMOON.DEV");
   });
 
-  test("solo scene mounts without uncaught browser errors", async ({ page }) => {
+  test("solo scene mounts without uncaught browser errors", async ({
+    page,
+  }) => {
     const pageErrors: string[] = [];
     page.on("pageerror", (error) => {
       // The E2E container runs Vite in middleware mode; its HMR WebSocket
@@ -29,10 +31,15 @@ test.describe("Darkmoon E2E Smoke Tests", () => {
 
     // Allow the initial React/Three.js render and effects to run before checking.
     await page.waitForTimeout(1000);
-    expect(pageErrors, "uncaught application errors during solo startup").toEqual([]);
+    expect(
+      pageErrors,
+      "uncaught application errors during solo startup",
+    ).toEqual([]);
   });
 
-  test("gallery debug bot can fire and score in a playable round", async ({ page }) => {
+  test("gallery debug bot can fire and score in a playable round", async ({
+    page,
+  }) => {
     const pageErrors: string[] = [];
     page.on("pageerror", (error) => {
       if (error.stack?.includes("/@vite/client")) return;
@@ -44,12 +51,15 @@ test.describe("Darkmoon E2E Smoke Tests", () => {
       window.localStorage.setItem("darkmoon-tutorial-complete", "true");
     });
     await page.goto("/solo");
-    await expect(page.locator("canvas").first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator("canvas").first()).toBeVisible({
+      timeout: 10000,
+    });
 
     // Enabling gallery debug mode auto-starts the shooting gallery after a short
     // delay. Starting it manually races that effect and the lobby disappears.
+    // The auto-start path skips the start toast, so wait for the HUD mode label.
     await page.getByRole("button", { name: /Gallery Debug/ }).click();
-    await expect(page.getByText(/Shooting Gallery! Hit targets to score/i)).toBeVisible({
+    await expect(page.getByText(/🎯 GALLERY/).first()).toBeVisible({
       timeout: 10000,
     });
 
@@ -57,12 +67,19 @@ test.describe("Darkmoon E2E Smoke Tests", () => {
     // assuming the bot is functional just because the round started.
     await page.keyboard.down("i");
     try {
-      await expect(page.getByText(/SHOOTING_GALLERY — SCORES/)).toBeVisible({ timeout: 5000 });
-      await expect(page.getByText(/^[1-9]\d* pts$/).first()).toBeVisible({ timeout: 15000 });
+      await expect(page.getByText(/SHOOTING_GALLERY — SCORES/)).toBeVisible({
+        timeout: 5000,
+      });
+      await expect(page.getByText(/^[1-9]\d* pts$/).first()).toBeVisible({
+        timeout: 15000,
+      });
     } finally {
       await page.keyboard.up("i");
     }
 
-    expect(pageErrors, "uncaught application errors during gallery gameplay").toEqual([]);
+    expect(
+      pageErrors,
+      "uncaught application errors during gallery gameplay",
+    ).toEqual([]);
   });
 });
