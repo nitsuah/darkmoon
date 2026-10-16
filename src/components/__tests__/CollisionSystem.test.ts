@@ -88,6 +88,64 @@ describe("CollisionSystem", () => {
       expect(hit).toEqual({ hitPlayerId: "target", distance: 5 });
     });
 
+    it("does not hit a player through the center-field crate", () => {
+      const system = new CollisionSystem();
+      const players = new Map([
+        ["shooter", makePlayer("shooter", [5, 1, 0])],
+        ["target", makePlayer("target", [12, 1, 0])],
+      ]);
+
+      const hit = system.checkProjectileHit(
+        new THREE.Vector3(5, 1, 0),
+        new THREE.Vector3(1, 0, 0),
+        30,
+        players,
+        "shooter",
+      );
+
+      expect(hit).toBeNull();
+    });
+
+    it("does not hit a near-edge target whose hit radius is clipped by cover", () => {
+      // Rock box spans x,z in [3.5, 6.5]. The ray along +X at z=3.6 clips its
+      // edge, but the target's center segment (z≈3.05 at x=12) passes outside it.
+      const system = new CollisionSystem();
+      const players = new Map([
+        ["shooter", makePlayer("shooter", [0, 1, 3.6])],
+        ["target", makePlayer("target", [12, 1, 3.05])],
+      ]);
+
+      const hit = system.checkProjectileHit(
+        new THREE.Vector3(0, 1, 3.6),
+        new THREE.Vector3(1, 0, 0),
+        30,
+        players,
+        "shooter",
+      );
+
+      expect(hit).toBeNull();
+    });
+
+    it("does not hit through cover that ends just before the target's hit point", () => {
+      const system = new CollisionSystem();
+      // The ray along +X at z=1.4 enters the east crate at x=7 and reaches the
+      // target's hit-radius entry point at x=7.2, only 0.2 past the crate face.
+      const players = new Map([
+        ["shooter", makePlayer("shooter", [5, 1, 1.4])],
+        ["target", makePlayer("target", [7.53, 1, 1.9])],
+      ]);
+
+      const hit = system.checkProjectileHit(
+        new THREE.Vector3(5, 1, 1.4),
+        new THREE.Vector3(1, 0, 0),
+        30,
+        players,
+        "shooter",
+      );
+
+      expect(hit).toBeNull();
+    });
+
     it("misses a player outside the weapon's range", () => {
       const system = new CollisionSystem();
       const players = new Map([

@@ -32,6 +32,37 @@ describe("usePlayerMovement helpers", () => {
     expect(dir.z).toBeLessThanOrEqual(0.001);
   });
 
+  test("diagonal keyboard movement is normalized to the same speed as cardinal movement", () => {
+    const forward = computeDirection(
+      0,
+      { x: 0, y: 0 },
+      { w: true, a: false, s: false, d: false, q: false, e: false },
+      false,
+    );
+    const diagonal = computeDirection(
+      0,
+      { x: 0, y: 0 },
+      { w: true, a: true, s: false, d: false, q: false, e: false },
+      false,
+    );
+
+    expect(forward.length()).toBeCloseTo(1);
+    expect(diagonal.length()).toBeCloseTo(1);
+    expect(diagonal.x).toBeLessThan(0);
+    expect(diagonal.z).toBeLessThan(0);
+  });
+
+  test("releasing all movement inputs produces a zero direction", () => {
+    const direction = computeDirection(
+      0,
+      { x: 0, y: 0 },
+      { w: false, a: false, s: false, d: false, q: false, e: false },
+      false,
+    );
+
+    expect(direction.length()).toBe(0);
+  });
+
   test("computeDirection respects bothMouseButtons auto-run", () => {
     const cam = Math.PI / 4; // 45 deg
     const dir = computeDirection(

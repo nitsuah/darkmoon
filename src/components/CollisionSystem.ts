@@ -283,6 +283,23 @@ export class CollisionSystem {
       const perpendicularDistance = targetPos.distanceTo(closestPoint);
 
       if (perpendicularDistance <= this.projectileHitRadius) {
+        // Hitscan weapons must respect the same world geometry as bot line-of-sight.
+        // Test the firing ray up to the target's first intersection with its hit
+        // radius, not the center-to-origin segment: a target near the edge of cover
+        // can have its center segment clear while the ray still clips the obstacle.
+        const halfChord = Math.sqrt(
+          Math.max(
+            0,
+            this.projectileHitRadius * this.projectileHitRadius -
+              perpendicularDistance * perpendicularDistance,
+          ),
+        );
+        const firstHitDistance = Math.max(0, along - halfChord);
+        const firstHitPoint = origin
+          .clone()
+          .add(dir.clone().multiplyScalar(firstHitDistance));
+        if (!this.isSegmentClear(origin, firstHitPoint, 0.01)) return;
+
         if (!closest || along < closest.distance) {
           closest = { hitPlayerId: id, distance: along };
         }
@@ -298,6 +315,20 @@ export class CollisionSystem {
    * firing when a wall is in the way.
    */
   hasLineOfSight(from: THREE.Vector3, to: THREE.Vector3): boolean {
+    // Bot AI endpoints sit at a player's center, so ignore boxes within 0.3 of it.
+    return this.isSegmentClear(from, to, 0.3);
+  }
+
+  /**
+   * Returns true if no boundary box is hit between `from` and `to`, ignoring hits
+   * within `endTolerance` of `to`. Hit points near `from` are ignored too, so an
+   * origin inside cover does not block its own shot.
+   */
+  private isSegmentClear(
+    from: THREE.Vector3,
+    to: THREE.Vector3,
+    endTolerance: number,
+  ): boolean {
     const dir = new THREE.Vector3().subVectors(to, from);
     const dist = dir.length();
     if (dist < 0.01) return true;
@@ -307,7 +338,7 @@ export class CollisionSystem {
       const hit = ray.intersectBox(box, new THREE.Vector3());
       if (hit !== null) {
         const hitDist = hit.distanceTo(from);
-        if (hitDist > 0.1 && hitDist < dist - 0.3) return false;
+        if (hitDist > 0.1 && hitDist < dist - endTolerance) return false;
       }
     }
     return true;
