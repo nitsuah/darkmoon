@@ -83,5 +83,17 @@ jobs:
       - name: Run Playwright E2E tests
         run: npx playwright test e2e/smoke.spec.ts
 
+      - name: Upload E2E diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: darkmoon-e2e-diagnostics
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Stop dev server
+        if: always()
         run: docker compose -f config/docker-compose.yml --profile test down
