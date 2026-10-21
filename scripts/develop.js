@@ -1,7 +1,7 @@
 import fs from "fs";
 import express from "express";
 import { createServer } from "vite";
-import viteConfig from "../vite.config.js";
+import viteConfig from "../config/vite.config.js";
 import { Server } from "socket.io";
 import rateLimit from "express-rate-limit";
 
