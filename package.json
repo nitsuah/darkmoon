@@ -5,7 +5,7 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
-    "build": "vite build",
+    "build": "vite build --config config/vite.config.js",
     "dev": "node scripts/develop.js",
     "start": "node server/index.js",
     "format": "prettier --write \"src/*.{js,jsx,json,md,ts,tsx,css}\"",
