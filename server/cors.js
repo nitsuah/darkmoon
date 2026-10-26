@@ -19,6 +19,9 @@ export const DEFAULT_ALLOWED_ORIGINS = [
   "http://localhost:4444",
   "https://deploy-preview-*--darkmoon-dev.netlify.app",
   "https://darkmoon-dev.netlify.app",
+  "https://darkmoon.dev",
+  "https://www.darkmoon.dev",
+  "https://darkmoon-dev.pages.dev",
 ];
 
 /**

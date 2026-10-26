@@ -12,5 +12,5 @@ services:
       - key: PORT
         fromGroup: web
       - key: ALLOWED_ORIGINS
-        value: https://darkmoon-dev.netlify.app,https://deploy-preview-*--darkmoon-dev.netlify.app
+        value: https://darkmoon-dev.netlify.app,https://deploy-preview-*--darkmoon-dev.netlify.app,https://darkmoon.dev,https://www.darkmoon.dev,https://darkmoon-dev.pages.dev
     healthCheckPath: /health

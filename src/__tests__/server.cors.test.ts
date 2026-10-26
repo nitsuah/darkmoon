@@ -165,16 +165,37 @@ describe("server CORS policy", () => {
     });
   });
 
+  describe("DEFAULT_ALLOWED_ORIGINS", () => {
+    it("includes Cloudflare Pages and custom domain production origins", () => {
+      expect(DEFAULT_ALLOWED_ORIGINS).toEqual(
+        expect.arrayContaining([
+          "https://darkmoon.dev",
+          "https://www.darkmoon.dev",
+          "https://darkmoon-dev.pages.dev",
+          "https://darkmoon-dev.netlify.app",
+        ]),
+      );
+    });
+  });
+
   describe("isOriginAllowed", () => {
     const allowed = [
       "http://localhost:3000",
       "https://deploy-preview-*--darkmoon-dev.netlify.app",
       "https://darkmoon-dev.netlify.app",
+      "https://darkmoon.dev",
+      "https://www.darkmoon.dev",
+      "https://darkmoon-dev.pages.dev",
     ];
 
     it("allows a configured origin", () => {
       expect(isOriginAllowed("http://localhost:3000", allowed)).toBe(true);
       expect(isOriginAllowed("https://darkmoon-dev.netlify.app", allowed)).toBe(
+        true,
+      );
+      expect(isOriginAllowed("https://darkmoon.dev", allowed)).toBe(true);
+      expect(isOriginAllowed("https://www.darkmoon.dev", allowed)).toBe(true);
+      expect(isOriginAllowed("https://darkmoon-dev.pages.dev", allowed)).toBe(
         true,
       );
     });
