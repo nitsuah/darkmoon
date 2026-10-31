@@ -8,7 +8,6 @@ import {
   useHitDirection,
   useDamageFlash,
   useHitMarker,
-  useMousePosition,
   useGalleryHighScore,
   useBonusRound,
   useGalleryCombo,
@@ -74,7 +73,6 @@ const GameUI: React.FC<GameUIProps> = ({
   const hitAngle = useHitDirection();
   const damageFlash = useDamageFlash(currentPlayer?.health);
   const { hitMarker, hitRingKey } = useHitMarker();
-  const mousePos = useMousePosition();
   const { galleryHighScore, isNewRecord } = useGalleryHighScore(gameState);
   const bonusRoundVisible = useBonusRound();
   const { galleryCombo, galleryMultiplier } = useGalleryCombo();
@@ -218,7 +216,6 @@ const GameUI: React.FC<GameUIProps> = ({
 
         {showCrosshair && (
           <Crosshair
-            mousePos={mousePos}
             crosshairSpread={crosshairSpread}
             hitMarker={hitMarker}
             hitRingKey={hitRingKey}
