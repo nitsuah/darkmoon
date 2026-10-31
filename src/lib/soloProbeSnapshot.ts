@@ -4,7 +4,10 @@ import type { Player, GameState } from "../components/GameManager";
 export function createSoloProbeSnapshot(
   playerPosition: [number, number, number] | undefined,
   currentPlayerId: string | undefined,
-  gameManager: { getGameState: () => GameState; getPlayers: () => Map<string, Player> } | null
+  gameManager: {
+    getGameState: () => GameState;
+    getPlayers: () => Map<string, Player>;
+  } | null,
 ): TestSnapshot {
   const position =
     playerPosition &&
@@ -26,10 +29,7 @@ export function createSoloProbeSnapshot(
 
     if (player) {
       health = typeof player.health === "number" ? player.health : null;
-      ammo =
-        player.currentAmmo !== undefined
-          ? player.currentAmmo
-          : null;
+      ammo = player.currentAmmo !== undefined ? player.currentAmmo : null;
 
       const playerScore = state.scores[currentPlayerId];
       score = typeof playerScore === "number" ? playerScore : null;
