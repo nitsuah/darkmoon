@@ -112,10 +112,10 @@ describe("soloProbeSnapshot", () => {
   });
 
   it("returns null score when player not in scores", () => {
-    mockPlayers.set("player-1", { id: "player-1", name: "Test" } as Player);
+    mockPlayers.set("player-3", { id: "player-3", name: "Test" } as Player);
     const snap = createSoloProbeSnapshot(
       [0, 0, 0],
-      "unknown-player",
+      "player-3",
       mockGameManager,
     );
     expect(snap.score).toBeNull();
