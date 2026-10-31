@@ -52,6 +52,8 @@ import {
   useGalleryDebugMode,
   useAutoRestart,
 } from "../lib/hooks/useDebugModes";
+import { installTestProbe } from "../lib/testProbe";
+import { createSoloProbeSnapshot } from "../lib/soloProbeSnapshot";
 
 const tagDebug = createTagLogger("Solo");
 
@@ -457,6 +459,17 @@ const Solo: React.FC = () => {
     setAutoRestartSecondsLeft,
     onRestart: handleStartGame,
   });
+
+  // --- Test probe (dev only) ---
+  useEffect(() => {
+    return installTestProbe(() =>
+      createSoloProbeSnapshot(
+        playerPositionRef.current,
+        currentPlayerId,
+        gameManager.current ?? null,
+      ),
+    );
+  }, [currentPlayerId]);
 
   // --- Handlers ---
 
