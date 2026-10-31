@@ -1,7 +1,6 @@
 import * as React from "react";
 
 interface Props {
-  mousePos: { x: number; y: number };
   crosshairSpread: number;
   hitMarker: boolean;
   hitRingKey: number;
@@ -10,7 +9,6 @@ interface Props {
 }
 
 const Crosshair: React.FC<Props> = ({
-  mousePos,
   crosshairSpread,
   hitMarker,
   hitRingKey,
@@ -27,17 +25,15 @@ const Crosshair: React.FC<Props> = ({
   const armLen = baseArm + crosshairSpread;
   const halfThick = barThick / 2;
 
-  // On mobile fire always aims from center; anchor crosshair there regardless of mousePos
-  const cx = isMobile ? window.innerWidth / 2 : mousePos.x;
-  const cy = isMobile ? window.innerHeight / 2 : mousePos.y;
-
   return (
     <div
       style={{
         position: "fixed",
-        top: 0,
-        left: 0,
-        transform: `translate(${cx}px, ${cy}px) translate(-50%, -50%)`,
+        // Fire always raycasts from NDC (0, 0) (PlayerWeapon.tsx), so the reticle
+        // is locked to the viewport centre in every mode (#482).
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
         pointerEvents: "none",
         zIndex: 997,
         width: `${size}px`,

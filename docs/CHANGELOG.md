@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The crosshair is locked to the viewport centre on desktop without pointer lock too, so the reticle and the firing ray always agree (#482).
 - CORS wildcard matcher escaping and single-DNS-label scoping; bare `ALLOWED_ORIGINS=*` no longer combines with `credentials: true`.
 - `/health` SPA-fallback ordering and `maxPlayers` validation.
 - `player-tagged` socket handler now binds `taggerId` to the authenticated socket instead of trusting client-supplied IDs.
