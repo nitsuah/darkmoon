@@ -8,6 +8,17 @@ import { KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_R, KEY_TAB } from "../../utils";
 import { processFiring } from "../../../lib/hooks/usePlayerWeapon";
 import * as gameInput from "../../../lib/gameInput";
 
+/**
+ * Secure random utility for visual effects (non-cryptographic).
+ * Uses crypto.getRandomValues() to avoid CodeQL insecure-randomness alerts.
+ * These are for visual camera shake only, not security-sensitive operations.
+ */
+function secureRandom(): number {
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return array[0] / 0x100000000;
+}
+
 // Shared read-only ground plane — never mutated, safe to reuse across instances.
 
 interface PlayerWeaponProps {
@@ -457,9 +468,9 @@ export const PlayerWeapon = React.memo(
                       ? 0.03
                       : 0.04;
             cameraShakeRef.current.set(
-              (Math.random() - 0.5) * shakeAmt,
-              (0.3 + Math.random() * 0.5) * shakeAmt,
-              (Math.random() - 0.5) * shakeAmt * 0.3,
+              (secureRandom() - 0.5) * shakeAmt,
+              (0.3 + secureRandom() * 0.5) * shakeAmt,
+              (secureRandom() - 0.5) * shakeAmt * 0.3,
             );
             // Muzzle flash
             if (muzzleFlashRef.current) {
