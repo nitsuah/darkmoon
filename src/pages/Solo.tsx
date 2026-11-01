@@ -11,6 +11,17 @@ import { useNavigate } from "react-router-dom";
 import { filterProfanity } from "../lib/constants/profanity";
 import { createTagLogger } from "../lib/utils/logger";
 import { useSoloGame } from "../lib/hooks/useSoloGame";
+
+/**
+ * Secure random utility for game mechanics (non-cryptographic).
+ * Uses crypto.getRandomValues() to avoid CodeQL insecure-randomness alerts.
+ * These are for gameplay randomness only, not security-sensitive operations.
+ */
+function secureRandom(): number {
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return array[0] / 0x100000000;
+}
 import {
   BOT1_CONFIG,
   BOT2_CONFIG,
@@ -116,7 +127,7 @@ const Solo: React.FC = () => {
     new Map(),
   );
   const [localPlayerId] = useState(
-    () => `local-${Math.random().toString(36).slice(2, 8)}`,
+    () => `local-${secureRandom().toString(36).slice(2, 8)}`,
   );
   const currentPlayerId = socketClient?.id || localPlayerId;
   const [joystickMove, setJoystickMove] = useState({ x: 0, y: 0 });
@@ -503,7 +514,7 @@ const Solo: React.FC = () => {
   const handleSendMessage = (message: string) => {
     const filtered = filterProfanity(message);
     const chatMessage: ChatMessage = {
-      id: `${Date.now()}-${Math.random()}`,
+      id: `${Date.now()}-${secureRandom().toString(36).slice(2, 8)}`,
       playerId: socketClient?.id || localPlayerId,
       playerName: "You",
       message: filtered,

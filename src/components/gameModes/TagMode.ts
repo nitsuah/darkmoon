@@ -9,6 +9,17 @@ import type {
 
 const log = createLogger("TagMode");
 
+/**
+ * Secure random utility for game mechanics (non-cryptographic).
+ * Uses crypto.getRandomValues() to avoid CodeQL insecure-randomness alerts.
+ * These are for gameplay randomness only, not security-sensitive operations.
+ */
+function secureRandom(): number {
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return array[0] / 0x100000000;
+}
+
 const TAG_STREAK_THRESHOLDS = [3, 5, 7, 10] as const;
 export const TAG_STREAK_LABELS: Record<number, string> = {
   3: "ON A ROLL",
@@ -238,7 +249,7 @@ export class TagMode implements GameModeHandler {
       );
       if (survivors.length > 0) {
         const [newItId, newIt] =
-          survivors[Math.floor(Math.random() * survivors.length)];
+          survivors[Math.floor(secureRandom() * survivors.length)];
         newIt.isIt = true;
         gameState.itPlayerId = newItId;
       }
@@ -385,7 +396,7 @@ export class TagMode implements GameModeHandler {
 
   private pickRandomPlayer(players: Map<string, Player>): string {
     const playerIds = Array.from(players.keys());
-    return playerIds[Math.floor(Math.random() * playerIds.length)];
+    return playerIds[Math.floor(secureRandom() * playerIds.length)];
   }
 }
 

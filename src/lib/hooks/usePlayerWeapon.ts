@@ -10,6 +10,17 @@ import type {
 } from "../../components/combat/WeaponManager";
 import { getSoundManager } from "../../components/SoundManager";
 
+/**
+ * Secure random utility for game mechanics (non-cryptographic).
+ * Uses crypto.getRandomValues() to avoid CodeQL insecure-randomness alerts.
+ * These are for gameplay randomness only, not security-sensitive operations.
+ */
+function secureRandom(): number {
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return array[0] / 0x100000000;
+}
+
 export interface FireParams {
   origin: THREE.Vector3;
   direction: THREE.Vector3;
@@ -40,8 +51,8 @@ function spreadDirection(
   spreadAngle: number,
 ): THREE.Vector3 {
   _right.crossVectors(baseDir, _up).normalize();
-  const yaw = (Math.random() - 0.5) * 2 * spreadAngle;
-  const pitch = (Math.random() - 0.5) * 2 * spreadAngle * 0.5;
+  const yaw = (secureRandom() - 0.5) * 2 * spreadAngle;
+  const pitch = (secureRandom() - 0.5) * 2 * spreadAngle * 0.5;
   _pelletDir
     .copy(baseDir)
     .addScaledVector(_right, Math.tan(yaw))
