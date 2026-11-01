@@ -12,6 +12,19 @@ import {
   type R3FRenderer,
 } from "../../../../__tests__/r3f.test.utils";
 
+/**
+ * Mock crypto.getRandomValues for testing secureRandom() function.
+ * secureRandom() = array[0] / 0x100000000
+ * So to get a specific return value R, we need array[0] = R * 0x100000000
+ */
+function mockSecureRandom(returnValue: number) {
+  const arrayValue = Math.floor(returnValue * 0x100000000);
+  vi.spyOn(crypto, "getRandomValues").mockImplementation((arr: Uint32Array) => {
+    arr[0] = arrayValue;
+    return arr;
+  });
+}
+
 type Phase = TargetState["phase"];
 
 function target(
@@ -196,7 +209,7 @@ describe("useGalleryBot", () => {
   );
 
   it("occasionally hesitates instead of shooting", async () => {
-    vi.spyOn(Math, "random").mockReturnValue(0.1); // < 0.15 → hesitate
+    mockSecureRandom(0.1); // < 0.15 → hesitate
     const targets = [target("a", 0, -10, 10)];
     renderer = await renderR3F(
       <Harness targets={targets} config={{ ...baseConfig, hesitate: true }} />,
@@ -206,7 +219,11 @@ describe("useGalleryBot", () => {
   });
 
   it("deflects its aim when the miss chance fires", async () => {
-    vi.spyOn(Math, "random").mockReturnValue(0.4);
+    // First call: missChance check (0.4 < 0.5 → fires miss)
+    // Second call: hSign (0.4 < 0.5 → -1)
+    // Third call: vJitter scale (0.4)
+    // Fourth call: hJitter scale (0.4)
+    mockSecureRandom(0.4);
     const targets = [target("a", 0, -10, 10)];
     renderer = await renderR3F(
       <Harness targets={targets} config={{ ...baseConfig, missChance: 0.5 }} />,
@@ -226,7 +243,7 @@ describe("useGalleryBot", () => {
   it.each([0.01, 0.4, 0.49])(
     "clears the target hitbox on a forced miss (random = %s)",
     async (r) => {
-      vi.spyOn(Math, "random").mockReturnValue(r);
+      mockSecureRandom(r);
       const targets = [target("a", 0, -10, 10)];
       renderer = await renderR3F(
         <Harness
@@ -240,7 +257,11 @@ describe("useGalleryBot", () => {
   );
 
   it("applies random aim jitter when configured", async () => {
-    vi.spyOn(Math, "random").mockReturnValue(0.9);
+    // First call: hSign (0.9 >= 0.5 → 1)
+    // Second call: hJitter scale (0.9)
+    // Third call: vSign (0.9 >= 0.5 → 1)
+    // Fourth call: vJitter scale (0.9)
+    mockSecureRandom(0.9);
     const targets = [target("a", 0, -10, 10)];
     renderer = await renderR3F(
       <Harness
