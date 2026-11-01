@@ -19,10 +19,13 @@ import {
  */
 function mockSecureRandom(returnValue: number) {
   const arrayValue = Math.floor(returnValue * 0x100000000);
-  vi.spyOn(crypto, "getRandomValues").mockImplementation((arr: Uint32Array) => {
-    arr[0] = arrayValue;
-    return arr;
-  });
+  vi.spyOn(crypto, "getRandomValues").mockImplementation(
+    (arr: ArrayBufferView): ArrayBufferView<ArrayBuffer> => {
+      const uint32 = arr as Uint32Array;
+      uint32[0] = arrayValue;
+      return arr as ArrayBufferView<ArrayBuffer>;
+    },
+  );
 }
 
 type Phase = TargetState["phase"];
