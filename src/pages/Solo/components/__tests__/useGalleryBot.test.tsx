@@ -19,8 +19,14 @@ import {
  */
 function mockSecureRandom(returnValue: number) {
   const arrayValue = Math.floor(returnValue * 0x100000000);
-  vi.spyOn(crypto, "getRandomValues").mockImplementation((arr: Uint32Array) => {
-    arr[0] = arrayValue;
+  vi.spyOn(crypto, "getRandomValues").mockImplementation((arr) => {
+    // secureRandom() calls this mock with a Uint32Array; write through a view
+    // while preserving the ArrayBufferView type returned by the Web Crypto API.
+    new Uint32Array(
+      arr.buffer,
+      arr.byteOffset,
+      arr.byteLength / Uint32Array.BYTES_PER_ELEMENT,
+    )[0] = arrayValue;
     return arr;
   });
 }
