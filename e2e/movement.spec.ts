@@ -110,7 +110,6 @@ test("WASD movement changes position, stops after release, and normalizes diagon
   };
 
   const expected = {
-    holdMs: 1400,
     minimumCardinalMagnitude: 0.5,
     oppositeCosineMaximum: -0.9,
     perpendicularAbsoluteCosineMaximum: 0.3,
