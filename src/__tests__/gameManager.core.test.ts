@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import GameManager, { type Player } from "../components/GameManager";
+import { mockCryptoRandom } from "./random.test.utils";
 
 const makePlayer = (id: string, name: string): Player => ({
   id,
@@ -13,6 +14,8 @@ const makePlayer = (id: string, name: string): Player => ({
 describe("GameManager core", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    // TagMode and other gameplay selectors use crypto.getRandomValues now.
+    mockCryptoRandom(0);
   });
 
   afterEach(() => {
@@ -47,8 +50,6 @@ describe("GameManager core", () => {
     manager.addPlayer(makePlayer("p2", "Player 2"));
     manager.addPlayer(makePlayer("p3", "Player 3"));
 
-    vi.spyOn(Math, "random").mockReturnValue(0);
-
     const started = manager.startTagGame();
     expect(started).toBe(true);
     // 60 + (3-2)*60
@@ -59,8 +60,6 @@ describe("GameManager core", () => {
     const manager = new GameManager();
     manager.addPlayer(makePlayer("p1", "Player 1"));
     manager.addPlayer(makePlayer("p2", "Player 2"));
-
-    vi.spyOn(Math, "random").mockReturnValue(0);
     manager.startTagGame(60);
 
     const currentIt = manager.getGameState().itPlayerId!;
@@ -74,8 +73,6 @@ describe("GameManager core", () => {
     const manager = new GameManager();
     manager.addPlayer(makePlayer("p1", "Player 1"));
     manager.addPlayer(makePlayer("p2", "Player 2"));
-
-    vi.spyOn(Math, "random").mockReturnValue(0);
     vi.spyOn(Date, "now").mockReturnValue(10000);
     manager.startTagGame(60);
 
@@ -100,8 +97,6 @@ describe("GameManager core", () => {
     const manager = new GameManager();
     manager.addPlayer(makePlayer("p1", "Player 1"));
     manager.addPlayer(makePlayer("p2", "Player 2"));
-
-    vi.spyOn(Math, "random").mockReturnValue(0);
     manager.startTagGame(1);
 
     manager.updateGameTimer(0.5);
@@ -114,7 +109,6 @@ describe("GameManager core", () => {
 
   it("laser-tag: a hit from the IT player transfers IT status (ranged tag)", () => {
     vi.spyOn(Date, "now").mockReturnValue(0);
-    vi.spyOn(Math, "random").mockReturnValue(0); // p1 becomes IT
 
     const manager = new GameManager();
     manager.addPlayer(makePlayer("p1", "Player 1"));
@@ -137,7 +131,6 @@ describe("GameManager core", () => {
 
   it("tag event is pushed to killFeed on a successful tag", () => {
     vi.spyOn(Date, "now").mockReturnValue(0);
-    vi.spyOn(Math, "random").mockReturnValue(0); // p1 becomes IT
 
     const manager = new GameManager();
     manager.addPlayer(makePlayer("p1", "Player 1"));
@@ -154,9 +147,8 @@ describe("GameManager core", () => {
     expect(feed[0].weaponId).toBe("tag");
   });
 
-  it("laser-tag: a hit from a non-IT player does nothing in tag mode", () => {
+  it("laser-tag: a non-IT hit damages the IT player without transferring IT", () => {
     vi.spyOn(Date, "now").mockReturnValue(0);
-    vi.spyOn(Math, "random").mockReturnValue(0); // p1 becomes IT
 
     const manager = new GameManager();
     manager.addPlayer(makePlayer("p1", "Player 1"));
@@ -176,7 +168,6 @@ describe("GameManager core", () => {
   it("tag streak: 3 cumulative tags by the same player trigger a streak announcement", () => {
     // p1 starts IT. Each time p1 escapes IT (tags someone), tally increments.
     // Getting re-tagged doesn't reset the tally, so milestone=3 is reachable.
-    vi.spyOn(Math, "random").mockReturnValue(0); // p1 starts IT
     vi.spyOn(Date, "now").mockReturnValue(0);
 
     const manager = new GameManager();

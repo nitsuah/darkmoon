@@ -12,6 +12,7 @@ import {
   type MockClock,
   type R3FRenderer,
 } from "../../../../__tests__/r3f.test.utils";
+import { mockCryptoRandom } from "../../../../__tests__/random.test.utils";
 
 // Scene layout inside the gallery's root group: back wall, 2 side walls,
 // 3 counters, floor, then the 15 target groups, the bonus duck, signs, lights.
@@ -90,7 +91,7 @@ describe("ShootingGallery (rendered)", () => {
   beforeEach(() => {
     clock = mockNow(100_000);
     // Always pick the first "down" target so spawns are deterministic (r0c0).
-    vi.spyOn(Math, "random").mockReturnValue(0);
+    mockCryptoRandom(0);
   });
 
   afterEach(() => {

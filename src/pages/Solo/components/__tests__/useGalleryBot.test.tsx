@@ -19,13 +19,16 @@ import {
  */
 function mockSecureRandom(returnValue: number) {
   const arrayValue = Math.floor(returnValue * 0x100000000);
-  vi.spyOn(crypto, "getRandomValues").mockImplementation(
-    (arr: ArrayBufferView): ArrayBufferView<ArrayBuffer> => {
-      const uint32 = arr as Uint32Array;
-      uint32[0] = arrayValue;
-      return arr as ArrayBufferView<ArrayBuffer>;
-    },
-  );
+  vi.spyOn(crypto, "getRandomValues").mockImplementation((arr) => {
+    // Write through a Uint32Array view while preserving the Web Crypto API's
+    // ArrayBufferView callback and return types.
+    new Uint32Array(
+      arr.buffer,
+      arr.byteOffset,
+      arr.byteLength / Uint32Array.BYTES_PER_ELEMENT,
+    )[0] = arrayValue;
+    return arr;
+  });
 }
 
 type Phase = TargetState["phase"];
