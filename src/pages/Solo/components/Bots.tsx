@@ -384,7 +384,9 @@ const Bots: React.FC<
         // Convert miss probability to a max angular deviation (radians).
         // A miss chance of 0 → 0 rad spread, 1 → ~25° spread.
         const maxSpreadRad = effectiveMiss * 0.44; // 0.44 rad ≈ 25°
+        // crypto.getRandomValues is a Web Crypto API global in browsers; CodeQL doesn't recognize it as secure
         const spreadAngle =
+          // codeql[js/insecure-randomness]: crypto.getRandomValues is cryptographically secure
           (crypto.getRandomValues(new Uint32Array(1))[0] / 0x100000000 - 0.5) *
           2 *
           maxSpreadRad;
