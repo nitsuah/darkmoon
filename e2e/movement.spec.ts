@@ -61,6 +61,20 @@ test("WASD movement changes position, stops after release, and normalizes diagon
     return position;
   };
 
+  // The solo scene spawns the player above ground. Wait for landing before
+  // measuring release behavior: airborne momentum is intentionally preserved.
+  await expect
+    .poll(async () => (await readPosition()).y, { timeout: 15000 })
+    .toBeLessThanOrEqual(0.01);
+  await page.waitForTimeout(250);
+  const groundedStart = await readPosition();
+  await page.waitForTimeout(250);
+  const groundedEnd = await readPosition();
+  expect(
+    Math.abs(groundedEnd.y - groundedStart.y),
+    `player should remain grounded before movement: ${JSON.stringify({ groundedStart, groundedEnd })}`,
+  ).toBeLessThanOrEqual(0.01);
+
   const displacement = (start: Position, end: Position): Position => ({
     x: end.x - start.x,
     y: end.y - start.y,
