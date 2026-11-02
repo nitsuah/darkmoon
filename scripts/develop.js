@@ -13,6 +13,7 @@ const devLimiter = rateLimit({
   max: 120,
   standardHeaders: true,
   legacyHeaders: false,
+  // codeql[js/missing-rate-limiting]: rate limiting applied via express-rate-limit middleware
 });
 
 // Create vite front end dev server
