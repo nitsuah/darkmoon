@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import Bots from "../Bots";
 import GameManager, { type Player } from "../../../../components/GameManager";
+import { mockCryptoRandom } from "../../../../__tests__/random.test.utils";
 
 const makeBotPlayer = (id: string, name: string): Player => ({
   id,
@@ -183,7 +184,7 @@ describe("Bots", () => {
 
   it("blocks an immediate IT ping-pong when bot-2 tries to tag bot-1 right back", () => {
     vi.spyOn(Date, "now").mockReturnValue(5000);
-    vi.spyOn(Math, "random").mockReturnValue(0); // bot-1 becomes IT
+    mockCryptoRandom(0); // bot-1 becomes IT
 
     const gm = new GameManager();
     gm.addPlayer(makeBotPlayer("bot-1", "Bot1"));
