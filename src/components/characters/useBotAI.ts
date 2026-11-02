@@ -7,6 +7,17 @@ import { GameState } from "../GameManager";
 import { createTagLogger } from "../../lib/utils/logger";
 import { SPAWN_POINTS } from "../../lib/constants/spawnPoints";
 
+/**
+ * Secure random utility for game mechanics (non-cryptographic).
+ * Uses crypto.getRandomValues() to avoid CodeQL insecure-randomness alerts.
+ * These are for gameplay randomness only, not security-sensitive operations.
+ */
+function secureRandom(): number {
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return array[0] / 0x100000000;
+}
+
 const tagDebug = createTagLogger("BotAI");
 
 // Flee speed multiplier for non-IT bots - intentionally slower (70%) so IT bot can catch them
@@ -127,7 +138,7 @@ export function useBotAI({
   const prevIsDownedRef = useRef(isDowned);
   useEffect(() => {
     if (prevIsDownedRef.current && !isDowned && meshRef.current) {
-      const pt = SPAWN_POINTS[Math.floor(Math.random() * SPAWN_POINTS.length)];
+      const pt = SPAWN_POINTS[Math.floor(secureRandom() * SPAWN_POINTS.length)];
       meshRef.current.position.set(...pt);
       lastPosition.current.set(...pt);
       lastReportedPosition.current.set(...pt);
@@ -257,7 +268,7 @@ export function useBotAI({
             stuckFrames.current++;
             if (stuckFrames.current >= 3) {
               stuckFrames.current = 0;
-              steerSign.current = Math.random() < 0.5 ? 1 : -1;
+              steerSign.current = secureRandom() < 0.5 ? 1 : -1;
               steerFramesLeft.current = 25;
             }
           } else {
@@ -342,7 +353,7 @@ export function useBotAI({
       const groundY = config.initialPosition[1];
       if (botPos.y <= groundY + 0.05 && now >= nextJumpTime.current) {
         jumpVelocity.current = JUMP_SPEED;
-        nextJumpTime.current = now + 2500 + Math.random() * 2000;
+        nextJumpTime.current = now + 2500 + secureRandom() * 2000;
       }
       if (jumpVelocity.current !== 0 || botPos.y > groundY + 0.05) {
         jumpVelocity.current -= GRAVITY * delta;
@@ -391,7 +402,7 @@ export function useBotAI({
             stuckFrames.current++;
             if (stuckFrames.current >= 3) {
               stuckFrames.current = 0;
-              steerSign.current = Math.random() < 0.5 ? 1 : -1;
+              steerSign.current = secureRandom() < 0.5 ? 1 : -1;
               steerFramesLeft.current = 25;
             }
           } else {
@@ -441,8 +452,8 @@ export function useBotAI({
         } else {
           // Strafe when at optimal distance
           if (now >= nextStrafeChangeTime.current) {
-            strafeSign.current = Math.random() < 0.5 ? 1 : -1;
-            nextStrafeChangeTime.current = now + 1200 + Math.random() * 600;
+            strafeSign.current = secureRandom() < 0.5 ? 1 : -1;
+            nextStrafeChangeTime.current = now + 1200 + secureRandom() * 600;
           }
           const lateral = new THREE.Vector3(
             -direction.z * strafeSign.current,

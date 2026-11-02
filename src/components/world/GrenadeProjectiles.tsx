@@ -7,6 +7,17 @@ const GRAVITY = 9.8;
 const DEFAULT_LAUNCH_ANGLE = Math.PI / 6; // 30° base arc
 const MAX_SIMULTANEOUS = 5;
 
+/**
+ * Secure random utility for game mechanics (non-cryptographic).
+ * Uses crypto.getRandomValues() to avoid CodeQL insecure-randomness alerts.
+ * These are for gameplay randomness only, not security-sensitive operations.
+ */
+function secureRandom(): number {
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return array[0] / 0x100000000;
+}
+
 type Slot = {
   startedAt: number;
   origin: THREE.Vector3;
@@ -97,16 +108,16 @@ const GrenadeProjectiles: React.FC = () => {
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       const p = particles.current[i];
       p.active = false; // reclaim all
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.random() * Math.PI * 0.7; // bias upward
-      const speed = 4 + Math.random() * 7;
+      const theta = secureRandom() * Math.PI * 2;
+      const phi = secureRandom() * Math.PI * 0.7; // bias upward
+      const speed = 4 + secureRandom() * 7;
       p.pos.copy(pos);
       p.vel.set(
         Math.sin(phi) * Math.cos(theta) * speed,
-        (0.3 + Math.random() * 0.7) * speed,
+        (0.3 + secureRandom() * 0.7) * speed,
         Math.sin(phi) * Math.sin(theta) * speed,
       );
-      p.maxLife = 0.5 + Math.random() * 0.5;
+      p.maxLife = 0.5 + secureRandom() * 0.5;
       p.life = p.maxLife;
       p.active = true;
       const mesh = particleRefs.current[i];

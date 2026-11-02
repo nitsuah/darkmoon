@@ -11,6 +11,17 @@ import * as soundEffects from "./soundEffects";
 import { createBackgroundMusic } from "./musicLayers";
 import { createLogger } from "../lib/utils/logger";
 
+/**
+ * Secure random utility for game mechanics (non-cryptographic).
+ * Uses crypto.getRandomValues() to avoid CodeQL insecure-randomness alerts.
+ * These are for gameplay randomness only, not security-sensitive operations.
+ */
+function secureRandom(): number {
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return array[0] / 0x100000000;
+}
+
 const log = createLogger("SoundManager");
 
 class SoundManager {
@@ -369,7 +380,7 @@ class SoundManager {
       const { osc, gain } = createOscillatorWithGain(
         ctx,
         "sine",
-        120 + Math.random() * 30,
+        120 + secureRandom() * 30,
       );
 
       gain.gain.value = 0;

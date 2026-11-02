@@ -1,5 +1,16 @@
 import { createOscillatorWithGain } from "./soundNodeFactory";
 
+/**
+ * Secure random utility for game mechanics (non-cryptographic).
+ * Uses crypto.getRandomValues() to avoid CodeQL insecure-randomness alerts.
+ * These are for gameplay randomness only, not security-sensitive operations.
+ */
+function secureRandom(): number {
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return array[0] / 0x100000000;
+}
+
 export function playWalkSoundImpl(
   ctx: AudioContext,
   sfxGain: GainNode,
@@ -9,7 +20,7 @@ export function playWalkSoundImpl(
     const { osc, gain } = createOscillatorWithGain(
       ctx,
       "sine",
-      80 + Math.random() * 20,
+      80 + secureRandom() * 20,
     );
 
     gain.gain.value = 0;

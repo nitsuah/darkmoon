@@ -7,6 +7,17 @@ const BEAM_COLOR = new THREE.Color("#ff8833");
 const GLOW_COLOR = new THREE.Color("#ff5500");
 const MAX_PELLETS = 48; // max simultaneous pellet beams (8 shots × 6 pellets)
 
+/**
+ * Secure random utility for game mechanics (non-cryptographic).
+ * Uses crypto.getRandomValues() to avoid CodeQL insecure-randomness alerts.
+ * These are for gameplay randomness only, not security-sensitive operations.
+ */
+function secureRandom(): number {
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return array[0] / 0x100000000;
+}
+
 // Shared geometry reused by every slot's core and glow mesh — never disposed.
 const UNIT_BOX = new THREE.BoxGeometry(1, 1, 1);
 
@@ -104,14 +115,14 @@ export const ShotgunVFX: React.FC = () => {
         const slot = slotsRef.current[slotIdx];
         slotIdx++;
 
-        const yaw = (Math.random() - 0.5) * 2 * spreadAngle;
-        const pitch = (Math.random() - 0.5) * 2 * spreadAngle * 0.5;
+        const yaw = (secureRandom() - 0.5) * 2 * spreadAngle;
+        const pitch = (secureRandom() - 0.5) * 2 * spreadAngle * 0.5;
         const dir = direction
           .clone()
           .addScaledVector(right, Math.tan(yaw))
           .addScaledVector(up, Math.tan(pitch))
           .normalize();
-        const len = range * (0.5 + Math.random() * 0.5);
+        const len = range * (0.5 + secureRandom() * 0.5);
 
         const mid = origin.clone().addScaledVector(dir, len / 2);
         slot.group.position.copy(mid);
@@ -136,16 +147,15 @@ export const ShotgunVFX: React.FC = () => {
     return () => window.removeEventListener("shotgun-pellets-fired", handler);
   }, []);
 
-   
   useFrame(() => {
     const now = Date.now();
-     
+
     for (const slot of slotsRef.current) {
       if (!slot.active) continue;
       if (now >= slot.hideAt) {
         // eslint-disable-next-line react-hooks/immutability
         slot.group.visible = false;
-         
+
         slot.active = false;
         continue;
       }
@@ -153,9 +163,9 @@ export const ShotgunVFX: React.FC = () => {
       const opacity = Math.max(0, 1 - age);
       const core = slot.group.children[0] as THREE.Mesh;
       const glow = slot.group.children[1] as THREE.Mesh;
-       
+
       (core.material as THREE.MeshBasicMaterial).opacity = opacity * 0.9;
-       
+
       (glow.material as THREE.MeshBasicMaterial).opacity = opacity * 0.3;
     }
   });

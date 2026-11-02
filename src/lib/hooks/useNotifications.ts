@@ -1,5 +1,16 @@
 import { useState, useCallback } from "react";
 
+/**
+ * Secure random utility for game mechanics (non-cryptographic).
+ * Uses crypto.getRandomValues() to avoid CodeQL insecure-randomness alerts.
+ * These are for gameplay randomness only, not security-sensitive operations.
+ */
+function secureRandom(): number {
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return array[0] / 0x100000000;
+}
+
 export interface Notification {
   id: string;
   message: string;
@@ -22,7 +33,7 @@ export const useNotifications = () => {
   const addNotification = useCallback(
     (message: string, type: Notification["type"] = "info") => {
       const notification: Notification = {
-        id: `${Date.now()}-${Math.random()}`,
+        id: `${Date.now()}-${secureRandom().toString(36).slice(2, 8)}`,
         message,
         type,
         timestamp: Date.now(),

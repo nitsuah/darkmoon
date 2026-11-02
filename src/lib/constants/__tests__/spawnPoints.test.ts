@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { SPAWN_POINTS, pickSafeSpawn } from "../spawnPoints";
+import { mockCryptoRandom } from "../../../__tests__/random.test.utils";
 
 describe("pickSafeSpawn", () => {
   afterEach(() => {
@@ -7,7 +8,7 @@ describe("pickSafeSpawn", () => {
   });
 
   it("picks a random spawn point when there are no enemies", () => {
-    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    mockCryptoRandom(0xffffffff);
     expect(pickSafeSpawn([])).toBe(SPAWN_POINTS[SPAWN_POINTS.length - 1]);
   });
 

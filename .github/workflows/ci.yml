@@ -16,6 +16,8 @@ concurrency:
 jobs:
   build-test-lint:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       VITEST_MAX_WORKERS: 1
     steps:
@@ -45,6 +47,8 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     needs: build-test-lint
+    permissions:
+      contents: read
     env:
       VITEST_MAX_WORKERS: 1
     steps:
@@ -81,7 +85,7 @@ jobs:
           exit 1
 
       - name: Run Playwright E2E tests
-        run: npx playwright test --config config/playwright.config.ts e2e/smoke.spec.ts
+        run: npx playwright test --config config/playwright.config.ts e2e/smoke.spec.ts e2e/movement.spec.ts
 
       - name: Upload E2E diagnostics
         if: always()

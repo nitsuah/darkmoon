@@ -7,6 +7,17 @@ import type { GalleryBotConfig } from "./GalleryBotConfig";
 import { GALLERY_BOT_PRESETS } from "./GalleryBotConfig";
 import { useGalleryBot } from "./useGalleryBot";
 
+/**
+ * Secure random utility for game mechanics (non-cryptographic).
+ * Uses crypto.getRandomValues() to avoid CodeQL insecure-randomness alerts.
+ * These are for gameplay randomness only, not security-sensitive operations.
+ */
+function secureRandom(): number {
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return array[0] / 0x100000000;
+}
+
 // ─── Target layout ────────────────────────────────────────────────────────────
 // Three rows: back (large/10pt), mid (medium/25pt), front (small/50pt).
 // Plus a rare bonus target (gold/100pt) that slowly moves across the middle.
@@ -465,7 +476,7 @@ const ShootingGallery: React.FC<Props> = ({
     if (upCount < maxUp && now - lastSpawnRef.current > spawnInterval) {
       const down = targets.current.filter((t) => t.phase === "down");
       if (down.length > 0) {
-        const pick = down[Math.floor(Math.random() * down.length)];
+        const pick = down[Math.floor(secureRandom() * down.length)];
         pick.phase = "rising";
         pick.phaseStartTime = now;
         pick.upDuration = getUpDuration();

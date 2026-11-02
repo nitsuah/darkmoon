@@ -9,6 +9,17 @@ import type { TargetState } from "./ShootingGallery";
 const log = createGalleryLogger("Bot");
 
 /**
+ * Secure random utility for game mechanics (non-cryptographic).
+ * Uses crypto.getRandomValues() to avoid CodeQL insecure-randomness alerts.
+ * These are for gameplay randomness only, not security-sensitive operations.
+ */
+function secureRandom(): number {
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return array[0] / 0x100000000;
+}
+
+/**
  * Gallery bot hook — runs inside the R3F Canvas (called from ShootingGallery).
  *
  * When enabled, the bot picks targets, computes a jittered aim ray, and
@@ -99,7 +110,7 @@ export function useGalleryBot(
     if (readyTargets.length === 0) return;
 
     // Human hesitation: occasionally skip a frame to simulate indecision.
-    if (config.hesitate && Math.random() < 0.15) return;
+    if (config.hesitate && secureRandom() < 0.15) return;
 
     // ── Pick a target ─────────────────────────────────────────────────────
     let target: TargetState;
@@ -126,7 +137,7 @@ export function useGalleryBot(
         );
         break;
       default: // "random"
-        target = readyTargets[Math.floor(Math.random() * readyTargets.length)];
+        target = readyTargets[Math.floor(secureRandom() * readyTargets.length)];
     }
 
     // ── Compute aim direction ─────────────────────────────────────────────
@@ -137,7 +148,7 @@ export function useGalleryBot(
 
     // Determine if this shot is an intentional miss (missChance fires).
     const intentionalMiss =
-      config.missChance > 0 && Math.random() < config.missChance;
+      config.missChance > 0 && secureRandom() < config.missChance;
 
     let jitterRad = 0;
     let aimDir = perfectDir.clone();
@@ -147,21 +158,21 @@ export function useGalleryBot(
       const hitboxHalfW = target.def.targetW;
       const hitboxAngle = Math.atan2(hitboxHalfW, Math.max(dist, 1));
       // 1.8–3× the hitbox half-angle guarantees a miss at this distance.
-      jitterRad = hitboxAngle * (1.8 + Math.random() * 1.2);
+      jitterRad = hitboxAngle * (1.8 + secureRandom() * 1.2);
     } else if (config.aimJitterRad > 0) {
-      jitterRad = (Math.random() - 0.5) * 2 * config.aimJitterRad;
+      jitterRad = (secureRandom() - 0.5) * 2 * config.aimJitterRad;
     }
 
     if (jitterRad !== 0) {
       // Independent horizontal + vertical jitter (more realistic than single-axis).
       // A forced miss applies its full horizontal deflection: scaling it down by
       // another random factor could leave the ray inside the hitbox.
-      const hSign = Math.random() < 0.5 ? 1 : -1;
+      const hSign = secureRandom() < 0.5 ? 1 : -1;
       const hJitter = intentionalMiss
         ? jitterRad * hSign
-        : jitterRad * hSign * Math.random();
+        : jitterRad * hSign * secureRandom();
       const vJitter =
-        jitterRad * (Math.random() < 0.5 ? 1 : -1) * Math.random() * 0.6;
+        jitterRad * (secureRandom() < 0.5 ? 1 : -1) * secureRandom() * 0.6;
       const worldUp = new THREE.Vector3(0, 1, 0);
       const right = new THREE.Vector3()
         .crossVectors(perfectDir, worldUp)
