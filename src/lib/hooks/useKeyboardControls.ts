@@ -62,12 +62,29 @@ export const useKeyboardControls = (
       }
     };
 
+    const clearPressedKeys = () => {
+      setKeysPressed((prev) => {
+        const cleared: KeyMap = {};
+        for (const key of Object.keys(prev)) cleared[key] = false;
+        keysPressedRef.current = cleared;
+        return cleared;
+      });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) clearPressedKeys();
+    };
+
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("blur", clearPressedKeys);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("blur", clearPressedKeys);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [chatVisible, isPaused, keysPressed]);
 
