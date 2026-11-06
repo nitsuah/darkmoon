@@ -63,12 +63,10 @@ export const useKeyboardControls = (
     };
 
     const clearPressedKeys = () => {
-      setKeysPressed((prev) => {
-        const cleared: KeyMap = {};
-        for (const key of Object.keys(prev)) cleared[key] = false;
-        keysPressedRef.current = cleared;
-        return cleared;
-      });
+      const cleared: KeyMap = {};
+      for (const key of Object.keys(keysPressedRef.current)) cleared[key] = false;
+      keysPressedRef.current = cleared;
+      setKeysPressed(cleared);
     };
 
     const handleVisibilityChange = () => {
