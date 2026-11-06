@@ -18,7 +18,7 @@ describe("useKeyboardControls", () => {
     expect(result.current.keysPressed.w).toBe(false);
   });
 
-  it("clears all pressed keys and the ref when the window blurs", () => {
+  it("clears all pressed keys and the ref before later blur listeners run", () => {
     const { result } = renderHook(() => useKeyboardControls(false, false));
 
     act(() => {
@@ -30,9 +30,21 @@ describe("useKeyboardControls", () => {
     expect(result.current.keysPressedRef.current.w).toBe(true);
     expect(result.current.keysPressedRef.current.d).toBe(true);
 
-    act(() => {
-      window.dispatchEvent(new Event("blur"));
-    });
+    let refAtLaterListener: Record<string, boolean> | undefined;
+    const observeBlur = () => {
+      refAtLaterListener = { ...result.current.keysPressedRef.current };
+    };
+    window.addEventListener("blur", observeBlur);
+    try {
+      act(() => {
+        window.dispatchEvent(new Event("blur"));
+      });
+    } finally {
+      window.removeEventListener("blur", observeBlur);
+    }
+
+    expect(refAtLaterListener).toBeDefined();
+    expect(Object.values(refAtLaterListener ?? {}).every((pressed) => !pressed)).toBe(true);
     expect(Object.values(result.current.keysPressed).every((pressed) => !pressed)).toBe(true);
     expect(Object.values(result.current.keysPressedRef.current).every((pressed) => !pressed)).toBe(true);
   });
