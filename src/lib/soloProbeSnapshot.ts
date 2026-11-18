@@ -49,11 +49,13 @@ export function createSoloProbeSnapshot(
         }
 
         const [x, y, z] = targetPosition;
-        return [{
-          id: target.id,
-          position: { x, y, z },
-          health: typeof target.health === "number" ? target.health : null,
-        }];
+        return [
+          {
+            id: target.id,
+            position: { x, y, z },
+            health: typeof target.health === "number" ? target.health : null,
+          },
+        ];
       })
       .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   }
