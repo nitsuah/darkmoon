@@ -69,7 +69,7 @@ docker compose -f config/docker-compose.yml exec solo \
 docker compose -f config/docker-compose.yml --profile test down
 ```
 
-Swap `e2e/smoke.spec.ts` for `e2e/movement.spec.ts` (or any other spec file) to run a different scenario. CI runs `smoke` and `movement`.
+Swap `e2e/smoke.spec.ts` for `e2e/movement.spec.ts` (or any other spec file) to run a different scenario. CI runs every spec in `e2e/` (directory glob), so a new `e2e/*.spec.ts` file is picked up automatically.
 
 **Where the output goes.** The `solo` container mounts the repo at `/app`, so output lands in the host checkout:
 
