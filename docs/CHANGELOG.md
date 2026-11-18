@@ -50,6 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dependabot now ignores `eslint` semver-major updates until `eslint-plugin-jsx-a11y` supports eslint 10 (#446); stops the recurring eslint 10 PR that fails `npm ci` with ERESOLVE.
 - Dependency bumps: vitest 5.0 (#441) and grouped minor/patch updates (#444, #450, #453).
 - Dependency bumps: jsdom 31 (supersedes #526), grouped minor/patch updates (supersedes #525), typescript-eslint 8.72.2, prettier 3.10.1, viem 2.57.19; lockfile regenerated so `npm ci` is in sync again. The `three` override now references the direct dependency (`"$three"`) so Dependabot can bump it instead of failing with "Override for three conflicts with direct dependency".
+- three 0.180 → 0.187 (supersedes #528, whose Dependabot lockfile dropped nested `typescript@5.9.3` / `@noble/hashes@2.4.0` entries and broke `npm ci`); lockfile regenerated, typecheck/lint/843 tests/build pass.
 - `CHANGELOG.md` and `FEATURES.md` moved into `docs/` (#460); multiplayer planning docs live under `docs/projects/multi/`.
 
 ### Docs
