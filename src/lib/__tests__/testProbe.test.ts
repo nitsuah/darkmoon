@@ -7,6 +7,11 @@ interface TestProbe {
     health: number | null;
     ammo: number | null;
     score: number | null;
+    targets: {
+      id: string;
+      position: { x: number; y: number; z: number };
+      health: number | null;
+    }[];
   };
 }
 
@@ -21,6 +26,7 @@ const mockSnapshot = {
   health: 100,
   ammo: 50,
   score: 0,
+  targets: [{ id: "bot-1", position: { x: 4, y: 5, z: 6 }, health: 80 }],
 };
 
 const getSnapshot = vi.fn(() => mockSnapshot);
@@ -56,6 +62,7 @@ describe("installTestProbe", () => {
       health: 100,
       ammo: 50,
       score: 0,
+      targets: [{ id: "bot-1", position: { x: 4, y: 5, z: 6 }, health: 80 }],
     });
     cleanup();
     expect(window.__darkmoonTest).toBeUndefined();
@@ -65,7 +72,15 @@ describe("installTestProbe", () => {
     const cleanup = installTestProbe(getSnapshot);
     const snap = window.__darkmoonTest?.getSnapshot();
     if (snap && snap.position) snap.position.x = 10;
-    expect(window.__darkmoonTest?.getSnapshot()?.position?.x).toBe(1);
+    if (snap?.targets[0]) {
+      snap.targets[0].id = "mutated";
+      snap.targets[0].position.x = 99;
+    }
+    const next = window.__darkmoonTest?.getSnapshot();
+    expect(next?.position?.x).toBe(1);
+    expect(next?.targets).toEqual([
+      { id: "bot-1", position: { x: 4, y: 5, z: 6 }, health: 80 },
+    ]);
     cleanup();
   });
 
