@@ -1,4 +1,4 @@
-import type { TestSnapshot } from "./testProbe";
+import type { TestSnapshot, TestTarget } from "./testProbe";
 import type { Player, GameState } from "../components/GameManager";
 
 export function createSoloProbeSnapshot(
@@ -21,6 +21,7 @@ export function createSoloProbeSnapshot(
   let health: number | null = null;
   let ammo: number | null = null;
   let score: number | null = null;
+  let targets: TestTarget[] = [];
 
   if (gameManager && currentPlayerId) {
     const state = gameManager.getGameState();
@@ -34,7 +35,28 @@ export function createSoloProbeSnapshot(
       const playerScore = state.scores[currentPlayerId];
       score = typeof playerScore === "number" ? playerScore : null;
     }
+
+    targets = [...players.values()]
+      .filter((target) => target.id !== currentPlayerId)
+      .flatMap((target): TestTarget[] => {
+        const targetPosition = target.position;
+        if (
+          !Array.isArray(targetPosition) ||
+          targetPosition.length !== 3 ||
+          !targetPosition.every((coordinate) => Number.isFinite(coordinate))
+        ) {
+          return [];
+        }
+
+        const [x, y, z] = targetPosition;
+        return [{
+          id: target.id,
+          position: { x, y, z },
+          health: typeof target.health === "number" ? target.health : null,
+        }];
+      })
+      .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   }
 
-  return { position, health, ammo, score };
+  return { position, health, ammo, score, targets };
 }
