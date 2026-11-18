@@ -39,16 +39,18 @@ export function createSoloProbeSnapshot(
     targets = [...players.values()]
       .filter((target) => target.id !== currentPlayerId)
       .flatMap((target): TestTarget[] => {
-        const targetPosition = target.position;
+        const targetPosition: unknown = target.position;
         if (
           !Array.isArray(targetPosition) ||
           targetPosition.length !== 3 ||
-          !targetPosition.every((coordinate) => Number.isFinite(coordinate))
+          !targetPosition.every((coordinate: unknown) =>
+            Number.isFinite(coordinate),
+          )
         ) {
           return [];
         }
 
-        const [x, y, z] = targetPosition;
+        const [x, y, z] = targetPosition as [number, number, number];
         return [
           {
             id: target.id,
