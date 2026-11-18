@@ -1,8 +1,15 @@
+export interface TestTarget {
+  id: string;
+  position: { x: number; y: number; z: number };
+  health: number | null;
+}
+
 export interface TestSnapshot {
   position: { x: number; y: number; z: number } | null;
   health: number | null;
   ammo: number | null;
   score: number | null;
+  targets: TestTarget[];
 }
 
 export type GetSnapshot = () => TestSnapshot;
@@ -32,6 +39,10 @@ export function installTestProbe(
       health: snap.health,
       ammo: snap.ammo,
       score: snap.score,
+      targets: snap.targets.map((target) => ({
+        ...target,
+        position: { ...target.position },
+      })),
     };
   };
 
