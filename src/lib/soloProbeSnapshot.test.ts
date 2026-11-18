@@ -138,6 +138,7 @@ describe("soloProbeSnapshot", () => {
       health: null,
       ammo: null,
       score: null,
+      targets: [],
     });
   });
 
@@ -148,6 +149,7 @@ describe("soloProbeSnapshot", () => {
       health: null,
       ammo: null,
       score: null,
+      targets: [],
     });
   });
 
@@ -166,6 +168,7 @@ describe("soloProbeSnapshot", () => {
       health: null,
       ammo: null,
       score: null,
+      targets: [],
     });
   });
 });
