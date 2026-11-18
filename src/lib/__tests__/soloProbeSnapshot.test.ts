@@ -23,7 +23,12 @@ function manager(players: Player[]) {
           scores: { self: 7 },
         }) as GameState,
     ),
-    getPlayers: vi.fn(() => new Map(players.map((item) => [item.id, item]))),
+    getPlayers: vi.fn(
+      () =>
+        new Map<string, Player>(
+          players.map((item): [string, Player] => [item.id, item]),
+        ),
+    ),
   };
 }
 
