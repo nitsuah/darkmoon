@@ -94,11 +94,17 @@ test("WASD movement changes position, stops after release, and normalizes diagon
     keys: string[],
   ): Promise<MovementSample> => {
     const start = await readPosition();
-    for (const key of keys) await page.keyboard.down(key);
+    // Send multi-key chords without awaiting each CDP round-trip in between.
+    // Sequential awaits let the first key move alone for one input latency
+    // (~1 frame in CI's software-GL Chromium), which inflates the diagonal
+    // sample and made the normalization check depend on render speed.
+    await Promise.all(keys.map((key) => page.keyboard.down(key)));
     try {
       await page.waitForTimeout(1400);
     } finally {
-      for (const key of [...keys].reverse()) await page.keyboard.up(key);
+      await Promise.all(
+        [...keys].reverse().map((key) => page.keyboard.up(key)),
+      );
     }
 
     // Allow the existing movement deceleration to settle, then sample twice.
