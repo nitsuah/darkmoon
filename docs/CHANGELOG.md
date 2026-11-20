@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **SEO basics** — `index.html` declares `https://darkmoon.dev/` as canonical, and `public/robots.txt` plus `public/sitemap.xml` point crawlers at it; the stale Netlify status badge is gone from the README (#536).
 - **CI e2e runs every spec** — the `e2e` job now runs the `e2e/` directory instead of naming `smoke` and `movement`, so new `e2e/*.spec.ts` files run without a workflow edit.
 - **Darkmoon dev test probe** — exposes other players/bots with finite positions and health for deterministic aim/fire E2E assertions; remains development-only (#532).
 - **Mobile wallet sign-in via WalletConnect** — when `VITE_WALLETCONNECT_PROJECT_ID` is set, the `/play` sign-in gate also offers phone wallets through a QR code. The provider loads only when chosen.
