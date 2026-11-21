@@ -37,6 +37,8 @@ export interface DarkmoonTestProbe {
   fire: () => void;
   /** Freeze bot AI: no movement, no firing. */
   freezeBots: (frozen: boolean) => void;
+  /** Stop weapon pickups from swapping the player's weapon. */
+  disablePickups: (disabled: boolean) => void;
   placeTarget: (targetId: string, position: Vec3) => boolean;
 }
 
@@ -98,6 +100,9 @@ export function installTestProbe(
     },
     freezeBots: (frozen) => {
       testControl.botsFrozen = frozen;
+    },
+    disablePickups: (disabled) => {
+      testControl.pickupsDisabled = disabled;
     },
     placeTarget: (targetId, position) =>
       actions.placeTarget?.(targetId, { ...position }) ?? false,

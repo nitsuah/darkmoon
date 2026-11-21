@@ -1,6 +1,7 @@
 import * as React from "react";
 import type { GameManager } from "../../../components/GameManager";
 import type { WeaponManager } from "../../../components/combat/WeaponManager";
+import * as gameInput from "../../../lib/gameInput";
 
 interface PlayerInputProps {
   /** Game manager for player state */
@@ -49,6 +50,8 @@ export const PlayerInput = React.memo(
     React.useEffect(() => {
       function handleWeaponPickup(event: WindowEventMap["weapon-pickup"]) {
         if (!gameManager || isPaused) return;
+        // Dev/e2e probe (#497): keep the test loadout when walking over pickups.
+        if (gameInput.testControl.pickupsDisabled) return;
         const weaponId = event.detail?.weaponId;
         if (!weaponId) return;
 

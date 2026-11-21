@@ -67,6 +67,8 @@ async function setUpRange(page: Page): Promise<string> {
   await page.evaluate((weaponId) => {
     const probe = window.__darkmoonTest!;
     probe.freezeBots(true);
+    // Spawn points can sit on weapon pickups, which would swap out the SMG.
+    probe.disablePickups(true);
     probe.setLoadout(weaponId);
   }, SMG.id);
   await expect.poll(async () => (await snapshot(page)).ammo, SLOW).toBe(SMG.maxAmmo);
@@ -87,9 +89,14 @@ async function fireOnce(page: Page, before: number): Promise<number> {
   let ammo = before;
   await expect
     .poll(async () => {
-      // Re-pull each poll: a pull inside the cooldown window is ignored.
-      await page.evaluate(() => window.__darkmoonTest!.fire());
-      ammo = (await snapshot(page)).ammo ?? before;
+      // Read ammo and pull in one step, and only while the shot has not landed,
+      // so a retry (a pull inside the cooldown is ignored) never queues a second shot.
+      ammo = await page.evaluate((start) => {
+        const probe = window.__darkmoonTest!;
+        const now = probe.getSnapshot().ammo ?? start;
+        if (now >= start) probe.fire();
+        return now;
+      }, before);
       return ammo < before;
     }, SLOW)
     .toBe(true);

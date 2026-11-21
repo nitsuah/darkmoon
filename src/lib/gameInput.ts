@@ -45,6 +45,7 @@ export function resetTransientInput(): void {
  * - equip: one-shot weapon switch, consumed by PlayerWeapon
  * - fire: one-shot trigger pull, consumed by PlayerWeapon
  * - botsFrozen: bot AI skips its frame (no movement, no firing)
+ * - pickupsDisabled: weapon pickups do not swap the player's weapon
  */
 export type TestVec3 = { x: number; y: number; z: number };
 export const testControl: {
@@ -52,11 +53,19 @@ export const testControl: {
   equip: string | null;
   fire: boolean;
   botsFrozen: boolean;
-} = { aimPoint: null, equip: null, fire: false, botsFrozen: false };
+  pickupsDisabled: boolean;
+} = {
+  aimPoint: null,
+  equip: null,
+  fire: false,
+  botsFrozen: false,
+  pickupsDisabled: false,
+};
 
 export function resetTestControl(): void {
   testControl.aimPoint = null;
   testControl.equip = null;
   testControl.fire = false;
   testControl.botsFrozen = false;
+  testControl.pickupsDisabled = false;
 }

@@ -114,7 +114,13 @@ describe("test probe controls (#497)", () => {
     window.__darkmoonTest?.setLoadout("smg");
     window.__darkmoonTest?.fire();
     window.__darkmoonTest?.freezeBots(true);
-    expect(testControl).toMatchObject({ equip: "smg", fire: true, botsFrozen: true });
+    window.__darkmoonTest?.disablePickups(true);
+    expect(testControl).toMatchObject({
+      equip: "smg",
+      fire: true,
+      botsFrozen: true,
+      pickupsDisabled: true,
+    });
     cleanup();
   });
 
@@ -136,8 +142,15 @@ describe("test probe controls (#497)", () => {
     window.__darkmoonTest?.setLoadout("smg");
     window.__darkmoonTest?.fire();
     window.__darkmoonTest?.freezeBots(true);
+    window.__darkmoonTest?.disablePickups(true);
     cleanup();
-    expect(testControl).toEqual({ aimPoint: null, equip: null, fire: false, botsFrozen: false });
+    expect(testControl).toEqual({
+      aimPoint: null,
+      equip: null,
+      fire: false,
+      botsFrozen: false,
+      pickupsDisabled: false,
+    });
   });
 
   it("disabled probe never touches the controls", () => {
