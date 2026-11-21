@@ -1,25 +1,33 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { installTestProbe } from "../testProbe";
+import { createSoloProbeSnapshot } from "../soloProbeSnapshot";
+import type { GameState, Player } from "../../components/GameManager";
 
-interface TestProbe {
-  getSnapshot: () => {
-    position: { x: number; y: number; z: number } | null;
-    health: number | null;
-    ammo: number | null;
-    score: number | null;
-    targets: {
-      id: string;
-      position: { x: number; y: number; z: number };
-      health: number | null;
-    }[];
-  };
-}
+const player = (overrides: Partial<Player> = {}): Player => ({
+  id: "player",
+  name: "Player",
+  position: [0, 0, 0],
+  rotation: [0, 0, 0],
+  ...overrides,
+});
 
-declare global {
-  interface Window {
-    __darkmoonTest?: TestProbe;
-  }
-}
+const manager = (players: Player[]) => ({
+  getGameState: vi.fn(
+    () =>
+      ({
+        mode: "solo",
+        isActive: true,
+        timeRemaining: 0,
+        scores: { self: 7 },
+      }) as GameState,
+  ),
+  getPlayers: vi.fn(
+    () =>
+      new Map<string, Player>(
+        players.map((item): [string, Player] => [item.id, item]),
+      ),
+  ),
+});
 
 const mockSnapshot = {
   position: { x: 1, y: 2, z: 3 },
@@ -91,5 +99,83 @@ describe("installTestProbe", () => {
     expect(window.__darkmoonTest).toBeDefined();
     cleanup2();
     expect(window.__darkmoonTest).toBeUndefined();
+  });
+
+  describe("aimAt", () => {
+    it("is installed on the probe when enabled", () => {
+      const cleanup = installTestProbe(getSnapshot);
+      expect(typeof window.__darkmoonTest?.aimAt).toBe("function");
+      cleanup();
+    });
+
+    it("calculates correct yaw and pitch to face target", () => {
+      const cleanup = installTestProbe(getSnapshot);
+
+      // Capture console.log to verify the calculated values
+      const logs: string[] = [];
+      const originalLog = console.log;
+      console.log = (...args: unknown[]) => {
+        logs.push(args.join(" "));
+      };
+
+      window.__darkmoonTest?.aimAt("bot-1");
+
+      console.log = originalLog;
+
+      // Verify the log contains the expected yaw/pitch calculation
+      expect(logs.length).toBeGreaterThan(0);
+      expect(logs[0]).toContain("Setting camera orientation:");
+      expect(logs[0]).toContain("yaw=");
+      expect(logs[0]).toContain("pitch=");
+
+      cleanup();
+    });
+
+    it("does nothing when target not found", () => {
+      const cleanup = installTestProbe(getSnapshot);
+
+      const logs: string[] = [];
+      const originalLog = console.log;
+      console.log = (...args: unknown[]) => {
+        logs.push(args.join(" "));
+      };
+
+      // Try to aim at non-existent target
+      window.__darkmoonTest?.aimAt("non-existent");
+
+      console.log = originalLog;
+
+      // Should not log anything since target not found
+      expect(logs.length).toBe(0);
+
+      cleanup();
+    });
+
+    it("works with createSoloProbeSnapshot targets", () => {
+      // Use the real createSoloProbeSnapshot to generate a snapshot
+      const players = [
+        player({ id: "self" }),
+        player({ id: "bot-1", position: [10, 0, 10], health: 100 }),
+      ];
+      const snapshot = createSoloProbeSnapshot([0, 0, 0], "self", manager(players));
+
+      const getSnapshotFn = vi.fn(() => snapshot);
+      const cleanup = installTestProbe(getSnapshotFn);
+
+      const logs: string[] = [];
+      const originalLog = console.log;
+      console.log = (...args: unknown[]) => {
+        logs.push(args.join(" "));
+      };
+
+      window.__darkmoonTest?.aimAt("bot-1");
+
+      console.log = originalLog;
+
+      expect(logs.length).toBeGreaterThan(0);
+      expect(logs[0]).toContain("Setting camera orientation:");
+
+      cleanup();
+    });
   });
 });
