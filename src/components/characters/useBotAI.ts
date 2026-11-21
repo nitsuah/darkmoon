@@ -6,6 +6,7 @@ import CollisionSystem from "../CollisionSystem";
 import { GameState } from "../GameManager";
 import { createTagLogger } from "../../lib/utils/logger";
 import { SPAWN_POINTS } from "../../lib/constants/spawnPoints";
+import * as gameInput from "../../lib/gameInput";
 
 /**
  * Secure random utility for game mechanics (non-cryptographic).
@@ -170,6 +171,8 @@ export function useBotAI({
 
   useFrame((_state, delta) => {
     if (!meshRef.current || isPaused) return;
+    // Dev/e2e probe (#497): frozen bots neither move nor fire.
+    if (gameInput.testControl.botsFrozen) return;
 
     const now = Date.now();
 

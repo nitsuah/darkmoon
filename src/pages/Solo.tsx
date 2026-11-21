@@ -473,12 +473,24 @@ const Solo: React.FC = () => {
 
   // --- Test probe (dev only) ---
   useEffect(() => {
-    return installTestProbe(() =>
-      createSoloProbeSnapshot(
-        playerPositionRef.current,
-        currentPlayerId,
-        gameManager.current ?? null,
-      ),
+    return installTestProbe(
+      () =>
+        createSoloProbeSnapshot(
+          playerPositionRef.current,
+          currentPlayerId,
+          gameManager.current ?? null,
+        ),
+      undefined,
+      {
+        // Moves the target's hitbox only; pair with freezeBots(true) so the
+        // bot AI does not write its own position back on the next frame.
+        placeTarget: (targetId, { x, y, z }) => {
+          const mgr = gameManager.current;
+          if (!mgr?.getPlayers().has(targetId)) return false;
+          mgr.updatePlayerPosition(targetId, [x, y, z]);
+          return true;
+        },
+      },
     );
   }, [currentPlayerId]);
 

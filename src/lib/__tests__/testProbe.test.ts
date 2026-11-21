@@ -1,33 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { installTestProbe } from "../testProbe";
-import { createSoloProbeSnapshot } from "../soloProbeSnapshot";
-import type { GameState, Player } from "../../components/GameManager";
-
-const player = (overrides: Partial<Player> = {}): Player => ({
-  id: "player",
-  name: "Player",
-  position: [0, 0, 0],
-  rotation: [0, 0, 0],
-  ...overrides,
-});
-
-const manager = (players: Player[]) => ({
-  getGameState: vi.fn(
-    () =>
-      ({
-        mode: "solo",
-        isActive: true,
-        timeRemaining: 0,
-        scores: { self: 7 },
-      }) as GameState,
-  ),
-  getPlayers: vi.fn(
-    () =>
-      new Map<string, Player>(
-        players.map((item): [string, Player] => [item.id, item]),
-      ),
-  ),
-});
+import { testControl, resetTestControl } from "../gameInput";
 
 const mockSnapshot = {
   position: { x: 1, y: 2, z: 3 },
@@ -45,6 +18,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  resetTestControl();
 });
 
 describe("installTestProbe", () => {
@@ -100,82 +74,75 @@ describe("installTestProbe", () => {
     cleanup2();
     expect(window.__darkmoonTest).toBeUndefined();
   });
+});
 
-  describe("aimAt", () => {
-    it("is installed on the probe when enabled", () => {
-      const cleanup = installTestProbe(getSnapshot);
-      expect(typeof window.__darkmoonTest?.aimAt).toBe("function");
-      cleanup();
+describe("test probe controls (#497)", () => {
+  it("aimAt returns false for an unknown target and leaves aim unset", () => {
+    const cleanup = installTestProbe(getSnapshot, true);
+    expect(window.__darkmoonTest?.aimAt("nobody")).toBe(false);
+    expect(testControl.aimPoint).toBeNull();
+    cleanup();
+  });
+
+  it("aimAt tracks the target's live position every frame", () => {
+    let x = 4;
+    const live = () => ({
+      ...mockSnapshot,
+      targets: [{ id: "bot-1", position: { x, y: 5, z: 6 }, health: 80 }],
     });
+    const cleanup = installTestProbe(live, true);
+    expect(window.__darkmoonTest?.aimAt("bot-1")).toBe(true);
+    expect(testControl.aimPoint?.()).toEqual({ x: 4, y: 5, z: 6 });
+    x = 9;
+    expect(testControl.aimPoint?.()).toEqual({ x: 9, y: 5, z: 6 });
+    cleanup();
+  });
 
-    it("calculates correct yaw and pitch to face target", () => {
-      const cleanup = installTestProbe(getSnapshot);
+  it("aimAtPoint copies the point, and clearAim removes the aim", () => {
+    const cleanup = installTestProbe(getSnapshot, true);
+    const point = { x: 1, y: 2, z: 3 };
+    window.__darkmoonTest?.aimAtPoint(point);
+    point.x = 99;
+    expect(testControl.aimPoint?.()).toEqual({ x: 1, y: 2, z: 3 });
+    window.__darkmoonTest?.clearAim();
+    expect(testControl.aimPoint).toBeNull();
+    cleanup();
+  });
 
-      // Capture console.log to verify the calculated values
-      const logs: string[] = [];
-      const originalLog = console.log;
-      console.log = (...args: unknown[]) => {
-        logs.push(args.join(" "));
-      };
+  it("setLoadout, fire and freezeBots set the one-shot controls", () => {
+    const cleanup = installTestProbe(getSnapshot, true);
+    window.__darkmoonTest?.setLoadout("smg");
+    window.__darkmoonTest?.fire();
+    window.__darkmoonTest?.freezeBots(true);
+    expect(testControl).toMatchObject({ equip: "smg", fire: true, botsFrozen: true });
+    cleanup();
+  });
 
-      window.__darkmoonTest?.aimAt("bot-1");
+  it("placeTarget delegates to the game action, or returns false without one", () => {
+    const placeTarget = vi.fn(() => true);
+    const cleanup = installTestProbe(getSnapshot, true, { placeTarget });
+    expect(window.__darkmoonTest?.placeTarget("bot-1", { x: 0, y: 1, z: 2 })).toBe(true);
+    expect(placeTarget).toHaveBeenCalledWith("bot-1", { x: 0, y: 1, z: 2 });
+    cleanup();
 
-      console.log = originalLog;
+    const cleanupBare = installTestProbe(getSnapshot, true);
+    expect(window.__darkmoonTest?.placeTarget("bot-1", { x: 0, y: 1, z: 2 })).toBe(false);
+    cleanupBare();
+  });
 
-      // Verify the log contains the expected yaw/pitch calculation
-      expect(logs.length).toBeGreaterThan(0);
-      expect(logs[0]).toContain("Setting camera orientation:");
-      expect(logs[0]).toContain("yaw=");
-      expect(logs[0]).toContain("pitch=");
+  it("cleanup resets every control so nothing leaks past the probe", () => {
+    const cleanup = installTestProbe(getSnapshot, true);
+    window.__darkmoonTest?.aimAt("bot-1");
+    window.__darkmoonTest?.setLoadout("smg");
+    window.__darkmoonTest?.fire();
+    window.__darkmoonTest?.freezeBots(true);
+    cleanup();
+    expect(testControl).toEqual({ aimPoint: null, equip: null, fire: false, botsFrozen: false });
+  });
 
-      cleanup();
-    });
-
-    it("does nothing when target not found", () => {
-      const cleanup = installTestProbe(getSnapshot);
-
-      const logs: string[] = [];
-      const originalLog = console.log;
-      console.log = (...args: unknown[]) => {
-        logs.push(args.join(" "));
-      };
-
-      // Try to aim at non-existent target
-      window.__darkmoonTest?.aimAt("non-existent");
-
-      console.log = originalLog;
-
-      // Should not log anything since target not found
-      expect(logs.length).toBe(0);
-
-      cleanup();
-    });
-
-    it("works with createSoloProbeSnapshot targets", () => {
-      // Use the real createSoloProbeSnapshot to generate a snapshot
-      const players = [
-        player({ id: "self" }),
-        player({ id: "bot-1", position: [10, 0, 10], health: 100 }),
-      ];
-      const snapshot = createSoloProbeSnapshot([0, 0, 0], "self", manager(players));
-
-      const getSnapshotFn = vi.fn(() => snapshot);
-      const cleanup = installTestProbe(getSnapshotFn);
-
-      const logs: string[] = [];
-      const originalLog = console.log;
-      console.log = (...args: unknown[]) => {
-        logs.push(args.join(" "));
-      };
-
-      window.__darkmoonTest?.aimAt("bot-1");
-
-      console.log = originalLog;
-
-      expect(logs.length).toBeGreaterThan(0);
-      expect(logs[0]).toContain("Setting camera orientation:");
-
-      cleanup();
-    });
+  it("disabled probe never touches the controls", () => {
+    installTestProbe(getSnapshot, false);
+    expect(window.__darkmoonTest).toBeUndefined();
+    expect(testControl.botsFrozen).toBe(false);
   });
 });

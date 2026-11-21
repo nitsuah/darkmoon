@@ -36,3 +36,27 @@ export function resetTransientInput(): void {
   weaponScrollInput.direction = 0;
   pointerLocked = false;
 }
+
+/**
+ * Dev/e2e-only controls (#497). Only the dev test probe (src/lib/testProbe.ts)
+ * writes these, and it is never installed in production builds, so they stay at
+ * their defaults there and the per-frame readers below are no-ops.
+ * - aimPoint: when set, the player's shots fly from the muzzle toward this point
+ * - equip: one-shot weapon switch, consumed by PlayerWeapon
+ * - fire: one-shot trigger pull, consumed by PlayerWeapon
+ * - botsFrozen: bot AI skips its frame (no movement, no firing)
+ */
+export type TestVec3 = { x: number; y: number; z: number };
+export const testControl: {
+  aimPoint: (() => TestVec3 | null) | null;
+  equip: string | null;
+  fire: boolean;
+  botsFrozen: boolean;
+} = { aimPoint: null, equip: null, fire: false, botsFrozen: false };
+
+export function resetTestControl(): void {
+  testControl.aimPoint = null;
+  testControl.equip = null;
+  testControl.fire = false;
+  testControl.botsFrozen = false;
+}
