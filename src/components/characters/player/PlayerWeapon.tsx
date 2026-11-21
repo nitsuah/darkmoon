@@ -199,6 +199,17 @@ export const PlayerWeapon = React.memo(
             currentAmmo: weaponManagerRef.current.getAmmo("smg"),
           });
         }
+        // Dev/e2e probe (#497): one-shot equip request
+        const probeEquip = gameInput.testControl.equip;
+        if (probeEquip) {
+          gameInput.testControl.equip = null;
+          if (weaponManagerRef.current.equip(probeEquip)) {
+            gameManager?.updatePlayer(myId, {
+              equippedWeaponId: probeEquip,
+              currentAmmo: weaponManagerRef.current.getAmmo(probeEquip),
+            });
+          }
+        }
         // R key: reload or precision snap
         if (keyR && !prevKeyRRef.current) {
           const equipped = weaponManagerRef.current.getEquipped();
@@ -279,10 +290,16 @@ export const PlayerWeapon = React.memo(
         !mouseControls.leftClick &&
         weaponManagerRef.current.isCharging("grenade");
 
+      // Dev/e2e probe (#497): a one-shot trigger pull, consumed every frame.
+      const probeFire = gameInput.testControl.fire;
+      gameInput.testControl.fire = false;
+
       // Fire the equipped weapon while left-click is held; the grenade is the
       // one exception — it charges while held and fires on release.
       if (
-        (mouseControls.leftClick && !isGrenadeEquipped && canActNow) ||
+        ((mouseControls.leftClick || probeFire) &&
+          !isGrenadeEquipped &&
+          canActNow) ||
         grenadeReleaseFire
       ) {
         // Reuse scratch objects to avoid per-frame GC churn
@@ -292,6 +309,15 @@ export const PlayerWeapon = React.memo(
         // Always fire from crosshair center (NDC 0,0) for accurate aiming
         _raycaster.current.setFromCamera(_ndc.current.set(0, 0), state.camera);
         _fireDir.current.copy(_raycaster.current.ray.direction);
+
+        // Dev/e2e probe (#497): aim straight from the muzzle at a world point.
+        const probeAim = gameInput.testControl.aimPoint?.();
+        if (probeAim) {
+          _fireDir.current
+            .set(probeAim.x, probeAim.y, probeAim.z)
+            .sub(_fireOrigin.current)
+            .normalize();
+        }
 
         // Mobile aim assist: snap toward the nearest enemy within a 20° cone
         if (gameInput.isMobile && gameManager) {
