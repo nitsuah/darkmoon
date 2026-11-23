@@ -38,21 +38,21 @@
   },
   "dependencies": {
     "@splinetool/react-spline": "^4.2.0",
-    "@splinetool/runtime": "^2.0.181",
+    "@splinetool/runtime": "^2.0.203",
     "@walletconnect/ethereum-provider": "2.26.0",
     "cors": "^2.8.6",
     "express": "^5.3.0",
-    "express-rate-limit": "^8.7.4",
+    "express-rate-limit": "^8.7.5",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "react-router-dom": "^7.18.4",
+    "react-router-dom": "^7.18.6",
     "socket.io": "^4.8.4",
     "three": "^0.187.0",
-    "viem": "2.57.19"
+    "viem": "2.58.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
-    "@playwright/test": "^1.65.0",
+    "@playwright/test": "^1.65.1",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.2",
     "@react-three/test-renderer": "^9.1.1",
@@ -62,11 +62,11 @@
     "@types/node": "^26.6.5",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.3.0",
-    "@typescript-eslint/eslint-plugin": "^8.72.2",
+    "@typescript-eslint/eslint-plugin": "^8.73.0",
     "@typescript-eslint/parser": "^8.72.2",
     "@vitejs/plugin-react": "^6.3.0",
-    "@vitest/coverage-v8": "^5.1.0",
-    "baseline-browser-mapping": "^2.11.37",
+    "@vitest/coverage-v8": "^5.1.1",
+    "baseline-browser-mapping": "^2.11.39",
     "eslint": "^9.28.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-jsx-a11y": "^6.10.2",
@@ -74,7 +74,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "husky": "^9.1.7",
     "jsdom": "^31.0.1",
-    "lint-staged": "^17.6.0",
+    "lint-staged": "^17.6.1",
     "nodemon": "^3.1.14",
     "prettier": "^3.10.1",
     "rollup-plugin-visualizer": "^7.1.3",
@@ -85,6 +85,6 @@
     "vitest": "^5.0.0"
   },
   "optionalDependencies": {
-    "@rollup/rollup-win32-x64-msvc": "^4.68.3"
+    "@rollup/rollup-win32-x64-msvc": "^4.68.7"
   }
 }
