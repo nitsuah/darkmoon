@@ -93,6 +93,9 @@ test.describe("kill and score", () => {
 
     const before = await snapshot(page);
     const scoreBefore = before.score ?? 0;
+    // Precondition: the magazine can kill this bot (aim-fire.spec.ts pins the SMG at 12 damage a hit).
+    const targetHp = before.targets.find((t) => t.id === targetId)!.health!;
+    expect(targetHp, "target health fits inside one magazine").toBeLessThanOrEqual(SMG.damage * before.ammo!);
 
     // Outcome, not timing or damage tables: pull the trigger until the score moves
     // or the magazine is empty. The loop runs inside the page: software-GL stalls
