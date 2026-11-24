@@ -80,9 +80,15 @@ test("WASD movement changes position, stops after release, and normalizes diagon
   // Position plus a page-side timestamp, so speed does not depend on how long
   // the CI runner took to deliver each CDP round-trip.
   const readTimedPosition = async (): Promise<{ position: Position; t: number }> => {
-    const position = await readPosition();
-    const t = await page.evaluate(() => performance.now());
-    return { position, t };
+    return page.evaluate(() => {
+      const position = (
+        window as Window & {
+          __darkmoonTest?: { getSnapshot: () => { position: Position | null } };
+        }
+      ).__darkmoonTest?.getSnapshot()?.position;
+      if (!position) throw new Error("Darkmoon test probe has no player position");
+      return { position, t: performance.now() };
+    });
   };
 
   const displacement = (start: Position, end: Position): Position => ({
