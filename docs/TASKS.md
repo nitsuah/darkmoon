@@ -2,7 +2,7 @@
 
 > 🧭 [darkmoon](../README.md) · [Features](./FEATURES.md) · [Roadmap](./ROADMAP.md) · **Tasks** · [Changelog](./CHANGELOG.md) · [Metrics](./METRICS.md) <!-- nav -->
 
-Last Updated: 2026-10-01
+Last Updated: 2026-11-24
 
 ## In Progress
 
@@ -15,6 +15,8 @@ _Shipped work is condensed into `docs/FEATURES.md`
 see those files rather than a duplicated narrative here._
 
 ## Todo
+
+- [ ] Retire Netlify leftovers after the Netlify site is deleted: remove `netlify.toml`, and the `darkmoon-dev.netlify.app` entries from `render.yaml` `ALLOWED_ORIGINS`. (P3 · Tech Debt) Owner-side: add a Cloudflare zone Single Redirect `www.darkmoon.dev` → `darkmoon.dev` (301, keep path/query). Source: #535.
 
 - [ ] Revisit the eslint 10 bump (issue #446, closed-unmerged PR #445) once `eslint-plugin-jsx-a11y` supports it. (P3 · Tech Debt · Confidence: High) Blocked externally: as of the 2026-09-24 PMO audit, `npm view eslint-plugin-jsx-a11y peerDependencies` still caps `eslint` at `^9`. Acceptance Criteria: when a jsx-a11y release allows eslint 10, remove the `eslint` semver-major `ignore` rule from `.github/dependabot.yml`, bump both, `npm run lint` passes in Docker, and #446 is closed. Canonical tracker: nitsuah/vigil#212.
 
