@@ -34,6 +34,7 @@ export default defineConfig({
         },
         exclude: [
             'e2e/**',
+            'tests/journeys/**',
             'e2e/**/*',
             'node_modules/**',
             'node_modules/**/*',
