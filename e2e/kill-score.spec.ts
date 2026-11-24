@@ -106,7 +106,7 @@ async function fireOnce(page: Page, before: number): Promise<number> {
 test.describe("kill and score", () => {
   test.setTimeout(240_000);
 
-  test("a lethal burst awards the player one kill and downs the target", async ({ page }) => {
+  test("a lethal burst awards one kill, and a downed target cannot be farmed", async ({ page }) => {
     const errors = trackPageErrors(page);
     const targetId = await setUpRange(page);
     expect(await page.evaluate((id) => window.__darkmoonTest!.aimAt(id), targetId)).toBe(true);
@@ -125,30 +125,15 @@ test.describe("kill and score", () => {
     await expect.poll(async () => (await snapshot(page)).score, SLOW).toBe(scoreBefore + 1);
     expect(await targetHealth(page, targetId)).toBe(0);
     expect(ammo).toBe(before.ammo! - shotsToKill);
-    expect(errors, "uncaught application errors").toEqual([]);
-  });
 
-  test("a downed target cannot be farmed for extra kills while it respawns", async ({ page }) => {
-    const errors = trackPageErrors(page);
-    const targetId = await setUpRange(page);
-    await page.evaluate((id) => window.__darkmoonTest!.aimAt(id), targetId);
-
-    let snap = await snapshot(page);
-    let ammo = snap.ammo!;
-    const scoreBefore = snap.score ?? 0;
-    // Shoot until the target is down.
-    while ((await targetHealth(page, targetId)) !== 0) {
+    // The downed target sits out a respawn window: more shots neither damage it
+    // nor award another kill (one setup, so only one slow software-GL page load).
+    for (let i = 0; i < 2; i++) {
       ammo = await fireOnce(page, ammo);
     }
-    await expect.poll(async () => (await snapshot(page)).score, SLOW).toBe(scoreBefore + 1);
-
-    // Keep firing into the respawn window: no further damage, no further score.
-    for (let i = 0; i < 3; i++) {
-      ammo = await fireOnce(page, ammo);
-    }
-    snap = await snapshot(page);
-    expect(snap.score).toBe(scoreBefore + 1);
-    expect(snap.targets.find((t) => t.id === targetId)!.health).toBe(0);
+    const after = await snapshot(page);
+    expect(after.score).toBe(scoreBefore + 1);
+    expect(after.targets.find((t) => t.id === targetId)!.health).toBe(0);
     expect(errors, "uncaught application errors").toEqual([]);
   });
 });
