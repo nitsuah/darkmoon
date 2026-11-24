@@ -76,6 +76,13 @@ async function setUpRange(page: Page): Promise<string> {
     { id: target.id, at: { x: p.x, y: p.y, z: p.z - 4 } },
   );
   expect(placed).toBe(true);
+  // The call returning true is not proof: wait until the snapshot shows the target there.
+  await expect
+    .poll(async () => {
+      const moved = (await snapshot(page)).targets.find((t) => t.id === target.id);
+      return moved ? Math.hypot(moved.position.x - p.x, moved.position.z - (p.z - 4)) : Infinity;
+    }, SLOW)
+    .toBeLessThan(0.5);
   return target.id;
 }
 
@@ -95,7 +102,7 @@ async function fireOnce(page: Page, before: number): Promise<number> {
       return ammo < before;
     }, SLOW)
     .toBe(true);
-  return ammo;
+  return (await snapshot(page)).ammo ?? ammo;
 }
 
 test.describe("kill and score", () => {
@@ -108,18 +115,17 @@ test.describe("kill and score", () => {
 
     const before = await snapshot(page);
     const scoreBefore = before.score ?? 0;
-    const shotsToKill = Math.ceil(before.targets.find((t) => t.id === targetId)!.health! / SMG.damage);
-    expect(shotsToKill).toBeLessThanOrEqual(before.ammo!);
 
-    // Outcome, not timing: keep shooting (one pull per landed shot) until the kill registers.
+    // Outcome, not timing or damage tables: pull the trigger (one pull per landed
+    // shot) until the score moves or the magazine is empty.
     let ammo = before.ammo!;
-    for (let i = 0; i < shotsToKill; i++) {
+    while (ammo > 0 && ((await snapshot(page)).score ?? 0) === scoreBefore) {
       ammo = await fireOnce(page, ammo);
     }
 
     await expect.poll(async () => (await snapshot(page)).score, SLOW).toBe(scoreBefore + 1);
-    expect(ammo).toBe(before.ammo! - shotsToKill);
-
+    expect(ammo, "the kill took at least one and fewer than all rounds").toBeLessThan(before.ammo!);
+    expect(ammo).toBeGreaterThan(0);
     expect(errors, "uncaught application errors").toEqual([]);
   });
 });

@@ -117,15 +117,20 @@ test("WASD movement changes position, stops after release, and normalizes diagon
     await Promise.all(keys.map((key) => page.keyboard.down(key)));
     let speed = 0;
     try {
-      // Let acceleration finish, then measure speed over a window that is
-      // timestamped on the page: the game integrates with dt, so speed (units/s)
-      // is frame-rate independent while displacement after a fixed wait is not.
-      await page.waitForTimeout(800);
-      const a = await readTimedPosition();
-      await page.waitForTimeout(600);
-      const b = await readTimedPosition();
-      const horizontal = displacement(a.position, b.position);
-      speed = Math.hypot(horizontal.x, horizontal.z) / ((b.t - a.t) / 1000);
+      // Speed (units/s) over successive page-timestamped windows; the game
+      // integrates with dt, so once acceleration is done it is frame-rate
+      // independent. Take the first window that matches the previous one.
+      let previous = await readTimedPosition();
+      let last = -1;
+      for (let n = 0; n < 12; n++) {
+        await page.waitForTimeout(400);
+        const current = await readTimedPosition();
+        const moved = displacement(previous.position, current.position);
+        speed = Math.hypot(moved.x, moved.z) / ((current.t - previous.t) / 1000);
+        previous = current;
+        if (last >= 0 && Math.abs(speed - last) <= 0.1 * Math.max(speed, last)) break;
+        last = speed;
+      }
     } finally {
       await Promise.all(
         [...keys].reverse().map((key) => page.keyboard.up(key)),
