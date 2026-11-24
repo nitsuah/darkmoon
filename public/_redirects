@@ -1,0 +1,8 @@
+# Client-side routes served by the SPA shell. Because public/404.html exists,
+# Pages stops falling back to index.html for every unknown path, so unknown
+# URLs get a real 404 and only the routes listed here (see src/pages/App.tsx)
+# rewrite to the app. Target "/" (not /index.html, which Pages redirects).
+/play / 200
+/play/ / 200
+/solo / 200
+/solo/ / 200
