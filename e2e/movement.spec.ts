@@ -11,6 +11,8 @@ type MovementSample = {
   stopStart: Position;
   stopEnd: Position;
   residual: number;
+  /** Steady-state speed in world units per second, from timestamped samples. */
+  speed: number;
 };
 
 test("WASD movement changes position, stops after release, and normalizes diagonals", async ({
@@ -75,6 +77,14 @@ test("WASD movement changes position, stops after release, and normalizes diagon
     `player should remain grounded before movement: ${JSON.stringify({ groundedStart, groundedEnd })}`,
   ).toBeLessThanOrEqual(0.01);
 
+  // Position plus a page-side timestamp, so speed does not depend on how long
+  // the CI runner took to deliver each CDP round-trip.
+  const readTimedPosition = async (): Promise<{ position: Position; t: number }> => {
+    const position = await readPosition();
+    const t = await page.evaluate(() => performance.now());
+    return { position, t };
+  };
+
   const displacement = (start: Position, end: Position): Position => ({
     x: end.x - start.x,
     y: end.y - start.y,
@@ -99,8 +109,17 @@ test("WASD movement changes position, stops after release, and normalizes diagon
     // (~1 frame in CI's software-GL Chromium), which inflates the diagonal
     // sample and made the normalization check depend on render speed.
     await Promise.all(keys.map((key) => page.keyboard.down(key)));
+    let speed = 0;
     try {
-      await page.waitForTimeout(1400);
+      // Let acceleration finish, then measure speed over a window that is
+      // timestamped on the page: the game integrates with dt, so speed (units/s)
+      // is frame-rate independent while displacement after a fixed wait is not.
+      await page.waitForTimeout(800);
+      const a = await readTimedPosition();
+      await page.waitForTimeout(600);
+      const b = await readTimedPosition();
+      const horizontal = displacement(a.position, b.position);
+      speed = Math.hypot(horizontal.x, horizontal.z) / ((b.t - a.t) / 1000);
     } finally {
       await Promise.all(
         [...keys].reverse().map((key) => page.keyboard.up(key)),
@@ -124,6 +143,7 @@ test("WASD movement changes position, stops after release, and normalizes diagon
       stopStart,
       stopEnd,
       residual: magnitude(displacement(stopStart, stopEnd)),
+      speed,
     };
     samples.push(sample);
     return sample;
@@ -165,10 +185,13 @@ test("WASD movement changes position, stops after release, and normalizes diagon
       expected.perpendicularAbsoluteCosineMaximum,
     );
 
-    const cardinalMagnitude = Math.max(w.magnitude, d.magnitude);
-    expect(diagonal.magnitude).toBeLessThanOrEqual(
-      cardinalMagnitude * expected.maximumDiagonalToCardinalRatio,
-    );
+    // Diagonal input must not be faster than a cardinal one (compare speeds,
+    // not displacements, so a slow or fast render loop cannot decide the result).
+    const cardinalSpeed = Math.max(w.speed, d.speed);
+    expect(
+      diagonal.speed,
+      `diagonal speed vs cardinal: ${JSON.stringify({ w: w.speed, d: d.speed, diagonal: diagonal.speed })}`,
+    ).toBeLessThanOrEqual(cardinalSpeed * expected.maximumDiagonalToCardinalRatio);
     expect(pageErrors, "uncaught application errors during movement").toEqual(
       [],
     );
