@@ -17,6 +17,7 @@
     "lint:docker": "docker compose run --rm solo npx lint-staged --config ./config/lint-staged.config.json",
     "ci": "npm run typecheck && npm run lint && npm run test:ci && npm run build",
     "test": "vitest --config ./config/vitest.config.ts --configLoader runner",
+    "test:journeys": "playwright test --config config/playwright.journeys.config.ts",
     "test:ci": "vitest --config ./config/vitest.config.ts --configLoader runner",
     "test:run": "vitest run --config ./config/vitest.config.ts --configLoader runner",
     "prepare": "husky",

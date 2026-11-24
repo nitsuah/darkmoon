@@ -1,0 +1,24 @@
+{
+  "product": "darkmoon",
+  "live": "https://darkmoon.dev",
+  "page": null,
+  "pagesDir": "public",
+  "frontend": true,
+  "features": [
+    { "id": "solo-practice", "title": "Solo Mode with AI Bots", "category": "Game Modes", "screenshots": ["docs/screenshots/solo-practice.png"], "spots": [] },
+    { "id": "game-mode-architecture", "title": "Pluggable Game Mode Architecture", "category": "Game Modes", "visual": "none" },
+    { "id": "multiplayer-tag", "title": "Multiplayer Tag", "category": "Game Modes", "visual": "none" },
+    { "id": "desktop-controls", "title": "Desktop Controls", "category": "Player Controls", "screenshots": [], "spots": [] },
+    { "id": "mobile-controls", "title": "Mobile Controls", "category": "Player Controls", "screenshots": [], "spots": [] },
+    { "id": "scene-3d", "title": "3D Scene", "category": "Graphics & Rendering", "screenshots": [], "spots": [] },
+    { "id": "theme-and-ui", "title": "Theme & UI", "category": "User Experience", "screenshots": [], "spots": [] },
+    { "id": "shooting-gallery", "title": "Shooting Gallery Mode", "category": "Combat & Gameplay", "screenshots": [], "spots": [] },
+    { "id": "weapons-and-reload", "title": "Weapons, Reload and Reticle", "category": "Combat & Gameplay", "screenshots": [], "spots": [] },
+    { "id": "development-tools", "title": "Development Tools", "category": "Technical Features", "visual": "none" },
+    { "id": "performance", "title": "Performance", "category": "Technical Features", "visual": "none" },
+    { "id": "server-and-networking", "title": "Server & Networking", "category": "Technical Features", "visual": "none" }
+  ],
+  "spots": [],
+  "reels": [ { "id": "hero", "spots": [], "published": null } ],
+  "brand": { "source": null, "derived": [], "manual": [] }
+}

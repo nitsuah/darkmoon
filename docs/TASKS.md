@@ -50,6 +50,7 @@ see those files rather than a duplicated narrative here._
 - [ ] Ship the first validated multiplayer-capable experience now that the readiness gate and server-side tag parity are both done — remaining work is a shipped client experience driving the existing socket events. See `docs/ROADMAP.md` 2027 Q1.
   - Priority: P1
   - Type: Feature
+  - Checked 2026-11-24 (PMO sweep): not done. Merged PRs cover the server gate (#418), tag parity (#448) and wallet sign-in (#478/#479), but there is no hosted socket server (`VITE_SOCKET_SERVER_URL` unset, see the `WALLET_AUTH_SECRET` item below) and `docs/FEATURES.md` still lists Multiplayer Tag as `[planned]`.
 
 - [ ] **Set `WALLET_AUTH_SECRET` on the hosted multiplayer socket server** — wallet sign-in tokens are signed with this secret, and without it sessions reset on every server restart.
   - Priority: P2
