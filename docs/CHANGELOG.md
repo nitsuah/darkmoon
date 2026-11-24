@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Nightly live crawl** — `.github/workflows/live-crawl.yml` runs `tests/live/crawl.spec.ts` (config `config/playwright.live.config.ts`, `BASE_URL` overridable) against https://darkmoon.dev through the shared journeys harness: `/` 200 with HSTS and nosniff, `/qa-junk-path` a real 404, `/health` JSON, hashed `/assets/*.js` immutable, and a clean landing load. Failures become deduplicated `bot:journey` issues (#543).
 - **Cloudflare Pages edge config** — `public/_headers` adds HSTS and `X-Content-Type-Options` everywhere and serves hashed `/assets/*` as `public, max-age=31536000, immutable`; `public/404.html` plus `public/_redirects` (`/play`, `/solo`) make unknown paths a real 404 instead of the SPA shell; `functions/health.js` answers `GET /health` with JSON instead of `index.html`. Covered by `src/__tests__/pagesConfig.test.ts` (nitsuah/darkmoon#535).
 - **Nightly journeys** — `.github/workflows/journeys.yml` runs `tests/journeys` (landing → solo start, shooting gallery, theme persistence) nightly in the pinned Playwright image against `vite preview` of the production build, with DOM-step baselines; failures become deduplicated `bot:journey` issues. `promo/spots.json` records the feature map for the showcase standard.
 - **SEO basics** — `index.html` declares `https://darkmoon.dev/` as canonical, and `public/robots.txt` plus `public/sitemap.xml` point crawlers at it; the stale Netlify status badge is gone from the README (#536).

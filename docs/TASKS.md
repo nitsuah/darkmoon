@@ -10,6 +10,8 @@ _None._
 
 ## Done
 
+- [x] Nightly live crawl of darkmoon.dev (status, HSTS/nosniff headers, real 404, JSON `/health`, immutable assets, clean landing load) — `.github/workflows/live-crawl.yml` + `tests/live/crawl.spec.ts` (#543, 2026-11-24).
+
 _Shipped work is condensed into `docs/FEATURES.md`
 (gameplay/server capabilities), and `docs/CHANGELOG.md` (change-by-change history) —
 see those files rather than a duplicated narrative here._

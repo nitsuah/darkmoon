@@ -1,0 +1,32 @@
+name: Live crawl
+
+# Nightly crawl of the deployed site (darkmoon.dev): status, edge headers, a real
+# 404, JSON /health and immutable asset caching. Failures become deduplicated
+# `bot:journey` issues via the shared harness in nitsuah/.github
+# (journeys/STANDARD.md); issues auto-close after 3 green runs. Not a PR check:
+# it tests production, so only schedule and manual runs.
+
+on:
+  schedule:
+    - cron: '23 7 * * *' # 07:23 UTC nightly
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: live-crawl
+  cancel-in-progress: true
+
+jobs:
+  crawl:
+    uses: nitsuah/.github/.github/workflows/journeys.yml@75e0607d9cd8401b2bbdd0ca46aa499c669f6834
+    permissions:
+      contents: write # bot/journeys branch only (BUGS.md, metrics)
+      issues: write
+    with:
+      kit-ref: 75e0607d9cd8401b2bbdd0ca46aa499c669f6834
+      # Keep in step with @playwright/test in package.json (1.65.1).
+      image: mcr.microsoft.com/playwright:v1.65.1-jammy
+      setup: npm ci --no-audit --no-fund
+      command: npx playwright test -c config/playwright.live.config.ts
+      repro: npm ci && npx playwright install chromium && npx playwright test -c config/playwright.live.config.ts
