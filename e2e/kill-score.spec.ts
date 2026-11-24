@@ -37,9 +37,6 @@ const snapshot = (page: Page): Promise<Snapshot> =>
     return snap;
   });
 
-const targetHealth = async (page: Page, id: string) =>
-  (await snapshot(page)).targets.find((t) => t.id === id)?.health ?? null;
-
 /** Start deathmatch, freeze bots, equip the SMG and put one target 4 units ahead. */
 async function setUpRange(page: Page): Promise<string> {
   await page.addInitScript(() => {
@@ -86,25 +83,6 @@ async function setUpRange(page: Page): Promise<string> {
   return target.id;
 }
 
-/** Pull the trigger until ammo drops below `before`; returns the new ammo. */
-async function fireOnce(page: Page, before: number): Promise<number> {
-  let ammo = before;
-  await expect
-    .poll(async () => {
-      // Read ammo and pull in one step, and only while the shot has not landed,
-      // so a retry (a pull inside the cooldown is ignored) never queues a second shot.
-      ammo = await page.evaluate((start) => {
-        const probe = window.__darkmoonTest!;
-        const now = probe.getSnapshot().ammo ?? start;
-        if (now >= start) probe.fire();
-        return now;
-      }, before);
-      return ammo < before;
-    }, SLOW)
-    .toBe(true);
-  return (await snapshot(page)).ammo ?? ammo;
-}
-
 test.describe("kill and score", () => {
   test.setTimeout(240_000);
 
@@ -116,16 +94,44 @@ test.describe("kill and score", () => {
     const before = await snapshot(page);
     const scoreBefore = before.score ?? 0;
 
-    // Outcome, not timing or damage tables: pull the trigger (one pull per landed
-    // shot) until the score moves or the magazine is empty.
-    let ammo = before.ammo!;
-    while (ammo > 0 && ((await snapshot(page)).score ?? 0) === scoreBefore) {
-      ammo = await fireOnce(page, ammo);
-    }
+    // Outcome, not timing or damage tables: pull the trigger until the score moves
+    // or the magazine is empty. The loop runs inside the page: software-GL stalls
+    // freeze the page for ~20 s at a time, and one CDP round-trip per shot would
+    // multiply those stalls past the test timeout.
+    const result = await page.evaluate(
+      ({ scoreBefore, budgetMs }) =>
+        new Promise<{ score: number | null; ammo: number | null; timedOut: boolean }>((resolve) => {
+          const probe = window.__darkmoonTest!;
+          const startedAt = performance.now();
+          let lastPullAt = -Infinity;
+          let ammoAtPull: number | null = null;
+          const tick = () => {
+            const snap = probe.getSnapshot();
+            const killed = (snap.score ?? 0) !== scoreBefore;
+            const empty = (snap.ammo ?? 0) <= 0;
+            const timedOut = performance.now() - startedAt > budgetMs;
+            if (killed || empty || timedOut) {
+              resolve({ score: snap.score, ammo: snap.ammo, timedOut });
+              return;
+            }
+            // One pull per landed shot; a pull swallowed by the cooldown is retried.
+            const landed = ammoAtPull === null || (snap.ammo ?? 0) < ammoAtPull;
+            if (landed || performance.now() - lastPullAt > 500) {
+              ammoAtPull = snap.ammo;
+              lastPullAt = performance.now();
+              probe.fire();
+            }
+            setTimeout(tick, 25);
+          };
+          tick();
+        }),
+      { scoreBefore, budgetMs: 150_000 },
+    );
 
-    await expect.poll(async () => (await snapshot(page)).score, SLOW).toBe(scoreBefore + 1);
-    expect(ammo, "the kill took at least one and fewer than all rounds").toBeLessThan(before.ammo!);
-    expect(ammo).toBeGreaterThan(0);
+    expect(result.timedOut, "the kill registered within the time budget").toBe(false);
+    expect(result.score).toBe(scoreBefore + 1);
+    expect(result.ammo, "the kill took at least one and fewer than all rounds").toBeLessThan(before.ammo!);
+    expect(result.ammo).toBeGreaterThan(0);
     expect(errors, "uncaught application errors").toEqual([]);
   });
 });
