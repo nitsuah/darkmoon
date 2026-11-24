@@ -11,6 +11,8 @@ type MovementSample = {
   stopStart: Position;
   stopEnd: Position;
   residual: number;
+  /** Steady-state speed in world units per second, from timestamped samples. */
+  speed: number;
 };
 
 test("WASD movement changes position, stops after release, and normalizes diagonals", async ({
@@ -75,6 +77,20 @@ test("WASD movement changes position, stops after release, and normalizes diagon
     `player should remain grounded before movement: ${JSON.stringify({ groundedStart, groundedEnd })}`,
   ).toBeLessThanOrEqual(0.01);
 
+  // Position plus a page-side timestamp, so speed does not depend on how long
+  // the CI runner took to deliver each CDP round-trip.
+  const readTimedPosition = async (): Promise<{ position: Position; t: number }> => {
+    return page.evaluate(() => {
+      const position = (
+        window as Window & {
+          __darkmoonTest?: { getSnapshot: () => { position: Position | null } };
+        }
+      ).__darkmoonTest?.getSnapshot()?.position;
+      if (!position) throw new Error("Darkmoon test probe has no player position");
+      return { position, t: performance.now() };
+    });
+  };
+
   const displacement = (start: Position, end: Position): Position => ({
     x: end.x - start.x,
     y: end.y - start.y,
@@ -88,6 +104,7 @@ test("WASD movement changes position, stops after release, and normalizes diagon
     return (a.x * b.x + a.y * b.y + a.z * b.z) / denominator;
   };
 
+  const MIN_MOVING_SPEED = 0.5; // units/s: below this the player is not really moving
   const samples: MovementSample[] = [];
   const measure = async (
     scenario: string,
@@ -99,8 +116,23 @@ test("WASD movement changes position, stops after release, and normalizes diagon
     // (~1 frame in CI's software-GL Chromium), which inflates the diagonal
     // sample and made the normalization check depend on render speed.
     await Promise.all(keys.map((key) => page.keyboard.down(key)));
+    let speed = 0;
     try {
-      await page.waitForTimeout(1400);
+      // Speed (units/s) over successive page-timestamped windows; the game
+      // integrates with dt, so once acceleration is done it is frame-rate
+      // independent. Take the first window that matches the previous one.
+      let previous = await readTimedPosition();
+      let last = -1;
+      for (let n = 0; n < 12; n++) {
+        await page.waitForTimeout(400);
+        const current = await readTimedPosition();
+        const moved = displacement(previous.position, current.position);
+        speed = Math.hypot(moved.x, moved.z) / ((current.t - previous.t) / 1000);
+        previous = current;
+        // A stalled player (blocked by cover) reads 0 in every window; never call that steady.
+        if (speed > MIN_MOVING_SPEED && last > MIN_MOVING_SPEED && Math.abs(speed - last) <= 0.1 * Math.max(speed, last)) break;
+        last = speed;
+      }
     } finally {
       await Promise.all(
         [...keys].reverse().map((key) => page.keyboard.up(key)),
@@ -124,6 +156,7 @@ test("WASD movement changes position, stops after release, and normalizes diagon
       stopStart,
       stopEnd,
       residual: magnitude(displacement(stopStart, stopEnd)),
+      speed,
     };
     samples.push(sample);
     return sample;
@@ -146,6 +179,10 @@ test("WASD movement changes position, stops after release, and normalizes diagon
 
     for (const sample of [w, s, a, d, diagonal]) {
       expect(
+        sample.speed,
+        `${sample.scenario} never reached a steady moving speed: ${JSON.stringify(sample)}`,
+      ).toBeGreaterThan(MIN_MOVING_SPEED);
+      expect(
         sample.magnitude,
         `${sample.scenario} displacement: ${JSON.stringify(sample)}`,
       ).toBeGreaterThanOrEqual(expected.minimumCardinalMagnitude);
@@ -165,10 +202,13 @@ test("WASD movement changes position, stops after release, and normalizes diagon
       expected.perpendicularAbsoluteCosineMaximum,
     );
 
-    const cardinalMagnitude = Math.max(w.magnitude, d.magnitude);
-    expect(diagonal.magnitude).toBeLessThanOrEqual(
-      cardinalMagnitude * expected.maximumDiagonalToCardinalRatio,
-    );
+    // Diagonal input must not be faster than a cardinal one (compare speeds,
+    // not displacements, so a slow or fast render loop cannot decide the result).
+    const cardinalSpeed = Math.max(w.speed, d.speed);
+    expect(
+      diagonal.speed,
+      `diagonal speed vs cardinal: ${JSON.stringify({ w: w.speed, d: d.speed, diagonal: diagonal.speed })}`,
+    ).toBeLessThanOrEqual(cardinalSpeed * expected.maximumDiagonalToCardinalRatio);
     expect(pageErrors, "uncaught application errors during movement").toEqual(
       [],
     );
