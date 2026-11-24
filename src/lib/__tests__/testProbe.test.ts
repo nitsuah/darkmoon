@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { installTestProbe } from "../testProbe";
+import * as THREE from "three";
 import { testControl, resetTestControl } from "../gameInput";
 
 const mockSnapshot = {
@@ -150,6 +151,7 @@ describe("test probe controls (#497)", () => {
       fire: false,
       botsFrozen: false,
       pickupsDisabled: false,
+      camera: null,
     });
   });
 
@@ -157,5 +159,59 @@ describe("test probe controls (#497)", () => {
     installTestProbe(getSnapshot, false);
     expect(window.__darkmoonTest).toBeUndefined();
     expect(testControl.botsFrozen).toBe(false);
+  });
+});
+
+describe("getAimRays (#482)", () => {
+  const rect = (left: number, top: number, width: number, height: number) => ({
+    getBoundingClientRect: () => ({ left, top, width, height }),
+  });
+  const stubDom = (reticle: unknown) =>
+    vi.stubGlobal("document", {
+      querySelector: (selector: string) =>
+        selector === "canvas" ? rect(0, 0, 800, 600) : reticle,
+    });
+  const makeCamera = () => {
+    const camera = new THREE.PerspectiveCamera(60, 800 / 600, 0.1, 100);
+    camera.position.set(0, 2, 5);
+    camera.lookAt(0, 1, 0);
+    return camera;
+  };
+
+  it("is null until the weapon publishes the camera", () => {
+    installTestProbe(getSnapshot, true);
+    expect(window.__darkmoonTest!.getAimRays()).toBeNull();
+  });
+
+  it("puts a viewport-centred reticle on the firing ray", () => {
+    stubDom(rect(390, 290, 20, 20)); // centre (400, 300) of an 800x600 canvas
+    installTestProbe(getSnapshot, true);
+    testControl.camera = makeCamera();
+    const rays = window.__darkmoonTest!.getAimRays()!;
+    expect(rays.reticleNdc!.x).toBeCloseTo(0, 6);
+    expect(rays.reticleNdc!.y).toBeCloseTo(0, 6);
+    const dot =
+      rays.fire.x * rays.reticle!.x + rays.fire.y * rays.reticle!.y + rays.fire.z * rays.reticle!.z;
+    expect(dot).toBeCloseTo(1, 9);
+  });
+
+  it("detects a reticle that is off the firing ray", () => {
+    stubDom(rect(590, 290, 20, 20)); // 200 px right of centre
+    installTestProbe(getSnapshot, true);
+    testControl.camera = makeCamera();
+    const rays = window.__darkmoonTest!.getAimRays()!;
+    expect(rays.reticleNdc!.x).toBeCloseTo(0.5, 6);
+    const dot =
+      rays.fire.x * rays.reticle!.x + rays.fire.y * rays.reticle!.y + rays.fire.z * rays.reticle!.z;
+    expect(dot).toBeLessThan(0.999);
+  });
+
+  it("reports no reticle when it is hidden", () => {
+    stubDom(null);
+    installTestProbe(getSnapshot, true);
+    testControl.camera = makeCamera();
+    const rays = window.__darkmoonTest!.getAimRays()!;
+    expect(rays.reticle).toBeNull();
+    expect(rays.fire.z).toBeLessThan(0);
   });
 });

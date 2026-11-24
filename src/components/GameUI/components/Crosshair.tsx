@@ -27,6 +27,7 @@ const Crosshair: React.FC<Props> = ({
 
   return (
     <div
+      data-testid="crosshair"
       style={{
         position: "fixed",
         // Fire always raycasts from NDC (0, 0) (PlayerWeapon.tsx), so the reticle
