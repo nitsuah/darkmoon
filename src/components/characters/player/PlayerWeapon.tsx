@@ -290,6 +290,10 @@ export const PlayerWeapon = React.memo(
         !mouseControls.leftClick &&
         weaponManagerRef.current.isCharging("grenade");
 
+      // Dev/e2e probe (#482): publish the camera so the probe can compare the
+      // firing ray with the reticle. Dev builds only; null in production.
+      if (import.meta.env.DEV) gameInput.testControl.camera = state.camera;
+
       // Dev/e2e probe (#497): a one-shot trigger pull, consumed every frame.
       const probeFire = gameInput.testControl.fire;
       gameInput.testControl.fire = false;

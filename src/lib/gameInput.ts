@@ -54,12 +54,15 @@ export const testControl: {
   fire: boolean;
   botsFrozen: boolean;
   pickupsDisabled: boolean;
+  /** The live game camera, published by PlayerWeapon in dev builds (#482). */
+  camera: import("three").Camera | null;
 } = {
   aimPoint: null,
   equip: null,
   fire: false,
   botsFrozen: false,
   pickupsDisabled: false,
+  camera: null,
 };
 
 export function resetTestControl(): void {
@@ -68,4 +71,5 @@ export function resetTestControl(): void {
   testControl.fire = false;
   testControl.botsFrozen = false;
   testControl.pickupsDisabled = false;
+  testControl.camera = null;
 }

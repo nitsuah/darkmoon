@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { testControl, resetTestControl } from "./gameInput";
 
 export interface TestTarget {
@@ -24,7 +25,18 @@ export interface TestProbeActions {
   placeTarget?: (targetId: string, position: Vec3) => boolean;
 }
 
+export interface AimRays {
+  /** Direction the player's shots fly: camera ray through NDC (0, 0). */
+  fire: Vec3;
+  /** Direction through the centre of the on-screen reticle, or null if hidden. */
+  reticle: Vec3 | null;
+  /** Reticle centre in NDC of the canvas, or null if hidden. */
+  reticleNdc: { x: number; y: number } | null;
+}
+
 export interface DarkmoonTestProbe {
+  /** Compare the firing ray with the reticle (#482); null before the camera exists. */
+  getAimRays: () => AimRays | null;
   getSnapshot: () => TestSnapshot;
   /** Aim the player's shots at a target's live position until cleared. */
   aimAt: (targetId: string) => boolean;
@@ -76,6 +88,7 @@ export function installTestProbe(
 
   window.__darkmoonTest = {
     getSnapshot: getSnapshotFn,
+    getAimRays: () => computeAimRays(),
     aimAt: (targetId) => {
       if (!findTarget(targetId)) return false;
       // Resolve every frame so a moving target stays under the aim.
@@ -115,4 +128,30 @@ export function installTestProbe(
       resetTestControl();
     }
   };
+}
+
+/** Camera-ray direction through an NDC point, as a plain vector. */
+function rayThrough(camera: THREE.Camera, x: number, y: number): Vec3 {
+  const raycaster = new THREE.Raycaster();
+  raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
+  const { x: dx, y: dy, z: dz } = raycaster.ray.direction;
+  return { x: dx, y: dy, z: dz };
+}
+
+function computeAimRays(): AimRays | null {
+  const camera = testControl.camera;
+  if (!camera) return null;
+  camera.updateMatrixWorld();
+  const fire = rayThrough(camera, 0, 0);
+
+  const reticle = document.querySelector('[data-testid="crosshair"]');
+  const canvas = document.querySelector("canvas");
+  if (!reticle || !canvas) return { fire, reticle: null, reticleNdc: null };
+  const r = reticle.getBoundingClientRect();
+  const c = canvas.getBoundingClientRect();
+  const ndc = {
+    x: ((r.left + r.width / 2 - c.left) / c.width) * 2 - 1,
+    y: -(((r.top + r.height / 2 - c.top) / c.height) * 2 - 1),
+  };
+  return { fire, reticle: rayThrough(camera, ndc.x, ndc.y), reticleNdc: ndc };
 }
