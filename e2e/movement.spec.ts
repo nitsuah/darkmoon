@@ -104,6 +104,7 @@ test("WASD movement changes position, stops after release, and normalizes diagon
     return (a.x * b.x + a.y * b.y + a.z * b.z) / denominator;
   };
 
+  const MIN_MOVING_SPEED = 0.5; // units/s: below this the player is not really moving
   const samples: MovementSample[] = [];
   const measure = async (
     scenario: string,
@@ -128,7 +129,8 @@ test("WASD movement changes position, stops after release, and normalizes diagon
         const moved = displacement(previous.position, current.position);
         speed = Math.hypot(moved.x, moved.z) / ((current.t - previous.t) / 1000);
         previous = current;
-        if (last >= 0 && Math.abs(speed - last) <= 0.1 * Math.max(speed, last)) break;
+        // A stalled player (blocked by cover) reads 0 in every window; never call that steady.
+        if (speed > MIN_MOVING_SPEED && last > MIN_MOVING_SPEED && Math.abs(speed - last) <= 0.1 * Math.max(speed, last)) break;
         last = speed;
       }
     } finally {
@@ -176,6 +178,10 @@ test("WASD movement changes position, stops after release, and normalizes diagon
     const diagonal = await measure("W+D", ["w", "d"]);
 
     for (const sample of [w, s, a, d, diagonal]) {
+      expect(
+        sample.speed,
+        `${sample.scenario} never reached a steady moving speed: ${JSON.stringify(sample)}`,
+      ).toBeGreaterThan(MIN_MOVING_SPEED);
       expect(
         sample.magnitude,
         `${sample.scenario} displacement: ${JSON.stringify(sample)}`,
