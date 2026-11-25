@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Unit tests for `KillFeed`** — `src/components/GameUI/components/__tests__/KillFeed.test.tsx` covers empty kills, weapon kills with display name from `WEAPONS`, tag kills, unknown weapon fallback, multiple entries, and distinct keys without React warnings (#553).
 - **Unit tests for `useQualitySettings`** — `src/lib/__tests__/useQualitySettings.test.ts` covers auto/low/medium/high quality levels and FPS-based scaling (#549, refs #481).
 - **Unit tests for `gameInput` reset helpers** — `src/lib/__tests__/gameInput.test.ts` covers `resetTransientInput` and `resetTestControl` (#548, refs #481).
 - **Unit tests for `server/validation.js`** — `src/__tests__/server.validation.test.ts` covers position, rotation, chat message and game-mode validators (#552).
