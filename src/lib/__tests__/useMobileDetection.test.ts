@@ -40,9 +40,12 @@ describe("useMobileDetection", () => {
     expect(result.current).toBe(true);
   });
   it("removes its resize listener on unmount", () => {
+    const add = vi.spyOn(window, "addEventListener");
     const remove = vi.spyOn(window, "removeEventListener");
     const { unmount } = renderHook(() => useMobileDetection());
+    const resizeCall = add.mock.calls.find(([type]) => type === "resize");
+    expect(resizeCall).toBeDefined();
     unmount();
-    expect(remove).toHaveBeenCalledWith("resize", expect.any(Function));
+    expect(remove).toHaveBeenCalledWith("resize", resizeCall![1]);
   });
 });
