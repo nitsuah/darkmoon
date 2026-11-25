@@ -1,1 +1,2 @@
 {"date":"2026-11-25","run":"https://github.com/nitsuah/darkmoon/actions/runs/45568441872","sha":"b0ed5a0670b725f1e8b522afe1862c9ec1dfe6e6","total":5,"passed":5,"failed":0,"flaky":0,"skipped":0,"coverage":{"covered":0,"total":7},"failures":[],"flakyJourneys":[],"actions":[]}
+{"date":"2026-11-25","run":"https://github.com/nitsuah/darkmoon/actions/runs/45570508100","sha":"b0ed5a0670b725f1e8b522afe1862c9ec1dfe6e6","total":3,"passed":3,"failed":0,"flaky":0,"skipped":0,"coverage":{"covered":3,"total":7},"failures":[],"flakyJourneys":[],"actions":[]}
