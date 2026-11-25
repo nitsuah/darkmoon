@@ -131,6 +131,12 @@ test("WASD movement changes position, stops after release, and normalizes diagon
         previous = current;
         // A stalled player (blocked by cover) reads 0 in every window; never call that steady.
         if (speed > MIN_MOVING_SPEED && last > MIN_MOVING_SPEED && Math.abs(speed - last) <= 0.1 * Math.max(speed, last)) break;
+        // Moving, then stalled: the player ran into cover before two windows
+        // matched (slow CI frames stretch acceleration). Keep the last moving speed.
+        if (speed <= MIN_MOVING_SPEED && last > MIN_MOVING_SPEED) {
+          speed = last;
+          break;
+        }
         last = speed;
       }
     } finally {
