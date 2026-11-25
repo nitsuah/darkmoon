@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Movement E2E flake** — the WASD speed check keeps the last moving speed when the player stalls against cover before two sample windows match, instead of reading 0.
+
 ### Added
 
 - **Unit tests for the bot AI presets** — `src/lib/__tests__/botConfigs.test.ts` covers `ZERO_ROTATION`, `BOT_CONFIGS` length and identity, labels, roles, speed/range validation, and unique initial positions (#556).
