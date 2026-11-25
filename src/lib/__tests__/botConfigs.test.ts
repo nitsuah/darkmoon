@@ -55,7 +55,9 @@ describe("botConfigs", () => {
       }
 
       expect(config.initialPosition).toHaveLength(3);
-      expect(config.initialPosition.every((n) => typeof n === "number")).toBe(true);
+      expect(config.initialPosition.every((n) => typeof n === "number")).toBe(
+        true,
+      );
     }
   });
 
