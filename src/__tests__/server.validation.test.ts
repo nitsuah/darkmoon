@@ -67,57 +67,73 @@ describe("validateRotation", () => {
 describe("validateChatMessage", () => {
   it("validates correct message", () => {
     expect(
-      validateChatMessage({ message: "hi", playerId: "p1", playerName: "Ann" })
+      validateChatMessage({ message: "hi", playerId: "p1", playerName: "Ann" }),
     ).toBe(true);
   });
 
   it("validates message at max length (500 chars)", () => {
     const msg500 = "a".repeat(500);
     expect(
-      validateChatMessage({ message: msg500, playerId: "p1", playerName: "Ann" })
+      validateChatMessage({
+        message: msg500,
+        playerId: "p1",
+        playerName: "Ann",
+      }),
     ).toBe(true);
   });
 
   it("rejects message over max length (501 chars)", () => {
     const msg501 = "a".repeat(501);
     expect(
-      validateChatMessage({ message: msg501, playerId: "p1", playerName: "Ann" })
+      validateChatMessage({
+        message: msg501,
+        playerId: "p1",
+        playerName: "Ann",
+      }),
     ).toBe(false);
   });
 
   it("rejects empty message", () => {
     expect(
-      validateChatMessage({ message: "", playerId: "p1", playerName: "Ann" })
+      validateChatMessage({ message: "", playerId: "p1", playerName: "Ann" }),
     ).toBe(false);
   });
 
   it("validates player name at max length (50 chars)", () => {
     const name50 = "a".repeat(50);
     expect(
-      validateChatMessage({ message: "hi", playerId: "p1", playerName: name50 })
+      validateChatMessage({
+        message: "hi",
+        playerId: "p1",
+        playerName: name50,
+      }),
     ).toBe(true);
   });
 
   it("rejects player name over max length (51 chars)", () => {
     const name51 = "a".repeat(51);
     expect(
-      validateChatMessage({ message: "hi", playerId: "p1", playerName: name51 })
+      validateChatMessage({
+        message: "hi",
+        playerId: "p1",
+        playerName: name51,
+      }),
     ).toBe(false);
   });
 
   it("rejects empty player name", () => {
     expect(
-      validateChatMessage({ message: "hi", playerId: "p1", playerName: "" })
+      validateChatMessage({ message: "hi", playerId: "p1", playerName: "" }),
     ).toBe(false);
   });
 
   it("rejects missing or non-string playerId", () => {
     expect(
-      validateChatMessage({ message: "hi", playerId: 123, playerName: "Ann" })
+      validateChatMessage({ message: "hi", playerId: 123, playerName: "Ann" }),
     ).toBe(false);
-    expect(
-      validateChatMessage({ message: "hi", playerName: "Ann" })
-    ).toBe(false);
+    expect(validateChatMessage({ message: "hi", playerName: "Ann" })).toBe(
+      false,
+    );
   });
 
   it("rejects null input", () => {
