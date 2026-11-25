@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Unit tests for `gameInput` reset helpers** — `src/lib/__tests__/gameInput.test.ts` covers `resetTransientInput` and `resetTestControl` (#548, refs #481).
 - **Kill-and-score E2E** — `e2e/kill-score.spec.ts` plays a deathmatch round through the dev-only probe: a lethal burst at a placed, frozen bot awards the player exactly one kill. Assertions are on outcomes (score, ammo), never on fixed waits or a damage table; target health after the kill is not asserted because the 3 s respawn is wall-clock (#481).
 - **Movement E2E measures speed, not displacement** — the diagonal-normalization check in `e2e/movement.spec.ts` now compares page-timestamped speeds (units/s) instead of distance after a fixed 1.4 s hold, which flaked when the software-GL runner dropped frames (#481).
 - **Nightly live crawl** — `.github/workflows/live-crawl.yml` runs `tests/live/crawl.spec.ts` (config `config/playwright.live.config.ts`, `BASE_URL` overridable) against https://darkmoon.dev through the shared journeys harness: `/` 200 with HSTS and nosniff, `/qa-junk-path` a real 404, `/health` JSON, hashed `/assets/*.js` immutable, and a clean landing load. Failures become deduplicated `bot:journey` issues (#543).
