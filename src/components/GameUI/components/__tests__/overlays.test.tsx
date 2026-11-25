@@ -26,7 +26,9 @@ describe("HitDirectionIndicator", () => {
 
 describe("BonusRoundOverlay", () => {
   it("renders nothing when visible is false", () => {
-    const { container } = render(<BonusRoundOverlay visible={false} isMinimal={false} />);
+    const { container } = render(
+      <BonusRoundOverlay visible={false} isMinimal={false} />,
+    );
     expect(container.firstChild).toBeNull();
   });
 
