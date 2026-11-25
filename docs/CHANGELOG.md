@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Unit tests for `useQualitySettings`** — `src/lib/__tests__/useQualitySettings.test.ts` covers auto/low/medium/high quality levels and FPS-based scaling (#549, refs #481).
 - **Unit tests for `gameInput` reset helpers** — `src/lib/__tests__/gameInput.test.ts` covers `resetTransientInput` and `resetTestControl` (#548, refs #481).
 - **Kill-and-score E2E** — `e2e/kill-score.spec.ts` plays a deathmatch round through the dev-only probe: a lethal burst at a placed, frozen bot awards the player exactly one kill. Assertions are on outcomes (score, ammo), never on fixed waits or a damage table; target health after the kill is not asserted because the 3 s respawn is wall-clock (#481).
 - **Movement E2E measures speed, not displacement** — the diagonal-normalization check in `e2e/movement.spec.ts` now compares page-timestamped speeds (units/s) instead of distance after a fixed 1.4 s hold, which flaked when the software-GL runner dropped frames (#481).
