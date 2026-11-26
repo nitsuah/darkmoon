@@ -81,6 +81,20 @@ async function setUpRange(page: Page): Promise<string> {
     { id: target.id, at: { x: p.x, y: p.y, z: p.z - 4 } },
   );
   expect(placed).toBe(true);
+
+  // Keep other frozen bots out of the firing lane; otherwise a nearer bot can
+  // intercept the ray before it reaches the deliberately placed target.
+  const others = snap.targets.filter((candidate) => candidate.id !== target.id);
+  for (const [index, other] of others.entries()) {
+    const moved = await page.evaluate(
+      ({ id, at }) => window.__darkmoonTest!.placeTarget(id, at),
+      {
+        id: other.id,
+        at: { x: p.x + 8 + index * 2, y: p.y, z: p.z - 4 },
+      },
+    );
+    expect(moved).toBe(true);
+  }
   return target.id;
 }
 
