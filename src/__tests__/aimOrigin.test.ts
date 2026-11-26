@@ -21,6 +21,15 @@ describe("shotOriginOnAimRay", () => {
     expect(Math.abs(muzzle.clone().sub(origin).dot(dir))).toBeLessThan(1e-9);
   });
 
+  it("clamps a muzzle behind the camera to the camera position", () => {
+    const origin = shotOriginOnAimRay(
+      new THREE.Vector3(0, 1, 1),
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, 0, -1),
+    );
+    expect(origin.toArray()).toEqual([0, 0, 0]);
+  });
+
   it("does not modify its arguments", () => {
     const d = dir.clone().multiplyScalar(2);
     shotOriginOnAimRay(muzzle, camera, d);
