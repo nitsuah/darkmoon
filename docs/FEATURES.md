@@ -82,7 +82,9 @@ Status guide: `[shipped]` is live today, `[in-progress]` is partially implemente
 
 ### 🎯 Player Reticle & Mouse-Aimed Firing `[shipped]`
 
-- **Phase BL**: ground-plane raycast maps mouse position to a world-space aim target; CSS crosshair follows cursor; all player shots fire toward the aimed point
+- **Pointer lock**: mouse turns the camera; the reticle stays fixed at the viewport center and every shot follows the camera ray through NDC (0, 0), starting from the player's body position (mesh position raised by 1 on Y)
+- **No pointer lock**: the reticle remains centered at the viewport center; shots still follow the camera ray through NDC (0, 0), starting from the player's body position
+- **Mobile**: the fire button uses the same centre ray, plus aim assist — the shot snaps to the nearest eligible player (self and respawning players excluded; teammates may be targeted) within a 20 degree cone
 
 ### 🏃 Smooth Velocity-Based Player Movement `[shipped]`
 

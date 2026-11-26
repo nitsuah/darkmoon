@@ -17,7 +17,7 @@
 
 - `[shipped]` **Combat Gameplay with AI Bots** — Full deathmatch and CTF modes with bot LOS checks, weapon reload system (including timing-based precision snap mechanic), angular spread, bot jumping, tracer beams, hit direction indicators, score tension alerts, and ShotgunVFX cone particle effects.
 - `[shipped]` **Shooting Gallery Mode** — Standalone target-practice mode with crosshair and bot tracer improvements.
-- `[shipped]` **Mouse-Aimed Firing & Player Reticle** — Ground-plane raycast aiming with GPU-composited CSS crosshair overlay; velocity-based smooth movement with camera-relative A/D strafing.
+- `[shipped]` **Mouse-Aimed Firing & Player Reticle** — Shots follow the camera ray through the viewport centre (NDC 0,0) where the reticle is fixed, originating from the player's body position; velocity-based smooth movement with camera-relative A/D strafing.
 - `[shipped]` **Pluggable Game Mode Architecture** — `GameModeHandler` interface decouples mode logic; `TagMode` (with health/damage support), `DeathmatchMode`, and `CTFMode` ship as reference implementations.
 - `[shipped]` **Modular UI Architecture** — `GameUI` and `Solo.tsx` fully componentized: 15 HUD sub-components, 3 new hooks (`useGameStart`, `useBotPositionHandlers`, `useDebugModes`), and a dedicated `useGameUIState.ts` for all event-driven state.
 - `[shipped]` **WebSocket Server Foundation** — Socket.io and server validation are in place for future live modes.

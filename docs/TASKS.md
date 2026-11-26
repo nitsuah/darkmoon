@@ -10,7 +10,7 @@ _None._
 
 ## Done
 
-- [x] Deterministic playable E2E with bot-driven gameplay assertions (#481, 2026-11-24): movement (#496), aim/fire/damage (#497), reticle vs firing ray (#482) and now kill-and-score (`e2e/kill-score.spec.ts`), all through the dev-only probe with frozen bots and outcome assertions; the movement diagonal check compares speeds so it no longer depends on frame rate. Seeded RNG was not needed: the probe places the target and freezes bot AI, so no scenario depends on a random spawn. Still manual (needs a human): real pointer-lock feel on desktop and mobile (#482).
+- [x] Deterministic playable E2E with bot-driven gameplay assertions (#481, 2026-11-24): movement (#496), aim/fire/damage (#497), reticle vs firing ray (#482) and now kill-and-score (`e2e/kill-score.spec.ts`), all through the dev-only probe with frozen bots and outcome assertions; the movement diagonal check compares speeds so it no longer depends on frame rate. Seeded RNG was not needed: the probe places the target and freezes bot AI, so no scenario depends on a random spawn. Still manual (needs a human): real pointer-lock feel on desktop and mobile (#482). Aiming behaviour documented (#573).
 - [x] Nightly live crawl of darkmoon.dev (status, HSTS/nosniff headers, real 404, JSON `/health`, immutable assets, clean landing load) — `.github/workflows/live-crawl.yml` + `tests/live/crawl.spec.ts` (#543, 2026-11-24).
 
 _Shipped work is condensed into `docs/FEATURES.md`
