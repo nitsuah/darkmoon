@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Reticle-aimed shots** — normal shots now start on the camera ray through the viewport-centre reticle, so hit detection follows the aim line instead of a parallel line above it (#578).
+
 - **Movement E2E flake** — the WASD speed check keeps the last moving speed when the player stalls against cover before two sample windows match, instead of reading 0.
 
 ### Changed
