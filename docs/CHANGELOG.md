@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **HUD format helpers extracted** — `formatTime` and `toMapCoord` move from `GameStatusPanel` and `MinimapRadar` into `src/components/GameUI/uiFormat.ts`, with unit tests (#565).
 
+### Docs
+
+- **Aiming behaviour documented** — README, FEATURES.md, and TASKS.md now describe centre-ray firing from the fixed viewport reticle with pointer-lock, no-pointer-lock, and mobile aim-assist (20° cone) semantics (#573).
+
 ### Added
 
 - Unit tests for createOscillatorWithGain.
