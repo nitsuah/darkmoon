@@ -11,6 +11,6 @@ export function shotOriginOnAimRay(
   aimDirection: THREE.Vector3,
 ): THREE.Vector3 {
   const dir = aimDirection.clone().normalize();
-  const along = muzzle.clone().sub(cameraPosition).dot(dir);
+  const along = Math.max(0, muzzle.clone().sub(cameraPosition).dot(dir));
   return dir.multiplyScalar(along).add(cameraPosition);
 }
