@@ -6,6 +6,7 @@ import type { WeaponManager } from "../../../components/combat/WeaponManager";
 import { CollisionSystem } from "../../../components/CollisionSystem";
 import { KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_R, KEY_TAB } from "../../utils";
 import { processFiring } from "../../../lib/hooks/usePlayerWeapon";
+import { shotOriginOnAimRay } from "../../../lib/aimOrigin";
 import * as gameInput from "../../../lib/gameInput";
 
 /**
@@ -323,6 +324,8 @@ export const PlayerWeapon = React.memo(
             .normalize();
         }
 
+        let aimAssisted = false;
+
         // Mobile aim assist: snap toward the nearest enemy within a 20° cone
         if (gameInput.isMobile && gameManager) {
           const AIM_CONE = Math.cos(Math.PI / 9); // cos(20°)
@@ -341,7 +344,22 @@ export const PlayerWeapon = React.memo(
               bestDir = toTarget.clone();
             }
           });
-          if (bestDir) _fireDir.current.copy(bestDir);
+          if (bestDir) {
+            _fireDir.current.copy(bestDir);
+            aimAssisted = true;
+          }
+        }
+
+        // A reticle-aimed shot starts on the camera ray. Preserve muzzle starts
+        // for probe aim, mobile aim assist, and grenades.
+        if (!probeAim && !aimAssisted && !isGrenadeEquipped) {
+          _fireOrigin.current.copy(
+            shotOriginOnAimRay(
+              _fireOrigin.current,
+              state.camera.position,
+              _fireDir.current,
+            ),
+          );
         }
 
         // Grenade: dispatch projectile event instead of instant raycast
