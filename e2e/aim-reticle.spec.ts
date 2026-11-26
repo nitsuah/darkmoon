@@ -99,6 +99,20 @@ test.describe("reticle and firing ray", () => {
     const snap = await page.evaluate(() => window.__darkmoonTest!.getSnapshot());
     const target = snap.targets.find((t) => (t.health ?? 0) > 0)!;
     const p = snap.position!;
+    // Freeze alone does not clear the firing lane: move every other bot away
+    // so the deliberately placed target is the first collision on the ray.
+    const others = snap.targets.filter((candidate) => candidate.id !== target.id);
+    for (const [index, other] of others.entries()) {
+      expect(
+        await page.evaluate(
+          ({ id, at }) => window.__darkmoonTest!.placeTarget(id, at),
+          {
+            id: other.id,
+            at: { x: p.x + 8 + index * 2, y: p.y, z: p.z - 4 },
+          },
+        ),
+      ).toBe(true);
+    }
     const muzzle = { x: p.x, y: p.y + 1, z: p.z };
     const aim = (await rays(page))!.fire;
     const place = (at: Vec3) =>
