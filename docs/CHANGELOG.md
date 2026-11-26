@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Unit tests for createOscillatorWithGain.
+- Unit tests for useRockPositions.
 - **Unit tests for `useMobileDetection`** — covers touch capability, the 1024px breakpoint, resize updates, and listener cleanup (#555).
 - **Unit tests for the bot AI presets** — `src/lib/__tests__/botConfigs.test.ts` covers `ZERO_ROTATION`, `BOT_CONFIGS` length and identity, labels, roles, speed/range validation, and unique initial positions (#556).
 - **Unit tests for the `HitDirectionIndicator` and `BonusRoundOverlay` HUD overlays** — `src/components/GameUI/components/__tests__/overlays.test.tsx` covers null/angle rendering, rotation, visibility, text content, and font-size variants (#554).
