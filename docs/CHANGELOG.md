@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Movement E2E flake** — the WASD speed check keeps the last moving speed when the player stalls against cover before two sample windows match, instead of reading 0.
 
+### Changed
+
+- **HUD format helpers extracted** — `formatTime` and `toMapCoord` move from `GameStatusPanel` and `MinimapRadar` into `src/components/GameUI/uiFormat.ts`, with unit tests (#565).
+
 ### Added
 
 - Unit tests for useRockPositions.

@@ -1,18 +1,13 @@
 import * as React from "react";
 import { GameState, Player } from "../../GameManager";
+import { MAP_PX, toMapCoord } from "../uiFormat";
 
-const MAP_PX = 180;
-const ARENA = 50;
 const CRATE_POSITIONS: [number, number][] = [
   [0, -8],
   [0, 8],
   [8, 0],
   [-8, 0],
 ];
-
-function toMapCoord(worldVal: number): number {
-  return ((worldVal + ARENA) / (ARENA * 2)) * MAP_PX;
-}
 
 interface Props {
   gameState: GameState;
