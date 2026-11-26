@@ -82,9 +82,9 @@ Status guide: `[shipped]` is live today, `[in-progress]` is partially implemente
 
 ### 🎯 Player Reticle & Mouse-Aimed Firing `[shipped]`
 
-- **Pointer lock**: mouse turns the camera; the reticle stays fixed at the viewport center and every shot raycasts from NDC (0, 0) along the camera
-- **No pointer lock**: the reticle remains centered at the viewport center; shots still fire from NDC (0, 0) along the camera
-- **Mobile**: the fire button uses the same centre ray, plus aim assist — the shot snaps to the nearest enemy within a 20 degree cone
+- **Pointer lock**: mouse turns the camera; the reticle stays fixed at the viewport center and every shot follows the camera ray through NDC (0, 0), starting from the player's body position (mesh position raised by 1 on Y)
+- **No pointer lock**: the reticle remains centered at the viewport center; shots still follow the camera ray through NDC (0, 0), starting from the player's body position
+- **Mobile**: the fire button uses the same centre ray, plus aim assist — the shot snaps to the nearest eligible player (self and respawning players excluded; teammates may be targeted) within a 20 degree cone
 
 ### 🏃 Smooth Velocity-Based Player Movement `[shipped]`
 
