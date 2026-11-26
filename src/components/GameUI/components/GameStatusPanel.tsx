@@ -1,5 +1,6 @@
 import * as React from "react";
 import { GameState, Player } from "../../GameManager";
+import { formatTime } from "../uiFormat";
 import { WEAPONS } from "../../combat/WeaponManager";
 
 interface Props {
@@ -19,12 +20,6 @@ interface Props {
   galleryHighScore: number;
   galleryCombo: number;
   galleryMultiplier: number;
-}
-
-function formatTime(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 }
 
 const btnStyle = (color: string, border: string): React.CSSProperties => ({
