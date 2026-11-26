@@ -58,9 +58,9 @@ describe('applyVolumes', () => {
     const musicGain = createMockGain();
     const sfxGain = createMockGain();
 
-    applyVolumes(musicGain, sfxGain, 1.5, -0.5, 1, false);
+    applyVolumes(musicGain, sfxGain, 1.5, -0.5, 0.5, false);
 
-    expect(musicGain.gain.value).toBe(1); // clamp(1.5)=1 * 1
+    expect(musicGain.gain.value).toBe(0.5); // clamp(1.5)=1 * 0.5
     expect(sfxGain.gain.value).toBe(0); // clamp(-0.5)=0 * 1
   });
 
@@ -77,6 +77,8 @@ describe('applyVolumes', () => {
   it('writes zero to both gain nodes when muted', () => {
     const musicGain = createMockGain();
     const sfxGain = createMockGain();
+    musicGain.gain.value = 0.7;
+    sfxGain.gain.value = 0.4;
 
     applyVolumes(musicGain, sfxGain, 1, 1, 1, true);
 
@@ -107,6 +109,7 @@ describe('applyVolumes', () => {
 
   it('handles muted with null music gain', () => {
     const sfxGain = createMockGain();
+    sfxGain.gain.value = 0.6;
 
     applyVolumes(null, sfxGain, 1, 1, 1, true);
 
@@ -115,6 +118,7 @@ describe('applyVolumes', () => {
 
   it('handles muted with null sfx gain', () => {
     const musicGain = createMockGain();
+    musicGain.gain.value = 0.8;
 
     applyVolumes(musicGain, null, 1, 1, 1, true);
 
