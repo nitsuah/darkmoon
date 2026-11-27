@@ -24,6 +24,7 @@ import {
   PlayerInput,
   PlayerJetpack,
 } from "./player/index";
+import { PLAYER_FACE_RANGE_EVENT } from "../../lib/hooks/useGameStart";
 
 const tagDebug = createTagLogger("PlayerCharacter");
 
@@ -177,8 +178,8 @@ export const PlayerCharacter = React.forwardRef<
       velocityRef.current.set(0, 0, 0);
       verticalVelocityRef.current = 0;
     };
-    window.addEventListener("player-face-range", faceRange);
-    return () => window.removeEventListener("player-face-range", faceRange);
+    window.addEventListener(PLAYER_FACE_RANGE_EVENT, faceRange);
+    return () => window.removeEventListener(PLAYER_FACE_RANGE_EVENT, faceRange);
   }, [meshRef, cameraRotationRef, velocityRef, verticalVelocityRef]);
 
   // Expose reset and freeze functions to parent via ref

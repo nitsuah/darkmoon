@@ -6,6 +6,7 @@ import type GameManager from "../../../components/GameManager";
 import type { GalleryBotConfig } from "./GalleryBotConfig";
 import { GALLERY_BOT_PRESETS } from "./GalleryBotConfig";
 import { useGalleryBot } from "./useGalleryBot";
+import { PLAYER_FACE_RANGE_EVENT } from "../../../lib/hooks/useGameStart";
 
 /**
  * Secure random utility for game mechanics (non-cryptographic).
@@ -265,8 +266,8 @@ const ShootingGallery: React.FC<Props> = ({
       bonusRoundFiredRef.current = false;
       bonusRoundEndRef.current = 0;
     };
-    window.addEventListener("player-face-range", onRoundStart);
-    return () => window.removeEventListener("player-face-range", onRoundStart);
+    window.addEventListener(PLAYER_FACE_RANGE_EVENT, onRoundStart);
+    return () => window.removeEventListener(PLAYER_FACE_RANGE_EVENT, onRoundStart);
   }, [resetRound]);
 
   // Trigger the bonus round when the clock crosses BONUS_ROUND_TRIGGER_SECS.
