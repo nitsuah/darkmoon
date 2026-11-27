@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Shooting Gallery starts with you at spawn facing the targets, and the first target rises straight ahead (#593).
+- Solo no longer shows a chat button or Alt+C shortcut; there is nobody to chat with until multiplayer is playable (#594).
+- The loading screen shows elapsed time after 5 seconds and offers a reload after 20, and records a `darkmoon:route-load` performance measure (#595).
+
 - **Live site review (#586):** the tutorial and Help panel describe solo play and the current controls (with touch wording on phones), are labelled dialogs, and Esc closes them without opening Pause. **Controls** is in the pause and mode menus. Each mode shows its goal, rounds open with an objective banner, and Deathmatch and CTF give 5 seconds of protection. **Main Menu** and **Quit to Menu** return to the mode menu (**Back to home** leaves). Debug buttons and the FPS counter need `?debug=1`. Fixed the phone overlay covering the game, the landing overflow, the light-theme card and the uncaught pointer-lock error; landing copy now leads with solo play.
 
 - CI: run the risk guard from the trusted base-branch workflow after bootstrap.

@@ -169,6 +169,18 @@ export const PlayerCharacter = React.forwardRef<
     }
   }, [gameManager, currentPlayerId, weaponManagerRef]);
 
+  // Shooting Gallery start: return to spawn, camera facing the targets.
+  React.useEffect(() => {
+    const faceRange = () => {
+      meshRef.current?.position.set(0, 0.0, 0);
+      cameraRotationRef.current = { horizontal: 0, vertical: 0.2 };
+      velocityRef.current.set(0, 0, 0);
+      verticalVelocityRef.current = 0;
+    };
+    window.addEventListener("player-face-range", faceRange);
+    return () => window.removeEventListener("player-face-range", faceRange);
+  }, [meshRef, cameraRotationRef, velocityRef, verticalVelocityRef]);
+
   // Expose reset and freeze functions to parent via ref
   React.useImperativeHandle(ref, () => ({
     resetPosition: () => {

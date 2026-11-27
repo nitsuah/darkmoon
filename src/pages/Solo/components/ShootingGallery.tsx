@@ -128,6 +128,21 @@ export function computeGalleryAward(
   };
 }
 
+/** The mid-row centre target, straight ahead of the spawn camera. */
+export const FIRST_TARGET_ID = "r1c2";
+
+/** The round's first target is always straight ahead; later ones are random. */
+export function pickTargetToRaise<T extends { def: { id: string } }>(
+  down: T[],
+  openingId: string | null,
+  random: number,
+): T {
+  const opening = openingId
+    ? down.find((t) => t.def.id === openingId)
+    : undefined;
+  return opening ?? down[Math.floor(random * down.length)];
+}
+
 function makeTargetState(def: TargetDef, now: number): TargetState {
   const yDown = def.counterY - def.targetH - 0.02;
   const yUp = def.counterY + def.targetH + 0.05;
@@ -153,6 +168,8 @@ interface Props {
   debugMode?: boolean;
   /** Bot configuration; defaults to the "medium" preset when omitted. */
   botConfig?: GalleryBotConfig;
+  /** Target that rises first each round; null makes the first one random. */
+  openingTargetId?: string | null;
 }
 
 const ANIM_DURATION = 280; // ms for rising/falling transition
@@ -169,6 +186,7 @@ const ShootingGallery: React.FC<Props> = ({
   timeRemaining = 0,
   debugMode = false,
   botConfig,
+  openingTargetId = FIRST_TARGET_ID,
 }) => {
   // Debug mode runs the bot as a deterministic perfect-aim bot so its score is reliable.
   const activeBotConfig =
@@ -178,6 +196,7 @@ const ShootingGallery: React.FC<Props> = ({
   const groupRefs = useRef<Map<string, THREE.Group>>(new Map()); // position / visibility / scale
   const lastSpawnRef = useRef(0);
   const initialized = useRef(false);
+  const raisedFirstRef = useRef(false);
 
   // Combo/streak tracking — resets on miss or after COMBO_BREAK_MS of inactivity.
   const comboRef = useRef(0);
@@ -204,6 +223,8 @@ const ShootingGallery: React.FC<Props> = ({
   const init = useCallback(
     (now: number) => {
       targets.current = TARGET_DEFS.map((def) => makeTargetState(def, now));
+      raisedFirstRef.current = false;
+      lastSpawnRef.current = 0;
       meshRefs.current.clear();
       groupRefs.current.clear();
       bonusX.current = -16;
@@ -476,7 +497,12 @@ const ShootingGallery: React.FC<Props> = ({
     if (upCount < maxUp && now - lastSpawnRef.current > spawnInterval) {
       const down = targets.current.filter((t) => t.phase === "down");
       if (down.length > 0) {
-        const pick = down[Math.floor(secureRandom() * down.length)];
+        const pick = pickTargetToRaise(
+          down,
+          raisedFirstRef.current ? null : openingTargetId,
+          secureRandom(),
+        );
+        raisedFirstRef.current = true;
         pick.phase = "rising";
         pick.phaseStartTime = now;
         pick.upDuration = getUpDuration();

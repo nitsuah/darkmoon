@@ -31,9 +31,8 @@ vi.mock("../../../../components/ChatBox", () => ({
   ),
 }));
 vi.mock("../../../../components/UtilityMenu", () => ({
-  default: ({ onToggleChat }: { onToggleChat: () => void }) => (
-    <button onClick={onToggleChat}>ToggleChat</button>
-  ),
+  default: ({ onToggleChat }: { onToggleChat?: () => void }) =>
+    onToggleChat ? <button onClick={onToggleChat}>ToggleChat</button> : null,
 }));
 vi.mock("../../../../components/GameUI", () => ({
   default: ({
@@ -119,7 +118,8 @@ describe("SoloHUD", () => {
     fireEvent.click(screen.getByText("Start"));
     fireEvent.click(screen.getByText("End"));
     fireEvent.click(screen.getByText("Debug"));
-    fireEvent.click(screen.getByText("ToggleChat"));
+    // Solo has no chat, so the utility menu gets no chat toggle.
+    expect(screen.queryByText("ToggleChat")).not.toBeInTheDocument();
     fireEvent.click(screen.getByText("Resume"));
     fireEvent.click(screen.getByText("Send"));
 
