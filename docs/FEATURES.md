@@ -14,6 +14,17 @@ Status guide: `[shipped]` is live today, `[in-progress]` is partially implemente
 - **Bot Coordination**: Multiple bots with independent AI decision-making
 - **Symmetrical Player-Bot Tagging**: Players can tag bots and bots tag players through unified `GameManager.tagPlayer` hit-detection; tag cooldowns and freeze logic enforced for both sides
 
+### ⚔️ Deathmatch `[shipped]`
+
+- **Goal**: against three bots, be first to 10 kills in a 2-minute round
+- **Respawn**: a downed player returns after 3 seconds with 2 seconds of protection; rounds open with 5 seconds of protection
+- **Regen**: after 5 seconds without damage, health recovers up to half
+
+### 🚩 Capture the Flag `[shipped]`
+
+- **Goal**: two teams, with bots, in a 3-minute round; carry the enemy flag back to your base to score
+- **Combat**: a downed player drops the flag and sits out briefly; rounds open with 5 seconds of protection
+
 ### 🧩 Pluggable Game Mode Architecture `[shipped]`
 
 - **GameModeHandler Interface**: `onStart`/`onTick`/`onAction`/`onPlayerRemoved`/`onEnd` contract decouples mode logic from the `GameManager` host; adding a new mode requires only a new handler implementation

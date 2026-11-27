@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `docs/FEATURES.md` has Deathmatch and Capture the Flag entries, and `promo/spots.json` lists every shipped gameplay feature (#587).
+
 ### Fixed
 
 - Shooting Gallery starts with you at spawn facing the targets, and the first target rises straight ahead (#593).
