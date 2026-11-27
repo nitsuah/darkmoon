@@ -106,6 +106,31 @@ describe("ShootingGallery (rendered)", () => {
     await advance(r); // rising → up
   }
 
+  it("opens each round, including a live restart, on the centre target", async () => {
+    // Row 1, column 2 of three five-target rows.
+    const CENTRE = 7;
+    const renderer = await renderR3F(
+      <ShootingGallery gameManager={null} currentPlayerId="p1" isActive />,
+    );
+
+    await raiseFirstTarget(renderer);
+    expect(targetGroup(renderer, CENTRE).visible).toBe(true);
+    expect(targetGroup(renderer, 0).visible).toBe(false);
+
+    // Later spawns use the random pick (mocked to the first hidden target).
+    await raiseFirstTarget(renderer);
+    expect(targetGroup(renderer, 0).visible).toBe(true);
+
+    // Restart while still active.
+    await inAct(() =>
+      window.dispatchEvent(new window.Event("player-face-range")),
+    );
+    await raiseFirstTarget(renderer);
+    expect(targetGroup(renderer, CENTRE).visible).toBe(true);
+    expect(targetGroup(renderer, 0).visible).toBe(false);
+    await renderer.unmount();
+  });
+
   it("renders nothing while inactive", async () => {
     const renderer = await renderR3F(
       <ShootingGallery

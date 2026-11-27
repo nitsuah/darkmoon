@@ -219,20 +219,28 @@ const ShootingGallery: React.FC<Props> = ({
   const bonusLastAppear = useRef(0);
   const BONUS_INTERVAL = 12000; // appear every 12s
 
-  // Initialize target states once
-  const init = useCallback(
+  // Put the round's state back to its start; mounted meshes stay registered.
+  const resetRound = useCallback(
     (now: number) => {
       targets.current = TARGET_DEFS.map((def) => makeTargetState(def, now));
       raisedFirstRef.current = false;
       lastSpawnRef.current = 0;
-      meshRefs.current.clear();
-      groupRefs.current.clear();
       bonusX.current = -16;
       bonusUp.current = false;
       bonusY.current = bonusYDown;
       bonusLastAppear.current = now + 4000; // first bonus after 4s
     },
     [bonusYDown],
+  );
+
+  // Initialize target states once
+  const init = useCallback(
+    (now: number) => {
+      meshRefs.current.clear();
+      groupRefs.current.clear();
+      resetRound(now);
+    },
+    [resetRound],
   );
 
   useEffect(() => {
@@ -247,6 +255,19 @@ const ShootingGallery: React.FC<Props> = ({
       initialized.current = true;
     }
   }, [isActive, init]);
+
+  // A restart from the pause menu ends and starts in one batch, so isActive
+  // never turns false: the start event resets the round instead.
+  useEffect(() => {
+    const onRoundStart = () => {
+      if (!initialized.current) return;
+      resetRound(Date.now());
+      bonusRoundFiredRef.current = false;
+      bonusRoundEndRef.current = 0;
+    };
+    window.addEventListener("player-face-range", onRoundStart);
+    return () => window.removeEventListener("player-face-range", onRoundStart);
+  }, [resetRound]);
 
   // Trigger the bonus round when the clock crosses BONUS_ROUND_TRIGGER_SECS.
   useEffect(() => {
