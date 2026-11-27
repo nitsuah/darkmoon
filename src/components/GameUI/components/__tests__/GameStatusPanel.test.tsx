@@ -2,7 +2,7 @@ import * as React from "react";
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import GameStatusPanel from "../GameStatusPanel";
-import type { GameState, Player } from "../../GameManager";
+import type { GameState, Player } from "../../../GameManager";
 
 describe("GameStatusPanel", () => {
   it("renders Tag mode with current player as IT and shows input-neutral firing hint", () => {
