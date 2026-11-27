@@ -172,6 +172,7 @@ const SoloHUD: React.FC<SoloHUDProps> = ({
         onToggleChat={() => setChatVisible(!chatVisible)}
         isChatVisible={chatVisible}
         currentFPS={currentFPS}
+        showFps={showDebug}
         onQualityChange={setQuality}
       />
 

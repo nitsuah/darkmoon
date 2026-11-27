@@ -542,9 +542,15 @@ const Solo: React.FC = () => {
     if (!manager) return;
     if (manager.getGameState().isActive) handleEndGame();
     manager.returnToLobby();
+    // A round that ended on its own still has its extra bots in the roster.
+    if (!botDebugMode) {
+      ["bot-2", "bot-3", "bot-4"].forEach((id) => manager.removePlayer(id));
+    }
+    // Gallery debug would start a new round as soon as the menu appeared.
+    setGalleryDebugMode(false);
     syncGameState();
     setIsPaused(false);
-  }, [handleEndGame, syncGameState]);
+  }, [botDebugMode, handleEndGame, syncGameState]);
 
   // Debug buttons and the FPS counter only show with ?debug=1.
   const showDebug =

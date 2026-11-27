@@ -359,6 +359,7 @@ export class GameManager {
       scores: {},
       galleryShots: 0,
       galleryHits: 0,
+      roundStartTime: Date.now(),
     };
     this.mode = new ShootingGalleryMode();
     this.mode.onStart(this.players, this.gameState);

@@ -12,6 +12,7 @@ interface UtilityMenuProps {
   onToggleChat?: () => void;
   isChatVisible?: boolean;
   currentFPS?: number;
+  showFps?: boolean;
   onQualityChange?: (quality: QualityLevel) => void;
 }
 
@@ -19,6 +20,7 @@ const UtilityMenu: React.FC<UtilityMenuProps> = ({
   onToggleChat,
   isChatVisible = false,
   currentFPS = 60,
+  showFps = false,
   onQualityChange,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -98,16 +100,18 @@ const UtilityMenu: React.FC<UtilityMenuProps> = ({
             transition: "all 0.3s ease",
           }}
         >
-          <div
-            style={{
-              fontSize: isMinimal ? "9px" : "11px",
-              color: "#888",
-              marginBottom: "6px",
-              textAlign: "center",
-            }}
-          >
-            FPS: {currentFPS.toFixed(0)}
-          </div>
+          {showFps && (
+            <div
+              style={{
+                fontSize: isMinimal ? "9px" : "11px",
+                color: "#888",
+                marginBottom: "6px",
+                textAlign: "center",
+              }}
+            >
+              FPS: {currentFPS.toFixed(0)}
+            </div>
+          )}
           {(["auto", "high", "medium", "low"] as QualityLevel[]).map(
             (level) => (
               <button
