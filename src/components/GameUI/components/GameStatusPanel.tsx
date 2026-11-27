@@ -155,7 +155,7 @@ const GameStatusPanel: React.FC<Props> = ({
                 textAlign: "center",
               }}
             >
-              Click to fire laser tag!
+              Tap or click to fire laser tag!
             </div>
           )}
           {currentPlayer?.health !== undefined && (
