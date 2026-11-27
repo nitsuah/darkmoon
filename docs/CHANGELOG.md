@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- CI: pull requests now run the shared risk guard check (`.github/workflows/risk-guard.yml`) (#577).
 ### Fixed
 
 - **Reticle-aimed shots** — normal shots now start on the camera ray through the viewport-centre reticle, so hit detection follows the aim line instead of a parallel line above it (#578).
