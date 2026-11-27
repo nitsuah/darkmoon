@@ -167,10 +167,9 @@ const SoloHUD: React.FC<SoloHUDProps> = ({
         hidden={!showDebug}
       />
 
-      {/* Utility Menu (Mute, Quality Settings, Chat) */}
+      {/* Utility Menu (Mute, Quality Settings). Solo has nobody to chat with,
+          so there is no chat button until multiplayer is playable. */}
       <UtilityMenu
-        onToggleChat={() => setChatVisible(!chatVisible)}
-        isChatVisible={chatVisible}
         currentFPS={currentFPS}
         showFps={showDebug}
         onQualityChange={setQuality}

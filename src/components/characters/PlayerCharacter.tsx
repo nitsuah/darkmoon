@@ -24,6 +24,7 @@ import {
   PlayerInput,
   PlayerJetpack,
 } from "./player/index";
+import { PLAYER_FACE_RANGE_EVENT } from "../../lib/hooks/useGameStart";
 
 const tagDebug = createTagLogger("PlayerCharacter");
 
@@ -168,6 +169,18 @@ export const PlayerCharacter = React.forwardRef<
       });
     }
   }, [gameManager, currentPlayerId, weaponManagerRef]);
+
+  // Shooting Gallery start: return to spawn, camera facing the targets.
+  React.useEffect(() => {
+    const faceRange = () => {
+      meshRef.current?.position.set(0, 0.0, 0);
+      cameraRotationRef.current = { horizontal: 0, vertical: 0.2 };
+      velocityRef.current.set(0, 0, 0);
+      verticalVelocityRef.current = 0;
+    };
+    window.addEventListener(PLAYER_FACE_RANGE_EVENT, faceRange);
+    return () => window.removeEventListener(PLAYER_FACE_RANGE_EVENT, faceRange);
+  }, [meshRef, cameraRotationRef, velocityRef, verticalVelocityRef]);
 
   // Expose reset and freeze functions to parent via ref
   React.useImperativeHandle(ref, () => ({

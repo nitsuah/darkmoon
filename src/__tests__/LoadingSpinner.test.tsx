@@ -1,8 +1,35 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { act, render, screen } from "@testing-library/react";
 import LoadingSpinner from "../components/LoadingSpinner";
 
 describe("LoadingSpinner Component", () => {
+  describe("Slow loads", () => {
+    it("shows elapsed time, then offers a reload", () => {
+      vi.useFakeTimers({
+        toFake: ["setInterval", "clearInterval", "performance"],
+      });
+      try {
+        render(<LoadingSpinner />);
+        expect(screen.queryByRole("status")).not.toBeInTheDocument();
+
+        act(() => {
+          vi.advanceTimersByTime(6000);
+        });
+        expect(screen.getByRole("status")).toHaveTextContent("(6s)");
+        expect(screen.queryByRole("button")).not.toBeInTheDocument();
+
+        act(() => {
+          vi.advanceTimersByTime(15000);
+        });
+        expect(
+          screen.getByRole("button", { name: "Reload" }),
+        ).toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
+
   describe("Rendering", () => {
     it("should render loading text", () => {
       render(<LoadingSpinner />);

@@ -19,6 +19,8 @@ interface Deps {
   BOT4_CONFIG: BotConfig;
 }
 
+export const PLAYER_FACE_RANGE_EVENT = "player-face-range";
+
 /** Time to look around before bots can hurt the player. */
 const START_GRACE_MS = 5000;
 
@@ -58,6 +60,9 @@ export function useGameStart({
 
       if (mode === "shooting_gallery") {
         mgr.startShootingGalleryGame();
+        // Targets are down-range of the spawn point: put the player and camera
+        // back there so the first target is in view.
+        window.dispatchEvent(new window.Event(PLAYER_FACE_RANGE_EVENT));
         syncGameState();
         addNotification(
           "Shooting Gallery! Hit targets to score. 🔴=10 🟠=25 🟡=50 ⭐=100",

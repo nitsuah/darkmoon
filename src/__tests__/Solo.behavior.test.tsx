@@ -138,7 +138,7 @@ describe("Solo behavior", () => {
     expect(gameManager.removePlayer).toHaveBeenCalledWith("bot-2");
   });
 
-  it("handles keyboard movement and chat toggle shortcuts", () => {
+  it("has no chat shortcut in solo", () => {
     renderSolo();
 
     act(() => {
@@ -147,6 +147,6 @@ describe("Solo behavior", () => {
       fireEvent.keyDown(window, { key: "c", altKey: true });
     });
 
-    expect(lastSoloHudProps).toBeTruthy();
+    expect(lastSoloHudProps?.chatVisible).toBe(false);
   });
 });

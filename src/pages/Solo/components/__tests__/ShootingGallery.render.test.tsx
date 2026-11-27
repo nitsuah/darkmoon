@@ -106,9 +106,35 @@ describe("ShootingGallery (rendered)", () => {
     await advance(r); // rising → up
   }
 
+  it("opens each round, including a live restart, on the centre target", async () => {
+    // Row 1, column 2 of three five-target rows.
+    const CENTRE = 7;
+    const renderer = await renderR3F(
+      <ShootingGallery gameManager={null} currentPlayerId="p1" isActive />,
+    );
+
+    await raiseFirstTarget(renderer);
+    expect(targetGroup(renderer, CENTRE).visible).toBe(true);
+    expect(targetGroup(renderer, 0).visible).toBe(false);
+
+    // Later spawns use the random pick (mocked to the first hidden target).
+    await raiseFirstTarget(renderer);
+    expect(targetGroup(renderer, 0).visible).toBe(true);
+
+    // Restart while still active.
+    await inAct(() =>
+      window.dispatchEvent(new window.Event("player-face-range")),
+    );
+    await raiseFirstTarget(renderer);
+    expect(targetGroup(renderer, CENTRE).visible).toBe(true);
+    expect(targetGroup(renderer, 0).visible).toBe(false);
+    await renderer.unmount();
+  });
+
   it("renders nothing while inactive", async () => {
     const renderer = await renderR3F(
       <ShootingGallery
+        openingTargetId={null}
         gameManager={null}
         currentPlayerId="p1"
         isActive={false}
@@ -121,7 +147,12 @@ describe("ShootingGallery (rendered)", () => {
 
   it("builds the gallery with hidden targets and pops one up on the spawn interval", async () => {
     const renderer = await renderR3F(
-      <ShootingGallery gameManager={null} currentPlayerId="p1" isActive />,
+      <ShootingGallery
+        openingTargetId={null}
+        gameManager={null}
+        currentPlayerId="p1"
+        isActive
+      />,
     );
     expect(root(renderer).children.length).toBeGreaterThan(BONUS_INDEX);
     const first = targetGroup(renderer, 0);
@@ -157,6 +188,7 @@ describe("ShootingGallery (rendered)", () => {
     );
     const renderer = await renderR3F(
       <ShootingGallery
+        openingTargetId={null}
         gameManager={gm as unknown as GameManager}
         currentPlayerId="p1"
         isActive
@@ -198,6 +230,7 @@ describe("ShootingGallery (rendered)", () => {
     const events = recordEvents("damage-number", "gallery-combo");
     const renderer = await renderR3F(
       <ShootingGallery
+        openingTargetId={null}
         gameManager={gm as unknown as GameManager}
         currentPlayerId="p1"
         isActive
@@ -238,6 +271,7 @@ describe("ShootingGallery (rendered)", () => {
     const events = recordEvents("gallery-combo");
     const renderer = await renderR3F(
       <ShootingGallery
+        openingTargetId={null}
         gameManager={gm as unknown as GameManager}
         currentPlayerId="p1"
         isActive
@@ -258,13 +292,19 @@ describe("ShootingGallery (rendered)", () => {
   it("ignores gallery-fire events while inactive and misses without a game manager", async () => {
     const events = recordEvents("gallery-combo");
     const renderer = await renderR3F(
-      <ShootingGallery gameManager={null} currentPlayerId="p1" isActive />,
+      <ShootingGallery
+        openingTargetId={null}
+        gameManager={null}
+        currentPlayerId="p1"
+        isActive
+      />,
     );
     await shootAtNothing(); // no game manager: miss is not recorded
     expect(events.seen["gallery-combo"]).toHaveLength(0);
 
     await renderer.update(
       <ShootingGallery
+        openingTargetId={null}
         gameManager={null}
         currentPlayerId="p1"
         isActive={false}
@@ -285,14 +325,20 @@ describe("ShootingGallery (rendered)", () => {
       isActive: true,
     };
     const renderer = await renderR3F(
-      <ShootingGallery {...props} timeRemaining={31} />,
+      <ShootingGallery openingTargetId={null} {...props} timeRemaining={31} />,
     );
-    await renderer.update(<ShootingGallery {...props} timeRemaining={30} />);
+    await renderer.update(
+      <ShootingGallery openingTargetId={null} {...props} timeRemaining={30} />,
+    );
     expect(events.seen["gallery-bonus-round"]).toEqual([{ duration: 8000 }]);
 
     // Only fires once per game.
-    await renderer.update(<ShootingGallery {...props} timeRemaining={45} />);
-    await renderer.update(<ShootingGallery {...props} timeRemaining={20} />);
+    await renderer.update(
+      <ShootingGallery openingTargetId={null} {...props} timeRemaining={45} />,
+    );
+    await renderer.update(
+      <ShootingGallery openingTargetId={null} {...props} timeRemaining={20} />,
+    );
     expect(events.seen["gallery-bonus-round"]).toHaveLength(1);
 
     await raiseFirstTarget(renderer);
@@ -304,10 +350,19 @@ describe("ShootingGallery (rendered)", () => {
 
     // Deactivating resets so the next game can trigger it again.
     await renderer.update(
-      <ShootingGallery {...props} isActive={false} timeRemaining={31} />,
+      <ShootingGallery
+        openingTargetId={null}
+        {...props}
+        isActive={false}
+        timeRemaining={31}
+      />,
     );
-    await renderer.update(<ShootingGallery {...props} timeRemaining={31} />);
-    await renderer.update(<ShootingGallery {...props} timeRemaining={29} />);
+    await renderer.update(
+      <ShootingGallery openingTargetId={null} {...props} timeRemaining={31} />,
+    );
+    await renderer.update(
+      <ShootingGallery openingTargetId={null} {...props} timeRemaining={29} />,
+    );
     expect(events.seen["gallery-bonus-round"]).toHaveLength(2);
 
     events.stop();
@@ -319,6 +374,7 @@ describe("ShootingGallery (rendered)", () => {
     const events = recordEvents("damage-number");
     const renderer = await renderR3F(
       <ShootingGallery
+        openingTargetId={null}
         gameManager={gm as unknown as GameManager}
         currentPlayerId="p1"
         isActive
@@ -349,7 +405,12 @@ describe("ShootingGallery (rendered)", () => {
 
   it("retires the bonus duck when it reaches the far side", async () => {
     const renderer = await renderR3F(
-      <ShootingGallery gameManager={null} currentPlayerId="p1" isActive />,
+      <ShootingGallery
+        openingTargetId={null}
+        gameManager={null}
+        currentPlayerId="p1"
+        isActive
+      />,
     );
     clock.tick(4_000);
     await advance(renderer);
@@ -371,6 +432,7 @@ describe("ShootingGallery (rendered)", () => {
     };
     const renderer = await renderR3F(
       <ShootingGallery
+        openingTargetId={null}
         gameManager={null}
         currentPlayerId="p1"
         isActive

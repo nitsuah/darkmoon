@@ -248,11 +248,6 @@ const Solo: React.FC = () => {
         setIsPaused((prev) => !prev);
         return;
       }
-      if (e.altKey && e.key === "c") {
-        setChatVisible((prev) => !prev);
-        return;
-      }
-
       const key = e.key.toLowerCase();
       // Don't capture Tab during pause so HUD controls remain keyboard-navigable
       if (key === KEY_TAB && isPausedRef.current) return;
