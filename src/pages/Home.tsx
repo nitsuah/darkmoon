@@ -44,7 +44,7 @@ const Home = () => {
       <div className="hero-section">
         <h1 className="hero-title">PLAY 🌑 DARKMOON</h1>
         <p className="hero-subtitle">
-          An immersive 3D multiplayer tag experience in the browser
+          Solo 3D combat and tag against bots, right in your browser
         </p>
         <button className="cta-play-button" onClick={() => navigate("/solo")}>
           <span className="cta-icon">🎮</span>

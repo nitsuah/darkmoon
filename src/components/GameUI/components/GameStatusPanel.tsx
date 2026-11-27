@@ -1,5 +1,6 @@
 import * as React from "react";
 import { GameState, Player } from "../../GameManager";
+import { isTouchDevice } from "../../../lib/hooks/useDialog";
 import { formatTime } from "../uiFormat";
 import { WEAPONS } from "../../combat/WeaponManager";
 
@@ -155,7 +156,9 @@ const GameStatusPanel: React.FC<Props> = ({
                 textAlign: "center",
               }}
             >
-              Tap or click to fire laser tag!
+              {isTouchDevice()
+                ? "Tap Fire to shoot your laser!"
+                : "Click to fire your laser!"}
             </div>
           )}
           {currentPlayer?.health !== undefined && (

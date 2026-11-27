@@ -39,7 +39,7 @@ test('player starts the shooting gallery', {
   tag: ['@feature:shooting-gallery'],
 }, async ({ page }) => {
   const errors = trackPageErrors(page);
-  await page.goto('/solo');
+  await page.goto('/solo?debug=1');
   await expect(page.locator('canvas').first()).toBeVisible({ timeout: 90_000 });
 
   await step(page, 'switch on the gallery and see the gallery HUD', async () => {

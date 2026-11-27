@@ -738,3 +738,24 @@
     grid-template-columns: 1fr 1fr 1fr !important;
   }
 }
+
+/* Padding must not widen the page on phones. */
+.home-container,
+.home-container * {
+  box-sizing: border-box;
+}
+
+/* Light theme: the featured card takes the page's surface and text colours. */
+[data-theme="light"] .game-card--featured {
+  background: var(--bg-secondary);
+  border-color: var(--border);
+  color: var(--text-color);
+}
+
+[data-theme="light"] .game-card--featured * {
+  color: var(--text-color);
+}
+
+[data-theme="light"] .game-card--featured .game-card__cta {
+  color: #fff;
+}

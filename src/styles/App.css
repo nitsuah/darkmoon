@@ -227,7 +227,8 @@ a:focus {
   margin-right: 10px;
 }
 
-.right {
+.header .right,
+div.right:not(.joystick-container) {
   display: flex;
   background: #181818;
   border-radius: 16px;

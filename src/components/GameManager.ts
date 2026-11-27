@@ -408,6 +408,18 @@ export class GameManager {
     return results;
   }
 
+  /** Ends any running round and clears its results, back to the mode menu. */
+  returnToLobby(): void {
+    if (this.gameState.isActive) this.endGame();
+    this.gameState = {
+      mode: "none",
+      isActive: false,
+      timeRemaining: 0,
+      scores: {},
+    };
+    this.callbacks.onGameStateUpdate?.(this.gameState);
+  }
+
   getGameState(): GameState {
     return this.gameState;
   }

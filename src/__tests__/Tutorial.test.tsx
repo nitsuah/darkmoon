@@ -119,11 +119,11 @@ describe("Tutorial Component", () => {
       render(<Tutorial />);
 
       const contents = [
-        "A multiplayer 3D experience",
-        "Use W/A/S/D keys to move around",
-        "The camera follows you automatically",
-        "Click the sun/moon icon",
-        "Press H at any time",
+        "Solo play against bots",
+        "W/A/S/D move",
+        "Click the game to lock the mouse",
+        "utility menu in the bottom-right",
+        "Press H for controls",
       ];
 
       contents.forEach((content, index) => {

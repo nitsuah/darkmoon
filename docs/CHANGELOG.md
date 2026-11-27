@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Live site review (#586):** the tutorial and Help panel describe solo play and the current controls (with touch wording on phones), are labelled dialogs, and Esc closes them without opening Pause. **Controls** is in the pause and mode menus. Each mode shows its goal, rounds open with an objective banner, and Deathmatch and CTF give 5 seconds of protection. **Main Menu** and **Quit to Menu** return to the mode menu (**Back to home** leaves). Debug buttons and the FPS counter need `?debug=1`. Fixed the phone overlay covering the game, the landing overflow, the light-theme card and the uncaught pointer-lock error; landing copy now leads with solo play.
+
 - CI: run the risk guard from the trusted base-branch workflow after bootstrap.
 
 - CI: pull requests now run the shared risk guard check (`.github/workflows/risk-guard.yml`) (#577).
