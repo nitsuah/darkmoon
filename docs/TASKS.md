@@ -20,7 +20,7 @@ see those files rather than a duplicated narrative here._
 
 ## Todo
 
-- [ ] Showcase media (#587): add a gameplay hero visual to the README linked to darkmoon.dev, re-shoot `solo-practice` on a live match with debug and FPS hidden, refresh `public/og-image.jpg` for the solo-first copy, capture the features in `promo/spots.json` that still have no visual, and render a 12-21 s launch spot (title; one click into a match; Deathmatch combat; grenade arc and blast; CTF grab and Gallery streak; end card "Solo vs bots today", no multiplayer). Needs `/promo` and `/brag`.
+- [ ] Showcase media (#587): add a gameplay hero visual to the README linked to darkmoon.dev, re-shoot `solo-practice` on a live match with debug and FPS hidden, refresh `public/og-image.jpg` for the solo-first copy, capture the features in `promo/spots.json` that still have no visual, and render a 12-21 s launch spot (title; one click into a match; Deathmatch combat; grenade arc and blast; CTF grab and Gallery streak; end card "Solo vs bots today", no multiplayer), then reuse it for the `hero` reel. Needs `/promo` and `/brag`.
 
 - [ ] Retire Netlify leftovers after the Netlify site is deleted: remove `netlify.toml`, and the `darkmoon-dev.netlify.app` entries from `render.yaml` `ALLOWED_ORIGINS`. (P3 · Tech Debt) Owner-side: add a Cloudflare zone Single Redirect `www.darkmoon.dev` → `darkmoon.dev` (301, keep path/query). Source: #535.
 
