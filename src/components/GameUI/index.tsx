@@ -33,6 +33,7 @@ import StreakAnnouncement from "./components/StreakAnnouncement";
 import BonusRoundOverlay from "./components/BonusRoundOverlay";
 import GameResultsScreen from "./components/GameResultsScreen";
 import GameLobbyPanel from "./components/GameLobbyPanel";
+import ObjectiveBanner from "./components/ObjectiveBanner";
 
 interface GameUIProps {
   gameState: GameState;
@@ -41,6 +42,8 @@ interface GameUIProps {
   onStartGame: (mode: StartableMode) => void;
   onEndGame: () => void;
   onMainMenu: () => void;
+  /** Leaves the game for the landing page (mode menu only). */
+  onHome?: () => void;
   botDebugMode?: boolean;
   onToggleDebug?: () => void;
   galleryDebugMode?: boolean;
@@ -57,6 +60,7 @@ const GameUI: React.FC<GameUIProps> = ({
   onStartGame,
   onEndGame,
   onMainMenu,
+  onHome,
   botDebugMode = false,
   onToggleDebug,
   galleryDebugMode = false,
@@ -159,6 +163,7 @@ const GameUI: React.FC<GameUIProps> = ({
         `}</style>
 
         <DamageFlash active={damageFlash} />
+        <ObjectiveBanner key={gameState.roundStartTime} gameState={gameState} />
 
         {criticalHealth && (
           <div
@@ -340,7 +345,7 @@ const GameUI: React.FC<GameUIProps> = ({
       onStartGame={onStartGame}
       onToggleDebug={onToggleDebug}
       onToggleGalleryDebug={onToggleGalleryDebug}
-      onMainMenu={onMainMenu}
+      onHome={onHome ?? onMainMenu}
     />
   );
 };

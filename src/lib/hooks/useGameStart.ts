@@ -19,6 +19,15 @@ interface Deps {
   BOT4_CONFIG: BotConfig;
 }
 
+/** Time to look around before bots can hurt the player. */
+const START_GRACE_MS = 5000;
+
+function protectAtStart(mgr: GameManager, playerId: string): void {
+  mgr.updatePlayer(playerId, {
+    spawnProtectedUntil: Date.now() + START_GRACE_MS,
+  });
+}
+
 function ensureBot(mgr: GameManager, id: string, config: BotConfig): void {
   if (!mgr.getPlayers().has(id)) {
     const bot: Player = {
@@ -62,6 +71,7 @@ export function useGameStart({
         ensureBot(mgr, "bot-3", BOT3_CONFIG);
         ensureBot(mgr, "bot-4", BOT4_CONFIG);
         mgr.startDeathmatchGame();
+        protectAtStart(mgr, currentPlayerId);
         const state = mgr.getGameState();
         setGameState(state);
         addNotification(
@@ -76,6 +86,7 @@ export function useGameStart({
         ensureBot(mgr, "bot-3", BOT3_CONFIG);
         ensureBot(mgr, "bot-4", BOT4_CONFIG);
         mgr.startCTFGame();
+        protectAtStart(mgr, currentPlayerId);
         const state = mgr.getGameState();
         setGameState(state);
         addNotification(

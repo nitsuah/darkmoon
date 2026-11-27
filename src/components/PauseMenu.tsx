@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Button } from "./21st.dev/Button";
 import "../styles/Button.css";
+import { openHelp } from "../lib/hooks/useDialog";
 
 interface PauseMenuProps {
   isVisible: boolean;
@@ -70,6 +71,10 @@ const PauseMenu: React.FC<PauseMenuProps> = ({
 
           <Button onClick={onRestart} variant="warning" size="large">
             🔄 Restart
+          </Button>
+
+          <Button onClick={openHelp} variant="secondary" size="large">
+            🕹️ Controls
           </Button>
 
           <Button onClick={onQuit} variant="danger" size="large">

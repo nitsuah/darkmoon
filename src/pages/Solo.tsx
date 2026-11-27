@@ -335,7 +335,10 @@ const Solo: React.FC = () => {
       // Request pointer lock on first click inside the game canvas
       if (!document.pointerLockElement) {
         const canvas = document.querySelector("canvas");
-        canvas?.requestPointerLock();
+        // Browsers reject the lock in some frames and right after Esc; ignore it.
+        Promise.resolve(canvas?.requestPointerLock()).catch((error) =>
+          tagDebug(`Pointer lock refused: ${String(error)}`),
+        );
       }
     };
 
@@ -536,6 +539,25 @@ const Solo: React.FC = () => {
     addNotification("Game ended", "info");
   }, [botDebugMode, syncGameState, addNotification]);
 
+  const showModeMenu = useCallback(() => {
+    const manager = gameManager.current;
+    if (!manager) return;
+    if (manager.getGameState().isActive) handleEndGame();
+    manager.returnToLobby();
+    // A round that ended on its own still has its extra bots in the roster.
+    if (!botDebugMode) {
+      ["bot-2", "bot-3", "bot-4"].forEach((id) => manager.removePlayer(id));
+    }
+    // Gallery debug would start a new round as soon as the menu appeared.
+    setGalleryDebugMode(false);
+    syncGameState();
+    setIsPaused(false);
+  }, [botDebugMode, handleEndGame, syncGameState]);
+
+  // Debug buttons and the FPS counter only show with ?debug=1.
+  const showDebug =
+    new window.URLSearchParams(window.location.search).get("debug") === "1";
+
   const handleSendMessage = (message: string) => {
     const filtered = filterProfanity(message);
     const chatMessage: ChatMessage = {
@@ -623,7 +645,9 @@ const Solo: React.FC = () => {
         currentPlayerId={currentPlayerId}
         onStartGame={handleStartGame}
         onEndGame={handleEndGame}
-        onMainMenu={() => navigate("/")}
+        onMainMenu={showModeMenu}
+        onHome={() => navigate("/")}
+        showDebug={showDebug}
         botDebugMode={botDebugMode}
         onToggleDebug={() => setBotDebugMode((prev) => !prev)}
         galleryDebugMode={galleryDebugMode}
@@ -647,7 +671,7 @@ const Solo: React.FC = () => {
           }
           setIsPaused(false);
         }}
-        onQuit={() => navigate("/")}
+        onQuit={showModeMenu}
         chatVisible={chatVisible}
         setChatVisible={setChatVisible}
         chatMessages={chatMessages}

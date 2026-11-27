@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Player, StartableMode } from "../../GameManager";
+import { openHelp } from "../../../lib/hooks/useDialog";
 
 interface Props {
   players: Map<string, Player>;
@@ -10,7 +11,7 @@ interface Props {
   onStartGame: (mode: StartableMode) => void;
   onToggleDebug?: () => void;
   onToggleGalleryDebug?: () => void;
-  onMainMenu: () => void;
+  onHome: () => void;
 }
 
 const btn = (
@@ -41,9 +42,15 @@ const GameLobbyPanel: React.FC<Props> = ({
   onStartGame,
   onToggleDebug,
   onToggleGalleryDebug,
-  onMainMenu,
+  onHome,
 }) => {
   const panelWidth = isMinimal ? 70 : isMobile ? 160 : 170;
+  const goal = (text: string) =>
+    isMinimal ? null : (
+      <div style={{ color: "#bbb", fontSize: "9px", textAlign: "center" }}>
+        {text}
+      </div>
+    );
 
   return (
     <div
@@ -84,7 +91,7 @@ const GameLobbyPanel: React.FC<Props> = ({
             textAlign: "center",
           }}
         >
-          {players.size === 1 ? "1 player (vs Bot)" : `${players.size} players`}
+          You vs bots
         </div>
       )}
 
@@ -95,6 +102,7 @@ const GameLobbyPanel: React.FC<Props> = ({
         >
           {isMinimal ? "🎯" : "🎯 Shooting Gallery"}
         </button>
+        {goal("Start here: hit targets before time runs out.")}
 
         <button
           onClick={() => onStartGame("tag")}
@@ -102,6 +110,7 @@ const GameLobbyPanel: React.FC<Props> = ({
         >
           {isMinimal ? "▶️" : `🏃 Tag${players.size <= 1 ? " (Practice)" : ""}`}
         </button>
+        {goal("Laser tag: pass IT on to the bot.")}
 
         {players.size >= 2 && (
           <button
@@ -111,6 +120,7 @@ const GameLobbyPanel: React.FC<Props> = ({
             {isMinimal ? "🔫" : "💀 Deathmatch"}
           </button>
         )}
+        {players.size >= 2 && goal("First to 10 kills wins.")}
 
         {players.size >= 2 && (
           <button
@@ -120,6 +130,7 @@ const GameLobbyPanel: React.FC<Props> = ({
             {isMinimal ? "🚩" : "🚩 CTF"}
           </button>
         )}
+        {players.size >= 2 && goal("Bring the enemy flag back to base.")}
 
         <div
           style={{
@@ -130,10 +141,17 @@ const GameLobbyPanel: React.FC<Props> = ({
         />
 
         <button
-          onClick={onMainMenu}
+          onClick={openHelp}
           style={btn("rgba(50,50,80,0.85)", "#555", isMobile)}
         >
-          {isMinimal ? "🏠" : "🏠 Main Menu"}
+          {isMinimal ? "🕹️" : "🕹️ Controls"}
+        </button>
+
+        <button
+          onClick={onHome}
+          style={btn("rgba(50,50,80,0.85)", "#555", isMobile)}
+        >
+          {isMinimal ? "🏠" : "🏠 Back to home"}
         </button>
 
         {onToggleDebug && (

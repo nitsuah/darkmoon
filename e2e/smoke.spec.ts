@@ -52,7 +52,7 @@ test.describe("Darkmoon E2E Smoke Tests", () => {
     await page.addInitScript(() => {
       window.localStorage.setItem("darkmoon-tutorial-complete", "true");
     });
-    await page.goto("/solo");
+    await page.goto("/solo?debug=1");
     await expect(page.locator("canvas").first()).toBeVisible({
       timeout: 10000,
     });

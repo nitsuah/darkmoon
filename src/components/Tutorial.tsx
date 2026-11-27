@@ -3,6 +3,11 @@ import { useState, useEffect } from "react";
 import "../styles/Tutorial.css";
 import { Button } from "./21st.dev/Button";
 import "../styles/Button.css";
+import {
+  isTouchDevice,
+  useDialogFocus,
+  useEscapeToClose,
+} from "../lib/hooks/useDialog";
 
 interface TutorialProps {
   onComplete?: () => void;
@@ -11,6 +16,18 @@ interface TutorialProps {
 const Tutorial: React.FC<TutorialProps> = ({ onComplete }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [step, setStep] = useState(0);
+
+  const isTouch = isTouchDevice();
+  const dialogRef = useDialogFocus(isVisible);
+
+  const handleComplete = () => {
+    window.localStorage.setItem("darkmoon-tutorial-complete", "true");
+    setIsVisible(false);
+    onComplete?.();
+  };
+
+  // Esc skips the tutorial instead of opening Pause on top of it.
+  useEscapeToClose(isVisible, () => handleComplete());
 
   useEffect(() => {
     // Check if user has seen the tutorial
@@ -25,24 +42,31 @@ const Tutorial: React.FC<TutorialProps> = ({ onComplete }) => {
   const steps = [
     {
       title: "Welcome to DARKMOON",
-      content: "A multiplayer 3D experience. Let's get you started!",
+      content:
+        "Solo play against bots. Pick a mode from the Game Modes menu; Shooting Gallery is a good place to start.",
     },
     {
       title: "Movement Controls",
-      content: "Use W/A/S/D keys to move around. Hold SHIFT to run faster.",
+      content: isTouch
+        ? "Left stick moves, hold Sprint to run. Tap Jump to jump and double-tap it for the jetpack."
+        : "W/A/S/D move, Q and E strafe, SHIFT runs, SPACE jumps. Press SPACE again in the air for the jetpack.",
     },
     {
       title: "Camera Control",
-      content: "The camera follows you automatically in third-person view.",
+      content: isTouch
+        ? "Drag the right stick to look and aim. Tap Fire to shoot."
+        : "Click the game to lock the mouse, then move it to look. Click to fire, R reloads, and 1 to 5, TAB or the scroll wheel swap weapons.",
     },
     {
       title: "Theme Toggle",
       content:
-        "Click the sun/moon icon in the top-left to switch between dark and light themes.",
+        "Open the utility menu in the bottom-right corner for the light or dark theme, sound and graphics quality.",
     },
     {
       title: "Need Help?",
-      content: "Press H at any time to view the help menu. Have fun!",
+      content: isTouch
+        ? "Open Controls from the Game Modes menu at any time. Have fun!"
+        : "Press H for controls, hold I for scores, and press ESC to pause. Have fun!",
     },
   ];
 
@@ -58,21 +82,22 @@ const Tutorial: React.FC<TutorialProps> = ({ onComplete }) => {
     handleComplete();
   };
 
-  const handleComplete = () => {
-    window.localStorage.setItem("darkmoon-tutorial-complete", "true");
-    setIsVisible(false);
-    onComplete?.();
-  };
-
   if (!isVisible) return null;
 
   const currentStep = steps[step];
 
   return (
     <div className="tutorial-overlay">
-      <div className="tutorial-content">
+      <div
+        className="tutorial-content"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tutorial-title"
+        tabIndex={-1}
+      >
         <div className="tutorial-header">
-          <h2>{currentStep.title}</h2>
+          <h2 id="tutorial-title">{currentStep.title}</h2>
           <div className="tutorial-progress">
             Step {step + 1} of {steps.length}
           </div>

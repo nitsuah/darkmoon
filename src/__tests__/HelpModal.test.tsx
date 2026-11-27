@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import HelpModal from "../components/HelpModal";
 import React from "react";
 
@@ -71,42 +71,42 @@ describe("HelpModal Component", () => {
   });
 
   describe("Content", () => {
-    it("should display movement controls section", () => {
+    it("should list the current movement and combat controls", () => {
       render(<HelpModal />);
       fireEvent.keyDown(window, { key: "h" });
 
       expect(screen.getByText("Movement")).toBeDefined();
-      expect(screen.getByText("Move Forward")).toBeDefined();
-      expect(screen.getByText("Move Left")).toBeDefined();
-      expect(screen.getByText("Move Backward")).toBeDefined();
-      expect(screen.getByText("Move Right")).toBeDefined();
+      expect(screen.getByText("Combat")).toBeDefined();
+      for (const key of ["W A S D", "SPACE", "R", "TAB / Scroll", "I", "ESC"]) {
+        expect(screen.getByText(key).closest("kbd")).not.toBeNull();
+      }
     });
 
-    it("should display interface controls section", () => {
+    it("should describe solo play", () => {
       render(<HelpModal />);
       fireEvent.keyDown(window, { key: "h" });
 
-      expect(screen.getByText("Interface")).toBeDefined();
-      expect(screen.getByText("Toggle this help menu")).toBeDefined();
+      expect(screen.getByText(/playing solo against bots/)).toBeDefined();
+      expect(screen.queryByText(/box/)).toBeNull();
     });
 
-    it("should display multiplayer section", () => {
+    it("should be a labelled dialog that Esc closes", () => {
       render(<HelpModal />);
       fireEvent.keyDown(window, { key: "h" });
 
-      expect(screen.getByText("Multiplayer & Games")).toBeDefined();
       expect(
-        screen.getByText('Your character is the blue box (red when "IT")'),
+        screen.getByRole("dialog", { name: "Help & Controls" }),
       ).toBeDefined();
+      fireEvent.keyDown(window, { key: "Escape" });
+      expect(screen.queryByRole("dialog")).toBeNull();
     });
 
-    it("should show keyboard keys as kbd elements", () => {
+    it("should open from the Controls buttons", () => {
       render(<HelpModal />);
-      fireEvent.keyDown(window, { key: "h" });
-
-      // Check for specific kbd content
-      const wKey = screen.getByText("W");
-      expect(wKey.closest("kbd")).toBeDefined();
+      act(() => {
+        window.dispatchEvent(new CustomEvent("darkmoon-open-help"));
+      });
+      expect(screen.getByText("Help & Controls")).toBeDefined();
     });
   });
 

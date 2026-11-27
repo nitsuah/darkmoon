@@ -359,6 +359,7 @@ export class GameManager {
       scores: {},
       galleryShots: 0,
       galleryHits: 0,
+      roundStartTime: Date.now(),
     };
     this.mode = new ShootingGalleryMode();
     this.mode.onStart(this.players, this.gameState);
@@ -406,6 +407,18 @@ export class GameManager {
     this.callbacks.onPlayerUpdate?.(this.players);
 
     return results;
+  }
+
+  /** Ends any running round and clears its results, back to the mode menu. */
+  returnToLobby(): void {
+    if (this.gameState.isActive) this.endGame();
+    this.gameState = {
+      mode: "none",
+      isActive: false,
+      timeRemaining: 0,
+      scores: {},
+    };
+    this.callbacks.onGameStateUpdate?.(this.gameState);
   }
 
   getGameState(): GameState {

@@ -58,7 +58,7 @@ describe("GameStatusPanel", () => {
 
     expect(screen.getByText(/🏃 TAG/)).toBeInTheDocument();
     expect(screen.getByText("🏃 YOU ARE IT!")).toBeInTheDocument();
-    expect(screen.getByText("Tap or click to fire laser tag!")).toBeInTheDocument();
+    expect(screen.getByText("Click to fire your laser!")).toBeInTheDocument();
   });
 
   it("renders Tag mode with another player as IT and shows who is IT", () => {
@@ -113,6 +113,6 @@ describe("GameStatusPanel", () => {
     );
 
     expect(screen.getByText(/Player Two is IT/)).toBeInTheDocument();
-    expect(screen.queryByText("Tap or click to fire laser tag!")).not.toBeInTheDocument();
+    expect(screen.queryByText("Click to fire your laser!")).not.toBeInTheDocument();
   });
 });

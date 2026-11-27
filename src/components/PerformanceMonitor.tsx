@@ -2,10 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 
 interface PerformanceMonitorProps {
   onPerformanceChange?: (fps: number) => void;
+  /** Keep measuring (auto quality uses it) without showing the counter. */
+  hidden?: boolean;
 }
 
 const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
   onPerformanceChange,
+  hidden = false,
 }) => {
   const [fps, setFps] = useState<number>(60);
   const [textMode, setTextMode] = useState<boolean>(true); // Toggle between text and icon mode
@@ -70,6 +73,8 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
     if (fps >= 30) return "#ffaa00"; // Orange
     return "#ff0000"; // Red
   };
+
+  if (hidden) return null;
 
   return (
     <div

@@ -34,6 +34,8 @@ interface SoloHUDProps {
   onStartGame: (mode: StartableMode) => void;
   onEndGame: () => void;
   onMainMenu: () => void;
+  onHome: () => void;
+  showDebug?: boolean;
   botDebugMode: boolean;
   onToggleDebug: () => void;
   galleryDebugMode?: boolean;
@@ -78,6 +80,8 @@ const SoloHUD: React.FC<SoloHUDProps> = ({
   onStartGame,
   onEndGame,
   onMainMenu,
+  onHome,
+  showDebug = false,
   botDebugMode,
   onToggleDebug,
   galleryDebugMode,
@@ -124,10 +128,11 @@ const SoloHUD: React.FC<SoloHUDProps> = ({
         onStartGame={onStartGame}
         onEndGame={onEndGame}
         onMainMenu={onMainMenu}
+        onHome={onHome}
         botDebugMode={botDebugMode}
-        onToggleDebug={onToggleDebug}
+        onToggleDebug={showDebug ? onToggleDebug : undefined}
         galleryDebugMode={galleryDebugMode}
-        onToggleGalleryDebug={onToggleGalleryDebug}
+        onToggleGalleryDebug={showDebug ? onToggleGalleryDebug : undefined}
         autoRestartSecondsLeft={autoRestartSecondsLeft}
       />
 
@@ -157,13 +162,17 @@ const SoloHUD: React.FC<SoloHUDProps> = ({
       </div>
 
       {/* Performance Monitor */}
-      <PerformanceMonitor onPerformanceChange={onPerformanceChange} />
+      <PerformanceMonitor
+        onPerformanceChange={onPerformanceChange}
+        hidden={!showDebug}
+      />
 
       {/* Utility Menu (Mute, Quality Settings, Chat) */}
       <UtilityMenu
         onToggleChat={() => setChatVisible(!chatVisible)}
         isChatVisible={chatVisible}
         currentFPS={currentFPS}
+        showFps={showDebug}
         onQualityChange={setQuality}
       />
 
