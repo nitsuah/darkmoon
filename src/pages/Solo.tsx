@@ -336,7 +336,9 @@ const Solo: React.FC = () => {
       if (!document.pointerLockElement) {
         const canvas = document.querySelector("canvas");
         // Browsers reject the lock in some frames and right after Esc; ignore it.
-        Promise.resolve(canvas?.requestPointerLock()).catch(() => {});
+        Promise.resolve(canvas?.requestPointerLock()).catch((error) =>
+          tagDebug(`Pointer lock refused: ${String(error)}`),
+        );
       }
     };
 
