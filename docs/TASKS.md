@@ -20,6 +20,8 @@ see those files rather than a duplicated narrative here._
 
 ## Todo
 
+- [ ] Showcase media (#587): add a gameplay hero visual to the README linked to darkmoon.dev, re-shoot `solo-practice` on a live match with debug and FPS hidden, refresh `public/og-image.jpg` for the solo-first copy, capture the features in `promo/spots.json` that still have no visual, and render a 12-21 s launch spot (title; one click into a match; Deathmatch combat; grenade arc and blast; CTF grab and Gallery streak; end card "Solo vs bots today", no multiplayer), then reuse it for the `hero` reel. Needs `/promo` and `/brag`.
+
 - [ ] Retire Netlify leftovers after the Netlify site is deleted: remove `netlify.toml`, and the `darkmoon-dev.netlify.app` entries from `render.yaml` `ALLOWED_ORIGINS`. (P3 · Tech Debt) Owner-side: add a Cloudflare zone Single Redirect `www.darkmoon.dev` → `darkmoon.dev` (301, keep path/query). Source: #535.
 
 - [ ] Revisit the eslint 10 bump (issue #446, closed-unmerged PR #445) once `eslint-plugin-jsx-a11y` supports it. (P3 · Tech Debt · Confidence: High) Blocked externally: as of the 2026-09-24 PMO audit, `npm view eslint-plugin-jsx-a11y peerDependencies` still caps `eslint` at `^9`. Acceptance Criteria: when a jsx-a11y release allows eslint 10, remove the `eslint` semver-major `ignore` rule from `.github/dependabot.yml`, bump both, `npm run lint` passes in Docker, and #446 is closed. Canonical tracker: nitsuah/vigil#212.
